@@ -9,6 +9,21 @@ import {
   insertQrTokenSchema 
 } from "@shared/schema";
 
+// Utility function to determine shift based on time
+function determineShiftByTime(time: string): string {
+  const [hours, minutes] = time.split(':').map(Number);
+  const totalMinutes = hours * 60 + minutes;
+  
+  // Shift 1: 06:00:00 - 18:00:00 (360 - 1080 minutes)
+  // Shift 2: 18:00:00 - 06:00:00 (1080 - 360 minutes next day)
+  
+  if (totalMinutes >= 360 && totalMinutes < 1080) {
+    return "Shift 1";
+  } else {
+    return "Shift 2";
+  }
+}
+
 export async function registerRoutes(app: Express): Promise<Server> {
   // Employee routes
   app.get("/api/employees", async (req, res) => {
@@ -107,11 +122,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Employee already attended today" });
       }
 
-      // Check if employee is scheduled for today
+      // Determine shift based on check-in time
+      const detectedShift = determineShiftByTime(validatedData.time);
+      
+      // Check if employee is scheduled for today and correct shift
       const roster = await storage.getRosterByDate(validatedData.date);
-      const isScheduled = roster.some(r => r.employeeId === validatedData.employeeId);
-      if (!isScheduled) {
-        return res.status(400).json({ message: "Employee not scheduled for today" });
+      const scheduledForShift = roster.find(r => 
+        r.employeeId === validatedData.employeeId && r.shift === detectedShift
+      );
+      
+      if (!scheduledForShift) {
+        const isScheduledAnyShift = roster.some(r => r.employeeId === validatedData.employeeId);
+        if (!isScheduledAnyShift) {
+          return res.status(400).json({ message: "Employee not scheduled for today" });
+        } else {
+          return res.status(400).json({ 
+            message: `Employee scheduled for different shift. Check-in time ${validatedData.time} indicates ${detectedShift}, but employee is scheduled for different shift.` 
+          });
+        }
       }
 
       const record = await storage.createAttendanceRecord(validatedData);

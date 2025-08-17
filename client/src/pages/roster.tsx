@@ -172,8 +172,8 @@ export default function Roster() {
                               </SelectTrigger>
                             </FormControl>
                             <SelectContent>
-                              <SelectItem value="Shift 1">Shift 1</SelectItem>
-                              <SelectItem value="Shift 2">Shift 2</SelectItem>
+                              <SelectItem value="Shift 1">Shift 1 (06:00 - 18:00)</SelectItem>
+                              <SelectItem value="Shift 2">Shift 2 (18:00 - 06:00)</SelectItem>
                             </SelectContent>
                           </Select>
                           <FormMessage />

@@ -4,6 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { validateQRData } from "@/lib/crypto-utils";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
+import { formatTimeWithShift, getCurrentShift } from "@/lib/shift-utils";
 import { Camera, CameraOff, CheckCircle, User, Clock, XCircle } from "lucide-react";
 import jsQR from "jsqr";
 
@@ -111,10 +112,15 @@ export function QRScanner() {
       const result = await response.json();
       
       if (result.valid) {
+        const currentTime = new Date().toLocaleTimeString('id-ID', {
+          hour: '2-digit',
+          minute: '2-digit'
+        });
+        
         const employeeData = {
           employeeId: result.employee.id,
           name: result.employee.name,
-          scanTime: new Date().toLocaleTimeString('id-ID'),
+          scanTime: formatTimeWithShift(currentTime),
           status: 'processing' as const
         };
         
@@ -232,12 +238,21 @@ export function QRScanner() {
     await processAttendanceAutomatically(scanResult);
   };
 
+  const currentShift = getCurrentShift();
+  const currentTime = new Date().toLocaleTimeString('id-ID', {
+    hour: '2-digit',
+    minute: '2-digit'
+  });
+
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
       {/* Camera Scanner */}
       <Card>
         <CardHeader>
           <CardTitle>Scan QR Code</CardTitle>
+          <div className="text-sm text-gray-600 dark:text-gray-400">
+            Waktu sekarang: {currentTime} • {currentShift}
+          </div>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="relative">
@@ -360,7 +375,7 @@ export function QRScanner() {
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
                     <Clock className="w-4 h-4 inline mr-1" />
-                    Waktu Scan
+                    Waktu & Shift
                   </label>
                   <p className="text-lg font-semibold text-gray-900 dark:text-white" data-testid="scan-time">
                     {scanResult.scanTime}
