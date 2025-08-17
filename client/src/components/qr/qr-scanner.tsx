@@ -173,6 +173,12 @@ export function QRScanner() {
         title: "Absensi Berhasil",
         description: `✅ Absensi berhasil dicatat untuk ${employeeData.name}`,
       });
+
+      // Invalidate queries to refresh roster and attendance data
+      const { queryClient } = await import("@/lib/queryClient");
+      queryClient.invalidateQueries({ queryKey: ["/api/attendance", today] });
+      queryClient.invalidateQueries({ queryKey: ["/api/roster", today] });
+      queryClient.invalidateQueries({ queryKey: ["/api/dashboard"] });
       
       // Clear scan result after 3 seconds to show success
       setTimeout(() => {
