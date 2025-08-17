@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { validateQRData } from "@/lib/crypto-utils";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
-import { Camera, CameraOff, CheckCircle, User, Clock } from "lucide-react";
+import { Camera, CameraOff, CheckCircle, User, Clock, XCircle } from "lucide-react";
 import jsQR from "jsqr";
 
 interface ScanResult {
@@ -12,6 +12,7 @@ interface ScanResult {
   name: string;
   scanTime: string;
   status?: 'processing' | 'success' | 'error';
+  errorMessage?: string;
 }
 
 export function QRScanner() {
@@ -194,6 +195,9 @@ export function QRScanner() {
         }
       }
       
+      // Update status to error with message
+      setScanResult(prev => prev ? { ...prev, status: 'error', errorMessage } : null);
+      
       toast({
         title: errorTitle,
         description: `❌ ${errorMessage}`,
@@ -285,6 +289,8 @@ export function QRScanner() {
                   ? 'bg-blue-50 dark:bg-blue-900 border-blue-200 dark:border-blue-700'
                   : scanResult.status === 'success'
                   ? 'bg-green-50 dark:bg-green-900 border-green-200 dark:border-green-700'
+                  : scanResult.status === 'error'
+                  ? 'bg-red-50 dark:bg-red-900 border-red-200 dark:border-red-700'
                   : 'bg-green-50 dark:bg-green-900 border-green-200 dark:border-green-700'
               }`}>
                 <div className="flex items-center">
@@ -298,6 +304,11 @@ export function QRScanner() {
                       <CheckCircle className="w-5 h-5 text-green-600 dark:text-green-300 mr-2" />
                       <span className="text-green-800 dark:text-green-200 font-medium">Absensi Berhasil</span>
                     </>
+                  ) : scanResult.status === 'error' ? (
+                    <>
+                      <XCircle className="w-5 h-5 text-red-600 dark:text-red-300 mr-2" />
+                      <span className="text-red-800 dark:text-red-200 font-medium">Gagal Memproses</span>
+                    </>
                   ) : (
                     <>
                       <CheckCircle className="w-5 h-5 text-green-600 dark:text-green-300 mr-2" />
@@ -305,6 +316,11 @@ export function QRScanner() {
                     </>
                   )}
                 </div>
+                {scanResult.status === 'error' && scanResult.errorMessage && (
+                  <div className="mt-2">
+                    <p className="text-sm text-red-600 dark:text-red-300">{scanResult.errorMessage}</p>
+                  </div>
+                )}
               </div>
               
               <div className="space-y-3">
@@ -336,14 +352,15 @@ export function QRScanner() {
                 </div>
               </div>
               
-              {/* Show scan again button only when processing is complete */}
-              {scanResult.status === 'success' && (
+              {/* Show action buttons based on status */}
+              {(scanResult.status === 'success' || scanResult.status === 'error') && (
                 <Button 
                   onClick={() => setScanResult(null)} 
                   className="w-full"
+                  variant={scanResult.status === 'error' ? 'destructive' : 'default'}
                   data-testid="scan-again-button"
                 >
-                  Scan Lagi
+                  {scanResult.status === 'error' ? 'Coba Lagi' : 'Scan Lagi'}
                 </Button>
               )}
               
