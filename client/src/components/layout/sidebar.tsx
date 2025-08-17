@@ -38,7 +38,6 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
           onClick={onClose}
         />
       )}
-      
       {/* Sidebar */}
       <div className={cn(
         "fixed inset-y-0 left-0 z-50 w-64 bg-white dark:bg-gray-800 shadow-lg transform transition-transform duration-300 lg:translate-x-0 lg:static lg:inset-0",
@@ -50,7 +49,7 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
             <div className="w-8 h-8 bg-white rounded-lg flex items-center justify-center">
               <QrCode className="w-5 h-5 text-primary-600" />
             </div>
-            <span className="text-xl font-bold text-white">AttendanceQR</span>
+            <span className="text-xl font-bold text-white">Attendance GECL</span>
           </div>
         </div>
         

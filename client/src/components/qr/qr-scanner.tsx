@@ -159,21 +159,29 @@ export function QRScanner() {
     } catch (error: any) {
       console.error("Attendance error:", error);
       
+      let errorMessage = "Gagal memproses absensi";
+      let errorTitle = "Error";
+      
       // Handle specific error cases
-      if (error.message && error.message.includes("already attended")) {
-        toast({
-          title: "Sudah Absen",
-          description: `⚠️ ${scanResult.name} sudah melakukan absensi hari ini`,
-          variant: "destructive",
-        });
-      } else {
-        const errorMessage = error.message || "Gagal memproses absensi";
-        toast({
-          title: "Error",
-          description: `❌ ${errorMessage}`,
-          variant: "destructive",
-        });
+      if (error.message) {
+        if (error.message.includes("already attended")) {
+          errorTitle = "Sudah Absen";
+          errorMessage = `${scanResult.name} sudah melakukan absensi hari ini`;
+        } else if (error.message.includes("Bad Request")) {
+          errorTitle = "Data Tidak Valid";
+          errorMessage = "QR Code tidak valid atau data absensi bermasalah";
+        } else {
+          errorMessage = error.message;
+        }
+      } else if (error.status) {
+        errorMessage = `HTTP Error ${error.status}`;
       }
+      
+      toast({
+        title: errorTitle,
+        description: `❌ ${errorMessage}`,
+        variant: "destructive",
+      });
       
       // Clear scan result after showing error
       setScanResult(null);
