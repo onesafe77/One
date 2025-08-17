@@ -213,7 +213,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
           validatedRosters.push(validatedData);
         } catch (error) {
-          errors.push(`Baris ${i + 1}: Data tidak valid`);
+          console.error(`Validation error for row ${i + 1}:`, error);
+          console.error(`Row data:`, rosters[i]);
+          errors.push(`Baris ${i + 1}: Data tidak valid - ${error instanceof Error ? error.message : 'Unknown error'}`);
         }
       }
 

@@ -151,9 +151,13 @@ export default function Roster() {
       });
     },
     onError: (error: any) => {
+      console.error('Upload error:', error);
+      const errorMessage = error.response?.data?.message || error.message || 'Gagal upload roster';
+      const errorDetails = error.response?.data?.errors || [];
+      
       toast({
         title: "Error",
-        description: error.message || "Gagal mengupload roster",
+        description: errorDetails.length > 0 ? errorDetails.join(', ') : errorMessage,
         variant: "destructive",
       });
     },
@@ -218,31 +222,38 @@ export default function Roster() {
       const worksheet = workbook.Sheets[workbook.SheetNames[0]];
       const jsonData = XLSX.utils.sheet_to_json(worksheet);
 
-      const rosterData: InsertRosterSchedule[] = jsonData.map((row: any) => {
+      console.log('Excel data parsed:', jsonData);
+
+      const rosterData: InsertRosterSchedule[] = jsonData.map((row: any, index: number) => {
+        console.log(`Processing row ${index + 1}:`, row);
+
         // Parse jam kerja format "08:00 - 16:00"
         const jamKerja = row['Jam Kerja'] || row.jamKerja || '';
         const jamKerjaParts = jamKerja.split(' - ');
-        const startTime = jamKerjaParts[0] || row['Start Time'] || row.startTime || '';
-        const endTime = jamKerjaParts[1] || row['End Time'] || row.endTime || '';
+        const startTime = jamKerjaParts[0] ? jamKerjaParts[0].trim() : '08:00';
+        const endTime = jamKerjaParts[1] ? jamKerjaParts[1].trim() : '16:00';
 
-        return {
-          employeeId: row.NIK || row.nik || row['Employee ID'] || row.employeeId,
+        const rosterData = {
+          employeeId: row.NIK || row.nik || row['Employee ID'] || row.employeeId || '',
           date: selectedDate,
-          shift: row.Shift || row.shift,
+          shift: row.Shift || row.shift || 'Shift 1',
           startTime: startTime,
           endTime: endTime,
-          jamTidur: row['Jam Tidur'] || row.jamTidur || '',
+          jamTidur: String(row['Jam Tidur'] || row.jamTidur || ''),
           fitToWork: row['Fit To Work'] || row.fitToWork || 'Fit To Work',
           status: row.Status || row.status || 'scheduled'
         };
-      });
 
-      // Validate required fields
-      const invalidRows = rosterData.filter(row => !row.employeeId || !row.shift || !row.startTime || !row.endTime);
-      if (invalidRows.length > 0) {
+        console.log(`Mapped data for row ${index + 1}:`, rosterData);
+        return rosterData;
+      }).filter(row => row.employeeId && row.shift && row.startTime && row.endTime);
+
+      console.log('Final roster data to upload:', rosterData);
+
+      if (rosterData.length === 0) {
         toast({
           title: "Error",
-          description: `${invalidRows.length} baris data tidak valid. Pastikan kolom NIK, Shift, Start Time, dan End Time terisi`,
+          description: "Tidak ada data valid ditemukan. Pastikan format Excel sesuai template",
           variant: "destructive",
         });
         return;
@@ -250,6 +261,7 @@ export default function Roster() {
 
       uploadMutation.mutate(rosterData);
     } catch (error) {
+      console.error('Excel processing error:', error);
       toast({
         title: "Error",
         description: "Format file Excel tidak valid",
