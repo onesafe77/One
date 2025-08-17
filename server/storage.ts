@@ -67,13 +67,27 @@ export class MemStorage implements IStorage {
   }
 
   private initializeSampleData() {
-    // Sample employees
+    // Sample employees - Adding employees that match the Excel upload data
     const sampleEmployees: Employee[] = [
       { id: 'C-00001', name: 'Budi Santoso', nomorLambung: 'GECL 9001', phone: '+6281234567890', shift: 'Shift 1', status: 'active', createdAt: new Date() },
       { id: 'C-00002', name: 'Siti Aisyah', nomorLambung: 'GECL 9002', phone: '+6281234567891', shift: 'Shift 2', status: 'active', createdAt: new Date() },
       { id: 'C-00003', name: 'Ahmad Fauzi', nomorLambung: 'GECL 9003', phone: '+6281234567892', shift: 'Shift 1', status: 'active', createdAt: new Date() },
       { id: 'C-00004', name: 'Dewi Lestari', nomorLambung: 'GECL 9004', phone: '+6281234567893', shift: 'Shift 1', status: 'active', createdAt: new Date() },
       { id: 'C-00005', name: 'Rudi Hermawan', nomorLambung: 'GECL 9005', phone: '+6281234567894', shift: 'Shift 2', status: 'active', createdAt: new Date() },
+      // Adding employees from Excel data
+      { id: 'C-015227', name: 'SYAHRIAL H', nomorLambung: 'GECL 9001', phone: '+628123456789', shift: 'Shift 1', status: 'active', createdAt: new Date() },
+      { id: 'C-004764', name: 'SAHRUL HELMI', nomorLambung: 'GECL 9002', phone: '+628123456789', shift: 'Shift 1', status: 'active', createdAt: new Date() },
+      { id: 'C-074091', name: 'ARDI ANAS', nomorLambung: 'GECL 9003', phone: '+628123456789', shift: 'Shift 1', status: 'active', createdAt: new Date() },
+      { id: 'C-004381', name: 'ARDIANSYAH', nomorLambung: 'GECL 9004', phone: '+628123456789', shift: 'Shift 1', status: 'active', createdAt: new Date() },
+      { id: 'C-022977', name: 'HENDRA', nomorLambung: 'GECL 9005', phone: '+628123456789', shift: 'Shift 1', status: 'active', createdAt: new Date() },
+      { id: 'C-041420', name: 'DENDI', nomorLambung: 'GECL 9006', phone: '+628123456789', shift: 'Shift 1', status: 'active', createdAt: new Date() },
+      { id: 'C-009301', name: 'IRAWADI', nomorLambung: 'GECL 9084', phone: '+628123456789', shift: 'Shift 1', status: 'active', createdAt: new Date() },
+      { id: 'C-020646', name: 'SAFARUDDIN', nomorLambung: 'GECL 9085', phone: '+628123456789', shift: 'Shift 1', status: 'active', createdAt: new Date() },
+      { id: 'C-005024', name: 'M SAIDI', nomorLambung: 'GECL 9086', phone: '+628123456789', shift: 'Shift 1', status: 'active', createdAt: new Date() },
+      { id: 'C-031598', name: 'A ZAINAL ABIDIN', nomorLambung: 'GECL 9087', phone: '+628123456789', shift: 'Shift 1', status: 'active', createdAt: new Date() },
+      { id: 'C-030875', name: 'HIDAYATUL S', nomorLambung: 'GECL 9088', phone: '+628123456789', shift: 'Shift 1', status: 'active', createdAt: new Date() },
+      { id: 'C-042013', name: 'HERI AKBAR', nomorLambung: 'GECL 9089', phone: '+628123456789', shift: 'Shift 1', status: 'active', createdAt: new Date() },
+      { id: 'C-029803', name: 'AMBRANI', nomorLambung: 'GECL 9090', phone: '+628123456789', shift: 'Shift 1', status: 'active', createdAt: new Date() },
     ];
 
     sampleEmployees.forEach(emp => this.employees.set(emp.id, emp));
