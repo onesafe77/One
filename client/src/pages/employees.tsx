@@ -22,7 +22,7 @@ const formSchema = insertEmployeeSchema.extend({
 
 export default function Employees() {
   const [searchTerm, setSearchTerm] = useState("");
-  const [shiftFilter, setShiftFilter] = useState("");
+  const [shiftFilter, setShiftFilter] = useState("all");
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingEmployee, setEditingEmployee] = useState<Employee | null>(null);
   const { toast } = useToast();
@@ -105,7 +105,7 @@ export default function Employees() {
   const filteredEmployees = employees.filter(employee => {
     const matchesSearch = employee.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          employee.id.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesShift = shiftFilter === "" || employee.shift === shiftFilter;
+    const matchesShift = shiftFilter === "all" || employee.shift === shiftFilter;
     return matchesSearch && matchesShift;
   });
 
@@ -295,7 +295,7 @@ export default function Employees() {
               <SelectValue placeholder="Semua Shift" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="">Semua Shift</SelectItem>
+              <SelectItem value="all">Semua Shift</SelectItem>
               <SelectItem value="Pagi">Pagi</SelectItem>
               <SelectItem value="Siang">Siang</SelectItem>
               <SelectItem value="Malam">Malam</SelectItem>
