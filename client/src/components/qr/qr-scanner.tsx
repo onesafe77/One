@@ -157,52 +157,44 @@ export function QRScanner() {
 
       console.log("Attendance response:", response);
 
-      if (response.ok) {
-        toast({
-          title: "Absensi Berhasil",
-          description: `✅ Absensi berhasil dicatat untuk ${scanResult.name}`,
-        });
-        
-        setScanResult(null);
-      } else {
-        const errorText = await response.text();
-        console.log("Response not ok, status:", response.status, "text:", errorText);
-        
-        // Parse the error response if it's JSON
-        try {
-          const errorJson = JSON.parse(errorText);
-          throw new Error(errorJson.message || errorText);
-        } catch (parseError) {
-          throw new Error(errorText || `HTTP ${response.status}`);
-        }
-      }
+      toast({
+        title: "Absensi Berhasil",
+        description: `✅ Absensi berhasil dicatat untuk ${scanResult.name}`,
+      });
+      
+      setScanResult(null);
     } catch (error: any) {
       console.error("Attendance error:", error);
-      console.error("Error details:", JSON.stringify(error));
+      console.error("Error message type:", typeof error.message);
+      console.error("Error properties:", Object.keys(error));
       
       let errorMessage = "Gagal memproses absensi";
       let errorTitle = "Error";
       
-      // Handle specific error cases based on the actual error message from server
-      if (error?.message) {
-        const message = error.message.toLowerCase();
-        console.log("Error message:", error.message);
+      // Try to get error message from different possible sources
+      const errorMsg = error?.message || error?.error || error?.data?.message || String(error);
+      console.log("Final error message:", errorMsg);
+      
+      if (errorMsg) {
+        const message = errorMsg.toLowerCase();
         
-        if (message.includes("already attended") || message.includes("sudah absen")) {
+        if (message.includes("already attended")) {
           errorTitle = "Sudah Absen Hari Ini";
           errorMessage = `${scanResult.name} sudah melakukan absensi pada hari ini`;
-        } else if (message.includes("bad request") || message.includes("400")) {
+        } else if (message.includes("not scheduled")) {
+          errorTitle = "Tidak Dijadwalkan";
+          errorMessage = `${scanResult.name} tidak dijadwalkan bekerja hari ini`;
+        } else if (message.includes("employee not found")) {
+          errorTitle = "Karyawan Tidak Ditemukan";
+          errorMessage = `Data karyawan ${scanResult.name} tidak ditemukan`;
+        } else if (message.includes("invalid") || message.includes("bad request")) {
           errorTitle = "Data Tidak Valid";
           errorMessage = "Data absensi tidak valid atau bermasalah";
-        } else if (message.includes("invalid") || message.includes("tidak valid")) {
-          errorTitle = "QR Code Tidak Valid";
-          errorMessage = "QR Code tidak valid atau sudah kadaluarsa";
         } else {
           errorTitle = "Gagal Memproses";
-          errorMessage = error.message;
+          errorMessage = errorMsg;
         }
       } else {
-        // If no error message, it might be a network or other issue
         errorTitle = "Kesalahan Sistem";
         errorMessage = "Terjadi kesalahan dalam memproses absensi";
       }
