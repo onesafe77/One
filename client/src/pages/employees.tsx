@@ -182,7 +182,7 @@ export default function Employees() {
                           <FormLabel>NIK</FormLabel>
                           <FormControl>
                             <Input 
-                              placeholder="C-000001" 
+                              placeholder="C-00001" 
                               {...field} 
                               disabled={true}
                               data-testid="employee-id-input"
@@ -218,7 +218,7 @@ export default function Employees() {
                         <FormLabel>Nomor Lambung</FormLabel>
                         <FormControl>
                           <Input 
-                            placeholder="B-001" 
+                            placeholder="GECL 9000" 
                             {...field} 
                             data-testid="employee-nomor-lambung-input"
                           />

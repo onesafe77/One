@@ -13,7 +13,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { insertRosterSchema } from "@shared/schema";
 import type { Employee, RosterSchedule, AttendanceRecord, InsertRosterSchedule } from "@shared/schema";
-import { Plus, Calendar, Users, CheckCircle, Clock, Upload, Download, Filter, Edit, Trash2 } from "lucide-react";
+import { Plus, Upload, Download, Filter, Calendar, CheckCircle, Clock, Users, Edit, Trash2 } from "lucide-react";
 import { z } from "zod";
 import * as XLSX from 'xlsx';
 import { saveAs } from 'file-saver';
@@ -64,6 +64,18 @@ export default function Roster() {
     },
   });
 
+  const editForm = useForm<z.infer<typeof formSchema>>({
+    resolver: zodResolver(formSchema),
+    defaultValues: {
+      employeeId: "",
+      date: selectedDate,
+      shift: "",
+      startTime: "",
+      endTime: "",
+      status: "scheduled",
+    },
+  });
+
   const createMutation = useMutation({
     mutationFn: (data: InsertRosterSchedule) => apiRequest("POST", "/api/roster", data),
     onSuccess: () => {
@@ -79,26 +91,6 @@ export default function Roster() {
       toast({
         title: "Error",
         description: "Gagal menambahkan roster",
-        variant: "destructive",
-      });
-    },
-  });
-
-  const uploadMutation = useMutation({
-    mutationFn: (data: InsertRosterSchedule[]) => apiRequest("POST", "/api/roster/bulk", { rosters: data }),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/roster"] });
-      setIsUploadDialogOpen(false);
-      setSelectedFile(null);
-      toast({
-        title: "Berhasil",
-        description: "Roster berhasil diupload dari Excel",
-      });
-    },
-    onError: (error: any) => {
-      toast({
-        title: "Error",
-        description: error.message || "Gagal mengupload roster",
         variant: "destructive",
       });
     },
@@ -126,7 +118,7 @@ export default function Roster() {
   });
 
   const deleteMutation = useMutation({
-    mutationFn: (id: string) => apiRequest("DELETE", `/api/roster/${id}`),
+    mutationFn: (id: string) => apiRequest("DELETE", `/api/roster/${id}`, {}),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/roster"] });
       toast({
@@ -143,6 +135,26 @@ export default function Roster() {
     },
   });
 
+  const uploadMutation = useMutation({
+    mutationFn: (data: InsertRosterSchedule[]) => apiRequest("POST", "/api/roster/bulk", { rosters: data }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/roster"] });
+      setIsUploadDialogOpen(false);
+      setSelectedFile(null);
+      toast({
+        title: "Berhasil",
+        description: "Roster berhasil diupload dari Excel",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: error.message || "Gagal mengupload roster",
+        variant: "destructive",
+      });
+    },
+  });
+
   const onSubmit = (values: z.infer<typeof formSchema>) => {
     createMutation.mutate({
       ...values,
@@ -151,28 +163,12 @@ export default function Roster() {
   };
 
   const onEditSubmit = (values: z.infer<typeof formSchema>) => {
-    if (editingRoster) {
-      updateMutation.mutate({
-        id: editingRoster.id,
-        data: {
-          ...values,
-          date: selectedDate,
-        }
-      });
-    }
+    if (!editingRoster) return;
+    updateMutation.mutate({
+      id: editingRoster.id,
+      data: { ...values, date: selectedDate }
+    });
   };
-
-  const editForm = useForm<z.infer<typeof formSchema>>({
-    resolver: zodResolver(formSchema),
-    defaultValues: {
-      employeeId: "",
-      date: selectedDate,
-      shift: "",
-      startTime: "",
-      endTime: "",
-      status: "scheduled",
-    },
-  });
 
   const handleEdit = (roster: RosterSchedule) => {
     setEditingRoster(roster);
@@ -257,18 +253,18 @@ export default function Roster() {
   const downloadTemplate = () => {
     const templateData = [
       {
-        NIK: 'C-000001',
+        NIK: 'C-00001',
         Nama: 'Budi Santoso',
-        'Nomor Lambung': 'B-001',
+        'Nomor Lambung': 'GECL 9001',
         Shift: 'Shift 1',
         'Jam Kerja': '08:00 - 16:00',
         'Fit To Work': 'Fit To Work',
         Status: 'scheduled'
       },
       {
-        NIK: 'C-000002',
+        NIK: 'C-00002',
         Nama: 'Dewi Lestari',
-        'Nomor Lambung': 'D-004',
+        'Nomor Lambung': 'GECL 9002',
         Shift: 'Shift 2',
         'Jam Kerja': '14:00 - 22:00',
         'Fit To Work': 'Not Fit To Work',
@@ -319,12 +315,23 @@ export default function Roster() {
     <Card>
       <CardHeader>
         <div className="flex items-center justify-between">
-          <CardTitle>Roster Kerja</CardTitle>
-          <div className="flex space-x-3">
+          <div>
+            <CardTitle className="text-2xl font-bold text-gray-900 dark:text-white">Roster Kerja</CardTitle>
+          </div>
+          
+          <div className="flex items-center space-x-4">
+            <Input
+              type="date"
+              value={selectedDate}
+              onChange={(e) => setSelectedDate(e.target.value)}
+              className="w-40"
+              data-testid="roster-date-input"
+            />
+            
+            {/* Shift Filter */}
             <Select value={shiftFilter} onValueChange={setShiftFilter}>
-              <SelectTrigger className="w-40" data-testid="shift-filter-select">
-                <Filter className="w-4 h-4 mr-2" />
-                <SelectValue placeholder="Filter Shift" />
+              <SelectTrigger className="w-48" data-testid="shift-filter-select">
+                <SelectValue />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">Semua Shift</SelectItem>
@@ -332,59 +339,45 @@ export default function Roster() {
                 <SelectItem value="Shift 2">Shift 2 saja</SelectItem>
               </SelectContent>
             </Select>
-            <Input
-              type="date"
-              value={selectedDate}
-              onChange={(e) => setSelectedDate(e.target.value)}
-              className="w-auto"
-              data-testid="roster-date-input"
-            />
-            <Button onClick={downloadTemplate} variant="outline" data-testid="download-template-button">
+
+            <Button 
+              onClick={downloadTemplate}
+              variant="outline"
+              data-testid="download-template-button"
+            >
               <Download className="w-4 h-4 mr-2" />
               Template Excel
             </Button>
+
+            {/* Upload Excel Dialog */}
             <Dialog open={isUploadDialogOpen} onOpenChange={setIsUploadDialogOpen}>
               <DialogTrigger asChild>
-                <Button variant="outline" data-testid="upload-excel-button">
+                <Button variant="secondary" data-testid="upload-excel-button">
                   <Upload className="w-4 h-4 mr-2" />
                   Upload Excel
                 </Button>
               </DialogTrigger>
-              <DialogContent className="sm:max-w-[425px]">
+              <DialogContent>
                 <DialogHeader>
-                  <DialogTitle>Upload Roster dari Excel</DialogTitle>
+                  <DialogTitle>Upload Excel Roster</DialogTitle>
                 </DialogHeader>
                 <div className="space-y-4">
                   <div>
-                    <label className="text-sm font-medium">Pilih File Excel</label>
                     <Input
                       type="file"
                       accept=".xlsx,.xls"
                       onChange={handleFileUpload}
-                      className="mt-2"
                       data-testid="excel-file-input"
                     />
                   </div>
                   {selectedFile && (
-                    <div className="text-sm text-gray-600">
-                      File terpilih: {selectedFile.name}
-                    </div>
+                    <p className="text-sm text-gray-600 dark:text-gray-300">
+                      File dipilih: {selectedFile.name}
+                    </p>
                   )}
-                  <div className="text-sm text-gray-500">
-                    <p className="font-medium">Format Excel yang diharapkan:</p>
-                    <ul className="list-disc list-inside mt-1">
-                      <li>NIK (contoh: C-000001)</li>
-                      <li>Nama (contoh: Budi Santoso)</li>
-                      <li>Nomor Lambung (contoh: B-001)</li>
-                      <li>Shift (Shift 1 atau Shift 2)</li>
-                      <li>Jam Kerja (contoh: 08:00 - 16:00)</li>
-                      <li>Fit To Work (Fit To Work atau Not Fit To Work)</li>
-                      <li>Status (scheduled, completed, cancelled)</li>
-                    </ul>
-                  </div>
                   <div className="flex space-x-2">
                     <Button 
-                      onClick={processExcelFile} 
+                      onClick={processExcelFile}
                       disabled={!selectedFile || uploadMutation.isPending}
                       data-testid="process-excel-button"
                     >
@@ -400,6 +393,8 @@ export default function Roster() {
                 </div>
               </DialogContent>
             </Dialog>
+            
+            {/* Add Roster Dialog */}
             <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
               <DialogTrigger asChild>
                 <Button data-testid="add-roster-button">
