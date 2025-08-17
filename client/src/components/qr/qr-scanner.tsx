@@ -149,12 +149,22 @@ export function QRScanner() {
 
       console.log("Auto-processing attendance for:", employeeData.name);
 
-      const response = await apiRequest("POST", "/api/attendance", {
-        employeeId: employeeData.employeeId,
-        date: today,
-        time: currentTime,
-        status: "present"
+      const response = await fetch("/api/attendance", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          employeeId: employeeData.employeeId,
+          date: today,
+          time: currentTime,
+          status: "present"
+        }),
+        credentials: "include"
       });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ message: "Unknown error" }));
+        throw new Error(errorData.message || `HTTP ${response.status}`);
+      }
 
       // Update status to success
       setScanResult(prev => prev ? { ...prev, status: 'success' } : null);
@@ -175,7 +185,7 @@ export function QRScanner() {
       let errorMessage = "Gagal memproses absensi";
       let errorTitle = "Error";
       
-      const errorMsg = error?.message || error?.error || error?.data?.message || String(error);
+      const errorMsg = error?.message || String(error);
       
       if (errorMsg) {
         const message = errorMsg.toLowerCase();
