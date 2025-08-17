@@ -189,6 +189,62 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.post("/api/roster/bulk", async (req, res) => {
+    try {
+      const { rosters } = req.body;
+      if (!Array.isArray(rosters)) {
+        return res.status(400).json({ message: "Rosters must be an array" });
+      }
+
+      const validatedRosters = [];
+      const errors = [];
+
+      // Validate each roster entry
+      for (let i = 0; i < rosters.length; i++) {
+        try {
+          const validatedData = insertRosterSchema.parse(rosters[i]);
+          
+          // Check if employee exists
+          const employee = await storage.getEmployee(validatedData.employeeId);
+          if (!employee) {
+            errors.push(`Baris ${i + 1}: Karyawan dengan NIK ${validatedData.employeeId} tidak ditemukan`);
+            continue;
+          }
+
+          validatedRosters.push(validatedData);
+        } catch (error) {
+          errors.push(`Baris ${i + 1}: Data tidak valid`);
+        }
+      }
+
+      if (errors.length > 0) {
+        return res.status(400).json({ 
+          message: "Beberapa data roster tidak valid", 
+          errors: errors 
+        });
+      }
+
+      // Create all valid rosters
+      const createdSchedules = [];
+      for (const rosterData of validatedRosters) {
+        try {
+          const schedule = await storage.createRosterSchedule(rosterData);
+          createdSchedules.push(schedule);
+        } catch (error) {
+          // Skip duplicates or other creation errors
+        }
+      }
+
+      res.status(201).json({
+        message: `${createdSchedules.length} roster berhasil ditambahkan`,
+        created: createdSchedules.length,
+        total: rosters.length
+      });
+    } catch (error) {
+      res.status(500).json({ message: "Failed to bulk create roster" });
+    }
+  });
+
   app.put("/api/roster/:id", async (req, res) => {
     try {
       const validatedData = insertRosterSchema.partial().parse(req.body);

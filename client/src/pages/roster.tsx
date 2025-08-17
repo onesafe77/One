@@ -13,14 +13,19 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { insertRosterSchema } from "@shared/schema";
 import type { Employee, RosterSchedule, AttendanceRecord, InsertRosterSchedule } from "@shared/schema";
-import { Plus, Calendar, Users, CheckCircle, Clock } from "lucide-react";
+import { Plus, Calendar, Users, CheckCircle, Clock, Upload, Download, Filter } from "lucide-react";
 import { z } from "zod";
+import * as XLSX from 'xlsx';
+import { saveAs } from 'file-saver';
 
 const formSchema = insertRosterSchema;
 
 export default function Roster() {
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [isUploadDialogOpen, setIsUploadDialogOpen] = useState(false);
+  const [shiftFilter, setShiftFilter] = useState("all");
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const { toast } = useToast();
 
   const { data: employees = [] } = useQuery<Employee[]>({
@@ -77,11 +82,109 @@ export default function Roster() {
     },
   });
 
+  const uploadMutation = useMutation({
+    mutationFn: (data: InsertRosterSchedule[]) => apiRequest("POST", "/api/roster/bulk", { rosters: data }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/roster"] });
+      setIsUploadDialogOpen(false);
+      setSelectedFile(null);
+      toast({
+        title: "Berhasil",
+        description: "Roster berhasil diupload dari Excel",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: error.message || "Gagal mengupload roster",
+        variant: "destructive",
+      });
+    },
+  });
+
   const onSubmit = (values: z.infer<typeof formSchema>) => {
     createMutation.mutate({
       ...values,
       date: selectedDate,
     });
+  };
+
+  const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      setSelectedFile(file);
+    }
+  };
+
+  const processExcelFile = async () => {
+    if (!selectedFile) {
+      toast({
+        title: "Error",
+        description: "Pilih file Excel terlebih dahulu",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      const data = await selectedFile.arrayBuffer();
+      const workbook = XLSX.read(data);
+      const worksheet = workbook.Sheets[workbook.SheetNames[0]];
+      const jsonData = XLSX.utils.sheet_to_json(worksheet);
+
+      const rosterData: InsertRosterSchedule[] = jsonData.map((row: any) => ({
+        employeeId: row.NIK || row.nik || row['Employee ID'] || row.employeeId,
+        date: selectedDate,
+        shift: row.Shift || row.shift,
+        startTime: row['Start Time'] || row.startTime || row['Jam Mulai'],
+        endTime: row['End Time'] || row.endTime || row['Jam Selesai'],
+        status: 'scheduled'
+      }));
+
+      // Validate required fields
+      const invalidRows = rosterData.filter(row => !row.employeeId || !row.shift || !row.startTime || !row.endTime);
+      if (invalidRows.length > 0) {
+        toast({
+          title: "Error",
+          description: `${invalidRows.length} baris data tidak valid. Pastikan kolom NIK, Shift, Start Time, dan End Time terisi`,
+          variant: "destructive",
+        });
+        return;
+      }
+
+      uploadMutation.mutate(rosterData);
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Format file Excel tidak valid",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const downloadTemplate = () => {
+    const templateData = [
+      {
+        NIK: 'C-000001',
+        Shift: 'Shift 1',
+        'Start Time': '08:00',
+        'End Time': '16:00'
+      },
+      {
+        NIK: 'C-000002',
+        Shift: 'Shift 2',
+        'Start Time': '14:00',
+        'End Time': '22:00'
+      }
+    ];
+
+    const worksheet = XLSX.utils.json_to_sheet(templateData);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, 'Template Roster');
+    
+    const excelBuffer = XLSX.write(workbook, { bookType: 'xlsx', type: 'array' });
+    const data = new Blob([excelBuffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+    saveAs(data, 'template-roster.xlsx');
   };
 
   const getEmployeeName = (employeeId: string) => {
@@ -96,7 +199,12 @@ export default function Roster() {
     } : { status: 'absent', time: null };
   };
 
-  const rosterWithAttendance = rosterSchedules.map(roster => ({
+  const filteredRosterSchedules = rosterSchedules.filter(roster => {
+    if (shiftFilter === "all") return true;
+    return roster.shift === shiftFilter;
+  });
+
+  const rosterWithAttendance = filteredRosterSchedules.map(roster => ({
     ...roster,
     employee: employees.find(emp => emp.id === roster.employeeId),
     attendance: getAttendanceStatus(roster.employeeId)
@@ -115,6 +223,17 @@ export default function Roster() {
         <div className="flex items-center justify-between">
           <CardTitle>Roster Kerja</CardTitle>
           <div className="flex space-x-3">
+            <Select value={shiftFilter} onValueChange={setShiftFilter}>
+              <SelectTrigger className="w-40" data-testid="shift-filter-select">
+                <Filter className="w-4 h-4 mr-2" />
+                <SelectValue placeholder="Filter Shift" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Semua Shift</SelectItem>
+                <SelectItem value="Shift 1">Shift 1 saja</SelectItem>
+                <SelectItem value="Shift 2">Shift 2 saja</SelectItem>
+              </SelectContent>
+            </Select>
             <Input
               type="date"
               value={selectedDate}
@@ -122,6 +241,64 @@ export default function Roster() {
               className="w-auto"
               data-testid="roster-date-input"
             />
+            <Button onClick={downloadTemplate} variant="outline" data-testid="download-template-button">
+              <Download className="w-4 h-4 mr-2" />
+              Template Excel
+            </Button>
+            <Dialog open={isUploadDialogOpen} onOpenChange={setIsUploadDialogOpen}>
+              <DialogTrigger asChild>
+                <Button variant="outline" data-testid="upload-excel-button">
+                  <Upload className="w-4 h-4 mr-2" />
+                  Upload Excel
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="sm:max-w-[425px]">
+                <DialogHeader>
+                  <DialogTitle>Upload Roster dari Excel</DialogTitle>
+                </DialogHeader>
+                <div className="space-y-4">
+                  <div>
+                    <label className="text-sm font-medium">Pilih File Excel</label>
+                    <Input
+                      type="file"
+                      accept=".xlsx,.xls"
+                      onChange={handleFileUpload}
+                      className="mt-2"
+                      data-testid="excel-file-input"
+                    />
+                  </div>
+                  {selectedFile && (
+                    <div className="text-sm text-gray-600">
+                      File terpilih: {selectedFile.name}
+                    </div>
+                  )}
+                  <div className="text-sm text-gray-500">
+                    <p className="font-medium">Format Excel yang diharapkan:</p>
+                    <ul className="list-disc list-inside mt-1">
+                      <li>NIK (contoh: C-000001)</li>
+                      <li>Shift (Shift 1 atau Shift 2)</li>
+                      <li>Start Time (contoh: 08:00)</li>
+                      <li>End Time (contoh: 16:00)</li>
+                    </ul>
+                  </div>
+                  <div className="flex space-x-2">
+                    <Button 
+                      onClick={processExcelFile} 
+                      disabled={!selectedFile || uploadMutation.isPending}
+                      data-testid="process-excel-button"
+                    >
+                      {uploadMutation.isPending ? "Mengupload..." : "Upload"}
+                    </Button>
+                    <Button variant="outline" onClick={() => {
+                      setIsUploadDialogOpen(false);
+                      setSelectedFile(null);
+                    }}>
+                      Batal
+                    </Button>
+                  </div>
+                </div>
+              </DialogContent>
+            </Dialog>
             <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
               <DialogTrigger asChild>
                 <Button data-testid="add-roster-button">

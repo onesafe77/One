@@ -53,6 +53,11 @@ Preferred communication style: Simple, everyday language.
 - **Real-time Dashboard**: Live attendance statistics with visual charts for management overview
 
 ### Recent Changes
+- **August 17, 2025**: Added Excel upload functionality for roster management with bulk import capabilities
+- **August 17, 2025**: Implemented shift filter on roster page with options: "Semua Shift", "Shift 1 saja", "Shift 2 saja"  
+- **August 17, 2025**: Added template Excel download feature for roster data with proper NIK format examples
+- **August 17, 2025**: Created bulk roster upload API endpoint with validation for employee existence and data integrity
+- **August 17, 2025**: Enhanced roster UI with upload dialog, file selection, and progress indicators
 - **August 17, 2025**: Added "Nomor Lambung" column to employee management system after the name field
 - **August 17, 2025**: Updated all employee forms and tables to include the new Nomor Lambung field
 - **August 17, 2025**: Enhanced PDF reports to include Nomor Lambung as a separate column in attendance reports
