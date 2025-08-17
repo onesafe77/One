@@ -83,10 +83,10 @@ function generateShiftSection(
   doc.text(shiftName.toUpperCase(), margin, yPosition);
   yPosition += 15;
   
-  // Table headers with separated Fit/Not Fit columns
+  // Table headers with Status and Fit To Work columns
   doc.setFontSize(9);
   doc.setFont('helvetica', 'bold');
-  const headers = ['Jam Masuk', 'Nama', 'NIK', 'Shift', 'Nomor Lambung', 'Fit To Work', 'Not Fit To Work'];
+  const headers = ['Jam Masuk', 'Nama', 'NIK', 'Shift', 'Nomor Lambung', 'Status', 'Fit To Work'];
   const columnWidths = [30, 50, 35, 25, 35, 35, 35];
   let xPosition = margin;
   
@@ -116,9 +116,9 @@ function generateShiftSection(
     
     xPosition = margin;
     
-    // Row data with separate Fit/Not Fit columns
-    const fitStatus = record.status === 'present' ? '✓' : '';
-    const notFitStatus = record.status === 'present' ? '' : '✓';
+    // Row data with Status and Fit To Work columns
+    const attendanceStatus = record.status === 'present' ? 'Hadir' : 'Tidak Hadir';
+    const fitToWorkStatus = record.status === 'present' ? 'Fit To Work' : 'Not Fit To Work';
     
     const rowData = [
       record.time,
@@ -126,8 +126,8 @@ function generateShiftSection(
       employee.id, // NIK
       shiftName, // Current shift being processed
       employee.nomorLambung || '-',
-      fitStatus,
-      notFitStatus
+      attendanceStatus,
+      fitToWorkStatus
     ];
     
     rowData.forEach((data, index) => {
@@ -157,15 +157,15 @@ function generateShiftSection(
       
       xPosition = margin;
       
-      // Row data for absent employee with separate Fit/Not Fit columns
+      // Row data for absent employee with Status and Fit To Work columns
       const rowData = [
         '-', // No check-in time
         employee.name,
         employee.id, // NIK
         shiftName, // Current shift being processed
         employee.nomorLambung || '-',
-        '', // Not fit to work (empty)
-        '✓' // Not fit to work (checked)
+        'Tidak Hadir', // Status
+        'Not Fit To Work' // Fit To Work
       ];
       
       rowData.forEach((data, index) => {
