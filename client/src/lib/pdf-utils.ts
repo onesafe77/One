@@ -83,6 +83,86 @@ function generateShiftSection(
   doc.text(shiftName.toUpperCase(), margin, yPosition);
   yPosition += 15;
   
+  // Filter attendance by shift
+  const shiftAttendance = data.attendance.filter(record => {
+    const recordShift = determineShiftByTime(record.time);
+    return recordShift === shiftName;
+  });
+  
+  // Get scheduled employees for this shift
+  const scheduledEmployees = data.roster?.filter(r => r.shift === shiftName && r.date === data.startDate) || [];
+  
+  // Separate employees by status
+  const fitToWorkEmployees: Array<{record?: any, employee: any}> = [];
+  const notFitToWorkEmployees: Array<{record?: any, employee: any}> = [];
+  
+  // Process attended employees
+  shiftAttendance.forEach(record => {
+    const employee = data.employees.find(emp => emp.id === record.employeeId);
+    if (!employee) return;
+    
+    if (record.status === 'present') {
+      fitToWorkEmployees.push({record, employee});
+    } else {
+      notFitToWorkEmployees.push({record, employee});
+    }
+  });
+  
+  // Add scheduled but absent employees to not fit to work
+  scheduledEmployees.forEach(scheduleRecord => {
+    const hasAttended = shiftAttendance.some(attendance => 
+      attendance.employeeId === scheduleRecord.employeeId
+    );
+    
+    if (!hasAttended) {
+      const employee = data.employees.find(emp => emp.id === scheduleRecord.employeeId);
+      if (employee) {
+        notFitToWorkEmployees.push({employee});
+      }
+    }
+  });
+  
+  // Render Fit To Work section
+  yPosition = renderStatusSection(doc, 'FIT TO WORK', fitToWorkEmployees, shiftName, yPosition, margin, pageWidth);
+  
+  // Add space between sections
+  yPosition += 15;
+  
+  // Render Not Fit To Work section
+  yPosition = renderStatusSection(doc, 'NOT FIT TO WORK', notFitToWorkEmployees, shiftName, yPosition, margin, pageWidth);
+  
+  // Add shift summary
+  yPosition += 15;
+  doc.setFontSize(10);
+  doc.setFont('helvetica', 'bold');
+  
+  const attendedCount = shiftAttendance.filter(r => r.status === 'present').length;
+  const scheduledCount = scheduledEmployees.length;
+  const absentCount = scheduledCount - attendedCount;
+  
+  const summaryText = `Ringkasan ${shiftName}: Dijadwalkan: ${scheduledCount} | Hadir: ${attendedCount} | Tidak Hadir: ${absentCount}`;
+  doc.text(summaryText, margin, yPosition);
+  
+  return yPosition + 10;
+}
+
+function renderStatusSection(
+  doc: jsPDF,
+  statusTitle: string,
+  employees: Array<{record?: any, employee: any}>,
+  shiftName: string,
+  startY: number,
+  margin: number,
+  pageWidth: number
+): number {
+  let yPosition = startY;
+  
+  // Status section title with count
+  doc.setFontSize(12);
+  doc.setFont('helvetica', 'bold');
+  doc.text(`${statusTitle} (${employees.length} orang)`, margin, yPosition);
+  yPosition += 12;
+  
   // Table headers
   doc.setFontSize(9);
   doc.setFont('helvetica', 'bold');
@@ -100,30 +180,20 @@ function generateShiftSection(
   yPosition += 12;
   doc.setFont('helvetica', 'normal');
   
-  // Filter attendance by shift
-  const shiftAttendance = data.attendance.filter(record => {
-    const recordShift = determineShiftByTime(record.time);
-    return recordShift === shiftName;
-  });
-  
-  // Get scheduled employees for this shift
-  const scheduledEmployees = data.roster?.filter(r => r.shift === shiftName && r.date === data.startDate) || [];
-  
-  // Process attended employees first
-  shiftAttendance.forEach(record => {
-    const employee = data.employees.find(emp => emp.id === record.employeeId);
-    if (!employee) return;
-    
+  // Render employees
+  employees.forEach(({record, employee}) => {
     xPosition = margin;
     
-    // Row data - reordered according to new format
+    const status = record ? (record.status === 'present' ? 'Fit To Work' : 'Not Fit To Work') : 'Not Fit To Work';
+    const time = record ? record.time : '-';
+    
     const rowData = [
-      record.time,
+      time,
       employee.name,
-      employee.id, // NIK
-      shiftName, // Current shift being processed
+      employee.id,
+      shiftName,
       employee.nomorLambung || '-',
-      record.status === 'present' ? 'Fit To Work' : 'Not Fit To Work'
+      status
     ];
     
     rowData.forEach((data, index) => {
@@ -140,57 +210,7 @@ function generateShiftSection(
     }
   });
   
-  // Add scheduled but absent employees
-  scheduledEmployees.forEach(scheduleRecord => {
-    // Check if employee already attended
-    const hasAttended = shiftAttendance.some(attendance => 
-      attendance.employeeId === scheduleRecord.employeeId
-    );
-    
-    if (!hasAttended) {
-      const employee = data.employees.find(emp => emp.id === scheduleRecord.employeeId);
-      if (!employee) return;
-      
-      xPosition = margin;
-      
-      // Row data for absent employee - reordered according to new format
-      const rowData = [
-        '-', // No check-in time
-        employee.name,
-        employee.id, // NIK
-        shiftName, // Current shift being processed
-        employee.nomorLambung || '-',
-        'Not Fit To Work'
-      ];
-      
-      rowData.forEach((data, index) => {
-        doc.text(data, xPosition, yPosition);
-        xPosition += columnWidths[index];
-      });
-      
-      yPosition += 10;
-      
-      // Check if we need a new page
-      if (yPosition > doc.internal.pageSize.height - 40) {
-        doc.addPage();
-        yPosition = 30;
-      }
-    }
-  });
-  
-  // Add shift summary
-  yPosition += 15;
-  doc.setFontSize(10);
-  doc.setFont('helvetica', 'bold');
-  
-  const attendedCount = shiftAttendance.filter(r => r.status === 'present').length;
-  const scheduledCount = scheduledEmployees.length;
-  const absentCount = scheduledCount - attendedCount;
-  
-  const summaryText = `Ringkasan ${shiftName}: Dijadwalkan: ${scheduledCount} | Hadir: ${attendedCount} | Tidak Hadir: ${absentCount}`;
-  doc.text(summaryText, margin, yPosition);
-  
-  return yPosition + 10;
+  return yPosition;
 }
 
 function formatDateForPDF(dateString: string): string {
