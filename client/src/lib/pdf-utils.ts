@@ -1,89 +1,186 @@
 import jsPDF from 'jspdf';
-import type { AttendanceRecord, Employee } from '@shared/schema';
+import type { AttendanceRecord, Employee, RosterSchedule } from '@shared/schema';
+import { determineShiftByTime } from './shift-utils';
 
 export interface ReportData {
   employees: Employee[];
   attendance: AttendanceRecord[];
+  roster?: RosterSchedule[];
   startDate: string;
   endDate: string;
   reportType: 'attendance' | 'summary' | 'leave';
 }
 
 export function generateAttendancePDF(data: ReportData): void {
-  const doc = new jsPDF();
+  const doc = new jsPDF('landscape'); // Use landscape orientation for more columns
   const pageWidth = doc.internal.pageSize.width;
+  const pageHeight = doc.internal.pageSize.height;
   const margin = 20;
   
   // Title
-  doc.setFontSize(20);
-  doc.text('Laporan Absensi Karyawan', pageWidth / 2, 30, { align: 'center' });
+  doc.setFontSize(16);
+  doc.text('LAPORAN ABSENSI HARIAN', pageWidth / 2, 25, { align: 'center' });
   
-  // Date range
+  // Date
   doc.setFontSize(12);
-  const dateRange = data.startDate === data.endDate 
+  const reportDate = data.startDate === data.endDate 
     ? `Tanggal: ${formatDateForPDF(data.startDate)}`
     : `Periode: ${formatDateForPDF(data.startDate)} - ${formatDateForPDF(data.endDate)}`;
-  doc.text(dateRange, pageWidth / 2, 45, { align: 'center' });
+  doc.text(reportDate, pageWidth / 2, 35, { align: 'center' });
   
-  // Table headers
-  let yPosition = 70;
-  doc.setFontSize(10);
-  doc.text('No', margin, yPosition);
-  doc.text('ID', margin + 20, yPosition);
-  doc.text('Nama', margin + 50, yPosition);
-  doc.text('Tanggal', margin + 100, yPosition);
-  doc.text('Jam', margin + 135, yPosition);
-  doc.text('Status', margin + 160, yPosition);
+  let yPosition = 55;
   
-  // Draw header line
-  doc.line(margin, yPosition + 5, pageWidth - margin, yPosition + 5);
+  // Generate shift sections
+  yPosition = generateShiftSection(doc, data, 'Shift 1', yPosition, margin, pageWidth);
+  
+  // Add new page or sufficient space for Shift 2
+  if (yPosition > pageHeight - 100) {
+    doc.addPage();
+    yPosition = 30;
+  } else {
+    yPosition += 30; // Add space between sections
+  }
+  
+  yPosition = generateShiftSection(doc, data, 'Shift 2', yPosition, margin, pageWidth);
+  
+  // Footer
+  const now = new Date();
+  const footerText = `Laporan dibuat pada: ${now.toLocaleDateString('id-ID')} ${now.toLocaleTimeString('id-ID')}`;
+  doc.text(footerText, pageWidth / 2, doc.internal.pageSize.height - 15, { align: 'center' });
+  
+  // Download
+  const filename = `Laporan_Absensi_${data.startDate.replace(/-/g, '')}.pdf`;
+  doc.save(filename);
+}
+
+function generateShiftSection(
+  doc: jsPDF, 
+  data: ReportData, 
+  shiftName: string, 
+  startY: number, 
+  margin: number, 
+  pageWidth: number
+): number {
+  let yPosition = startY;
+  
+  // Shift title
+  doc.setFontSize(14);
+  doc.setFont('helvetica', 'bold');
+  doc.text(shiftName.toUpperCase(), margin, yPosition);
   yPosition += 15;
   
-  // Table data
-  data.attendance.forEach((record, index) => {
+  // Table headers
+  doc.setFontSize(9);
+  doc.setFont('helvetica', 'bold');
+  const headers = ['No', 'Nama', 'NIK/No Simper', 'Unit', 'Jam Masuk', 'Status'];
+  const columnWidths = [15, 60, 45, 40, 35, 30];
+  let xPosition = margin;
+  
+  headers.forEach((header, index) => {
+    doc.text(header, xPosition, yPosition);
+    xPosition += columnWidths[index];
+  });
+  
+  // Draw header line
+  doc.line(margin, yPosition + 3, pageWidth - margin, yPosition + 3);
+  yPosition += 12;
+  doc.setFont('helvetica', 'normal');
+  
+  // Filter attendance by shift
+  const shiftAttendance = data.attendance.filter(record => {
+    const recordShift = determineShiftByTime(record.time);
+    return recordShift === shiftName;
+  });
+  
+  // Get scheduled employees for this shift
+  const scheduledEmployees = data.roster?.filter(r => r.shift === shiftName && r.date === data.startDate) || [];
+  
+  let rowNumber = 1;
+  
+  // Process attended employees first
+  shiftAttendance.forEach(record => {
     const employee = data.employees.find(emp => emp.id === record.employeeId);
     if (!employee) return;
     
-    doc.text((index + 1).toString(), margin, yPosition);
-    doc.text(record.employeeId, margin + 20, yPosition);
-    doc.text(employee.name, margin + 50, yPosition);
-    doc.text(formatDateForPDF(record.date), margin + 100, yPosition);
-    doc.text(record.time, margin + 135, yPosition);
-    doc.text(record.status === 'present' ? 'Hadir' : 'Tidak Hadir', margin + 160, yPosition);
+    xPosition = margin;
     
-    yPosition += 12;
+    // Row data
+    const rowData = [
+      rowNumber.toString(),
+      employee.name,
+      employee.id, // Using employee ID as NIK/No Simper
+      employee.shift || 'Unit 1', // Using shift as unit, or default
+      record.time,
+      record.status === 'present' ? 'Hadir' : 'Tidak Hadir'
+    ];
     
-    // Add new page if needed
+    rowData.forEach((data, index) => {
+      doc.text(data, xPosition, yPosition);
+      xPosition += columnWidths[index];
+    });
+    
+    yPosition += 10;
+    rowNumber++;
+    
+    // Check if we need a new page
     if (yPosition > doc.internal.pageSize.height - 40) {
       doc.addPage();
       yPosition = 30;
     }
   });
   
-  // Summary
-  yPosition += 20;
-  const totalRecords = data.attendance.length;
-  const presentCount = data.attendance.filter(r => r.status === 'present').length;
-  const absentCount = totalRecords - presentCount;
+  // Add scheduled but absent employees
+  scheduledEmployees.forEach(scheduleRecord => {
+    // Check if employee already attended
+    const hasAttended = shiftAttendance.some(attendance => 
+      attendance.employeeId === scheduleRecord.employeeId
+    );
+    
+    if (!hasAttended) {
+      const employee = data.employees.find(emp => emp.id === scheduleRecord.employeeId);
+      if (!employee) return;
+      
+      xPosition = margin;
+      
+      // Row data for absent employee
+      const rowData = [
+        rowNumber.toString(),
+        employee.name,
+        employee.id,
+        employee.shift || 'Unit 1',
+        '-',
+        'Tidak Hadir'
+      ];
+      
+      rowData.forEach((data, index) => {
+        doc.text(data, xPosition, yPosition);
+        xPosition += columnWidths[index];
+      });
+      
+      yPosition += 10;
+      rowNumber++;
+      
+      // Check if we need a new page
+      if (yPosition > doc.internal.pageSize.height - 40) {
+        doc.addPage();
+        yPosition = 30;
+      }
+    }
+  });
   
-  doc.setFontSize(12);
-  doc.text('Ringkasan:', margin, yPosition);
-  yPosition += 15;
-  doc.setFontSize(10);
-  doc.text(`Total Absensi: ${totalRecords}`, margin, yPosition);
-  yPosition += 12;
-  doc.text(`Hadir: ${presentCount}`, margin, yPosition);
-  yPosition += 12;
-  doc.text(`Tidak Hadir: ${absentCount}`, margin, yPosition);
+  // Summary for this shift
+  yPosition += 10;
+  doc.setFont('helvetica', 'bold');
+  const presentCount = shiftAttendance.filter(r => r.status === 'present').length;
+  const scheduledCount = scheduledEmployees.length;
+  const absentCount = scheduledCount - presentCount;
   
-  // Footer
-  const now = new Date();
-  const footerText = `Laporan dibuat pada: ${now.toLocaleDateString('id-ID')} ${now.toLocaleTimeString('id-ID')}`;
-  doc.text(footerText, pageWidth / 2, doc.internal.pageSize.height - 20, { align: 'center' });
+  doc.text(`Ringkasan ${shiftName}:`, margin, yPosition);
+  yPosition += 10;
+  doc.setFont('helvetica', 'normal');
+  doc.text(`Dijadwalkan: ${scheduledCount} | Hadir: ${presentCount} | Tidak Hadir: ${absentCount}`, margin, yPosition);
   
-  // Download
-  const filename = `Absensi_${data.startDate.replace(/-/g, '')}_${data.endDate.replace(/-/g, '')}.pdf`;
-  doc.save(filename);
+  return yPosition + 15;
 }
 
 function formatDateForPDF(dateString: string): string {

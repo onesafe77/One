@@ -9,7 +9,7 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { generateAttendancePDF } from "@/lib/pdf-utils";
 import { exportAttendanceToCSV, exportLeaveToCSV, exportEmployeesToCSV } from "@/lib/csv-utils";
 import { useToast } from "@/hooks/use-toast";
-import type { Employee, AttendanceRecord, LeaveRequest } from "@shared/schema";
+import type { Employee, AttendanceRecord, LeaveRequest, RosterSchedule } from "@shared/schema";
 import { Download, FileText, Calendar, Users, TrendingUp } from "lucide-react";
 
 export default function Reports() {
@@ -33,6 +33,11 @@ export default function Reports() {
     enabled: reportType === "leave",
   });
 
+  const { data: roster = [] } = useQuery<RosterSchedule[]>({
+    queryKey: ["/api/roster", startDate],
+    enabled: reportType === "attendance",
+  });
+
   const exportReport = () => {
     if (!startDate || !endDate) {
       toast({
@@ -53,6 +58,7 @@ export default function Reports() {
           generateAttendancePDF({
             employees,
             attendance: filteredAttendance,
+            roster,
             startDate,
             endDate,
             reportType: "attendance"
