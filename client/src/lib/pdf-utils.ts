@@ -83,10 +83,10 @@ function generateShiftSection(
   doc.text(shiftName.toUpperCase(), margin, yPosition);
   yPosition += 15;
   
-  // Table headers with Status and Fit To Work columns
+  // Table headers with Fit To Work and Status columns
   doc.setFontSize(9);
   doc.setFont('helvetica', 'bold');
-  const headers = ['Jam Masuk', 'Nama', 'NIK', 'Shift', 'Nomor Lambung', 'Status', 'Fit To Work'];
+  const headers = ['Jam Masuk', 'Nama', 'NIK', 'Shift', 'Nomor Lambung', 'Fit To Work', 'Status'];
   const columnWidths = [30, 50, 35, 25, 35, 35, 35];
   let xPosition = margin;
   
@@ -126,8 +126,8 @@ function generateShiftSection(
       employee.id, // NIK
       shiftName, // Current shift being processed
       employee.nomorLambung || '-',
-      attendanceStatus,
-      fitToWorkStatus
+      fitToWorkStatus,
+      attendanceStatus
     ];
     
     rowData.forEach((data, index) => {
@@ -157,15 +157,15 @@ function generateShiftSection(
       
       xPosition = margin;
       
-      // Row data for absent employee with Status and Fit To Work columns
+      // Row data for absent employee with Fit To Work and Status columns
       const rowData = [
         '-', // No check-in time
         employee.name,
         employee.id, // NIK
         shiftName, // Current shift being processed
         employee.nomorLambung || '-',
-        'Tidak Hadir', // Status
-        'Not Fit To Work' // Fit To Work
+        'Not Fit To Work', // Fit To Work
+        'Tidak Hadir' // Status
       ];
       
       rowData.forEach((data, index) => {
