@@ -273,23 +273,23 @@ export default function Roster() {
   const downloadTemplate = () => {
     const templateData = [
       {
-        NIK: 'C-00001',
-        Nama: 'Budi Santoso',
+        NIK: 'C-015227',
+        Nama: 'SYAHRIAL H',
         'Nomor Lambung': 'GECL 9001',
         Shift: 'Shift 1',
-        'Jam Kerja': '08:00 - 16:00',
+        'Jam Kerja': '06:00 - 07:30',
         'Jam Tidur': '6',
         'Fit To Work': 'Fit To Work',
         Status: 'scheduled'
       },
       {
-        NIK: 'C-00002',
-        Nama: 'Dewi Lestari',
+        NIK: 'C-004764',
+        Nama: 'SAHRUL HELMI',
         'Nomor Lambung': 'GECL 9002',
-        Shift: 'Shift 2',
-        'Jam Kerja': '14:00 - 22:00',
-        'Jam Tidur': '5',
-        'Fit To Work': 'Not Fit To Work',
+        Shift: 'Shift 1',
+        'Jam Kerja': '06:00 - 07:30',
+        'Jam Tidur': '6',
+        'Fit To Work': 'Fit To Work',
         Status: 'scheduled'
       }
     ];
