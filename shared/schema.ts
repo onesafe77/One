@@ -30,6 +30,7 @@ export const rosterSchedules = pgTable("roster_schedules", {
   startTime: text("start_time").notNull(),
   endTime: text("end_time").notNull(),
   jamTidur: text("jam_tidur"), // Jam tidur dalam angka (contoh: "6", "5")
+  fitToWork: text("fit_to_work").notNull().default("Fit To Work"), // Status fit to work
   status: text("status").notNull().default("scheduled"),
 });
 

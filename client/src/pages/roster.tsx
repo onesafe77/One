@@ -61,6 +61,7 @@ export default function Roster() {
       startTime: "",
       endTime: "",
       jamTidur: "",
+      fitToWork: "Fit To Work",
       status: "scheduled",
     },
   });
@@ -74,6 +75,7 @@ export default function Roster() {
       startTime: "",
       endTime: "",
       jamTidur: "",
+      fitToWork: "Fit To Work",
       status: "scheduled",
     },
   });
@@ -181,6 +183,7 @@ export default function Roster() {
       startTime: roster.startTime,
       endTime: roster.endTime,
       jamTidur: roster.jamTidur || "",
+      fitToWork: roster.fitToWork || "Fit To Work",
       status: roster.status,
     });
     setIsEditDialogOpen(true);
@@ -229,6 +232,7 @@ export default function Roster() {
           startTime: startTime,
           endTime: endTime,
           jamTidur: row['Jam Tidur'] || row.jamTidur || '',
+          fitToWork: row['Fit To Work'] || row.fitToWork || 'Fit To Work',
           status: row.Status || row.status || 'scheduled'
         };
       });
@@ -516,6 +520,27 @@ export default function Roster() {
                         </FormItem>
                       )}
                     />
+                    <FormField
+                      control={form.control}
+                      name="fitToWork"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Status Fit To Work</FormLabel>
+                          <Select onValueChange={field.onChange} value={field.value}>
+                            <FormControl>
+                              <SelectTrigger data-testid="roster-fit-to-work-select">
+                                <SelectValue placeholder="Pilih status fit to work" />
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                              <SelectItem value="Fit To Work">Fit To Work</SelectItem>
+                              <SelectItem value="Not Fit To Work">Not Fit To Work</SelectItem>
+                            </SelectContent>
+                          </Select>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
                     <Button 
                       type="submit" 
                       className="w-full"
@@ -639,6 +664,27 @@ export default function Roster() {
                         </FormItem>
                       )}
                     />
+                    <FormField
+                      control={editForm.control}
+                      name="fitToWork"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Status Fit To Work</FormLabel>
+                          <Select onValueChange={field.onChange} value={field.value}>
+                            <FormControl>
+                              <SelectTrigger data-testid="edit-roster-fit-to-work-select">
+                                <SelectValue placeholder="Pilih status fit to work" />
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                              <SelectItem value="Fit To Work">Fit To Work</SelectItem>
+                              <SelectItem value="Not Fit To Work">Not Fit To Work</SelectItem>
+                            </SelectContent>
+                          </Select>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
                     <div className="flex space-x-2">
                       <Button 
                         type="submit" 
@@ -741,9 +787,10 @@ export default function Roster() {
                     </td>
                     <td className="py-3 px-4">
                       <Badge 
-                        className={roster.attendance.status === 'present' ? 'bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300' : 'bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300'}
+                        variant={roster.fitToWork === "Fit To Work" ? "default" : "destructive"}
+                        data-testid={`roster-fit-to-work-${roster.employeeId}`}
                       >
-                        {roster.attendance.status === 'present' ? 'Fit To Work' : 'Not Fit To Work'}
+                        {roster.fitToWork || "Fit To Work"}
                       </Badge>
                     </td>
                     <td className="py-3 px-4">

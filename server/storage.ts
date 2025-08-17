@@ -81,10 +81,10 @@ export class MemStorage implements IStorage {
     // Sample roster for today
     const today = new Date().toISOString().split('T')[0];
     const sampleRoster: RosterSchedule[] = [
-      { id: randomUUID(), employeeId: 'C-00001', date: today, shift: 'Shift 1', startTime: '08:00', endTime: '16:00', jamTidur: '6', status: 'scheduled' },
-      { id: randomUUID(), employeeId: 'C-00002', date: today, shift: 'Shift 2', startTime: '14:00', endTime: '22:00', jamTidur: '5', status: 'scheduled' },
-      { id: randomUUID(), employeeId: 'C-00004', date: today, shift: 'Shift 1', startTime: '08:00', endTime: '16:00', jamTidur: '6', status: 'scheduled' },
-      { id: randomUUID(), employeeId: 'C-00005', date: today, shift: 'Shift 2', startTime: '14:00', endTime: '22:00', jamTidur: '5', status: 'scheduled' },
+      { id: randomUUID(), employeeId: 'C-00001', date: today, shift: 'Shift 1', startTime: '08:00', endTime: '16:00', jamTidur: '6', fitToWork: 'Fit To Work', status: 'scheduled' },
+      { id: randomUUID(), employeeId: 'C-00002', date: today, shift: 'Shift 2', startTime: '14:00', endTime: '22:00', jamTidur: '5', fitToWork: 'Not Fit To Work', status: 'scheduled' },
+      { id: randomUUID(), employeeId: 'C-00004', date: today, shift: 'Shift 1', startTime: '08:00', endTime: '16:00', jamTidur: '6', fitToWork: 'Fit To Work', status: 'scheduled' },
+      { id: randomUUID(), employeeId: 'C-00005', date: today, shift: 'Shift 2', startTime: '14:00', endTime: '22:00', jamTidur: '5', fitToWork: 'Fit To Work', status: 'scheduled' },
     ];
 
     sampleRoster.forEach(roster => this.rosterSchedules.set(roster.id, roster));
@@ -226,6 +226,7 @@ export class MemStorage implements IStorage {
       id: randomUUID(),
       ...insertSchedule,
       jamTidur: insertSchedule.jamTidur || null,
+      fitToWork: insertSchedule.fitToWork || "Fit To Work",
       status: insertSchedule.status || "scheduled"
     };
     this.rosterSchedules.set(schedule.id, schedule);
