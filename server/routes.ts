@@ -191,10 +191,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/roster/bulk", async (req, res) => {
     try {
+      console.log('Bulk roster request body:', req.body);
       const { rosters } = req.body;
       if (!Array.isArray(rosters)) {
         return res.status(400).json({ message: "Rosters must be an array" });
       }
+
+      console.log(`Processing ${rosters.length} roster entries`);
 
       const validatedRosters = [];
       const errors = [];
@@ -202,7 +205,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Validate each roster entry
       for (let i = 0; i < rosters.length; i++) {
         try {
+          console.log(`Validating roster ${i + 1}:`, rosters[i]);
           const validatedData = insertRosterSchema.parse(rosters[i]);
+          console.log(`Validated data for roster ${i + 1}:`, validatedData);
           
           // Check if employee exists
           const employee = await storage.getEmployee(validatedData.employeeId);
