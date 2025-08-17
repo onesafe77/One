@@ -13,9 +13,12 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { insertEmployeeSchema } from "@shared/schema";
 import type { Employee, InsertEmployee } from "@shared/schema";
-import { Plus, Search, Edit, Trash2, Upload } from "lucide-react";
+import { Plus, Search, Edit, Trash2, Upload, AlertCircle } from "lucide-react";
 import { z } from "zod";
 import * as XLSX from "xlsx";
+import { useAutoSave } from "@/hooks/useAutoSave";
+import { AutoSaveIndicator } from "@/components/AutoSaveIndicator";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 const formSchema = insertEmployeeSchema.extend({
   id: z.string().optional(), // NIK akan digenerate otomatis
@@ -52,12 +55,20 @@ export default function Employees() {
     },
   });
 
+  // Auto save hook
+  const { saveStatus, clearDraft, hasDraft } = useAutoSave({
+    key: editingEmployee ? `employee_edit_${editingEmployee.id}` : 'employee_new',
+    form,
+    exclude: ['id'], // Don't auto save ID field
+  });
+
   const createMutation = useMutation({
     mutationFn: (data: InsertEmployee) => apiRequest("POST", "/api/employees", data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/employees"] });
       setIsDialogOpen(false);
       form.reset();
+      clearDraft(); // Clear auto saved draft after successful save
       toast({
         title: "Berhasil",
         description: "Karyawan berhasil ditambahkan",
@@ -80,6 +91,7 @@ export default function Employees() {
       setIsDialogOpen(false);
       setEditingEmployee(null);
       form.reset();
+      clearDraft(); // Clear auto saved draft after successful save
       toast({
         title: "Berhasil",
         description: "Data karyawan berhasil diperbarui",
@@ -265,10 +277,20 @@ export default function Employees() {
             </DialogTrigger>
             <DialogContent className="sm:max-w-[425px]">
               <DialogHeader>
-                <DialogTitle>
-                  {editingEmployee ? "Edit Karyawan" : "Tambah Karyawan"}
+                <DialogTitle className="flex items-center justify-between">
+                  <span>{editingEmployee ? "Edit Karyawan" : "Tambah Karyawan"}</span>
+                  <AutoSaveIndicator status={saveStatus} />
                 </DialogTitle>
               </DialogHeader>
+              
+              {!editingEmployee && hasDraft() && (
+                <Alert>
+                  <AlertCircle className="h-4 w-4" />
+                  <AlertDescription>
+                    Draft tersimpan otomatis akan dipulihkan. Data yang belum disimpan akan tetap aman.
+                  </AlertDescription>
+                </Alert>
+              )}
               <Form {...form}>
                 <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
                   {editingEmployee && (

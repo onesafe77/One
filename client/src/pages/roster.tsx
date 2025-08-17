@@ -13,9 +13,12 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { insertRosterSchema } from "@shared/schema";
 import type { Employee, RosterSchedule, AttendanceRecord, InsertRosterSchedule } from "@shared/schema";
-import { Plus, Upload, Download, Filter, Calendar, CheckCircle, Clock, Users, Edit, Trash2 } from "lucide-react";
+import { Plus, Upload, Download, Filter, Calendar, CheckCircle, Clock, Users, Edit, Trash2, AlertCircle } from "lucide-react";
 import { z } from "zod";
 import * as XLSX from 'xlsx';
+import { useAutoSave } from "@/hooks/useAutoSave";
+import { AutoSaveIndicator } from "@/components/AutoSaveIndicator";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { saveAs } from 'file-saver';
 
 const formSchema = insertRosterSchema;
@@ -66,6 +69,13 @@ export default function Roster() {
     },
   });
 
+  // Auto save hook for roster form
+  const { saveStatus, clearDraft, hasDraft } = useAutoSave({
+    key: 'roster_new',
+    form,
+    exclude: [], // Save all fields for roster
+  });
+
   const editForm = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -86,6 +96,7 @@ export default function Roster() {
       queryClient.invalidateQueries({ queryKey: ["/api/roster"] });
       setIsDialogOpen(false);
       form.reset();
+      clearDraft(); // Clear auto saved draft after successful save
       toast({
         title: "Berhasil",
         description: "Roster berhasil ditambahkan",
@@ -426,8 +437,20 @@ export default function Roster() {
               </DialogTrigger>
               <DialogContent className="sm:max-w-[425px]">
                 <DialogHeader>
-                  <DialogTitle>Tambah Roster</DialogTitle>
+                  <DialogTitle className="flex items-center justify-between">
+                    <span>Tambah Roster</span>
+                    <AutoSaveIndicator status={saveStatus} />
+                  </DialogTitle>
                 </DialogHeader>
+                
+                {hasDraft() && (
+                  <Alert>
+                    <AlertCircle className="h-4 w-4" />
+                    <AlertDescription>
+                      Draft tersimpan otomatis akan dipulihkan. Data yang belum disimpan akan tetap aman.
+                    </AlertDescription>
+                  </Alert>
+                )}
                 <Form {...form}>
                   <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
                     <FormField
