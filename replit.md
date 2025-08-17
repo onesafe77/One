@@ -53,6 +53,11 @@ Preferred communication style: Simple, everyday language.
 - **Real-time Dashboard**: Live attendance statistics with visual charts for management overview
 
 ### Recent Changes
+- **August 17, 2025**: Added "Nomor Lambung" column to employee management system after the name field
+- **August 17, 2025**: Updated all employee forms and tables to include the new Nomor Lambung field
+- **August 17, 2025**: Enhanced PDF reports to include Nomor Lambung as a separate column in attendance reports
+- **August 17, 2025**: Modified roster display to show employee Nomor Lambung information
+- **August 17, 2025**: Updated database schema to include nomorLambung field in Employee model
 - **August 17, 2025**: Updated shift system from "Pagi, Siang, Malam" to "Shift 1, Shift 2" across all components
 - **August 17, 2025**: Implemented time-based shift criteria: Shift 1 (06:00-18:00) and Shift 2 (18:00-06:00) with automatic shift detection during attendance
 - **QR Code System**: Implemented consistent token generation using stable employee-based tokens instead of timestamp-based

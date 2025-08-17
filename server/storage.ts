@@ -69,11 +69,11 @@ export class MemStorage implements IStorage {
   private initializeSampleData() {
     // Sample employees
     const sampleEmployees: Employee[] = [
-      { id: 'C-000001', name: 'Budi Santoso', phone: '+6281234567890', shift: 'Shift 1', status: 'active', createdAt: new Date() },
-      { id: 'C-000002', name: 'Siti Aisyah', phone: '+6281234567891', shift: 'Shift 2', status: 'active', createdAt: new Date() },
-      { id: 'C-000003', name: 'Ahmad Fauzi', phone: '+6281234567892', shift: 'Shift 1', status: 'active', createdAt: new Date() },
-      { id: 'C-000004', name: 'Dewi Lestari', phone: '+6281234567893', shift: 'Shift 1', status: 'active', createdAt: new Date() },
-      { id: 'C-000005', name: 'Rudi Hermawan', phone: '+6281234567894', shift: 'Shift 2', status: 'active', createdAt: new Date() },
+      { id: 'C-000001', name: 'Budi Santoso', nomorLambung: 'B-001', phone: '+6281234567890', shift: 'Shift 1', status: 'active', createdAt: new Date() },
+      { id: 'C-000002', name: 'Siti Aisyah', nomorLambung: 'S-002', phone: '+6281234567891', shift: 'Shift 2', status: 'active', createdAt: new Date() },
+      { id: 'C-000003', name: 'Ahmad Fauzi', nomorLambung: 'A-003', phone: '+6281234567892', shift: 'Shift 1', status: 'active', createdAt: new Date() },
+      { id: 'C-000004', name: 'Dewi Lestari', nomorLambung: 'D-004', phone: '+6281234567893', shift: 'Shift 1', status: 'active', createdAt: new Date() },
+      { id: 'C-000005', name: 'Rudi Hermawan', nomorLambung: 'R-005', phone: '+6281234567894', shift: 'Shift 2', status: 'active', createdAt: new Date() },
     ];
 
     sampleEmployees.forEach(emp => this.employees.set(emp.id, emp));

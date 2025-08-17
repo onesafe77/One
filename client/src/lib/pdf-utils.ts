@@ -72,8 +72,8 @@ function generateShiftSection(
   // Table headers
   doc.setFontSize(9);
   doc.setFont('helvetica', 'bold');
-  const headers = ['No', 'Nama', 'NIK/No Simper', 'Unit', 'Jam Masuk', 'Status'];
-  const columnWidths = [15, 60, 45, 40, 35, 30];
+  const headers = ['No', 'Nama', 'NIK/No Simper', 'Unit', 'Jam Masuk', 'Status', 'Nomor Lambung'];
+  const columnWidths = [12, 50, 40, 35, 30, 25, 35];
   let xPosition = margin;
   
   headers.forEach((header, index) => {
@@ -111,7 +111,8 @@ function generateShiftSection(
       employee.id, // Using employee ID as NIK/No Simper
       employee.shift || 'Unit 1', // Using shift as unit, or default
       record.time,
-      record.status === 'present' ? 'Hadir' : 'Tidak Hadir'
+      record.status === 'present' ? 'Hadir' : 'Tidak Hadir',
+      employee.nomorLambung || '-'
     ];
     
     rowData.forEach((data, index) => {
@@ -149,7 +150,8 @@ function generateShiftSection(
         employee.id,
         employee.shift || 'Unit 1',
         '-',
-        'Tidak Hadir'
+        'Tidak Hadir',
+        employee.nomorLambung || '-'
       ];
       
       rowData.forEach((data, index) => {

@@ -150,7 +150,7 @@ export default function Roster() {
                             <SelectContent>
                               {employees.map((employee) => (
                                 <SelectItem key={employee.id} value={employee.id}>
-                                  {employee.id} - {employee.name}
+                                  {employee.id} - {employee.name} ({employee.nomorLambung})
                                 </SelectItem>
                               ))}
                             </SelectContent>
@@ -264,6 +264,7 @@ export default function Roster() {
               <tr className="border-b border-gray-200 dark:border-gray-700">
                 <th className="text-left py-3 px-4 font-medium text-gray-900 dark:text-white">ID</th>
                 <th className="text-left py-3 px-4 font-medium text-gray-900 dark:text-white">Nama</th>
+                <th className="text-left py-3 px-4 font-medium text-gray-900 dark:text-white">Nomor Lambung</th>
                 <th className="text-left py-3 px-4 font-medium text-gray-900 dark:text-white">Shift</th>
                 <th className="text-left py-3 px-4 font-medium text-gray-900 dark:text-white">Jam Kerja</th>
                 <th className="text-left py-3 px-4 font-medium text-gray-900 dark:text-white">Status</th>
@@ -273,13 +274,13 @@ export default function Roster() {
             <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
               {isLoadingRoster ? (
                 <tr>
-                  <td colSpan={6} className="py-8 text-center text-gray-500 dark:text-gray-400">
+                  <td colSpan={7} className="py-8 text-center text-gray-500 dark:text-gray-400">
                     Loading...
                   </td>
                 </tr>
               ) : rosterWithAttendance.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="py-8 text-center text-gray-500 dark:text-gray-400">
+                  <td colSpan={7} className="py-8 text-center text-gray-500 dark:text-gray-400">
                     Tidak ada roster untuk tanggal ini
                   </td>
                 </tr>
@@ -291,6 +292,9 @@ export default function Roster() {
                     </td>
                     <td className="py-3 px-4 text-sm text-gray-900 dark:text-white">
                       {roster.employee?.name || 'Unknown'}
+                    </td>
+                    <td className="py-3 px-4 text-sm text-gray-900 dark:text-white">
+                      {roster.employee?.nomorLambung || '-'}
                     </td>
                     <td className="py-3 px-4 text-sm text-gray-900 dark:text-white">
                       {roster.shift}

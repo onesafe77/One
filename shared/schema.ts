@@ -6,6 +6,7 @@ import { z } from "zod";
 export const employees = pgTable("employees", {
   id: varchar("id").primaryKey(),
   name: text("name").notNull(),
+  nomorLambung: text("nomor_lambung").notNull(),
   phone: text("phone").notNull(),
   shift: text("shift").notNull(),
   status: text("status").notNull().default("active"),

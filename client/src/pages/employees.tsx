@@ -18,6 +18,7 @@ import { z } from "zod";
 
 const formSchema = insertEmployeeSchema.extend({
   id: z.string().optional(), // NIK akan digenerate otomatis
+  nomorLambung: z.string().min(1, "Nomor lambung harus diisi"),
 });
 
 export default function Employees() {
@@ -36,6 +37,7 @@ export default function Employees() {
     defaultValues: {
       id: "", // NIK akan digenerate otomatis di server
       name: "",
+      nomorLambung: "",
       phone: "",
       shift: "",
       status: "active",
@@ -124,6 +126,7 @@ export default function Employees() {
     form.reset({
       id: employee.id,
       name: employee.name,
+      nomorLambung: employee.nomorLambung,
       phone: employee.phone,
       shift: employee.shift,
       status: employee.status,
@@ -142,6 +145,7 @@ export default function Employees() {
     form.reset({
       id: "",
       name: "",
+      nomorLambung: "",
       phone: "",
       shift: "",
       status: "active",
@@ -200,6 +204,23 @@ export default function Employees() {
                             placeholder="Nama karyawan" 
                             {...field} 
                             data-testid="employee-name-input"
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="nomorLambung"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Nomor Lambung</FormLabel>
+                        <FormControl>
+                          <Input 
+                            placeholder="B-001" 
+                            {...field} 
+                            data-testid="employee-nomor-lambung-input"
                           />
                         </FormControl>
                         <FormMessage />
@@ -312,6 +333,7 @@ export default function Employees() {
               <tr className="border-b border-gray-200 dark:border-gray-700">
                 <th className="text-left py-3 px-4 font-medium text-gray-900 dark:text-white">NIK</th>
                 <th className="text-left py-3 px-4 font-medium text-gray-900 dark:text-white">Nama</th>
+                <th className="text-left py-3 px-4 font-medium text-gray-900 dark:text-white">Nomor Lambung</th>
                 <th className="text-left py-3 px-4 font-medium text-gray-900 dark:text-white">WhatsApp</th>
                 <th className="text-left py-3 px-4 font-medium text-gray-900 dark:text-white">Shift</th>
                 <th className="text-left py-3 px-4 font-medium text-gray-900 dark:text-white">Status</th>
@@ -321,13 +343,13 @@ export default function Employees() {
             <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
               {isLoading ? (
                 <tr>
-                  <td colSpan={6} className="py-8 text-center text-gray-500 dark:text-gray-400">
+                  <td colSpan={7} className="py-8 text-center text-gray-500 dark:text-gray-400">
                     Loading...
                   </td>
                 </tr>
               ) : filteredEmployees.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="py-8 text-center text-gray-500 dark:text-gray-400">
+                  <td colSpan={7} className="py-8 text-center text-gray-500 dark:text-gray-400">
                     Tidak ada data karyawan
                   </td>
                 </tr>
@@ -336,6 +358,7 @@ export default function Employees() {
                   <tr key={employee.id} data-testid={`employee-row-${employee.id}`}>
                     <td className="py-3 px-4 text-sm text-gray-900 dark:text-white">{employee.id}</td>
                     <td className="py-3 px-4 text-sm text-gray-900 dark:text-white">{employee.name}</td>
+                    <td className="py-3 px-4 text-sm text-gray-900 dark:text-white">{employee.nomorLambung}</td>
                     <td className="py-3 px-4 text-sm text-gray-900 dark:text-white">{employee.phone}</td>
                     <td className="py-3 px-4 text-sm text-gray-900 dark:text-white">{employee.shift}</td>
                     <td className="py-3 px-4">
