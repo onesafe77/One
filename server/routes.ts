@@ -211,7 +211,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
           
           // Check if employee exists
           const employee = await storage.getEmployee(validatedData.employeeId);
+          console.log(`Checking employee for NIK ${validatedData.employeeId}:`, employee);
           if (!employee) {
+            console.log(`Employee not found for NIK: ${validatedData.employeeId}`);
             errors.push(`Baris ${i + 1}: Karyawan dengan NIK ${validatedData.employeeId} tidak ditemukan`);
             continue;
           }
@@ -225,11 +227,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       if (errors.length > 0) {
+        console.log('Validation errors found:', errors);
         return res.status(400).json({ 
           message: "Beberapa data roster tidak valid", 
           errors: errors 
         });
       }
+
+      console.log(`${validatedRosters.length} rosters passed validation`);
 
       // Create all valid rosters
       const createdSchedules = [];
