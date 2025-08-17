@@ -9,6 +9,7 @@ export interface ReportData {
   startDate: string;
   endDate: string;
   reportType: 'attendance' | 'summary' | 'leave';
+  shiftFilter?: string;
 }
 
 export function generateAttendancePDF(data: ReportData): void {
@@ -17,9 +18,15 @@ export function generateAttendancePDF(data: ReportData): void {
   const pageHeight = doc.internal.pageSize.height;
   const margin = 20;
   
-  // Title
+  // Title with shift filter info
   doc.setFontSize(16);
-  doc.text('LAPORAN ABSENSI HARIAN', pageWidth / 2, 25, { align: 'center' });
+  let title = 'LAPORAN ABSENSI HARIAN';
+  if (data.shiftFilter === 'Shift 1') {
+    title = 'LAPORAN ABSENSI HARIAN - SHIFT 1';
+  } else if (data.shiftFilter === 'Shift 2') {
+    title = 'LAPORAN ABSENSI HARIAN - SHIFT 2';
+  }
+  doc.text(title, pageWidth / 2, 25, { align: 'center' });
   
   // Date
   doc.setFontSize(12);
@@ -30,18 +37,25 @@ export function generateAttendancePDF(data: ReportData): void {
   
   let yPosition = 55;
   
-  // Generate shift sections
-  yPosition = generateShiftSection(doc, data, 'Shift 1', yPosition, margin, pageWidth);
-  
-  // Add new page or sufficient space for Shift 2
-  if (yPosition > pageHeight - 100) {
-    doc.addPage();
-    yPosition = 30;
-  } else {
-    yPosition += 30; // Add space between sections
+  // Generate shift sections based on filter
+  if (data.shiftFilter === 'all' || data.shiftFilter === 'Shift 1') {
+    yPosition = generateShiftSection(doc, data, 'Shift 1', yPosition, margin, pageWidth);
   }
   
-  yPosition = generateShiftSection(doc, data, 'Shift 2', yPosition, margin, pageWidth);
+  // Add Shift 2 if needed
+  if (data.shiftFilter === 'all' || data.shiftFilter === 'Shift 2') {
+    // Only add space/page if we already rendered Shift 1
+    if (data.shiftFilter === 'all') {
+      if (yPosition > pageHeight - 100) {
+        doc.addPage();
+        yPosition = 30;
+      } else {
+        yPosition += 30; // Add space between sections
+      }
+    }
+    
+    yPosition = generateShiftSection(doc, data, 'Shift 2', yPosition, margin, pageWidth);
+  }
   
   // Footer
   const now = new Date();

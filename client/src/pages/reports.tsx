@@ -17,6 +17,7 @@ export default function Reports() {
   const [endDate, setEndDate] = useState(new Date().toISOString().split('T')[0]);
   const [reportType, setReportType] = useState("attendance");
   const [format, setFormat] = useState("pdf");
+  const [shiftFilter, setShiftFilter] = useState("all");
   const { toast } = useToast();
 
   const { data: employees = [] } = useQuery<Employee[]>({
@@ -61,7 +62,8 @@ export default function Reports() {
             roster,
             startDate,
             endDate,
-            reportType: "attendance"
+            reportType: "attendance",
+            shiftFilter
           });
         } else {
           exportAttendanceToCSV(filteredAttendance, employees);
@@ -149,6 +151,24 @@ export default function Reports() {
               </SelectContent>
             </Select>
           </div>
+
+          {reportType === "attendance" && (
+            <div>
+              <Label className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                Filter Shift
+              </Label>
+              <Select value={shiftFilter} onValueChange={setShiftFilter}>
+                <SelectTrigger data-testid="shift-filter-select">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Semua Shift</SelectItem>
+                  <SelectItem value="Shift 1">Shift 1 saja</SelectItem>
+                  <SelectItem value="Shift 2">Shift 2 saja</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          )}
           
           <div>
             <Label className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
