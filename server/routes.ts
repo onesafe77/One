@@ -39,7 +39,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const employee = await storage.getEmployee(req.params.id);
       if (!employee) {
-        return res.status(404).json({ message: "Employee not found" });
+        return res.status(404).json({ message: "Karyawan tidak ditemukan" });
       }
       res.json(employee);
     } catch (error) {
@@ -62,7 +62,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const validatedData = insertEmployeeSchema.partial().parse(req.body);
       const employee = await storage.updateEmployee(req.params.id, validatedData);
       if (!employee) {
-        return res.status(404).json({ message: "Employee not found" });
+        return res.status(404).json({ message: "Karyawan tidak ditemukan" });
       }
       res.json(employee);
     } catch (error) {
@@ -74,7 +74,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const deleted = await storage.deleteEmployee(req.params.id);
       if (!deleted) {
-        return res.status(404).json({ message: "Employee not found" });
+        return res.status(404).json({ message: "Karyawan tidak ditemukan" });
       }
       res.status(204).send();
     } catch (error) {
@@ -110,7 +110,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Check if employee exists
       const employee = await storage.getEmployee(validatedData.employeeId);
       if (!employee) {
-        return res.status(404).json({ message: "Employee not found" });
+        return res.status(404).json({ message: "Karyawan tidak ditemukan" });
       }
 
       // Check if already attended today
@@ -119,7 +119,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         validatedData.date
       );
       if (existingAttendance.length > 0) {
-        return res.status(400).json({ message: "Employee already attended today" });
+        return res.status(400).json({ message: "Karyawan sudah melakukan absensi hari ini" });
       }
 
       // Determine shift based on check-in time
@@ -134,10 +134,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!scheduledForShift) {
         const isScheduledAnyShift = roster.some(r => r.employeeId === validatedData.employeeId);
         if (!isScheduledAnyShift) {
-          return res.status(400).json({ message: "Employee not scheduled for today" });
+          return res.status(400).json({ message: "Karyawan tidak dijadwalkan untuk hari ini" });
         } else {
           return res.status(400).json({ 
-            message: `Employee scheduled for different shift. Check-in time ${validatedData.time} indicates ${detectedShift}, but employee is scheduled for different shift.` 
+            message: `Karyawan dijadwalkan untuk shift yang berbeda. Waktu check-in ${validatedData.time} menunjukkan ${detectedShift}, tetapi karyawan dijadwalkan untuk shift yang berbeda.` 
           });
         }
       }
@@ -179,7 +179,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Check if employee exists
       const employee = await storage.getEmployee(validatedData.employeeId);
       if (!employee) {
-        return res.status(404).json({ message: "Employee not found" });
+        return res.status(404).json({ message: "Karyawan tidak ditemukan" });
       }
 
       const schedule = await storage.createRosterSchedule(validatedData);
@@ -240,7 +240,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Check if employee exists
       const employee = await storage.getEmployee(validatedData.employeeId);
       if (!employee) {
-        return res.status(404).json({ message: "Employee not found" });
+        return res.status(404).json({ message: "Karyawan tidak ditemukan" });
       }
 
       const request = await storage.createLeaveRequest(validatedData);
@@ -274,7 +274,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Check if employee exists
       const employee = await storage.getEmployee(employeeId);
       if (!employee) {
-        return res.status(404).json({ message: "Employee not found" });
+        return res.status(404).json({ message: "Karyawan tidak ditemukan" });
       }
 
       // Check if employee already has an active QR token
@@ -319,13 +319,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Check if employee exists
       const employee = await storage.getEmployee(employeeId);
       if (!employee) {
-        return res.status(404).json({ message: "Employee not found" });
+        return res.status(404).json({ message: "Karyawan tidak ditemukan" });
       }
 
       // Validate token
       const isValid = await storage.validateQrToken(employeeId, token);
       if (!isValid) {
-        return res.status(400).json({ message: "Invalid QR token" });
+        return res.status(400).json({ message: "Token QR tidak valid" });
       }
 
       res.json({ 

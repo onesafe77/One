@@ -202,15 +202,18 @@ export function QRScanner() {
       if (errorMsg) {
         const message = errorMsg.toLowerCase();
         
-        if (message.includes("already attended")) {
+        if (message.includes("sudah melakukan absensi")) {
           errorTitle = "Sudah Absen Hari Ini";
           errorMessage = `${employeeData.name} sudah melakukan absensi pada hari ini`;
-        } else if (message.includes("not scheduled")) {
+        } else if (message.includes("tidak dijadwalkan")) {
           errorTitle = "Tidak Dijadwalkan";
           errorMessage = `${employeeData.name} tidak dijadwalkan bekerja hari ini`;
-        } else if (message.includes("employee not found")) {
+        } else if (message.includes("tidak ditemukan")) {
           errorTitle = "Karyawan Tidak Ditemukan";
           errorMessage = `Data karyawan ${employeeData.name} tidak ditemukan`;
+        } else if (message.includes("shift yang berbeda")) {
+          errorTitle = "Shift Tidak Sesuai";
+          errorMessage = `Waktu check-in tidak sesuai dengan shift yang dijadwalkan untuk ${employeeData.name}`;
         } else {
           errorTitle = "Gagal Memproses";
           errorMessage = errorMsg;
