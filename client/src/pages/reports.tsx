@@ -49,7 +49,7 @@ export default function Reports() {
     enabled: reportType === "attendance",
   });
 
-  const exportReport = () => {
+  const exportReport = async () => {
     if (!startDate || !endDate) {
       toast({
         title: "Error",
@@ -61,6 +61,15 @@ export default function Reports() {
 
     try {
       if (reportType === "attendance") {
+        if (!employees || employees.length === 0) {
+          toast({
+            title: "Error",
+            description: "Data karyawan tidak tersedia",
+            variant: "destructive",
+          });
+          return;
+        }
+
         const filteredAttendance = attendance.filter(record => {
           return record.date >= startDate && record.date <= endDate;
         });
@@ -75,12 +84,27 @@ export default function Reports() {
             reportType: "attendance",
             shiftFilter
           });
+          
+          toast({
+            title: "Berhasil",
+            description: "Laporan PDF berhasil diunduh",
+          });
         } else {
           exportAttendanceToCSV(filteredAttendance, employees);
+          
+          toast({
+            title: "Berhasil",
+            description: "Laporan CSV berhasil diunduh",
+          });
         }
       } else if (reportType === "leave") {
         if (format === "csv") {
           exportLeaveToCSV(leaveRequests, employees);
+          
+          toast({
+            title: "Berhasil",
+            description: "Laporan cuti CSV berhasil diunduh",
+          });
         } else {
           toast({
             title: "Info",
@@ -90,6 +114,11 @@ export default function Reports() {
       } else if (reportType === "summary") {
         if (format === "csv") {
           exportEmployeesToCSV(employees);
+          
+          toast({
+            title: "Berhasil",
+            description: "Laporan ringkasan CSV berhasil diunduh",
+          });
         } else {
           toast({
             title: "Info",
@@ -97,15 +126,11 @@ export default function Reports() {
           });
         }
       }
-
-      toast({
-        title: "Berhasil",
-        description: "Laporan berhasil diunduh",
-      });
     } catch (error) {
+      console.error('Export error:', error);
       toast({
         title: "Error",
-        description: "Gagal mengunduh laporan",
+        description: `Gagal mengunduh laporan: ${error instanceof Error ? error.message : 'Unknown error'}`,
         variant: "destructive",
       });
     }

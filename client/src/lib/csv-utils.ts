@@ -51,7 +51,7 @@ export function exportLeaveToCSV(
 }
 
 export function exportEmployeesToCSV(employees: Employee[]): void {
-  const headers = ['No', 'ID Karyawan', 'Nama', 'No. WhatsApp', 'Shift', 'Status'];
+  const headers = ['No', 'ID Karyawan', 'Nama', 'No. WhatsApp', 'Position', 'Department', 'Investor Group', 'Status'];
   
   const csvData = [
     headers,
@@ -60,7 +60,9 @@ export function exportEmployeesToCSV(employees: Employee[]): void {
       employee.id,
       employee.name,
       employee.phone,
-      getShiftLabel(employee.shift),
+      employee.position || '-',
+      employee.department || '-',
+      employee.investorGroup || '-',
       employee.status === 'active' ? 'Aktif' : 'Tidak Aktif'
     ])
   ];
@@ -110,10 +112,6 @@ function getLeaveStatusLabel(status: string): string {
 }
 
 function getShiftLabel(shift: string): string {
-  const shifts: { [key: string]: string } = {
-    'Pagi': 'Pagi',
-    'Siang': 'Siang',
-    'Malam': 'Malam'
-  };
-  return shifts[shift] || shift;
+  // Employee no longer has shift field - this function is deprecated
+  return shift || 'Tidak Ada';
 }
