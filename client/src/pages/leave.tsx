@@ -19,7 +19,7 @@ import { z } from "zod";
 const formSchema = insertLeaveRequestSchema;
 
 export default function Leave() {
-  const [statusFilter, setStatusFilter] = useState("");
+  const [statusFilter, setStatusFilter] = useState("all");
   const { toast } = useToast();
 
   const { data: employees = [] } = useQuery<Employee[]>({
@@ -117,7 +117,7 @@ export default function Leave() {
   };
 
   const filteredLeaveRequests = leaveRequests.filter(request => 
-    statusFilter === "" || request.status === statusFilter
+    statusFilter === "all" || request.status === statusFilter
   );
 
   const handleApprove = (id: string) => {
@@ -266,7 +266,7 @@ export default function Leave() {
                 <SelectValue placeholder="Semua Status" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">Semua Status</SelectItem>
+                <SelectItem value="all">Semua Status</SelectItem>
                 <SelectItem value="pending">Menunggu</SelectItem>
                 <SelectItem value="approved">Disetujui</SelectItem>
                 <SelectItem value="rejected">Ditolak</SelectItem>
