@@ -17,7 +17,7 @@ import { Plus, Search, Edit, Trash2 } from "lucide-react";
 import { z } from "zod";
 
 const formSchema = insertEmployeeSchema.extend({
-  id: z.string().min(1, "ID karyawan harus diisi"),
+  id: z.string().optional(), // NIK akan digenerate otomatis
 });
 
 export default function Employees() {
@@ -34,7 +34,7 @@ export default function Employees() {
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      id: "",
+      id: "", // NIK akan digenerate otomatis di server
       name: "",
       phone: "",
       shift: "",
@@ -113,7 +113,9 @@ export default function Employees() {
     if (editingEmployee) {
       updateMutation.mutate({ id: editingEmployee.id, data: values });
     } else {
-      createMutation.mutate(values);
+      // NIK akan digenerate di server, jadi kita kirim tanpa id
+      const { id, ...employeeData } = values;
+      createMutation.mutate(employeeData as InsertEmployee);
     }
   };
 
@@ -167,24 +169,26 @@ export default function Employees() {
               </DialogHeader>
               <Form {...form}>
                 <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-                  <FormField
-                    control={form.control}
-                    name="id"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>ID Karyawan</FormLabel>
-                        <FormControl>
-                          <Input 
-                            placeholder="EMP001" 
-                            {...field} 
-                            disabled={!!editingEmployee}
-                            data-testid="employee-id-input"
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
+                  {editingEmployee && (
+                    <FormField
+                      control={form.control}
+                      name="id"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>NIK</FormLabel>
+                          <FormControl>
+                            <Input 
+                              placeholder="C-000001" 
+                              {...field} 
+                              disabled={true}
+                              data-testid="employee-id-input"
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  )}
                   <FormField
                     control={form.control}
                     name="name"
@@ -306,7 +310,7 @@ export default function Employees() {
           <table className="w-full table-auto">
             <thead>
               <tr className="border-b border-gray-200 dark:border-gray-700">
-                <th className="text-left py-3 px-4 font-medium text-gray-900 dark:text-white">ID</th>
+                <th className="text-left py-3 px-4 font-medium text-gray-900 dark:text-white">NIK</th>
                 <th className="text-left py-3 px-4 font-medium text-gray-900 dark:text-white">Nama</th>
                 <th className="text-left py-3 px-4 font-medium text-gray-900 dark:text-white">WhatsApp</th>
                 <th className="text-left py-3 px-4 font-medium text-gray-900 dark:text-white">Shift</th>

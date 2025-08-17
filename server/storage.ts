@@ -69,11 +69,11 @@ export class MemStorage implements IStorage {
   private initializeSampleData() {
     // Sample employees
     const sampleEmployees: Employee[] = [
-      { id: 'EMP001', name: 'Budi Santoso', phone: '+6281234567890', shift: 'Shift 1', status: 'active', createdAt: new Date() },
-      { id: 'EMP002', name: 'Siti Aisyah', phone: '+6281234567891', shift: 'Shift 2', status: 'active', createdAt: new Date() },
-      { id: 'EMP003', name: 'Ahmad Fauzi', phone: '+6281234567892', shift: 'Shift 1', status: 'active', createdAt: new Date() },
-      { id: 'EMP004', name: 'Dewi Lestari', phone: '+6281234567893', shift: 'Shift 1', status: 'active', createdAt: new Date() },
-      { id: 'EMP005', name: 'Rudi Hermawan', phone: '+6281234567894', shift: 'Shift 2', status: 'active', createdAt: new Date() },
+      { id: 'C-000001', name: 'Budi Santoso', phone: '+6281234567890', shift: 'Shift 1', status: 'active', createdAt: new Date() },
+      { id: 'C-000002', name: 'Siti Aisyah', phone: '+6281234567891', shift: 'Shift 2', status: 'active', createdAt: new Date() },
+      { id: 'C-000003', name: 'Ahmad Fauzi', phone: '+6281234567892', shift: 'Shift 1', status: 'active', createdAt: new Date() },
+      { id: 'C-000004', name: 'Dewi Lestari', phone: '+6281234567893', shift: 'Shift 1', status: 'active', createdAt: new Date() },
+      { id: 'C-000005', name: 'Rudi Hermawan', phone: '+6281234567894', shift: 'Shift 2', status: 'active', createdAt: new Date() },
     ];
 
     sampleEmployees.forEach(emp => this.employees.set(emp.id, emp));
@@ -81,17 +81,17 @@ export class MemStorage implements IStorage {
     // Sample roster for today
     const today = new Date().toISOString().split('T')[0];
     const sampleRoster: RosterSchedule[] = [
-      { id: randomUUID(), employeeId: 'EMP001', date: today, shift: 'Shift 1', startTime: '08:00', endTime: '16:00', status: 'scheduled' },
-      { id: randomUUID(), employeeId: 'EMP002', date: today, shift: 'Shift 2', startTime: '14:00', endTime: '22:00', status: 'scheduled' },
-      { id: randomUUID(), employeeId: 'EMP004', date: today, shift: 'Shift 1', startTime: '08:00', endTime: '16:00', status: 'scheduled' },
-      { id: randomUUID(), employeeId: 'EMP005', date: today, shift: 'Shift 2', startTime: '14:00', endTime: '22:00', status: 'scheduled' },
+      { id: randomUUID(), employeeId: 'C-000001', date: today, shift: 'Shift 1', startTime: '08:00', endTime: '16:00', status: 'scheduled' },
+      { id: randomUUID(), employeeId: 'C-000002', date: today, shift: 'Shift 2', startTime: '14:00', endTime: '22:00', status: 'scheduled' },
+      { id: randomUUID(), employeeId: 'C-000004', date: today, shift: 'Shift 1', startTime: '08:00', endTime: '16:00', status: 'scheduled' },
+      { id: randomUUID(), employeeId: 'C-000005', date: today, shift: 'Shift 2', startTime: '14:00', endTime: '22:00', status: 'scheduled' },
     ];
 
     sampleRoster.forEach(roster => this.rosterSchedules.set(roster.id, roster));
 
     // Sample attendance
     const sampleAttendance: AttendanceRecord[] = [
-      { id: randomUUID(), employeeId: 'EMP001', date: today, time: '08:15', status: 'present', createdAt: new Date() },
+      { id: randomUUID(), employeeId: 'C-000001', date: today, time: '08:15', status: 'present', createdAt: new Date() },
     ];
 
     sampleAttendance.forEach(att => this.attendanceRecords.set(att.id, att));
@@ -100,7 +100,7 @@ export class MemStorage implements IStorage {
     const sampleLeave: LeaveRequest[] = [
       { 
         id: randomUUID(), 
-        employeeId: 'EMP003', 
+        employeeId: 'C-000003', 
         startDate: '2024-12-15', 
         endDate: '2024-12-17', 
         leaveType: 'annual', 
@@ -122,9 +122,27 @@ export class MemStorage implements IStorage {
     return Array.from(this.employees.values());
   }
 
+  private generateNextNIK(): string {
+    const existingEmployees = Array.from(this.employees.values());
+    const existingNumbers = existingEmployees
+      .map(emp => {
+        const match = emp.id.match(/^C-(\d{6})$/);
+        return match ? parseInt(match[1]) : 0;
+      })
+      .filter(num => num > 0);
+    
+    const maxNumber = existingNumbers.length > 0 ? Math.max(...existingNumbers) : 0;
+    const nextNumber = maxNumber + 1;
+    return `C-${nextNumber.toString().padStart(6, '0')}`;
+  }
+
   async createEmployee(insertEmployee: InsertEmployee): Promise<Employee> {
+    // Generate NIK automatically if not provided or if using old format
+    const id = insertEmployee.id || this.generateNextNIK();
+    
     const employee: Employee = { 
       ...insertEmployee,
+      id,
       status: insertEmployee.status || "active",
       createdAt: new Date() 
     };
@@ -225,6 +243,7 @@ export class MemStorage implements IStorage {
     const request: LeaveRequest = {
       id: randomUUID(),
       ...insertRequest,
+      reason: insertRequest.reason || null, // Ensure reason is string | null, not undefined
       status: insertRequest.status || "pending",
       createdAt: new Date()
     };
