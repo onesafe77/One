@@ -209,13 +209,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
           const validatedData = insertRosterSchema.parse(rosters[i]);
           console.log(`Validated data for roster ${i + 1}:`, validatedData);
           
-          // Check if employee exists
-          const employee = await storage.getEmployee(validatedData.employeeId);
-          console.log(`Checking employee for NIK ${validatedData.employeeId}:`, employee);
+          // For bulk upload, we'll create employee if not exists instead of rejecting
+          let employee = await storage.getEmployee(validatedData.employeeId);
           if (!employee) {
-            console.log(`Employee not found for NIK: ${validatedData.employeeId}`);
-            errors.push(`Baris ${i + 1}: Karyawan dengan NIK ${validatedData.employeeId} tidak ditemukan`);
-            continue;
+            console.log(`Employee not found for NIK: ${validatedData.employeeId}, creating new employee`);
+            // Create a basic employee record for bulk upload
+            try {
+              const newEmployee = await storage.createEmployee({
+                id: validatedData.employeeId,
+                name: `Employee ${validatedData.employeeId}`,
+                nomorLambung: `GECL ${Math.random().toString().substr(2, 4)}`,
+                phone: '+628123456789',
+                shift: validatedData.shift,
+                status: 'active'
+              });
+              console.log(`Created new employee: ${newEmployee.id}`);
+            } catch (createError) {
+              console.error(`Failed to create employee ${validatedData.employeeId}:`, createError);
+              errors.push(`Baris ${i + 1}: Gagal membuat karyawan dengan NIK ${validatedData.employeeId}`);
+              continue;
+            }
           }
 
           validatedRosters.push(validatedData);
