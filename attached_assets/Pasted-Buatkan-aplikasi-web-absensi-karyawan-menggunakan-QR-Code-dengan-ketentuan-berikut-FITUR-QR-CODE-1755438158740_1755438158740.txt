@@ -1,0 +1,80 @@
+Buatkan aplikasi web absensi karyawan menggunakan QR Code dengan ketentuan berikut:
+
+FITUR QR CODE:
+1. Setiap karyawan memiliki ID unik, Nama, dan Nomor WhatsApp.
+2. Saat generate QR Code:
+   - Encode ID karyawan + token validasi.
+   - Token dibuat otomatis dengan cara:
+     a. Ambil ID karyawan.
+     b. Gabungkan dengan secret key internal.
+     c. Encode ke Base64 atau hash sederhana.
+   - Format QR Code berisi JSON:
+     {
+       "id": "EMP001",
+       "token": "ENCODED_HASH"
+     }
+3. Gunakan library `qrcode.js` untuk generate QR.
+
+FITUR SCAN QR:
+1. Gunakan kamera HP/laptop dengan library `jsQR`.
+2. Saat scan QR:
+   - Decode isi QR (JSON).
+   - Ambil `id` dan `token`.
+   - Validasi dengan cara:
+     a. Hitung ulang token dari ID karyawan menggunakan secret key.
+     b. Jika token cocok → QR valid.
+     c. Jika token tidak cocok → tampilkan "❌ QR Code tidak valid / bukan dari sistem resmi".
+3. Jika validasi berhasil → lanjutkan proses absensi.
+
+VALIDASI ABSENSI:
+1. Jika QR valid:
+   - Cek apakah ID ada di daftar karyawan.
+   - Jika tidak ada → tampilkan "Karyawan tidak terdaftar".
+   - Cek apakah ID ada di roster kerja hari ini.
+     a. Jika tidak ada → tampilkan "Absensi ditolak: tidak ada di roster".
+     b. Jika ada → lanjut.
+   - Cek apakah karyawan sudah absen hari ini.
+     a. Jika sudah → tampilkan "Sudah absen".
+     b. Jika belum → catat absensi dengan status "Hadir" dan waktu scan.
+2. Jika QR tidak valid → tolak absensi.
+
+DASHBOARD & MONITORING:
+1. Dashboard ringkasan:
+   - Total karyawan terdaftar.
+   - Jumlah yang dijadwalkan hari ini.
+   - Jumlah hadir, cuti, belum hadir.
+   - Grafik perbandingan Hadir vs Belum Hadir vs Cuti (pakai Chart.js).
+2. Monitoring roster:
+   - Tabel karyawan beserta shift, status (Hadir, Belum Hadir, Cuti).
+   - Status otomatis update sesuai scan atau cuti.
+   - Warna: Hijau = Hadir, Biru = Cuti, Merah = Belum Hadir.
+3. Monitoring cuti:
+   - Tabel cuti karyawan dengan filter nama, tanggal, status cuti (akan datang, sedang cuti, selesai).
+   - Real-time update setiap ada perubahan.
+
+EXPORT DATA:
+1. Export absensi ke CSV.
+2. Export laporan absensi ke PDF menggunakan jsPDF/pdfmake:
+   - Judul: "Laporan Absensi [Tanggal]"
+   - Tabel: No, ID, Nama, Tanggal, Shift, Jam, Status
+   - Ringkasan hadir/cuti/tidak hadir
+   - Footer: waktu cetak & nama admin
+   - Nama file: Absensi_[YYYY-MM-DD].pdf
+
+NOTIFIKASI CUTI:
+1. Simpan nomor WhatsApp setiap karyawan.
+2. Sistem cek jadwal cuti secara otomatis.
+3. Kirim notifikasi WhatsApp:
+   - 7 hari sebelum cuti dimulai.
+   - 3 hari sebelum cuti.
+   - 1 hari sebelum cuti.
+4. Gunakan API WhatsApp (Twilio, WhatsApp Cloud API, atau Fonnte).
+
+TEKNOLOGI:
+- HTML, CSS, JavaScript.
+- qrcode.js untuk QR generate.
+- jsQR untuk QR scan via kamera.
+- Chart.js untuk grafik dashboard.
+- jsPDF/pdfmake untuk export PDF.
+- LocalStorage untuk simpan data.
+- WhatsApp API/n8n untuk notifikasi otomatis.
