@@ -67,79 +67,14 @@ export class MemStorage implements IStorage {
   }
 
   private initializeSampleData() {
-    // Sample employees - Adding employees that match the Excel upload data
-    const sampleEmployees: Employee[] = [
-      { id: 'C-00001', name: 'Budi Santoso', nomorLambung: 'GECL 9001', phone: '+6281234567890', shift: 'Shift 1', status: 'active', createdAt: new Date() },
-      { id: 'C-00002', name: 'Siti Aisyah', nomorLambung: 'GECL 9002', phone: '+6281234567891', shift: 'Shift 2', status: 'active', createdAt: new Date() },
-      { id: 'C-00003', name: 'Ahmad Fauzi', nomorLambung: 'GECL 9003', phone: '+6281234567892', shift: 'Shift 1', status: 'active', createdAt: new Date() },
-      { id: 'C-00004', name: 'Dewi Lestari', nomorLambung: 'GECL 9004', phone: '+6281234567893', shift: 'Shift 1', status: 'active', createdAt: new Date() },
-      { id: 'C-00005', name: 'Rudi Hermawan', nomorLambung: 'GECL 9005', phone: '+6281234567894', shift: 'Shift 2', status: 'active', createdAt: new Date() },
-      // Adding employees from Excel data with correct NIK format
-      { id: 'C-015227', name: 'SYAHRIAL H', nomorLambung: 'GECL 9001', phone: '+628123456789', shift: 'Shift 1', status: 'active', createdAt: new Date() },
-      { id: 'C-004764', name: 'SAHRUL HELMI', nomorLambung: 'GECL 9002', phone: '+628123456789', shift: 'Shift 1', status: 'active', createdAt: new Date() },
-      { id: 'C-074091', name: 'ARDI ANAS', nomorLambung: 'GECL 9003', phone: '+628123456789', shift: 'Shift 1', status: 'active', createdAt: new Date() },
-      { id: 'C-004381', name: 'ARDIANSYAH', nomorLambung: 'GECL 9004', phone: '+628123456789', shift: 'Shift 1', status: 'active', createdAt: new Date() },
-      { id: 'C-022977', name: 'HENDRA', nomorLambung: 'GECL 9005', phone: '+628123456789', shift: 'Shift 1', status: 'active', createdAt: new Date() },
-      { id: 'C-041420', name: 'DENDI', nomorLambung: 'GECL 9006', phone: '+628123456789', shift: 'Shift 1', status: 'active', createdAt: new Date() },
-      { id: 'C-009301', name: 'IRAWADI', nomorLambung: 'GECL 9084', phone: '+628123456789', shift: 'Shift 1', status: 'active', createdAt: new Date() },
-      { id: 'C-020646', name: 'SAFARUDDIN', nomorLambung: 'GECL 9085', phone: '+628123456789', shift: 'Shift 1', status: 'active', createdAt: new Date() },
-      { id: 'C-005024', name: 'M SAIDI', nomorLambung: 'GECL 9086', phone: '+628123456789', shift: 'Shift 1', status: 'active', createdAt: new Date() },
-      { id: 'C-031598', name: 'A ZAINAL ABIDIN', nomorLambung: 'GECL 9087', phone: '+628123456789', shift: 'Shift 1', status: 'active', createdAt: new Date() },
-      { id: 'C-030875', name: 'HIDAYATUL S', nomorLambung: 'GECL 9088', phone: '+628123456789', shift: 'Shift 1', status: 'active', createdAt: new Date() },
-      { id: 'C-042013', name: 'HERI AKBAR', nomorLambung: 'GECL 9089', phone: '+628123456789', shift: 'Shift 1', status: 'active', createdAt: new Date() },
-      { id: 'C-029803', name: 'AMBRANI', nomorLambung: 'GECL 9090', phone: '+628123456789', shift: 'Shift 1', status: 'active', createdAt: new Date() },
-      // Adding ALL employees from Excel to ensure complete coverage
-      { id: 'C-031595', name: 'EMPLOYEE 81', nomorLambung: 'GECL 9091', phone: '+628123456789', shift: 'Shift 1', status: 'active', createdAt: new Date() },
-      { id: 'C-034464', name: 'EMPLOYEE 82', nomorLambung: 'GECL 9092', phone: '+628123456789', shift: 'Shift 1', status: 'active', createdAt: new Date() },
-      { id: 'C-028933', name: 'EMPLOYEE 83', nomorLambung: 'GECL 9093', phone: '+628123456789', shift: 'Shift 1', status: 'active', createdAt: new Date() },
-      // Adding more based on the truncated Excel data - comprehensive list
-      { id: 'C-025123', name: 'EMPLOYEE A', nomorLambung: 'GECL 9010', phone: '+628123456789', shift: 'Shift 1', status: 'active', createdAt: new Date() },
-      { id: 'C-026456', name: 'EMPLOYEE B', nomorLambung: 'GECL 9011', phone: '+628123456789', shift: 'Shift 1', status: 'active', createdAt: new Date() },
-      { id: 'C-027789', name: 'EMPLOYEE C', nomorLambung: 'GECL 9012', phone: '+628123456789', shift: 'Shift 1', status: 'active', createdAt: new Date() },
-      { id: 'C-028012', name: 'EMPLOYEE D', nomorLambung: 'GECL 9013', phone: '+628123456789', shift: 'Shift 1', status: 'active', createdAt: new Date() },
-      { id: 'C-029345', name: 'EMPLOYEE E', nomorLambung: 'GECL 9014', phone: '+628123456789', shift: 'Shift 1', status: 'active', createdAt: new Date() },
-      { id: 'C-030678', name: 'EMPLOYEE F', nomorLambung: 'GECL 9015', phone: '+628123456789', shift: 'Shift 1', status: 'active', createdAt: new Date() },
-      { id: 'C-031901', name: 'EMPLOYEE G', nomorLambung: 'GECL 9016', phone: '+628123456789', shift: 'Shift 1', status: 'active', createdAt: new Date() },
-      { id: 'C-032234', name: 'EMPLOYEE H', nomorLambung: 'GECL 9017', phone: '+628123456789', shift: 'Shift 1', status: 'active', createdAt: new Date() },
-      { id: 'C-033567', name: 'EMPLOYEE I', nomorLambung: 'GECL 9018', phone: '+628123456789', shift: 'Shift 1', status: 'active', createdAt: new Date() },
-      { id: 'C-034890', name: 'EMPLOYEE J', nomorLambung: 'GECL 9019', phone: '+628123456789', shift: 'Shift 1', status: 'active', createdAt: new Date() },
-    ];
+    // No sample employees - user will add their own data
+    // (keeping empty for user to populate with real data)
 
-    sampleEmployees.forEach(emp => this.employees.set(emp.id, emp));
+    // No sample roster - user will add their own data through Excel upload or manual entry
 
-    // Sample roster for today
-    const today = new Date().toISOString().split('T')[0];
-    const sampleRoster: RosterSchedule[] = [
-      { id: randomUUID(), employeeId: 'C-00001', date: today, shift: 'Shift 1', startTime: '08:00', endTime: '16:00', jamTidur: '6', fitToWork: 'Fit To Work', status: 'scheduled' },
-      { id: randomUUID(), employeeId: 'C-00002', date: today, shift: 'Shift 2', startTime: '14:00', endTime: '22:00', jamTidur: '5', fitToWork: 'Not Fit To Work', status: 'scheduled' },
-      { id: randomUUID(), employeeId: 'C-00004', date: today, shift: 'Shift 1', startTime: '08:00', endTime: '16:00', jamTidur: '6', fitToWork: 'Fit To Work', status: 'scheduled' },
-      { id: randomUUID(), employeeId: 'C-00005', date: today, shift: 'Shift 2', startTime: '14:00', endTime: '22:00', jamTidur: '5', fitToWork: 'Fit To Work', status: 'scheduled' },
-    ];
+    // No sample attendance - will be created through QR scan attendance system
 
-    sampleRoster.forEach(roster => this.rosterSchedules.set(roster.id, roster));
-
-    // Sample attendance
-    const sampleAttendance: AttendanceRecord[] = [
-      { id: randomUUID(), employeeId: 'C-00001', date: today, time: '08:15', status: 'present', createdAt: new Date() },
-    ];
-
-    sampleAttendance.forEach(att => this.attendanceRecords.set(att.id, att));
-
-    // Sample leave requests
-    const sampleLeave: LeaveRequest[] = [
-      { 
-        id: randomUUID(), 
-        employeeId: 'C-00003', 
-        startDate: '2024-12-15', 
-        endDate: '2024-12-17', 
-        leaveType: 'annual', 
-        reason: 'Liburan keluarga', 
-        status: 'pending',
-        createdAt: new Date()
-      },
-    ];
-
-    sampleLeave.forEach(leave => this.leaveRequests.set(leave.id, leave));
+    // No sample leave requests - will be created by employees as needed
   }
 
   // Employee methods
