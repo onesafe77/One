@@ -232,9 +232,8 @@ export default function Employees() {
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent>
-                            <SelectItem value="Pagi">Pagi</SelectItem>
-                            <SelectItem value="Siang">Siang</SelectItem>
-                            <SelectItem value="Malam">Malam</SelectItem>
+                            <SelectItem value="Shift 1">Shift 1</SelectItem>
+                            <SelectItem value="Shift 2">Shift 2</SelectItem>
                           </SelectContent>
                         </Select>
                         <FormMessage />
@@ -296,9 +295,8 @@ export default function Employees() {
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">Semua Shift</SelectItem>
-              <SelectItem value="Pagi">Pagi</SelectItem>
-              <SelectItem value="Siang">Siang</SelectItem>
-              <SelectItem value="Malam">Malam</SelectItem>
+              <SelectItem value="Shift 1">Shift 1</SelectItem>
+              <SelectItem value="Shift 2">Shift 2</SelectItem>
             </SelectContent>
           </Select>
         </div>

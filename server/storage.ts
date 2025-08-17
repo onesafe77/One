@@ -69,11 +69,11 @@ export class MemStorage implements IStorage {
   private initializeSampleData() {
     // Sample employees
     const sampleEmployees: Employee[] = [
-      { id: 'EMP001', name: 'Budi Santoso', phone: '+6281234567890', shift: 'Pagi', status: 'active', createdAt: new Date() },
-      { id: 'EMP002', name: 'Siti Aisyah', phone: '+6281234567891', shift: 'Siang', status: 'active', createdAt: new Date() },
-      { id: 'EMP003', name: 'Ahmad Fauzi', phone: '+6281234567892', shift: 'Malam', status: 'active', createdAt: new Date() },
-      { id: 'EMP004', name: 'Dewi Lestari', phone: '+6281234567893', shift: 'Pagi', status: 'active', createdAt: new Date() },
-      { id: 'EMP005', name: 'Rudi Hermawan', phone: '+6281234567894', shift: 'Siang', status: 'active', createdAt: new Date() },
+      { id: 'EMP001', name: 'Budi Santoso', phone: '+6281234567890', shift: 'Shift 1', status: 'active', createdAt: new Date() },
+      { id: 'EMP002', name: 'Siti Aisyah', phone: '+6281234567891', shift: 'Shift 2', status: 'active', createdAt: new Date() },
+      { id: 'EMP003', name: 'Ahmad Fauzi', phone: '+6281234567892', shift: 'Shift 1', status: 'active', createdAt: new Date() },
+      { id: 'EMP004', name: 'Dewi Lestari', phone: '+6281234567893', shift: 'Shift 1', status: 'active', createdAt: new Date() },
+      { id: 'EMP005', name: 'Rudi Hermawan', phone: '+6281234567894', shift: 'Shift 2', status: 'active', createdAt: new Date() },
     ];
 
     sampleEmployees.forEach(emp => this.employees.set(emp.id, emp));
@@ -81,10 +81,10 @@ export class MemStorage implements IStorage {
     // Sample roster for today
     const today = new Date().toISOString().split('T')[0];
     const sampleRoster: RosterSchedule[] = [
-      { id: randomUUID(), employeeId: 'EMP001', date: today, shift: 'Pagi', startTime: '08:00', endTime: '16:00', status: 'scheduled' },
-      { id: randomUUID(), employeeId: 'EMP002', date: today, shift: 'Siang', startTime: '14:00', endTime: '22:00', status: 'scheduled' },
-      { id: randomUUID(), employeeId: 'EMP004', date: today, shift: 'Pagi', startTime: '08:00', endTime: '16:00', status: 'scheduled' },
-      { id: randomUUID(), employeeId: 'EMP005', date: today, shift: 'Siang', startTime: '14:00', endTime: '22:00', status: 'scheduled' },
+      { id: randomUUID(), employeeId: 'EMP001', date: today, shift: 'Shift 1', startTime: '08:00', endTime: '16:00', status: 'scheduled' },
+      { id: randomUUID(), employeeId: 'EMP002', date: today, shift: 'Shift 2', startTime: '14:00', endTime: '22:00', status: 'scheduled' },
+      { id: randomUUID(), employeeId: 'EMP004', date: today, shift: 'Shift 1', startTime: '08:00', endTime: '16:00', status: 'scheduled' },
+      { id: randomUUID(), employeeId: 'EMP005', date: today, shift: 'Shift 2', startTime: '14:00', endTime: '22:00', status: 'scheduled' },
     ];
 
     sampleRoster.forEach(roster => this.rosterSchedules.set(roster.id, roster));

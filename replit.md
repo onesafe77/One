@@ -47,7 +47,12 @@ Preferred communication style: Simple, everyday language.
 
 ### Key Features and Business Logic
 - **QR Code Workflow**: Generate secure tokens, embed in QR codes, validate on scan, record attendance
-- **Roster Management**: Schedule employees for specific dates and shifts with status tracking
+- **Roster Management**: Schedule employees for specific dates and shifts (Shift 1, Shift 2) with status tracking
 - **Leave Management**: Request submission, approval workflow, and calendar integration
 - **Reporting System**: Exportable reports in PDF and CSV formats with date range filtering
 - **Real-time Dashboard**: Live attendance statistics with visual charts for management overview
+
+### Recent Changes
+- **August 17, 2025**: Updated shift system from "Pagi, Siang, Malam" to "Shift 1, Shift 2" across all components
+- **QR Code System**: Implemented consistent token generation using stable employee-based tokens instead of timestamp-based
+- **Real-time Updates**: Added automatic cache invalidation for roster and attendance data after successful QR scan
