@@ -3,9 +3,9 @@ import QRCode from 'qrcode';
 export async function generateQRCodeCanvas(
   data: string,
   canvas: HTMLCanvasElement,
-  options?: QRCode.QRCodeToCanvasOptions
+  options?: any
 ): Promise<void> {
-  const defaultOptions: QRCode.QRCodeToCanvasOptions = {
+  const defaultOptions = {
     width: 256,
     margin: 2,
     color: {
@@ -15,14 +15,20 @@ export async function generateQRCodeCanvas(
     ...options
   };
 
-  await QRCode.toCanvas(canvas, data, defaultOptions);
+  try {
+    await QRCode.toCanvas(canvas, data, defaultOptions);
+    console.log('QR Code generated successfully');
+  } catch (error) {
+    console.error('Error generating QR code:', error);
+    throw error;
+  }
 }
 
 export async function generateQRCodeDataURL(
   data: string,
-  options?: QRCode.QRCodeToDataURLOptions
+  options?: any
 ): Promise<string> {
-  const defaultOptions: QRCode.QRCodeToDataURLOptions = {
+  const defaultOptions = {
     width: 256,
     margin: 2,
     color: {

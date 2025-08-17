@@ -39,17 +39,30 @@ export function QRGenerator() {
       });
       const result = await response.json();
       
+      console.log("QR Response:", result);
       setQrData(result.qrData);
       
-      if (canvasRef.current) {
-        await generateQRCodeCanvas(result.qrData, canvasRef.current);
-      }
+      // Wait a bit to ensure canvas is ready
+      setTimeout(async () => {
+        if (canvasRef.current) {
+          console.log("Canvas element:", canvasRef.current);
+          try {
+            await generateQRCodeCanvas(result.qrData, canvasRef.current);
+            console.log("QR Code rendered to canvas");
+          } catch (error) {
+            console.error("Canvas rendering error:", error);
+          }
+        } else {
+          console.error("Canvas ref is null");
+        }
+      }, 100);
 
       toast({
         title: "QR Code Generated",
         description: `QR Code berhasil dibuat untuk ${selectedEmployee?.name}`,
       });
     } catch (error) {
+      console.error("QR Generation error:", error);
       toast({
         title: "Error",
         description: "Gagal membuat QR Code",
@@ -143,7 +156,10 @@ export function QRGenerator() {
               <div className="text-center mb-4">
                 <canvas 
                   ref={canvasRef} 
-                  className="mx-auto border border-gray-200 dark:border-gray-600 rounded-lg"
+                  width={256}
+                  height={256}
+                  className="mx-auto border border-gray-200 dark:border-gray-600 rounded-lg bg-white"
+                  style={{ display: 'block' }}
                   data-testid="qr-canvas"
                 />
               </div>
