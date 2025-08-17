@@ -11,6 +11,7 @@ interface ScanResult {
   employeeId: string;
   name: string;
   scanTime: string;
+  status?: 'processing' | 'success' | 'error';
 }
 
 export function QRScanner() {
@@ -109,17 +110,23 @@ export function QRScanner() {
       const result = await response.json();
       
       if (result.valid) {
-        setScanResult({
+        const employeeData = {
           employeeId: result.employee.id,
           name: result.employee.name,
-          scanTime: new Date().toLocaleTimeString('id-ID')
-        });
+          scanTime: new Date().toLocaleTimeString('id-ID'),
+          status: 'processing' as const
+        };
+        
+        setScanResult(employeeData);
         stopScanning();
         
         toast({
           title: "QR Code Valid",
-          description: `✅ QR Code valid untuk ${result.employee.name}`,
+          description: `✅ Memproses absensi untuk ${result.employee.name}...`,
         });
+        
+        // Otomatis proses absensi setelah validasi berhasil
+        await processAttendanceAutomatically(employeeData);
       }
     } catch (error) {
       toast({
@@ -130,9 +137,7 @@ export function QRScanner() {
     }
   };
 
-  const processAttendance = async () => {
-    if (!scanResult) return;
-
+  const processAttendanceAutomatically = async (employeeData: { employeeId: string; name: string; scanTime: string }) => {
     try {
       const today = new Date().toISOString().split('T')[0];
       const currentTime = new Date().toLocaleTimeString('id-ID', {
@@ -141,62 +146,52 @@ export function QRScanner() {
         second: '2-digit'
       });
 
-      console.log("Sending attendance data:", {
-        employeeId: scanResult.employeeId,
-        date: today,
-        time: currentTime,
-        status: "present"
-      });
+      console.log("Auto-processing attendance for:", employeeData.name);
 
       const response = await apiRequest("POST", "/api/attendance", {
-        employeeId: scanResult.employeeId,
+        employeeId: employeeData.employeeId,
         date: today,
         time: currentTime,
         status: "present"
       });
 
-      console.log("Attendance response:", response);
-
+      // Update status to success
+      setScanResult(prev => prev ? { ...prev, status: 'success' } : null);
+      
       toast({
         title: "Absensi Berhasil",
-        description: `✅ Absensi berhasil dicatat untuk ${scanResult.name}`,
+        description: `✅ Absensi berhasil dicatat untuk ${employeeData.name}`,
       });
       
-      setScanResult(null);
+      // Clear scan result after 3 seconds to show success
+      setTimeout(() => {
+        setScanResult(null);
+      }, 3000);
+      
     } catch (error: any) {
-      console.error("Attendance error:", error);
-      console.error("Error message type:", typeof error.message);
-      console.error("Error properties:", Object.keys(error));
+      console.error("Auto attendance error:", error);
       
       let errorMessage = "Gagal memproses absensi";
       let errorTitle = "Error";
       
-      // Try to get error message from different possible sources
       const errorMsg = error?.message || error?.error || error?.data?.message || String(error);
-      console.log("Final error message:", errorMsg);
       
       if (errorMsg) {
         const message = errorMsg.toLowerCase();
         
         if (message.includes("already attended")) {
           errorTitle = "Sudah Absen Hari Ini";
-          errorMessage = `${scanResult.name} sudah melakukan absensi pada hari ini`;
+          errorMessage = `${employeeData.name} sudah melakukan absensi pada hari ini`;
         } else if (message.includes("not scheduled")) {
           errorTitle = "Tidak Dijadwalkan";
-          errorMessage = `${scanResult.name} tidak dijadwalkan bekerja hari ini`;
+          errorMessage = `${employeeData.name} tidak dijadwalkan bekerja hari ini`;
         } else if (message.includes("employee not found")) {
           errorTitle = "Karyawan Tidak Ditemukan";
-          errorMessage = `Data karyawan ${scanResult.name} tidak ditemukan`;
-        } else if (message.includes("invalid") || message.includes("bad request")) {
-          errorTitle = "Data Tidak Valid";
-          errorMessage = "Data absensi tidak valid atau bermasalah";
+          errorMessage = `Data karyawan ${employeeData.name} tidak ditemukan`;
         } else {
           errorTitle = "Gagal Memproses";
           errorMessage = errorMsg;
         }
-      } else {
-        errorTitle = "Kesalahan Sistem";
-        errorMessage = "Terjadi kesalahan dalam memproses absensi";
       }
       
       toast({
@@ -205,9 +200,16 @@ export function QRScanner() {
         variant: "destructive",
       });
       
-      // Clear scan result after showing error to allow retry
-      setScanResult(null);
+      // Clear scan result after error to allow retry
+      setTimeout(() => {
+        setScanResult(null);
+      }, 3000);
     }
+  };
+
+  const processAttendance = async () => {
+    if (!scanResult) return;
+    await processAttendanceAutomatically(scanResult);
   };
 
   return (
@@ -278,10 +280,30 @@ export function QRScanner() {
             </div>
           ) : (
             <div className="space-y-4" data-testid="scan-result">
-              <div className="p-4 bg-green-50 dark:bg-green-900 border border-green-200 dark:border-green-700 rounded-lg">
+              <div className={`p-4 border rounded-lg ${
+                scanResult.status === 'processing' 
+                  ? 'bg-blue-50 dark:bg-blue-900 border-blue-200 dark:border-blue-700'
+                  : scanResult.status === 'success'
+                  ? 'bg-green-50 dark:bg-green-900 border-green-200 dark:border-green-700'
+                  : 'bg-green-50 dark:bg-green-900 border-green-200 dark:border-green-700'
+              }`}>
                 <div className="flex items-center">
-                  <CheckCircle className="w-5 h-5 text-green-600 dark:text-green-300 mr-2" />
-                  <span className="text-green-800 dark:text-green-200 font-medium">QR Code Valid</span>
+                  {scanResult.status === 'processing' ? (
+                    <>
+                      <div className="w-5 h-5 mr-2 animate-spin rounded-full border-2 border-blue-300 border-t-blue-600"></div>
+                      <span className="text-blue-800 dark:text-blue-200 font-medium">Memproses Absensi...</span>
+                    </>
+                  ) : scanResult.status === 'success' ? (
+                    <>
+                      <CheckCircle className="w-5 h-5 text-green-600 dark:text-green-300 mr-2" />
+                      <span className="text-green-800 dark:text-green-200 font-medium">Absensi Berhasil</span>
+                    </>
+                  ) : (
+                    <>
+                      <CheckCircle className="w-5 h-5 text-green-600 dark:text-green-300 mr-2" />
+                      <span className="text-green-800 dark:text-green-200 font-medium">QR Code Valid</span>
+                    </>
+                  )}
                 </div>
               </div>
               
@@ -314,23 +336,24 @@ export function QRScanner() {
                 </div>
               </div>
               
-              <div className="flex space-x-2">
-                <Button 
-                  onClick={processAttendance} 
-                  className="flex-1 bg-green-600 hover:bg-green-700"
-                  data-testid="process-attendance-button"
-                >
-                  Proses Absensi
-                </Button>
+              {/* Show scan again button only when processing is complete */}
+              {scanResult.status === 'success' && (
                 <Button 
                   onClick={() => setScanResult(null)} 
-                  variant="outline"
-                  className="flex-1"
-                  data-testid="cancel-scan-button"
+                  className="w-full"
+                  data-testid="scan-again-button"
                 >
-                  Batal
+                  Scan Lagi
                 </Button>
-              </div>
+              )}
+              
+              {scanResult.status === 'processing' && (
+                <div className="text-center py-2">
+                  <p className="text-sm text-gray-600 dark:text-gray-400">
+                    Sedang memproses absensi, harap tunggu...
+                  </p>
+                </div>
+              )}
             </div>
           )}
         </CardContent>
