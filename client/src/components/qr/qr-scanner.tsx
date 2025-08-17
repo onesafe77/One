@@ -141,12 +141,21 @@ export function QRScanner() {
         second: '2-digit'
       });
 
+      console.log("Sending attendance data:", {
+        employeeId: scanResult.employeeId,
+        date: today,
+        time: currentTime,
+        status: "present"
+      });
+
       const response = await apiRequest("POST", "/api/attendance", {
         employeeId: scanResult.employeeId,
         date: today,
         time: currentTime,
         status: "present"
       });
+
+      console.log("Attendance response:", response);
 
       if (response.ok) {
         toast({
@@ -155,26 +164,36 @@ export function QRScanner() {
         });
         
         setScanResult(null);
+      } else {
+        const errorText = await response.text();
+        console.log("Response not ok, status:", response.status, "text:", errorText);
+        throw new Error(`${response.status}: ${errorText}`);
       }
     } catch (error: any) {
       console.error("Attendance error:", error);
+      console.error("Error details:", JSON.stringify(error));
       
       let errorMessage = "Gagal memproses absensi";
       let errorTitle = "Error";
       
-      // Handle specific error cases
-      if (error.message) {
-        if (error.message.includes("already attended")) {
+      // Handle specific error cases based on the actual error message from server
+      if (error?.message) {
+        const message = error.message;
+        console.log("Error message:", message);
+        
+        if (message.includes("Employee already attended today")) {
           errorTitle = "Sudah Absen";
           errorMessage = `${scanResult.name} sudah melakukan absensi hari ini`;
-        } else if (error.message.includes("Bad Request")) {
+        } else if (message.includes("Bad Request") || message.includes("400")) {
           errorTitle = "Data Tidak Valid";
           errorMessage = "QR Code tidak valid atau data absensi bermasalah";
         } else {
-          errorMessage = error.message;
+          errorMessage = message;
         }
-      } else if (error.status) {
-        errorMessage = `HTTP Error ${error.status}`;
+      } else {
+        // If no error message, it might be a network or other issue
+        errorTitle = "Koneksi Error";
+        errorMessage = "Tidak dapat terhubung ke server atau terjadi kesalahan jaringan";
       }
       
       toast({
@@ -183,7 +202,7 @@ export function QRScanner() {
         variant: "destructive",
       });
       
-      // Clear scan result after showing error
+      // Clear scan result after showing error to allow retry
       setScanResult(null);
     }
   };
