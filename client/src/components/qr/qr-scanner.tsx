@@ -141,26 +141,42 @@ export function QRScanner() {
         second: '2-digit'
       });
 
-      await apiRequest("POST", "/api/attendance", {
+      const response = await apiRequest("POST", "/api/attendance", {
         employeeId: scanResult.employeeId,
         date: today,
         time: currentTime,
         status: "present"
       });
 
-      toast({
-        title: "Absensi Berhasil",
-        description: `✅ Absensi berhasil dicatat untuk ${scanResult.name}`,
-      });
-      
-      setScanResult(null);
+      if (response.ok) {
+        toast({
+          title: "Absensi Berhasil",
+          description: `✅ Absensi berhasil dicatat untuk ${scanResult.name}`,
+        });
+        
+        setScanResult(null);
+      }
     } catch (error: any) {
-      const errorMessage = error.message || "Gagal memproses absensi";
-      toast({
-        title: "Error",
-        description: errorMessage,
-        variant: "destructive",
-      });
+      console.error("Attendance error:", error);
+      
+      // Handle specific error cases
+      if (error.message && error.message.includes("already attended")) {
+        toast({
+          title: "Sudah Absen",
+          description: `⚠️ ${scanResult.name} sudah melakukan absensi hari ini`,
+          variant: "destructive",
+        });
+      } else {
+        const errorMessage = error.message || "Gagal memproses absensi";
+        toast({
+          title: "Error",
+          description: `❌ ${errorMessage}`,
+          variant: "destructive",
+        });
+      }
+      
+      // Clear scan result after showing error
+      setScanResult(null);
     }
   };
 
