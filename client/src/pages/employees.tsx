@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -13,19 +13,24 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { insertEmployeeSchema } from "@shared/schema";
 import type { Employee, InsertEmployee } from "@shared/schema";
-import { Plus, Search, Edit, Trash2 } from "lucide-react";
+import { Plus, Search, Edit, Trash2, Upload } from "lucide-react";
 import { z } from "zod";
+import * as XLSX from "xlsx";
 
 const formSchema = insertEmployeeSchema.extend({
   id: z.string().optional(), // NIK akan digenerate otomatis
-  nomorLambung: z.string().min(1, "Nomor lambung harus diisi"),
+  position: z.string().optional(),
+  department: z.string().optional(),
+  investorGroup: z.string().optional(),
 });
 
 export default function Employees() {
   const [searchTerm, setSearchTerm] = useState("");
-  const [shiftFilter, setShiftFilter] = useState("all");
+  const [nikFilter, setNikFilter] = useState("");
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingEmployee, setEditingEmployee] = useState<Employee | null>(null);
+  const [isUploadDialogOpen, setIsUploadDialogOpen] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
 
   const { data: employees = [], isLoading } = useQuery<Employee[]>({
@@ -37,9 +42,10 @@ export default function Employees() {
     defaultValues: {
       id: "", // NIK akan digenerate otomatis di server
       name: "",
-      nomorLambung: "",
+      position: "",
+      department: "",
+      investorGroup: "",
       phone: "",
-      shift: "",
       status: "active",
     },
   });
@@ -104,11 +110,15 @@ export default function Employees() {
     },
   });
 
-  const filteredEmployees = employees.filter(employee => {
+  const filteredEmployees = employees.filter((employee) => {
     const matchesSearch = employee.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         employee.id.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesShift = shiftFilter === "all" || employee.shift === shiftFilter;
-    return matchesSearch && matchesShift;
+                         employee.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         (employee.position?.toLowerCase() || "").includes(searchTerm.toLowerCase()) ||
+                         (employee.department?.toLowerCase() || "").includes(searchTerm.toLowerCase());
+    
+    const matchesNik = nikFilter === "" || employee.id.toLowerCase().includes(nikFilter.toLowerCase());
+    
+    return matchesSearch && matchesNik;
   });
 
   const onSubmit = (values: z.infer<typeof formSchema>) => {
@@ -126,9 +136,10 @@ export default function Employees() {
     form.reset({
       id: employee.id,
       name: employee.name,
-      nomorLambung: employee.nomorLambung,
+      position: employee.position || "",
+      department: employee.department || "",
+      investorGroup: employee.investorGroup || "",
       phone: employee.phone,
-      shift: employee.shift,
       status: employee.status,
     });
     setIsDialogOpen(true);
@@ -145,12 +156,94 @@ export default function Employees() {
     form.reset({
       id: "",
       name: "",
-      nomorLambung: "",
+      position: "",
+      department: "",
+      investorGroup: "",
       phone: "",
-      shift: "",
       status: "active",
     });
     setIsDialogOpen(true);
+  };
+
+  const uploadExcelMutation = useMutation({
+    mutationFn: (employeeData: InsertEmployee[]) => 
+      apiRequest("POST", "/api/employees/bulk", { employees: employeeData }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/employees"] });
+      setIsUploadDialogOpen(false);
+      toast({
+        title: "Berhasil",
+        description: "Data karyawan berhasil diupload",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: error.message || "Gagal mengupload data karyawan",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      try {
+        const data = new Uint8Array(e.target?.result as ArrayBuffer);
+        const workbook = XLSX.read(data, { type: "array" });
+        const sheetName = workbook.SheetNames[0];
+        const worksheet = workbook.Sheets[sheetName];
+        const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
+
+        // Skip header row
+        const rows = jsonData.slice(1) as any[][];
+        const employeeData: InsertEmployee[] = rows
+          .filter(row => row.length >= 6 && row[0] && row[1]) // Check required fields
+          .map(row => ({
+            id: row[0]?.toString() || "",
+            name: row[1]?.toString() || "",
+            position: row[2]?.toString() || "",
+            department: row[3]?.toString() || "",
+            investorGroup: row[4]?.toString() || "",
+            phone: row[5]?.toString() || "",
+            status: "active",
+          }));
+
+        if (employeeData.length === 0) {
+          toast({
+            title: "Error",
+            description: "File Excel tidak memiliki data yang valid",
+            variant: "destructive",
+          });
+          return;
+        }
+
+        uploadExcelMutation.mutate(employeeData);
+      } catch (error) {
+        toast({
+          title: "Error",
+          description: "Gagal membaca file Excel",
+          variant: "destructive",
+        });
+      }
+    };
+    reader.readAsArrayBuffer(file);
+  };
+
+  const downloadTemplate = () => {
+    const templateData = [
+      ["NIK", "Nama", "Posisi", "Departemen", "Investor Group", "No. WhatsApp"],
+      ["C-00001", "John Doe", "Manager", "IT", "Group A", "+628123456789"],
+      ["C-00002", "Jane Smith", "Staff", "HR", "Group B", "+628123456790"],
+    ];
+
+    const worksheet = XLSX.utils.aoa_to_sheet(templateData);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Template Karyawan");
+    XLSX.writeFile(workbook, "Template_Karyawan.xlsx");
   };
 
   return (
@@ -212,15 +305,49 @@ export default function Employees() {
                   />
                   <FormField
                     control={form.control}
-                    name="nomorLambung"
+                    name="position"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Nomor Lambung</FormLabel>
+                        <FormLabel>Posisi</FormLabel>
                         <FormControl>
                           <Input 
-                            placeholder="GECL 9000" 
+                            placeholder="Manager, Staff, dll" 
                             {...field} 
-                            data-testid="employee-nomor-lambung-input"
+                            data-testid="employee-position-input"
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="department"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Departemen</FormLabel>
+                        <FormControl>
+                          <Input 
+                            placeholder="HR, IT, Finance, dll" 
+                            {...field} 
+                            data-testid="employee-department-input"
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="investorGroup"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Investor Group</FormLabel>
+                        <FormControl>
+                          <Input 
+                            placeholder="Group A, Group B, dll" 
+                            {...field} 
+                            data-testid="employee-investor-group-input"
                           />
                         </FormControl>
                         <FormMessage />
@@ -244,27 +371,7 @@ export default function Employees() {
                       </FormItem>
                     )}
                   />
-                  <FormField
-                    control={form.control}
-                    name="shift"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Shift</FormLabel>
-                        <Select onValueChange={field.onChange} defaultValue={field.value}>
-                          <FormControl>
-                            <SelectTrigger data-testid="employee-shift-select">
-                              <SelectValue placeholder="Pilih shift" />
-                            </SelectTrigger>
-                          </FormControl>
-                          <SelectContent>
-                            <SelectItem value="Shift 1">Shift 1 (06:00 - 18:00)</SelectItem>
-                            <SelectItem value="Shift 2">Shift 2 (18:00 - 06:00)</SelectItem>
-                          </SelectContent>
-                        </Select>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
+
                   <FormField
                     control={form.control}
                     name="status"
@@ -314,16 +421,14 @@ export default function Employees() {
               data-testid="search-employees-input"
             />
           </div>
-          <Select value={shiftFilter} onValueChange={setShiftFilter}>
-            <SelectTrigger className="w-full sm:w-[180px]" data-testid="filter-shift-select">
-              <SelectValue placeholder="Semua Shift" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">Semua Shift</SelectItem>
-              <SelectItem value="Shift 1">Shift 1 (06:00 - 18:00)</SelectItem>
-              <SelectItem value="Shift 2">Shift 2 (18:00 - 06:00)</SelectItem>
-            </SelectContent>
-          </Select>
+          <div className="w-full sm:w-[180px]">
+            <Input
+              placeholder="Cari NIK..."
+              value={nikFilter}
+              onChange={(e) => setNikFilter(e.target.value)}
+              data-testid="filter-nik-input"
+            />
+          </div>
         </div>
         
         {/* Employee Table */}
@@ -333,9 +438,10 @@ export default function Employees() {
               <tr className="border-b border-gray-200 dark:border-gray-700">
                 <th className="text-left py-3 px-4 font-medium text-gray-900 dark:text-white">NIK</th>
                 <th className="text-left py-3 px-4 font-medium text-gray-900 dark:text-white">Nama</th>
-                <th className="text-left py-3 px-4 font-medium text-gray-900 dark:text-white">Nomor Lambung</th>
+                <th className="text-left py-3 px-4 font-medium text-gray-900 dark:text-white">Position</th>
+                <th className="text-left py-3 px-4 font-medium text-gray-900 dark:text-white">Department</th>
+                <th className="text-left py-3 px-4 font-medium text-gray-900 dark:text-white">Investor Group</th>
                 <th className="text-left py-3 px-4 font-medium text-gray-900 dark:text-white">WhatsApp</th>
-                <th className="text-left py-3 px-4 font-medium text-gray-900 dark:text-white">Shift</th>
                 <th className="text-left py-3 px-4 font-medium text-gray-900 dark:text-white">Status</th>
                 <th className="text-left py-3 px-4 font-medium text-gray-900 dark:text-white">Aksi</th>
               </tr>
@@ -343,13 +449,13 @@ export default function Employees() {
             <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
               {isLoading ? (
                 <tr>
-                  <td colSpan={7} className="py-8 text-center text-gray-500 dark:text-gray-400">
+                  <td colSpan={8} className="py-8 text-center text-gray-500 dark:text-gray-400">
                     Loading...
                   </td>
                 </tr>
               ) : filteredEmployees.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="py-8 text-center text-gray-500 dark:text-gray-400">
+                  <td colSpan={8} className="py-8 text-center text-gray-500 dark:text-gray-400">
                     Tidak ada data karyawan
                   </td>
                 </tr>
@@ -358,9 +464,10 @@ export default function Employees() {
                   <tr key={employee.id} data-testid={`employee-row-${employee.id}`}>
                     <td className="py-3 px-4 text-sm text-gray-900 dark:text-white">{employee.id}</td>
                     <td className="py-3 px-4 text-sm text-gray-900 dark:text-white">{employee.name}</td>
-                    <td className="py-3 px-4 text-sm text-gray-900 dark:text-white">{employee.nomorLambung}</td>
+                    <td className="py-3 px-4 text-sm text-gray-900 dark:text-white">{employee.position || "-"}</td>
+                    <td className="py-3 px-4 text-sm text-gray-900 dark:text-white">{employee.department || "-"}</td>
+                    <td className="py-3 px-4 text-sm text-gray-900 dark:text-white">{employee.investorGroup || "-"}</td>
                     <td className="py-3 px-4 text-sm text-gray-900 dark:text-white">{employee.phone}</td>
-                    <td className="py-3 px-4 text-sm text-gray-900 dark:text-white">{employee.shift}</td>
                     <td className="py-3 px-4">
                       <Badge 
                         variant={employee.status === 'active' ? 'default' : 'secondary'}
@@ -397,11 +504,52 @@ export default function Employees() {
           </table>
         </div>
         
-        {/* Pagination Info */}
+        {/* Pagination Info and Upload Excel Button */}
         <div className="flex items-center justify-between mt-6">
           <p className="text-sm text-gray-500 dark:text-gray-400">
             Menampilkan {filteredEmployees.length} dari {employees.length} karyawan
           </p>
+          <Dialog open={isUploadDialogOpen} onOpenChange={setIsUploadDialogOpen}>
+            <DialogTrigger asChild>
+              <Button variant="outline" className="ml-auto" data-testid="upload-excel-button">
+                <Upload className="w-4 h-4 mr-2" />
+                Upload Excel
+              </Button>
+            </DialogTrigger>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Upload Data Karyawan dari Excel</DialogTitle>
+              </DialogHeader>
+              <div className="space-y-4">
+                <p className="text-sm text-gray-600 dark:text-gray-300">
+                  Upload file Excel dengan format: NIK, Nama, Posisi, Departemen, Investor Group, No. WhatsApp
+                </p>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept=".xlsx,.xls"
+                  className="hidden"
+                  onChange={handleFileUpload}
+                />
+                <Button 
+                  onClick={() => fileInputRef.current?.click()}
+                  className="w-full"
+                  data-testid="select-excel-file"
+                >
+                  <Upload className="w-4 h-4 mr-2" />
+                  Pilih File Excel
+                </Button>
+                <Button 
+                  variant="outline" 
+                  onClick={downloadTemplate}
+                  className="w-full"
+                  data-testid="download-template"
+                >
+                  Download Template Excel
+                </Button>
+              </div>
+            </DialogContent>
+          </Dialog>
         </div>
       </CardContent>
     </Card>

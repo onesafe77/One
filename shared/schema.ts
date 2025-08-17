@@ -6,9 +6,10 @@ import { z } from "zod";
 export const employees = pgTable("employees", {
   id: varchar("id").primaryKey(),
   name: text("name").notNull(),
-  nomorLambung: text("nomor_lambung").notNull(),
+  position: text("position"),
+  department: text("department"),
+  investorGroup: text("investor_group"),
   phone: text("phone").notNull(),
-  shift: text("shift").notNull(),
   status: text("status").notNull().default("active"),
   createdAt: timestamp("created_at").default(sql`now()`),
 });

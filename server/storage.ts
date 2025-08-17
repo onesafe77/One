@@ -100,31 +100,18 @@ export class MemStorage implements IStorage {
     return `C-${nextNumber.toString().padStart(5, '0')}`;
   }
   
-  private generateNextNomorLambung(): string {
-    const existingEmployees = Array.from(this.employees.values());
-    const existingNumbers = existingEmployees
-      .map(emp => {
-        const match = emp.nomorLambung?.match(/^GECL (\d+)$/);
-        return match ? parseInt(match[1]) : 0;
-      })
-      .filter(num => num > 0);
-    
-    const maxNumber = existingNumbers.length > 0 ? Math.max(...existingNumbers) : 9000;
-    const nextNumber = maxNumber + 1;
-    return `GECL ${nextNumber}`;
-  }
+  // Removed generateNextNomorLambung as it's no longer needed
 
   async createEmployee(insertEmployee: InsertEmployee): Promise<Employee> {
-    // Generate NIK automatically if not provided or if using old format
+    // Generate NIK automatically if not provided
     const id = insertEmployee.id || this.generateNextNIK();
-    
-    // Generate Nomor Lambung automatically if not provided
-    const nomorLambung = insertEmployee.nomorLambung || this.generateNextNomorLambung();
     
     const employee: Employee = { 
       ...insertEmployee,
       id,
-      nomorLambung,
+      position: insertEmployee.position || null,
+      department: insertEmployee.department || null,
+      investorGroup: insertEmployee.investorGroup || null,
       status: insertEmployee.status || "active",
       createdAt: new Date() 
     };

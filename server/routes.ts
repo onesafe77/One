@@ -82,6 +82,38 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Bulk upload employees
+  app.post("/api/employees/bulk", async (req, res) => {
+    try {
+      const { employees: employeeData } = req.body;
+      
+      if (!Array.isArray(employeeData)) {
+        return res.status(400).json({ message: "Invalid employee data format" });
+      }
+
+      const results = [];
+      for (const emp of employeeData) {
+        try {
+          // Validate each employee data
+          const validatedEmployee = insertEmployeeSchema.parse(emp);
+          const employee = await storage.createEmployee(validatedEmployee);
+          results.push(employee);
+        } catch (validationError) {
+          console.error("Validation error for employee:", emp, validationError);
+          // Skip invalid entries but continue processing
+        }
+      }
+
+      res.json({ 
+        message: `Successfully uploaded ${results.length} employees`,
+        employees: results
+      });
+    } catch (error) {
+      console.error("Error bulk uploading employees:", error);
+      res.status(500).json({ message: "Failed to upload employees" });
+    }
+  });
+
   // Attendance routes
   app.get("/api/attendance", async (req, res) => {
     try {
