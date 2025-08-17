@@ -445,7 +445,7 @@ export default function Roster() {
                             <SelectContent>
                               {employees.map((employee) => (
                                 <SelectItem key={employee.id} value={employee.id}>
-                                  {employee.id} - {employee.name} ({employee.nomorLambung})
+                                  {employee.id} - {employee.name} ({employee.position || 'No Position'})
                                 </SelectItem>
                               ))}
                             </SelectContent>
@@ -589,7 +589,7 @@ export default function Roster() {
                             <SelectContent>
                               {employees.map((employee) => (
                                 <SelectItem key={employee.id} value={employee.id}>
-                                  {employee.id} - {employee.name} ({employee.nomorLambung})
+                                  {employee.id} - {employee.name} ({employee.position || 'No Position'})
                                 </SelectItem>
                               ))}
                             </SelectContent>
@@ -757,7 +757,7 @@ export default function Roster() {
               <tr className="border-b border-gray-200 dark:border-gray-700">
                 <th className="text-left py-3 px-4 font-medium text-gray-900 dark:text-white">NIK</th>
                 <th className="text-left py-3 px-4 font-medium text-gray-900 dark:text-white">Nama</th>
-                <th className="text-left py-3 px-4 font-medium text-gray-900 dark:text-white">Nomor Lambung</th>
+                <th className="text-left py-3 px-4 font-medium text-gray-900 dark:text-white">Position</th>
                 <th className="text-left py-3 px-4 font-medium text-gray-900 dark:text-white">Shift</th>
                 <th className="text-left py-3 px-4 font-medium text-gray-900 dark:text-white">Jam Tidur</th>
                 <th className="text-left py-3 px-4 font-medium text-gray-900 dark:text-white">Fit To Work</th>
@@ -789,7 +789,7 @@ export default function Roster() {
                       {roster.employee?.name || 'Unknown'}
                     </td>
                     <td className="py-3 px-4 text-sm text-gray-900 dark:text-white">
-                      {roster.employee?.nomorLambung || '-'}
+                      {roster.employee?.position || '-'}
                     </td>
                     <td className="py-3 px-4 text-sm text-gray-900 dark:text-white">
                       {roster.shift}

@@ -63,6 +63,9 @@ Preferred communication style: Simple, everyday language.
 - **August 17, 2025**: Implemented NIK-based search filtering replacing shift filter on employee management page
 - **August 17, 2025**: Created downloadable Excel template with new employee structure format
 - **August 17, 2025**: Added bulk employee upload API endpoint with error handling and validation
+- **August 17, 2025**: Fixed roster page display to show Position instead of deprecated Nomor Lambung column
+- **August 17, 2025**: Updated roster employee selection dropdowns to display position instead of nomor lambung
+- **August 17, 2025**: Fixed PDF download error handling and updated PDF format to match new employee structure
 - **August 17, 2025**: Updated shift system from "Pagi, Siang, Malam" to "Shift 1, Shift 2" across all components
 - **August 17, 2025**: Implemented time-based shift criteria: Shift 1 (06:00-18:00) and Shift 2 (18:00-06:00) with automatic shift detection during attendance
 - **QR Code System**: Implemented consistent token generation using stable employee-based tokens instead of timestamp-based
