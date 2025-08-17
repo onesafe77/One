@@ -86,8 +86,8 @@ function generateShiftSection(
   // Table headers with Fit To Work and Status columns
   doc.setFontSize(9);
   doc.setFont('helvetica', 'bold');
-  const headers = ['Jam Masuk', 'Nama', 'NIK', 'Shift', 'Nomor Lambung', 'Fit To Work', 'Status'];
-  const columnWidths = [30, 50, 35, 25, 35, 35, 35];
+  const headers = ['Jam Masuk', 'Nama', 'NIK', 'Shift', 'Nomor Lambung', 'Jam Tidur', 'Fit To Work', 'Status'];
+  const columnWidths = [28, 45, 30, 20, 30, 25, 30, 25];
   let xPosition = margin;
   
   headers.forEach((header, index) => {
@@ -120,12 +120,17 @@ function generateShiftSection(
     const attendanceStatus = record.status === 'present' ? 'Hadir' : 'Tidak Hadir';
     const fitToWorkStatus = record.status === 'present' ? 'Fit To Work' : 'Not Fit To Work';
     
+    // Get roster info for jam tidur
+    const rosterInfo = data.roster?.find(r => r.employeeId === employee.id && r.shift === shiftName);
+    const jamTidur = rosterInfo?.jamTidur ? `${rosterInfo.jamTidur} jam` : '-';
+    
     const rowData = [
       record.time,
       employee.name,
       employee.id, // NIK
       shiftName, // Current shift being processed
       employee.nomorLambung || '-',
+      jamTidur,
       fitToWorkStatus,
       attendanceStatus
     ];
@@ -157,13 +162,16 @@ function generateShiftSection(
       
       xPosition = margin;
       
-      // Row data for absent employee with Fit To Work and Status columns
+      // Row data for absent employee with Jam Tidur, Fit To Work and Status columns
+      const jamTidur = scheduleRecord.jamTidur ? `${scheduleRecord.jamTidur} jam` : '-';
+      
       const rowData = [
         '-', // No check-in time
         employee.name,
         employee.id, // NIK
         shiftName, // Current shift being processed
         employee.nomorLambung || '-',
+        jamTidur,
         'Not Fit To Work', // Fit To Work
         'Tidak Hadir' // Status
       ];

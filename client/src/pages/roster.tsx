@@ -60,6 +60,7 @@ export default function Roster() {
       shift: "",
       startTime: "",
       endTime: "",
+      jamTidur: "",
       status: "scheduled",
     },
   });
@@ -72,6 +73,7 @@ export default function Roster() {
       shift: "",
       startTime: "",
       endTime: "",
+      jamTidur: "",
       status: "scheduled",
     },
   });
@@ -178,6 +180,7 @@ export default function Roster() {
       shift: roster.shift,
       startTime: roster.startTime,
       endTime: roster.endTime,
+      jamTidur: roster.jamTidur || "",
       status: roster.status,
     });
     setIsEditDialogOpen(true);
@@ -225,6 +228,7 @@ export default function Roster() {
           shift: row.Shift || row.shift,
           startTime: startTime,
           endTime: endTime,
+          jamTidur: row['Jam Tidur'] || row.jamTidur || '',
           status: row.Status || row.status || 'scheduled'
         };
       });
@@ -258,6 +262,7 @@ export default function Roster() {
         'Nomor Lambung': 'GECL 9001',
         Shift: 'Shift 1',
         'Jam Kerja': '08:00 - 16:00',
+        'Jam Tidur': '6',
         'Fit To Work': 'Fit To Work',
         Status: 'scheduled'
       },
@@ -267,6 +272,7 @@ export default function Roster() {
         'Nomor Lambung': 'GECL 9002',
         Shift: 'Shift 2',
         'Jam Kerja': '14:00 - 22:00',
+        'Jam Tidur': '5',
         'Fit To Work': 'Not Fit To Work',
         Status: 'scheduled'
       }
@@ -489,6 +495,27 @@ export default function Roster() {
                         )}
                       />
                     </div>
+                    <FormField
+                      control={form.control}
+                      name="jamTidur"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Jam Tidur (contoh: 6 atau 5)</FormLabel>
+                          <FormControl>
+                            <Input 
+                              type="number"
+                              min="1"
+                              max="12"
+                              placeholder="6"
+                              {...field}
+                              value={field.value || ""}
+                              data-testid="roster-jam-tidur-input"
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
                     <Button 
                       type="submit" 
                       className="w-full"
@@ -591,6 +618,27 @@ export default function Roster() {
                         )}
                       />
                     </div>
+                    <FormField
+                      control={editForm.control}
+                      name="jamTidur"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Jam Tidur (contoh: 6 atau 5)</FormLabel>
+                          <FormControl>
+                            <Input 
+                              type="number"
+                              min="1"
+                              max="12"
+                              placeholder="6"
+                              {...field}
+                              value={field.value || ""}
+                              data-testid="edit-roster-jam-tidur-input"
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
                     <div className="flex space-x-2">
                       <Button 
                         type="submit" 
@@ -653,7 +701,7 @@ export default function Roster() {
                 <th className="text-left py-3 px-4 font-medium text-gray-900 dark:text-white">Nama</th>
                 <th className="text-left py-3 px-4 font-medium text-gray-900 dark:text-white">Nomor Lambung</th>
                 <th className="text-left py-3 px-4 font-medium text-gray-900 dark:text-white">Shift</th>
-                <th className="text-left py-3 px-4 font-medium text-gray-900 dark:text-white">Jam Kerja</th>
+                <th className="text-left py-3 px-4 font-medium text-gray-900 dark:text-white">Jam Tidur</th>
                 <th className="text-left py-3 px-4 font-medium text-gray-900 dark:text-white">Fit To Work</th>
                 <th className="text-left py-3 px-4 font-medium text-gray-900 dark:text-white">Status</th>
                 <th className="text-left py-3 px-4 font-medium text-gray-900 dark:text-white">Jam Absensi</th>
@@ -689,7 +737,7 @@ export default function Roster() {
                       {roster.shift}
                     </td>
                     <td className="py-3 px-4 text-sm text-gray-900 dark:text-white">
-                      {roster.startTime} - {roster.endTime}
+                      {roster.jamTidur || '-'} jam
                     </td>
                     <td className="py-3 px-4">
                       <Badge 
