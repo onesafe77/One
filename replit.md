@@ -66,6 +66,9 @@ Preferred communication style: Simple, everyday language.
 - **August 17, 2025**: Fixed roster page display to show Position instead of deprecated Nomor Lambung column
 - **August 17, 2025**: Updated roster employee selection dropdowns to display position instead of nomor lambung
 - **August 17, 2025**: Fixed PDF download error handling and updated PDF format to match new employee structure
+- **August 17, 2025**: Added Nomor Lambung column back to employee schema after Position column
+- **August 17, 2025**: Updated employee form, roster display, and Excel template to include Nomor Lambung field
+- **August 17, 2025**: Modified roster employee dropdowns to prioritize Nomor Lambung over position for display
 - **August 17, 2025**: Updated shift system from "Pagi, Siang, Malam" to "Shift 1, Shift 2" across all components
 - **August 17, 2025**: Implemented time-based shift criteria: Shift 1 (06:00-18:00) and Shift 2 (18:00-06:00) with automatic shift detection during attendance
 - **QR Code System**: Implemented consistent token generation using stable employee-based tokens instead of timestamp-based

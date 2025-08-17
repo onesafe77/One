@@ -20,6 +20,7 @@ import * as XLSX from "xlsx";
 const formSchema = insertEmployeeSchema.extend({
   id: z.string().optional(), // NIK akan digenerate otomatis
   position: z.string().optional(),
+  nomorLambung: z.string().optional(),
   department: z.string().optional(),
   investorGroup: z.string().optional(),
 });
@@ -43,6 +44,7 @@ export default function Employees() {
       id: "", // NIK akan digenerate otomatis di server
       name: "",
       position: "",
+      nomorLambung: "",
       department: "",
       investorGroup: "",
       phone: "",
@@ -137,6 +139,7 @@ export default function Employees() {
       id: employee.id,
       name: employee.name,
       position: employee.position || "",
+      nomorLambung: employee.nomorLambung || "",
       department: employee.department || "",
       investorGroup: employee.investorGroup || "",
       phone: employee.phone,
@@ -157,6 +160,7 @@ export default function Employees() {
       id: "",
       name: "",
       position: "",
+      nomorLambung: "",
       department: "",
       investorGroup: "",
       phone: "",
@@ -201,14 +205,15 @@ export default function Employees() {
         // Skip header row
         const rows = jsonData.slice(1) as any[][];
         const employeeData: InsertEmployee[] = rows
-          .filter(row => row.length >= 6 && row[0] && row[1]) // Check required fields
+          .filter(row => row.length >= 7 && row[0] && row[1]) // Check required fields
           .map(row => ({
             id: row[0]?.toString() || "",
             name: row[1]?.toString() || "",
             position: row[2]?.toString() || "",
-            department: row[3]?.toString() || "",
-            investorGroup: row[4]?.toString() || "",
-            phone: row[5]?.toString() || "",
+            nomorLambung: row[3]?.toString() || "",
+            department: row[4]?.toString() || "",
+            investorGroup: row[5]?.toString() || "",
+            phone: row[6]?.toString() || "",
             status: "active",
           }));
 
@@ -235,9 +240,9 @@ export default function Employees() {
 
   const downloadTemplate = () => {
     const templateData = [
-      ["NIK", "Nama", "Posisi", "Departemen", "Investor Group", "No. WhatsApp"],
-      ["C-00001", "John Doe", "Manager", "IT", "Group A", "+628123456789"],
-      ["C-00002", "Jane Smith", "Staff", "HR", "Group B", "+628123456790"],
+      ["NIK", "Nama", "Posisi", "Nomor Lambung", "Departemen", "Investor Group", "No. WhatsApp"],
+      ["C-00001", "John Doe", "Manager", "L-001", "IT", "Group A", "+628123456789"],
+      ["C-00002", "Jane Smith", "Staff", "L-002", "HR", "Group B", "+628123456790"],
     ];
 
     const worksheet = XLSX.utils.aoa_to_sheet(templateData);
@@ -314,6 +319,40 @@ export default function Employees() {
                             placeholder="Manager, Staff, dll" 
                             {...field} 
                             data-testid="employee-position-input"
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="nomorLambung"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Nomor Lambung</FormLabel>
+                        <FormControl>
+                          <Input 
+                            placeholder="L-001, L-002, dll" 
+                            {...field} 
+                            data-testid="employee-nomor-lambung-input"
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="nomorLambung"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Nomor Lambung</FormLabel>
+                        <FormControl>
+                          <Input 
+                            placeholder="L-001, L-002, dll" 
+                            {...field} 
+                            data-testid="employee-nomor-lambung-input"
                           />
                         </FormControl>
                         <FormMessage />
@@ -439,6 +478,7 @@ export default function Employees() {
                 <th className="text-left py-3 px-4 font-medium text-gray-900 dark:text-white">NIK</th>
                 <th className="text-left py-3 px-4 font-medium text-gray-900 dark:text-white">Nama</th>
                 <th className="text-left py-3 px-4 font-medium text-gray-900 dark:text-white">Position</th>
+                <th className="text-left py-3 px-4 font-medium text-gray-900 dark:text-white">Nomor Lambung</th>
                 <th className="text-left py-3 px-4 font-medium text-gray-900 dark:text-white">Department</th>
                 <th className="text-left py-3 px-4 font-medium text-gray-900 dark:text-white">Investor Group</th>
                 <th className="text-left py-3 px-4 font-medium text-gray-900 dark:text-white">WhatsApp</th>
@@ -449,13 +489,13 @@ export default function Employees() {
             <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
               {isLoading ? (
                 <tr>
-                  <td colSpan={8} className="py-8 text-center text-gray-500 dark:text-gray-400">
+                  <td colSpan={9} className="py-8 text-center text-gray-500 dark:text-gray-400">
                     Loading...
                   </td>
                 </tr>
               ) : filteredEmployees.length === 0 ? (
                 <tr>
-                  <td colSpan={8} className="py-8 text-center text-gray-500 dark:text-gray-400">
+                  <td colSpan={9} className="py-8 text-center text-gray-500 dark:text-gray-400">
                     Tidak ada data karyawan
                   </td>
                 </tr>
@@ -465,6 +505,7 @@ export default function Employees() {
                     <td className="py-3 px-4 text-sm text-gray-900 dark:text-white">{employee.id}</td>
                     <td className="py-3 px-4 text-sm text-gray-900 dark:text-white">{employee.name}</td>
                     <td className="py-3 px-4 text-sm text-gray-900 dark:text-white">{employee.position || "-"}</td>
+                    <td className="py-3 px-4 text-sm text-gray-900 dark:text-white">{employee.nomorLambung || "-"}</td>
                     <td className="py-3 px-4 text-sm text-gray-900 dark:text-white">{employee.department || "-"}</td>
                     <td className="py-3 px-4 text-sm text-gray-900 dark:text-white">{employee.investorGroup || "-"}</td>
                     <td className="py-3 px-4 text-sm text-gray-900 dark:text-white">{employee.phone}</td>
@@ -522,7 +563,7 @@ export default function Employees() {
               </DialogHeader>
               <div className="space-y-4">
                 <p className="text-sm text-gray-600 dark:text-gray-300">
-                  Upload file Excel dengan format: NIK, Nama, Posisi, Departemen, Investor Group, No. WhatsApp
+                  Upload file Excel dengan format: NIK, Nama, Posisi, Nomor Lambung, Departemen, Investor Group, No. WhatsApp
                 </p>
                 <input
                   ref={fileInputRef}
