@@ -13,7 +13,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { insertRosterSchema } from "@shared/schema";
 import type { Employee, RosterSchedule, AttendanceRecord, InsertRosterSchedule } from "@shared/schema";
-import { Plus, Calendar, Users, CheckCircle, Clock, Upload, Download, Filter } from "lucide-react";
+import { Plus, Calendar, Users, CheckCircle, Clock, Upload, Download, Filter, Edit, Trash2 } from "lucide-react";
 import { z } from "zod";
 import * as XLSX from 'xlsx';
 import { saveAs } from 'file-saver';
@@ -24,6 +24,8 @@ export default function Roster() {
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isUploadDialogOpen, setIsUploadDialogOpen] = useState(false);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [editingRoster, setEditingRoster] = useState<RosterSchedule | null>(null);
   const [shiftFilter, setShiftFilter] = useState("all");
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const { toast } = useToast();
@@ -102,11 +104,93 @@ export default function Roster() {
     },
   });
 
+  const updateMutation = useMutation({
+    mutationFn: ({ id, data }: { id: string; data: Partial<InsertRosterSchedule> }) => 
+      apiRequest("PUT", `/api/roster/${id}`, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/roster"] });
+      setIsEditDialogOpen(false);
+      setEditingRoster(null);
+      toast({
+        title: "Berhasil",
+        description: "Roster berhasil diupdate",
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "Gagal mengupdate roster",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: (id: string) => apiRequest("DELETE", `/api/roster/${id}`),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/roster"] });
+      toast({
+        title: "Berhasil",
+        description: "Roster berhasil dihapus",
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "Gagal menghapus roster",
+        variant: "destructive",
+      });
+    },
+  });
+
   const onSubmit = (values: z.infer<typeof formSchema>) => {
     createMutation.mutate({
       ...values,
       date: selectedDate,
     });
+  };
+
+  const onEditSubmit = (values: z.infer<typeof formSchema>) => {
+    if (editingRoster) {
+      updateMutation.mutate({
+        id: editingRoster.id,
+        data: {
+          ...values,
+          date: selectedDate,
+        }
+      });
+    }
+  };
+
+  const editForm = useForm<z.infer<typeof formSchema>>({
+    resolver: zodResolver(formSchema),
+    defaultValues: {
+      employeeId: "",
+      date: selectedDate,
+      shift: "",
+      startTime: "",
+      endTime: "",
+      status: "scheduled",
+    },
+  });
+
+  const handleEdit = (roster: RosterSchedule) => {
+    setEditingRoster(roster);
+    editForm.reset({
+      employeeId: roster.employeeId,
+      date: roster.date,
+      shift: roster.shift,
+      startTime: roster.startTime,
+      endTime: roster.endTime,
+      status: roster.status,
+    });
+    setIsEditDialogOpen(true);
+  };
+
+  const handleDelete = (rosterId: string) => {
+    if (confirm("Apakah Anda yakin ingin menghapus roster ini?")) {
+      deleteMutation.mutate(rosterId);
+    }
   };
 
   const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -132,14 +216,22 @@ export default function Roster() {
       const worksheet = workbook.Sheets[workbook.SheetNames[0]];
       const jsonData = XLSX.utils.sheet_to_json(worksheet);
 
-      const rosterData: InsertRosterSchedule[] = jsonData.map((row: any) => ({
-        employeeId: row.NIK || row.nik || row['Employee ID'] || row.employeeId,
-        date: selectedDate,
-        shift: row.Shift || row.shift,
-        startTime: row['Start Time'] || row.startTime || row['Jam Mulai'],
-        endTime: row['End Time'] || row.endTime || row['Jam Selesai'],
-        status: 'scheduled'
-      }));
+      const rosterData: InsertRosterSchedule[] = jsonData.map((row: any) => {
+        // Parse jam kerja format "08:00 - 16:00"
+        const jamKerja = row['Jam Kerja'] || row.jamKerja || '';
+        const jamKerjaParts = jamKerja.split(' - ');
+        const startTime = jamKerjaParts[0] || row['Start Time'] || row.startTime || '';
+        const endTime = jamKerjaParts[1] || row['End Time'] || row.endTime || '';
+
+        return {
+          employeeId: row.NIK || row.nik || row['Employee ID'] || row.employeeId,
+          date: selectedDate,
+          shift: row.Shift || row.shift,
+          startTime: startTime,
+          endTime: endTime,
+          status: row.Status || row.status || 'scheduled'
+        };
+      });
 
       // Validate required fields
       const invalidRows = rosterData.filter(row => !row.employeeId || !row.shift || !row.startTime || !row.endTime);
@@ -166,15 +258,21 @@ export default function Roster() {
     const templateData = [
       {
         NIK: 'C-000001',
+        Nama: 'Budi Santoso',
+        'Nomor Lambung': 'B-001',
         Shift: 'Shift 1',
-        'Start Time': '08:00',
-        'End Time': '16:00'
+        'Jam Kerja': '08:00 - 16:00',
+        'Fit To Work': 'Fit To Work',
+        Status: 'scheduled'
       },
       {
         NIK: 'C-000002',
+        Nama: 'Dewi Lestari',
+        'Nomor Lambung': 'D-004',
         Shift: 'Shift 2',
-        'Start Time': '14:00',
-        'End Time': '22:00'
+        'Jam Kerja': '14:00 - 22:00',
+        'Fit To Work': 'Not Fit To Work',
+        Status: 'scheduled'
       }
     ];
 
@@ -276,9 +374,12 @@ export default function Roster() {
                     <p className="font-medium">Format Excel yang diharapkan:</p>
                     <ul className="list-disc list-inside mt-1">
                       <li>NIK (contoh: C-000001)</li>
+                      <li>Nama (contoh: Budi Santoso)</li>
+                      <li>Nomor Lambung (contoh: B-001)</li>
                       <li>Shift (Shift 1 atau Shift 2)</li>
-                      <li>Start Time (contoh: 08:00)</li>
-                      <li>End Time (contoh: 16:00)</li>
+                      <li>Jam Kerja (contoh: 08:00 - 16:00)</li>
+                      <li>Fit To Work (Fit To Work atau Not Fit To Work)</li>
+                      <li>Status (scheduled, completed, cancelled)</li>
                     </ul>
                   </div>
                   <div className="flex space-x-2">
@@ -405,6 +506,120 @@ export default function Roster() {
                 </Form>
               </DialogContent>
             </Dialog>
+            
+            {/* Edit Roster Dialog */}
+            <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+              <DialogContent className="sm:max-w-[425px]">
+                <DialogHeader>
+                  <DialogTitle>Edit Roster</DialogTitle>
+                </DialogHeader>
+                <Form {...editForm}>
+                  <form onSubmit={editForm.handleSubmit(onEditSubmit)} className="space-y-4">
+                    <FormField
+                      control={editForm.control}
+                      name="employeeId"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Karyawan</FormLabel>
+                          <Select onValueChange={field.onChange} value={field.value}>
+                            <FormControl>
+                              <SelectTrigger data-testid="edit-roster-employee-select">
+                                <SelectValue placeholder="Pilih karyawan" />
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                              {employees.map((employee) => (
+                                <SelectItem key={employee.id} value={employee.id}>
+                                  {employee.id} - {employee.name} ({employee.nomorLambung})
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={editForm.control}
+                      name="shift"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Shift</FormLabel>
+                          <Select onValueChange={field.onChange} value={field.value}>
+                            <FormControl>
+                              <SelectTrigger data-testid="edit-roster-shift-select">
+                                <SelectValue placeholder="Pilih shift" />
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                              <SelectItem value="Shift 1">Shift 1 (06:00 - 18:00)</SelectItem>
+                              <SelectItem value="Shift 2">Shift 2 (18:00 - 06:00)</SelectItem>
+                            </SelectContent>
+                          </Select>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <div className="grid grid-cols-2 gap-4">
+                      <FormField
+                        control={editForm.control}
+                        name="startTime"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Jam Mulai</FormLabel>
+                            <FormControl>
+                              <Input 
+                                type="time" 
+                                {...field} 
+                                data-testid="edit-roster-start-time-input"
+                              />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      <FormField
+                        control={editForm.control}
+                        name="endTime"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Jam Selesai</FormLabel>
+                            <FormControl>
+                              <Input 
+                                type="time" 
+                                {...field} 
+                                data-testid="edit-roster-end-time-input"
+                              />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    </div>
+                    <div className="flex space-x-2">
+                      <Button 
+                        type="submit" 
+                        className="flex-1"
+                        disabled={updateMutation.isPending}
+                        data-testid="update-roster-button"
+                      >
+                        {updateMutation.isPending ? "Menyimpan..." : "Update"}
+                      </Button>
+                      <Button 
+                        type="button"
+                        variant="outline"
+                        onClick={() => {
+                          setIsEditDialogOpen(false);
+                          setEditingRoster(null);
+                        }}
+                      >
+                        Batal
+                      </Button>
+                    </div>
+                  </form>
+                </Form>
+              </DialogContent>
+            </Dialog>
           </div>
         </div>
       </CardHeader>
@@ -447,18 +662,19 @@ export default function Roster() {
                 <th className="text-left py-3 px-4 font-medium text-gray-900 dark:text-white">Fit To Work</th>
                 <th className="text-left py-3 px-4 font-medium text-gray-900 dark:text-white">Status</th>
                 <th className="text-left py-3 px-4 font-medium text-gray-900 dark:text-white">Jam Absensi</th>
+                <th className="text-left py-3 px-4 font-medium text-gray-900 dark:text-white">Aksi</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
               {isLoadingRoster ? (
                 <tr>
-                  <td colSpan={8} className="py-8 text-center text-gray-500 dark:text-gray-400">
+                  <td colSpan={9} className="py-8 text-center text-gray-500 dark:text-gray-400">
                     Loading...
                   </td>
                 </tr>
               ) : rosterWithAttendance.length === 0 ? (
                 <tr>
-                  <td colSpan={8} className="py-8 text-center text-gray-500 dark:text-gray-400">
+                  <td colSpan={9} className="py-8 text-center text-gray-500 dark:text-gray-400">
                     Tidak ada roster untuk tanggal ini
                   </td>
                 </tr>
@@ -496,6 +712,26 @@ export default function Roster() {
                     </td>
                     <td className="py-3 px-4 text-sm text-gray-900 dark:text-white">
                       {roster.attendance.time || '-'}
+                    </td>
+                    <td className="py-3 px-4">
+                      <div className="flex space-x-2">
+                        <Button 
+                          size="sm" 
+                          variant="outline"
+                          onClick={() => handleEdit(roster)}
+                          data-testid={`edit-roster-${roster.employeeId}`}
+                        >
+                          <Edit className="w-4 h-4" />
+                        </Button>
+                        <Button 
+                          size="sm" 
+                          variant="destructive"
+                          onClick={() => handleDelete(roster.id)}
+                          data-testid={`delete-roster-${roster.employeeId}`}
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                      </div>
                     </td>
                   </tr>
                 ))

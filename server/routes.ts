@@ -248,6 +248,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.put("/api/roster/:id", async (req, res) => {
     try {
       const validatedData = insertRosterSchema.partial().parse(req.body);
+      
+      const schedule = await storage.updateRosterSchedule(req.params.id, validatedData);
+      if (!schedule) {
+        return res.status(404).json({ message: "Roster tidak ditemukan" });
+      }
+
+      res.json(schedule);
+    } catch (error) {
+      res.status(400).json({ message: "Invalid roster data" });
+    }
+  });
+
+  app.delete("/api/roster/:id", async (req, res) => {
+    try {
+      const deleted = await storage.deleteRosterSchedule(req.params.id);
+      if (!deleted) {
+        return res.status(404).json({ message: "Roster tidak ditemukan" });
+      }
+
+      res.json({ message: "Roster berhasil dihapus" });
+    } catch (error) {
+      res.status(500).json({ message: "Failed to delete roster" });
+    }
+  });
+
+  app.put("/api/roster/:id", async (req, res) => {
+    try {
+      const validatedData = insertRosterSchema.partial().parse(req.body);
       const schedule = await storage.updateRosterSchedule(req.params.id, validatedData);
       if (!schedule) {
         return res.status(404).json({ message: "Roster schedule not found" });
