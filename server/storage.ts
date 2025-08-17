@@ -43,6 +43,7 @@ export interface IStorage {
   
   // QR Token methods
   getQrToken(employeeId: string): Promise<QrToken | undefined>;
+  getQrTokensByEmployee(employeeId: string): Promise<QrToken[]>;
   createQrToken(token: InsertQrToken): Promise<QrToken>;
   validateQrToken(employeeId: string, token: string): Promise<boolean>;
 }
@@ -244,6 +245,12 @@ export class MemStorage implements IStorage {
   async getQrToken(employeeId: string): Promise<QrToken | undefined> {
     return Array.from(this.qrTokens.values()).find(token => 
       token.employeeId === employeeId && token.isActive
+    );
+  }
+
+  async getQrTokensByEmployee(employeeId: string): Promise<QrToken[]> {
+    return Array.from(this.qrTokens.values()).filter(token => 
+      token.employeeId === employeeId
     );
   }
 

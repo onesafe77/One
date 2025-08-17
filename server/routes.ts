@@ -249,17 +249,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "Employee not found" });
       }
 
-      // Generate token
-      const timestamp = Date.now();
-      const secretKey = process.env.QR_SECRET_KEY || 'AttendanceQR2024';
-      const tokenData = `${employeeId}${secretKey}${timestamp}`;
-      const token = Buffer.from(tokenData).toString('base64').slice(0, 16);
+      // Check if employee already has an active QR token
+      const existingTokens = await storage.getQrTokensByEmployee(employeeId);
+      const activeToken = existingTokens.find(t => t.isActive);
+      
+      let token;
+      if (activeToken) {
+        // Use existing active token
+        token = activeToken.token;
+      } else {
+        // Generate consistent token based on employee ID only
+        const secretKey = process.env.QR_SECRET_KEY || 'AttendanceQR2024';
+        const tokenData = `${employeeId}${secretKey}Attend`;
+        token = Buffer.from(tokenData).toString('base64').slice(0, 16);
 
-      const qrToken = await storage.createQrToken({
-        employeeId,
-        token,
-        isActive: true
-      });
+        // Create new token
+        await storage.createQrToken({
+          employeeId,
+          token,
+          isActive: true
+        });
+      }
 
       res.json({
         employeeId,
