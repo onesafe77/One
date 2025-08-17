@@ -86,9 +86,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/attendance", async (req, res) => {
     try {
       const date = req.query.date as string;
+      console.log(`Fetching attendance records for date: ${date || 'all'}`);
       const attendance = await storage.getAllAttendance(date);
+      console.log(`Found ${attendance.length} attendance records`);
       res.json(attendance);
     } catch (error) {
+      console.error('Error fetching attendance records:', error);
       res.status(500).json({ message: "Failed to fetch attendance records" });
     }
   });

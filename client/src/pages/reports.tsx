@@ -26,6 +26,11 @@ export default function Reports() {
 
   const { data: attendance = [] } = useQuery<AttendanceRecord[]>({
     queryKey: ["/api/attendance", startDate],
+    queryFn: async () => {
+      const response = await fetch(`/api/attendance?date=${startDate}`);
+      if (!response.ok) throw new Error('Failed to fetch attendance');
+      return response.json();
+    },
     enabled: reportType === "attendance",
   });
 
@@ -36,6 +41,11 @@ export default function Reports() {
 
   const { data: roster = [] } = useQuery<RosterSchedule[]>({
     queryKey: ["/api/roster", startDate],
+    queryFn: async () => {
+      const response = await fetch(`/api/roster?date=${startDate}`);
+      if (!response.ok) throw new Error('Failed to fetch roster');
+      return response.json();
+    },
     enabled: reportType === "attendance",
   });
 

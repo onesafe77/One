@@ -243,7 +243,10 @@ export class MemStorage implements IStorage {
   }
 
   async getRosterByDate(date: string): Promise<RosterSchedule[]> {
-    return Array.from(this.rosterSchedules.values()).filter(schedule => schedule.date === date);
+    console.log(`Filtering roster schedules for date: ${date}`);
+    const filtered = Array.from(this.rosterSchedules.values()).filter(schedule => schedule.date === date);
+    console.log(`Found ${filtered.length} schedules for date ${date}`);
+    return filtered;
   }
 
   async getRosterByEmployee(employeeId: string): Promise<RosterSchedule[]> {

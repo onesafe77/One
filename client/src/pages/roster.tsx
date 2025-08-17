@@ -166,7 +166,7 @@ export default function Roster() {
   const onSubmit = (values: z.infer<typeof formSchema>) => {
     createMutation.mutate({
       ...values,
-      date: selectedDate,
+      date: selectedDate, // Always use the selected date from date picker
     });
   };
 
@@ -174,7 +174,7 @@ export default function Roster() {
     if (!editingRoster) return;
     updateMutation.mutate({
       id: editingRoster.id,
-      data: { ...values, date: selectedDate }
+      data: { ...values, date: selectedDate } // Always use the selected date from date picker
     });
   };
 
@@ -235,7 +235,7 @@ export default function Roster() {
 
         const rosterData = {
           employeeId: row.NIK || row.nik || row['Employee ID'] || row.employeeId || '',
-          date: selectedDate,
+          date: selectedDate, // This will use the currently selected date in the UI
           shift: row.Shift || row.shift || 'Shift 1',
           startTime: startTime,
           endTime: endTime,
@@ -244,7 +244,7 @@ export default function Roster() {
           status: row.Status || row.status || 'scheduled'
         };
 
-        console.log(`Mapped data for row ${index + 1}:`, rosterData);
+        console.log(`Mapped data for row ${index + 1} with date ${selectedDate}:`, rosterData);
         return rosterData;
       }).filter(row => row.employeeId && row.shift && row.startTime && row.endTime);
 
