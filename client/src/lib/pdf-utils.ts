@@ -72,8 +72,8 @@ function generateShiftSection(
   // Table headers
   doc.setFontSize(9);
   doc.setFont('helvetica', 'bold');
-  const headers = ['No', 'Nama', 'NIK/No Simper', 'Unit', 'Jam Masuk', 'Status', 'Nomor Lambung'];
-  const columnWidths = [12, 50, 40, 35, 30, 25, 35];
+  const headers = ['Jam Masuk', 'Nama', 'NIK', 'Shift', 'Nomor Lambung', 'Fit/To Work Status'];
+  const columnWidths = [35, 60, 45, 30, 40, 45];
   let xPosition = margin;
   
   headers.forEach((header, index) => {
@@ -95,8 +95,6 @@ function generateShiftSection(
   // Get scheduled employees for this shift
   const scheduledEmployees = data.roster?.filter(r => r.shift === shiftName && r.date === data.startDate) || [];
   
-  let rowNumber = 1;
-  
   // Process attended employees first
   shiftAttendance.forEach(record => {
     const employee = data.employees.find(emp => emp.id === record.employeeId);
@@ -104,15 +102,14 @@ function generateShiftSection(
     
     xPosition = margin;
     
-    // Row data
+    // Row data - reordered according to new format
     const rowData = [
-      rowNumber.toString(),
-      employee.name,
-      employee.id, // Using employee ID as NIK/No Simper
-      employee.shift || 'Unit 1', // Using shift as unit, or default
       record.time,
-      record.status === 'present' ? 'Hadir' : 'Tidak Hadir',
-      employee.nomorLambung || '-'
+      employee.name,
+      employee.id, // NIK
+      shiftName, // Current shift being processed
+      employee.nomorLambung || '-',
+      record.status === 'present' ? 'Fit To Work' : 'Not Fit To Work'
     ];
     
     rowData.forEach((data, index) => {
@@ -121,7 +118,6 @@ function generateShiftSection(
     });
     
     yPosition += 10;
-    rowNumber++;
     
     // Check if we need a new page
     if (yPosition > doc.internal.pageSize.height - 40) {
@@ -143,15 +139,14 @@ function generateShiftSection(
       
       xPosition = margin;
       
-      // Row data for absent employee
+      // Row data for absent employee - reordered according to new format
       const rowData = [
-        rowNumber.toString(),
+        '-', // No check-in time
         employee.name,
-        employee.id,
-        employee.shift || 'Unit 1',
-        '-',
-        'Tidak Hadir',
-        employee.nomorLambung || '-'
+        employee.id, // NIK
+        shiftName, // Current shift being processed
+        employee.nomorLambung || '-',
+        'Not Fit To Work'
       ];
       
       rowData.forEach((data, index) => {
@@ -160,7 +155,6 @@ function generateShiftSection(
       });
       
       yPosition += 10;
-      rowNumber++;
       
       // Check if we need a new page
       if (yPosition > doc.internal.pageSize.height - 40) {
@@ -170,19 +164,19 @@ function generateShiftSection(
     }
   });
   
-  // Summary for this shift
-  yPosition += 10;
+  // Add shift summary
+  yPosition += 15;
+  doc.setFontSize(10);
   doc.setFont('helvetica', 'bold');
-  const presentCount = shiftAttendance.filter(r => r.status === 'present').length;
+  
+  const attendedCount = shiftAttendance.filter(r => r.status === 'present').length;
   const scheduledCount = scheduledEmployees.length;
-  const absentCount = scheduledCount - presentCount;
+  const absentCount = scheduledCount - attendedCount;
   
-  doc.text(`Ringkasan ${shiftName}:`, margin, yPosition);
-  yPosition += 10;
-  doc.setFont('helvetica', 'normal');
-  doc.text(`Dijadwalkan: ${scheduledCount} | Hadir: ${presentCount} | Tidak Hadir: ${absentCount}`, margin, yPosition);
+  const summaryText = `Ringkasan ${shiftName}: Dijadwalkan: ${scheduledCount} | Hadir: ${attendedCount} | Tidak Hadir: ${absentCount}`;
+  doc.text(summaryText, margin, yPosition);
   
-  return yPosition + 15;
+  return yPosition + 10;
 }
 
 function formatDateForPDF(dateString: string): string {
