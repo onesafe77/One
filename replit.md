@@ -53,6 +53,12 @@ Preferred communication style: Simple, everyday language.
 - **Real-time Dashboard**: Live attendance statistics with visual charts for management overview
 
 ### Recent Changes
+- **August 18, 2025**: Enhanced dashboard with real-time attendance tracking and date filtering capabilities
+- **August 18, 2025**: Added dashboard API endpoints for attendance details and recent activities with date filtering
+- **August 18, 2025**: Implemented auto-refresh functionality (30-second intervals) for real-time dashboard updates
+- **August 18, 2025**: Created detailed attendance table showing employee attendance status, shift, jam tidur, and fit-to-work status
+- **August 18, 2025**: Updated dashboard charts to use red color theme matching application branding
+- **August 18, 2025**: Replaced company logo with uploaded image in sidebar header
 - **August 18, 2025**: Changed application color scheme from blue to red (#ff1100) - updated primary colors, accent colors, and chart colors across both light and dark themes
 - **August 18, 2025**: Fixed QR scan results to display roster-based time and shift instead of system-detected time
 - **August 18, 2025**: Implemented real-time report updates - reports now force refresh data before generation to ensure latest attendance data

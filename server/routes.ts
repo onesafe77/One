@@ -540,36 +540,106 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Dashboard stats
+  // Dashboard stats with optional date filter
   app.get("/api/dashboard/stats", async (req, res) => {
     try {
-      const today = new Date().toISOString().split('T')[0];
+      const date = (req.query.date as string) || new Date().toISOString().split('T')[0];
       
-      const [employees, todayAttendance, todayRoster, leaveRequests] = await Promise.all([
+      const [employees, dateAttendance, dateRoster, leaveRequests] = await Promise.all([
         storage.getAllEmployees(),
-        storage.getAllAttendance(today),
-        storage.getRosterByDate(today),
+        storage.getAllAttendance(date),
+        storage.getRosterByDate(date),
         storage.getAllLeaveRequests()
       ]);
 
-      const activeLeavesToday = leaveRequests.filter(leave => 
+      const activeLeavesOnDate = leaveRequests.filter(leave => 
         leave.status === 'approved' && 
-        leave.startDate <= today && 
-        leave.endDate >= today
+        leave.startDate <= date && 
+        leave.endDate >= date
       );
 
       const stats = {
         totalEmployees: employees.length,
-        scheduledToday: todayRoster.length,
-        presentToday: todayAttendance.length,
-        absentToday: todayRoster.length - todayAttendance.length,
-        onLeaveToday: activeLeavesToday.length,
+        scheduledToday: dateRoster.length,
+        presentToday: dateAttendance.length,
+        absentToday: dateRoster.length - dateAttendance.length,
+        onLeaveToday: activeLeavesOnDate.length,
         pendingLeaveRequests: leaveRequests.filter(leave => leave.status === 'pending').length
       };
 
       res.json(stats);
     } catch (error) {
       res.status(500).json({ message: "Failed to fetch dashboard stats" });
+    }
+  });
+
+  // Recent attendance activities
+  app.get("/api/dashboard/recent-activities", async (req, res) => {
+    try {
+      const date = (req.query.date as string) || new Date().toISOString().split('T')[0];
+      
+      const [attendance, employees] = await Promise.all([
+        storage.getAllAttendance(date),
+        storage.getAllEmployees()
+      ]);
+
+      // Get recent activities (latest 10 attendance records)
+      const recentActivities = attendance
+        .sort((a, b) => new Date(b.createdAt || b.date).getTime() - new Date(a.createdAt || a.date).getTime())
+        .slice(0, 10)
+        .map(record => {
+          const employee = employees.find(emp => emp.id === record.employeeId);
+          return {
+            id: record.id,
+            employeeId: record.employeeId,
+            employeeName: employee?.name || 'Unknown',
+            time: record.time,
+            jamTidur: record.jamTidur,
+            fitToWork: record.fitToWork,
+            status: record.status,
+            createdAt: record.createdAt
+          };
+        });
+
+      res.json(recentActivities);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch recent activities" });
+    }
+  });
+
+  // Detailed attendance data for dashboard
+  app.get("/api/dashboard/attendance-details", async (req, res) => {
+    try {
+      const date = (req.query.date as string) || new Date().toISOString().split('T')[0];
+      
+      const [attendance, roster, employees] = await Promise.all([
+        storage.getAllAttendance(date),
+        storage.getRosterByDate(date),
+        storage.getAllEmployees()
+      ]);
+
+      // Create detailed attendance list with employee info
+      const attendanceDetails = roster.map(rosterEntry => {
+        const employee = employees.find(emp => emp.id === rosterEntry.employeeId);
+        const attendanceRecord = attendance.find(att => att.employeeId === rosterEntry.employeeId);
+        
+        return {
+          employeeId: rosterEntry.employeeId,
+          employeeName: employee?.name || 'Unknown',
+          position: employee?.position || '-',
+          shift: rosterEntry.shift,
+          scheduledTime: `${rosterEntry.startTime} - ${rosterEntry.endTime}`,
+          actualTime: attendanceRecord?.time || '-',
+          jamTidur: attendanceRecord?.jamTidur || '-',
+          fitToWork: attendanceRecord?.fitToWork || 'Not Set',
+          status: attendanceRecord ? 'present' : 'absent',
+          hasAttended: !!attendanceRecord
+        };
+      });
+
+      res.json(attendanceDetails);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch attendance details" });
     }
   });
 
