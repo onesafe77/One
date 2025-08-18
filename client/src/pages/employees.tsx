@@ -503,6 +503,7 @@ export default function Employees() {
                 <th className="text-left py-3 px-4 font-medium text-gray-900 dark:text-white">Department</th>
                 <th className="text-left py-3 px-4 font-medium text-gray-900 dark:text-white">Investor Group</th>
                 <th className="text-left py-3 px-4 font-medium text-gray-900 dark:text-white">WhatsApp</th>
+                <th className="text-left py-3 px-4 font-medium text-gray-900 dark:text-white">QR Code</th>
                 <th className="text-left py-3 px-4 font-medium text-gray-900 dark:text-white">Status</th>
                 <th className="text-left py-3 px-4 font-medium text-gray-900 dark:text-white">Aksi</th>
               </tr>
@@ -510,13 +511,13 @@ export default function Employees() {
             <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
               {isLoading ? (
                 <tr>
-                  <td colSpan={9} className="py-8 text-center text-gray-500 dark:text-gray-400">
+                  <td colSpan={10} className="py-8 text-center text-gray-500 dark:text-gray-400">
                     Loading...
                   </td>
                 </tr>
               ) : filteredEmployees.length === 0 ? (
                 <tr>
-                  <td colSpan={9} className="py-8 text-center text-gray-500 dark:text-gray-400">
+                  <td colSpan={10} className="py-8 text-center text-gray-500 dark:text-gray-400">
                     Tidak ada data karyawan
                   </td>
                 </tr>
@@ -530,6 +531,17 @@ export default function Employees() {
                     <td className="py-3 px-4 text-sm text-gray-900 dark:text-white">{employee.department || "-"}</td>
                     <td className="py-3 px-4 text-sm text-gray-900 dark:text-white">{employee.investorGroup || "-"}</td>
                     <td className="py-3 px-4 text-sm text-gray-900 dark:text-white">{employee.phone}</td>
+                    <td className="py-3 px-4">
+                      {employee.qrCode ? (
+                        <Badge className="bg-green-500 hover:bg-green-600 text-white">
+                          QR Generated
+                        </Badge>
+                      ) : (
+                        <Badge variant="secondary">
+                          No QR
+                        </Badge>
+                      )}
+                    </td>
                     <td className="py-3 px-4">
                       <Badge 
                         variant={employee.status === 'active' ? 'default' : 'secondary'}

@@ -11,6 +11,7 @@ export const employees = pgTable("employees", {
   department: text("department"),
   investorGroup: text("investor_group"),
   phone: text("phone").notNull(),
+  qrCode: text("qr_code"), // QR Code data untuk karyawan
   status: text("status").notNull().default("active"),
   createdAt: timestamp("created_at").default(sql`now()`),
 });

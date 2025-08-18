@@ -8,9 +8,18 @@ import {
   type LeaveRequest,
   type InsertLeaveRequest,
   type QrToken,
-  type InsertQrToken
+  type InsertQrToken,
+  employees,
+  attendanceRecords,
+  rosterSchedules,
+  leaveRequests,
+  qrTokens
 } from "@shared/schema";
 import { randomUUID } from "crypto";
+import { drizzle } from "drizzle-orm/neon-http";
+import { neon } from "@neondatabase/serverless";
+import { eq, and } from "drizzle-orm";
+import { sql as drizzleSql } from "drizzle-orm";
 
 export interface IStorage {
   // Employee methods
@@ -114,6 +123,7 @@ export class MemStorage implements IStorage {
       nomorLambung: insertEmployee.nomorLambung || null,
       department: insertEmployee.department || null,
       investorGroup: insertEmployee.investorGroup || null,
+      qrCode: insertEmployee.qrCode || null, // Add QR Code field
       status: insertEmployee.status || "active",
       createdAt: new Date() 
     };
@@ -285,4 +295,150 @@ export class MemStorage implements IStorage {
   }
 }
 
-export const storage = new MemStorage();
+// DrizzleStorage implementation using PostgreSQL
+export class DrizzleStorage implements IStorage {
+  private db;
+
+  constructor() {
+    const sql = neon(process.env.DATABASE_URL!);
+    this.db = drizzle(sql);
+  }
+
+  // Employee methods
+  async getEmployee(id: string): Promise<Employee | undefined> {
+    const result = await this.db.select().from(employees).where(eq(employees.id, id));
+    return result[0];
+  }
+
+  async getAllEmployees(): Promise<Employee[]> {
+    return await this.db.select().from(employees);
+  }
+
+  async createEmployee(insertEmployee: InsertEmployee): Promise<Employee> {
+    const result = await this.db.insert(employees).values(insertEmployee).returning();
+    return result[0];
+  }
+
+  async updateEmployee(id: string, updateData: Partial<InsertEmployee>): Promise<Employee | undefined> {
+    const result = await this.db.update(employees).set(updateData).where(eq(employees.id, id)).returning();
+    return result[0];
+  }
+
+  async deleteEmployee(id: string): Promise<boolean> {
+    const result = await this.db.delete(employees).where(eq(employees.id, id));
+    return true;
+  }
+
+  async deleteAllEmployees(): Promise<boolean> {
+    await this.db.delete(employees);
+    return true;
+  }
+
+  // Attendance methods
+  async getAttendanceRecord(id: string): Promise<AttendanceRecord | undefined> {
+    const result = await this.db.select().from(attendanceRecords).where(eq(attendanceRecords.id, id));
+    return result[0];
+  }
+
+  async getAttendanceByEmployee(employeeId: string, date?: string): Promise<AttendanceRecord[]> {
+    if (date) {
+      return await this.db.select().from(attendanceRecords)
+        .where(and(eq(attendanceRecords.employeeId, employeeId), eq(attendanceRecords.date, date)));
+    }
+    return await this.db.select().from(attendanceRecords).where(eq(attendanceRecords.employeeId, employeeId));
+  }
+
+  async getAllAttendance(date?: string): Promise<AttendanceRecord[]> {
+    if (date) {
+      return await this.db.select().from(attendanceRecords).where(eq(attendanceRecords.date, date));
+    }
+    return await this.db.select().from(attendanceRecords);
+  }
+
+  async createAttendanceRecord(record: InsertAttendanceRecord): Promise<AttendanceRecord> {
+    const result = await this.db.insert(attendanceRecords).values(record).returning();
+    return result[0];
+  }
+
+  // Roster methods
+  async getRosterSchedule(id: string): Promise<RosterSchedule | undefined> {
+    const result = await this.db.select().from(rosterSchedules).where(eq(rosterSchedules.id, id));
+    return result[0];
+  }
+
+  async getRosterByDate(date: string): Promise<RosterSchedule[]> {
+    return await this.db.select().from(rosterSchedules).where(eq(rosterSchedules.date, date));
+  }
+
+  async getRosterByEmployee(employeeId: string): Promise<RosterSchedule[]> {
+    return await this.db.select().from(rosterSchedules).where(eq(rosterSchedules.employeeId, employeeId));
+  }
+
+  async createRosterSchedule(schedule: InsertRosterSchedule): Promise<RosterSchedule> {
+    const result = await this.db.insert(rosterSchedules).values(schedule).returning();
+    return result[0];
+  }
+
+  async updateRosterSchedule(id: string, updateData: Partial<InsertRosterSchedule>): Promise<RosterSchedule | undefined> {
+    const result = await this.db.update(rosterSchedules).set(updateData).where(eq(rosterSchedules.id, id)).returning();
+    return result[0];
+  }
+
+  async deleteRosterSchedule(id: string): Promise<boolean> {
+    await this.db.delete(rosterSchedules).where(eq(rosterSchedules.id, id));
+    return true;
+  }
+
+  // Leave methods
+  async getLeaveRequest(id: string): Promise<LeaveRequest | undefined> {
+    const result = await this.db.select().from(leaveRequests).where(eq(leaveRequests.id, id));
+    return result[0];
+  }
+
+  async getLeaveByEmployee(employeeId: string): Promise<LeaveRequest[]> {
+    return await this.db.select().from(leaveRequests).where(eq(leaveRequests.employeeId, employeeId));
+  }
+
+  async getAllLeaveRequests(): Promise<LeaveRequest[]> {
+    return await this.db.select().from(leaveRequests);
+  }
+
+  async createLeaveRequest(request: InsertLeaveRequest): Promise<LeaveRequest> {
+    const result = await this.db.insert(leaveRequests).values(request).returning();
+    return result[0];
+  }
+
+  async updateLeaveRequest(id: string, updateData: Partial<InsertLeaveRequest>): Promise<LeaveRequest | undefined> {
+    const result = await this.db.update(leaveRequests).set(updateData).where(eq(leaveRequests.id, id)).returning();
+    return result[0];
+  }
+
+  // QR Token methods
+  async getQrToken(employeeId: string): Promise<QrToken | undefined> {
+    const result = await this.db.select().from(qrTokens)
+      .where(and(eq(qrTokens.employeeId, employeeId), eq(qrTokens.isActive, true)));
+    return result[0];
+  }
+
+  async getQrTokensByEmployee(employeeId: string): Promise<QrToken[]> {
+    return await this.db.select().from(qrTokens).where(eq(qrTokens.employeeId, employeeId));
+  }
+
+  async createQrToken(insertToken: InsertQrToken): Promise<QrToken> {
+    // Deactivate existing tokens for this employee
+    await this.db.update(qrTokens)
+      .set({ isActive: false })
+      .where(eq(qrTokens.employeeId, insertToken.employeeId));
+
+    const result = await this.db.insert(qrTokens).values(insertToken).returning();
+    return result[0];
+  }
+
+  async validateQrToken(employeeId: string, token: string): Promise<boolean> {
+    const qrToken = await this.getQrToken(employeeId);
+    return qrToken ? qrToken.token === token && qrToken.isActive : false;
+  }
+}
+
+// Use DrizzleStorage for PostgreSQL database
+export const storage = new DrizzleStorage();

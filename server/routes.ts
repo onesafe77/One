@@ -66,9 +66,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/employees", async (req, res) => {
     try {
       const validatedData = insertEmployeeSchema.parse(req.body);
-      const employee = await storage.createEmployee(validatedData);
+      
+      // Generate QR Code token for the employee
+      const secretKey = process.env.QR_SECRET_KEY || 'AttendanceQR2024';
+      const tokenData = `${validatedData.id || ''}${secretKey}Attend`;
+      const qrToken = Buffer.from(tokenData).toString('base64').slice(0, 16);
+      const qrData = JSON.stringify({ id: validatedData.id, token: qrToken });
+      
+      // Add QR Code to employee data
+      const employeeWithQR = {
+        ...validatedData,
+        qrCode: qrData
+      };
+      
+      const employee = await storage.createEmployee(employeeWithQR);
+      
+      // Also create QR token record
+      await storage.createQrToken({
+        employeeId: employee.id,
+        token: qrToken,
+        isActive: true
+      });
+      
       res.status(201).json(employee);
     } catch (error) {
+      console.error('Error creating employee:', error);
       res.status(400).json({ message: "Invalid employee data" });
     }
   });
