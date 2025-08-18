@@ -13,12 +13,13 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { insertEmployeeSchema } from "@shared/schema";
 import type { Employee, InsertEmployee } from "@shared/schema";
-import { Plus, Search, Edit, Trash2, Upload, AlertCircle } from "lucide-react";
+import { Plus, Search, Edit, Trash2, Upload, AlertCircle, Download, Eye } from "lucide-react";
 import { z } from "zod";
 import * as XLSX from "xlsx";
 import { useAutoSave } from "@/hooks/useAutoSave";
 import { AutoSaveIndicator } from "@/components/AutoSaveIndicator";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import QRCode from "qrcode";
 
 const formSchema = insertEmployeeSchema.extend({
   id: z.string().optional(), // NIK akan digenerate otomatis
@@ -27,6 +28,95 @@ const formSchema = insertEmployeeSchema.extend({
   department: z.string().optional(),
   investorGroup: z.string().optional(),
 });
+
+// Component untuk menampilkan QR Code di kolom
+function QRCodeDisplay({ qrData, employeeName }: { qrData: string; employeeName: string }) {
+  const [qrImageUrl, setQrImageUrl] = useState<string>("");
+  const [isViewDialogOpen, setIsViewDialogOpen] = useState(false);
+
+  const generateQRImage = async () => {
+    try {
+      const url = await QRCode.toDataURL(qrData, {
+        width: 200,
+        margin: 2,
+        color: {
+          dark: '#000000',
+          light: '#FFFFFF'
+        }
+      });
+      setQrImageUrl(url);
+      return url;
+    } catch (error) {
+      console.error('Error generating QR code:', error);
+      return null;
+    }
+  };
+
+  const downloadQRCode = async () => {
+    const url = qrImageUrl || await generateQRImage();
+    if (url) {
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `QR_${employeeName.replace(/\s+/g, '_')}.png`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    }
+  };
+
+  const viewQRCode = async () => {
+    if (!qrImageUrl) {
+      await generateQRImage();
+    }
+    setIsViewDialogOpen(true);
+  };
+
+  return (
+    <div className="flex gap-2">
+      <Button
+        variant="outline"
+        size="sm"
+        onClick={viewQRCode}
+        className="h-8 w-8 p-0"
+        data-testid={`view-qr-${employeeName}`}
+      >
+        <Eye className="w-4 h-4" />
+      </Button>
+      <Button
+        variant="outline"
+        size="sm"
+        onClick={downloadQRCode}
+        className="h-8 w-8 p-0"
+        data-testid={`download-qr-${employeeName}`}
+      >
+        <Download className="w-4 h-4" />
+      </Button>
+      
+      <Dialog open={isViewDialogOpen} onOpenChange={setIsViewDialogOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>QR Code - {employeeName}</DialogTitle>
+          </DialogHeader>
+          <div className="flex flex-col items-center space-y-4">
+            {qrImageUrl && (
+              <img 
+                src={qrImageUrl} 
+                alt={`QR Code for ${employeeName}`}
+                className="w-64 h-64 border rounded-lg"
+              />
+            )}
+            <div className="flex gap-2">
+              <Button onClick={downloadQRCode} className="flex items-center gap-2">
+                <Download className="w-4 h-4" />
+                Download QR Code
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
+}
 
 export default function Employees() {
   const [searchTerm, setSearchTerm] = useState("");
@@ -533,9 +623,7 @@ export default function Employees() {
                     <td className="py-3 px-4 text-sm text-gray-900 dark:text-white">{employee.phone}</td>
                     <td className="py-3 px-4">
                       {employee.qrCode ? (
-                        <Badge className="bg-green-500 hover:bg-green-600 text-white">
-                          QR Generated
-                        </Badge>
+                        <QRCodeDisplay qrData={employee.qrCode} employeeName={employee.name} />
                       ) : (
                         <Badge variant="secondary">
                           No QR
