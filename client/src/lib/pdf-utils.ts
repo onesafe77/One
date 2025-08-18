@@ -224,6 +224,7 @@ function generateShiftSection(
   margin: number, 
   pageWidth: number
 ): number {
+  const bottomMargin = 20; // Define bottomMargin within function scope
   let yPosition = startY;
   
   // Horizontal line before table section
