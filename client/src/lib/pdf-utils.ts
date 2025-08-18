@@ -88,11 +88,11 @@ function generateShiftSection(
   doc.text(shiftName.toUpperCase(), margin, yPosition);
   yPosition += 15;
   
-  // Table headers with Position, Department and Status columns (updated for new employee structure)
+  // Table headers with Position, Nomor Lambung and Status columns (updated for new employee structure)
   doc.setFontSize(9);
   doc.setFont('helvetica', 'bold');
-  const headers = ['Jam Masuk', 'Nama', 'NIK', 'Shift', 'Position', 'Jam Tidur', 'Fit To Work', 'Status'];
-  const columnWidths = [28, 45, 30, 20, 30, 25, 30, 25];
+  const headers = ['Jam Masuk', 'Nama', 'NIK', 'Shift', 'Position', 'Nomor Lambung', 'Jam Tidur', 'Fit To Work', 'Status'];
+  const columnWidths = [25, 40, 25, 18, 28, 28, 22, 28, 22];
   let xPosition = margin;
   
   headers.forEach((header, index) => {
@@ -120,7 +120,7 @@ function generateShiftSection(
     
     if (attendanceRecord) {
       // Employee attended - use attendance data
-      const jamTidur = attendanceRecord.jamTidur ? `${attendanceRecord.jamTidur} jam` : '-';
+      const jamTidur = attendanceRecord.jamTidur || '-';
       const fitToWorkStatus = attendanceRecord.fitToWork || 'Not Fit To Work';
       const attendanceStatus = attendanceRecord.status === 'present' ? 'Hadir' : 'Tidak Hadir';
       
@@ -130,6 +130,7 @@ function generateShiftSection(
         employee.id, // NIK
         shiftName, // Use scheduled shift, not detected shift
         employee.position || '-',
+        employee.nomorLambung || '-',
         jamTidur,
         fitToWorkStatus,
         attendanceStatus
@@ -147,6 +148,7 @@ function generateShiftSection(
         employee.id, // NIK
         shiftName, // Current shift being processed
         employee.position || '-',
+        employee.nomorLambung || '-',
         '-', // No jam tidur since absent
         'Fit To Work', // Default fit to work from schedule
         'Tidak Hadir' // Status
