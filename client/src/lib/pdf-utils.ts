@@ -101,6 +101,14 @@ export async function generateAttendancePDF(data: ReportData): Promise<void> {
       doc.text('Tempat', leftX, leftY);
       doc.text(':', leftX + labelWidth, leftY);
       doc.text(data.reportInfo.tempat || '-', leftX + labelWidth + 10, leftY);
+      leftY += 12;
+      
+      // Add Catatan if provided
+      if (data.reportInfo?.catatan && data.reportInfo.catatan.trim()) {
+        doc.text('Catatan', leftX, leftY);
+        doc.text(':', leftX + labelWidth, leftY);
+        doc.text(data.reportInfo.catatan, leftX + labelWidth + 10, leftY);
+      }
       
       // Right column - Signature area with border
       const sigBoxX = rightX;
@@ -214,7 +222,7 @@ function generateShiftSection(
   // Table headers with better spacing and alignment
   doc.setFontSize(8);
   doc.setFont('helvetica', 'bold');
-  const headers = ['Jam Masuk', 'Nama', 'NIK', 'Catatan', 'Position', 'Nomor Lambung', 'Jam Tidur', 'Fit To Work', 'Status'];
+  const headers = ['Jam Masuk', 'Nama', 'NIK', 'Shift', 'Position', 'Nomor Lambung', 'Jam Tidur', 'Fit To Work', 'Status'];
   const columnWidths = [28, 48, 28, 16, 38, 38, 22, 28, 32];
   let xPosition = margin;
   
@@ -272,7 +280,7 @@ function generateShiftSection(
         attendanceRecord.time,
         employee.name,
         employee.id, // NIK
-        data.reportInfo?.catatan || '-', // Catatan dari form
+        shiftName, // Shift
         employee.position || '-',
         employee.nomorLambung || '-',
         jamTidur,
@@ -306,7 +314,7 @@ function generateShiftSection(
         '-', // No check-in time
         employee.name,
         employee.id, // NIK
-        data.reportInfo?.catatan || '-', // Catatan dari form
+        shiftName, // Shift
         employee.position || '-',
         employee.nomorLambung || '-',
         '-', // No jam tidur since absent
