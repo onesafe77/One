@@ -25,17 +25,17 @@ function determineShiftByTime(time: string): string {
   }
 }
 
-// Kriteria check-in berdasarkan data roster sesungguhnya
+// Kriteria check-in yang fleksibel berdasarkan roster aktual
 function isWithinShiftTransitionPeriod(currentTime: string, scheduledShift: string): boolean {
   const [hours, minutes] = currentTime.split(':').map(Number);
   const totalMinutes = hours * 60 + minutes;
   
   if (scheduledShift === "Shift 1") {
-    // Shift 1: 08:00-16:00, allow check-in from 07:00 to 17:00 (flexible 1 hour window)
-    return totalMinutes >= 420 && totalMinutes <= 1020; // 7:00 AM to 5:00 PM
+    // Shift 1: 08:00-16:00, allow check-in from 06:00 to 18:00 (extended flexibility)
+    return totalMinutes >= 360 && totalMinutes <= 1080; // 6:00 AM to 6:00 PM
   } else if (scheduledShift === "Shift 2") {
-    // Shift 2: 18:00-06:00, allow check-in from 17:00 to 07:00 next day (flexible 1 hour window)
-    return totalMinutes >= 1020 || totalMinutes <= 420; // 5:00 PM to 7:00 AM next day
+    // Shift 2: 18:00-06:00, allow check-in dari jam 12:00 siang sampai 10:00 pagi (very flexible for night shift)
+    return totalMinutes >= 720 || totalMinutes <= 600; // 12:00 PM to 10:00 AM next day
   }
   
   return true; // Default to allow if shift is not recognized
