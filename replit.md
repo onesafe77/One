@@ -75,6 +75,7 @@ Preferred communication style: Simple, everyday language.
 - **August 17, 2025**: Added search functionality for employee name or NIK in QR Code generation page with real-time filtering
 - **August 17, 2025**: Updated shift system from "Pagi, Siang, Malam" to "Shift 1, Shift 2" across all components
 - **August 17, 2025**: Implemented time-based shift criteria: Shift 1 (06:00-18:00) and Shift 2 (18:00-06:00) with automatic shift detection during attendance
+- **August 17, 2025**: Fixed shift validation criteria to correctly match Shift 1 (06:00-18:00) and Shift 2 (18:00-06:00) with flexible 30-minute window
 - **QR Code System**: Implemented consistent token generation using stable employee-based tokens instead of timestamp-based
 - **Real-time Updates**: Added automatic cache invalidation for roster and attendance data after successful QR scan
 - **Shift Validation**: Added server-side validation to ensure employees check-in during their scheduled shift based on time

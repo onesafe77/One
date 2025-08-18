@@ -30,11 +30,11 @@ function isWithinShiftTransitionPeriod(currentTime: string, scheduledShift: stri
   const totalMinutes = hours * 60 + minutes;
   
   if (scheduledShift === "Shift 1") {
-    // Allow Shift 1 check-in from 05:00 to 19:00 (more flexible window)
-    return totalMinutes >= 300 && totalMinutes <= 1140; // 5:00 AM to 7:00 PM
+    // Shift 1: 06:00-18:00, allow check-in from 05:30 to 18:30 (flexible window)
+    return totalMinutes >= 330 && totalMinutes <= 1110; // 5:30 AM to 6:30 PM
   } else if (scheduledShift === "Shift 2") {
-    // Allow Shift 2 check-in from 17:00 to 07:00 (next day)
-    return totalMinutes >= 1020 || totalMinutes <= 420; // 5:00 PM to 7:00 AM
+    // Shift 2: 18:00-06:00, allow check-in from 17:30 to 06:30 (next day)
+    return totalMinutes >= 1050 || totalMinutes <= 390; // 5:30 PM to 6:30 AM
   }
   
   return false;
