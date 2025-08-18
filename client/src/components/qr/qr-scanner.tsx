@@ -1,25 +1,38 @@
 import { useState, useRef, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { validateQRData } from "@/lib/crypto-utils";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { formatTimeWithShift, getCurrentShift } from "@/lib/shift-utils";
-import { Camera, CameraOff, CheckCircle, User, Clock, XCircle } from "lucide-react";
+import { Camera, CameraOff, CheckCircle, User, Clock, XCircle, Moon, Heart } from "lucide-react";
 import jsQR from "jsqr";
 
 interface ScanResult {
   employeeId: string;
   name: string;
   scanTime: string;
-  status?: 'processing' | 'success' | 'error';
+  status?: 'validated' | 'processing' | 'success' | 'error';
   errorMessage?: string;
+}
+
+interface AttendanceFormData {
+  jamTidur: string;
+  fitToWork: string;
 }
 
 export function QRScanner() {
   const [isScanning, setIsScanning] = useState(false);
   const [scanResult, setScanResult] = useState<ScanResult | null>(null);
   const [stream, setStream] = useState<MediaStream | null>(null);
+  const [attendanceForm, setAttendanceForm] = useState<AttendanceFormData>({
+    jamTidur: '',
+    fitToWork: ''
+  });
+  const [isProcessing, setIsProcessing] = useState(false);
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const scanningRef = useRef(false);
@@ -124,16 +137,13 @@ export function QRScanner() {
           status: 'processing' as const
         };
         
-        setScanResult(employeeData);
+        setScanResult({ ...employeeData, status: 'validated' });
         stopScanning();
         
         toast({
           title: "QR Code Valid",
-          description: `✅ Memproses absensi untuk ${result.employee.name}...`,
+          description: `✅ QR Code valid untuk ${result.employee.name}. Silakan isi data absensi.`,
         });
-        
-        // Otomatis proses absensi setelah validasi berhasil
-        await processAttendanceAutomatically(employeeData);
       }
     } catch (error) {
       toast({
@@ -144,7 +154,18 @@ export function QRScanner() {
     }
   };
 
-  const processAttendanceAutomatically = async (employeeData: { employeeId: string; name: string; scanTime: string }) => {
+  const processAttendance = async () => {
+    if (!scanResult || !attendanceForm.jamTidur || !attendanceForm.fitToWork) {
+      toast({
+        title: "Data Tidak Lengkap",
+        description: "Silakan isi jam tidur dan status fit to work",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsProcessing(true);
+    setScanResult(prev => prev ? { ...prev, status: 'processing' } : null);
     try {
       const today = new Date().toISOString().split('T')[0];
       const currentTime = new Date().toLocaleTimeString('id-ID', {
@@ -153,15 +174,17 @@ export function QRScanner() {
         second: '2-digit'
       });
 
-      console.log("Auto-processing attendance for:", employeeData.name);
+      console.log("Processing attendance for:", scanResult.name);
 
       const response = await fetch("/api/attendance", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          employeeId: employeeData.employeeId,
+          employeeId: scanResult.employeeId,
           date: today,
           time: currentTime,
+          jamTidur: attendanceForm.jamTidur,
+          fitToWork: attendanceForm.fitToWork,
           status: "present"
         }),
         credentials: "include"
@@ -177,7 +200,7 @@ export function QRScanner() {
       
       toast({
         title: "Absensi Berhasil",
-        description: `✅ Absensi berhasil dicatat untuk ${employeeData.name}`,
+        description: `✅ Absensi berhasil dicatat untuk ${scanResult.name}`,
       });
 
       // Invalidate queries to refresh roster and attendance data
@@ -186,9 +209,10 @@ export function QRScanner() {
       queryClient.invalidateQueries({ queryKey: ["/api/roster", today] });
       queryClient.invalidateQueries({ queryKey: ["/api/dashboard"] });
       
-      // Clear scan result after 3 seconds to show success
+      // Reset form and clear scan result after 3 seconds
       setTimeout(() => {
         setScanResult(null);
+        setAttendanceForm({ jamTidur: '', fitToWork: '' });
       }, 3000);
       
     } catch (error: any) {
