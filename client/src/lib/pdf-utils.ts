@@ -223,133 +223,119 @@ function generateShiftSection(
   // Get scheduled employees for this shift first
   const scheduledEmployees = data.roster?.filter(r => r.shift === shiftName && r.date === data.startDate) || [];
   
-  // Table headers with better spacing and alignment
+  // Table headers with proper alignment
   doc.setFontSize(8);
   doc.setFont('helvetica', 'bold');
   const headers = ['Jam Masuk', 'Nama', 'NIK', 'Shift', 'Position', 'Nomor Lambung', 'Jam Tidur', 'Fit To Work', 'Status'];
-  const columnWidths = [28, 48, 28, 16, 38, 38, 22, 28, 32];
-  let xPosition = margin;
+  const columnWidths = [26, 46, 26, 18, 36, 36, 24, 26, 30]; // Adjusted for better proportions
   
-  // Draw complete table border first
+  // Calculate table dimensions
   const tableWidth = columnWidths.reduce((sum, width) => sum + width, 0);
-  const tableHeight = (scheduledEmployees.length + 1) * 12; // +1 for header
+  const rowHeight = 10;
+  const tableHeight = (scheduledEmployees.length + 1) * rowHeight; // +1 for header
   
-  // Table background for better readability
-  doc.setFillColor(255, 255, 255); // White background
-  doc.rect(margin, yPosition - 8, tableWidth, tableHeight, 'F');
+  // Draw main table border
+  doc.setLineWidth(0.8);
+  doc.rect(margin, yPosition - 6, tableWidth, tableHeight);
   
-  // Draw table border
-  doc.setLineWidth(0.5);
-  doc.rect(margin, yPosition - 8, tableWidth, tableHeight);
+  // Draw header background
+  doc.setFillColor(240, 240, 240);
+  doc.rect(margin, yPosition - 6, tableWidth, rowHeight, 'F');
   
-  // Draw table header background
-  doc.setFillColor(220, 220, 220); // Darker gray for header
-  doc.rect(margin, yPosition - 8, tableWidth, 12, 'F');
-  doc.setTextColor(0, 0, 0); // Black text
-  
-  // Draw vertical grid lines for header
+  // Draw vertical grid lines for all columns
   let currentX = margin;
+  for (let i = 0; i <= headers.length; i++) {
+    doc.line(currentX, yPosition - 6, currentX, yPosition - 6 + tableHeight);
+    if (i < headers.length) {
+      currentX += columnWidths[i];
+    }
+  }
+  
+  // Draw horizontal header line
+  doc.line(margin, yPosition - 6 + rowHeight, margin + tableWidth, yPosition - 6 + rowHeight);
+  
+  // Add header text (centered)
+  currentX = margin;
   headers.forEach((header, index) => {
-    // Center align header text
     const textWidth = doc.getTextWidth(header);
     const centerX = currentX + (columnWidths[index] - textWidth) / 2;
-    doc.text(header, centerX, yPosition);
-    
+    doc.text(header, centerX, yPosition - 1);
     currentX += columnWidths[index];
-    // Draw vertical line after each column
-    doc.line(currentX, yPosition - 8, currentX, yPosition - 8 + tableHeight);
   });
   
-  yPosition += 12;
+  yPosition += rowHeight;
   doc.setFont('helvetica', 'normal');
-  doc.setFontSize(8);
+  doc.setFontSize(7); // Slightly smaller for data rows
   
   // Process scheduled employees and check if they attended
-  scheduledEmployees.forEach(scheduleRecord => {
+  scheduledEmployees.forEach((scheduleRecord, rowIndex) => {
     const employee = data.employees.find(emp => emp.id === scheduleRecord.employeeId);
     if (!employee) return;
     
     // Find attendance record for this employee
     const attendanceRecord = data.attendance.find(record => record.employeeId === employee.id);
     
-    xPosition = margin;
-    
+    // Prepare row data
+    let rowData;
     if (attendanceRecord) {
       // Employee attended - use attendance data
       const jamTidur = attendanceRecord.jamTidur || '-';
       const fitToWorkStatus = attendanceRecord.fitToWork || 'Not Fit To Work';
       const attendanceStatus = attendanceRecord.status === 'present' ? 'Hadir' : 'Tidak Hadir';
       
-      const rowData = [
-        attendanceRecord.time,
-        employee.name,
-        employee.id, // NIK
-        shiftName, // Shift
+      rowData = [
+        attendanceRecord.time || '-',
+        employee.name || '-',
+        employee.id || '-',
+        shiftName || '-',
         employee.position || '-',
         employee.nomorLambung || '-',
         jamTidur,
         fitToWorkStatus,
         attendanceStatus
       ];
-      
-      // Alternate row background for better readability
-      if ((scheduledEmployees.indexOf(scheduleRecord) + 1) % 2 === 0) {
-        doc.setFillColor(248, 248, 248); // Very light gray for even rows
-        doc.rect(margin, yPosition - 6, tableWidth, 12, 'F');
-      }
-      
-      rowData.forEach((data, index) => {
-        // Center align text in each cell (except name which is left-aligned)
-        if (index === 1) { // Name column - left align
-          doc.text(data, xPosition + 2, yPosition);
-        } else {
-          const textWidth = doc.getTextWidth(data);
-          const centerX = xPosition + (columnWidths[index] - textWidth) / 2;
-          doc.text(data, centerX, yPosition);
-        }
-        xPosition += columnWidths[index];
-      });
-      
-      // Draw horizontal line below each row
-      doc.line(margin, yPosition + 6, margin + tableWidth, yPosition + 6);
     } else {
       // Employee didn't attend - show as absent
-      const rowData = [
-        '-', // No check-in time
-        employee.name,
-        employee.id, // NIK
-        shiftName, // Shift
+      rowData = [
+        '-',
+        employee.name || '-',
+        employee.id || '-',
+        shiftName || '-',
         employee.position || '-',
         employee.nomorLambung || '-',
-        '-', // No jam tidur since absent
-        'Fit To Work', // Default fit to work from schedule
-        'Tidak Hadir' // Status
+        '-',
+        'Fit To Work',
+        'Tidak Hadir'
       ];
-      
-      // Alternate row background for better readability
-      if ((scheduledEmployees.indexOf(scheduleRecord) + 1) % 2 === 0) {
-        doc.setFillColor(248, 248, 248); // Very light gray for even rows
-        doc.rect(margin, yPosition - 6, tableWidth, 12, 'F');
-      }
-      
-      rowData.forEach((data, index) => {
-        // Center align text in each cell (except name which is left-aligned)
-        if (index === 1) { // Name column - left align
-          doc.text(data, xPosition + 2, yPosition);
-        } else {
-          const textWidth = doc.getTextWidth(data);
-          const centerX = xPosition + (columnWidths[index] - textWidth) / 2;
-          doc.text(data, centerX, yPosition);
-        }
-        xPosition += columnWidths[index];
-      });
-      
-      // Draw horizontal line below each row
-      doc.line(margin, yPosition + 6, margin + tableWidth, yPosition + 6);
     }
     
+    // Alternate row background
+    if (rowIndex % 2 === 1) {
+      doc.setFillColor(250, 250, 250);
+      doc.rect(margin, yPosition - 4, tableWidth, rowHeight, 'F');
+    }
     
-    yPosition += 14;
+    // Draw row data with proper alignment
+    let currentX = margin;
+    rowData.forEach((cellData, columnIndex) => {
+      const cellText = String(cellData);
+      
+      if (columnIndex === 1) {
+        // Name column - left aligned with padding
+        doc.text(cellText, currentX + 2, yPosition + 2);
+      } else {
+        // All other columns - center aligned
+        const textWidth = doc.getTextWidth(cellText);
+        const centerX = currentX + (columnWidths[columnIndex] - textWidth) / 2;
+        doc.text(cellText, Math.max(currentX + 1, centerX), yPosition + 2);
+      }
+      currentX += columnWidths[columnIndex];
+    });
+    
+    // Draw horizontal line after each row
+    doc.line(margin, yPosition + rowHeight - 4, margin + tableWidth, yPosition + rowHeight - 4);
+    
+    yPosition += rowHeight;
     
     // Check if we need a new page
     if (yPosition > doc.internal.pageSize.height - 40) {
