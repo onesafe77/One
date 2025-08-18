@@ -64,20 +64,21 @@ export default function Employees() {
 
   const createMutation = useMutation({
     mutationFn: (data: InsertEmployee) => apiRequest("POST", "/api/employees", data),
-    onSuccess: () => {
+    onSuccess: (result) => {
       queryClient.invalidateQueries({ queryKey: ["/api/employees"] });
       setIsDialogOpen(false);
+      setEditingEmployee(null);
       form.reset();
       clearDraft(); // Clear auto saved draft after successful save
       toast({
         title: "Berhasil",
-        description: "Karyawan berhasil ditambahkan",
+        description: `Karyawan ${result.name} (${result.id}) berhasil ditambahkan`,
       });
     },
-    onError: () => {
+    onError: (error: any) => {
       toast({
         title: "Error",
-        description: "Gagal menambahkan karyawan",
+        description: error.message || "Gagal menambahkan karyawan",
         variant: "destructive",
       });
     },
@@ -86,7 +87,7 @@ export default function Employees() {
   const updateMutation = useMutation({
     mutationFn: ({ id, data }: { id: string; data: Partial<InsertEmployee> }) =>
       apiRequest("PUT", `/api/employees/${id}`, data),
-    onSuccess: () => {
+    onSuccess: (result) => {
       queryClient.invalidateQueries({ queryKey: ["/api/employees"] });
       setIsDialogOpen(false);
       setEditingEmployee(null);
@@ -94,13 +95,13 @@ export default function Employees() {
       clearDraft(); // Clear auto saved draft after successful save
       toast({
         title: "Berhasil",
-        description: "Data karyawan berhasil diperbarui",
+        description: `Data karyawan ${result.name} (${result.id}) berhasil diperbarui`,
       });
     },
-    onError: () => {
+    onError: (error: any) => {
       toast({
         title: "Error",
-        description: "Gagal memperbarui data karyawan",
+        description: error.message || "Gagal memperbarui data karyawan",
         variant: "destructive",
       });
     },
@@ -366,23 +367,6 @@ export default function Employees() {
                   />
                   <FormField
                     control={form.control}
-                    name="nomorLambung"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Nomor Lambung</FormLabel>
-                        <FormControl>
-                          <Input 
-                            placeholder="L-001, L-002, dll" 
-                            {...field} 
-                            data-testid="employee-nomor-lambung-input"
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={form.control}
                     name="department"
                     render={({ field }) => (
                       <FormItem>
@@ -454,14 +438,29 @@ export default function Employees() {
                       </FormItem>
                     )}
                   />
-                  <Button 
-                    type="submit" 
-                    className="w-full"
-                    disabled={createMutation.isPending || updateMutation.isPending}
-                    data-testid="submit-employee-button"
-                  >
-                    {createMutation.isPending || updateMutation.isPending ? "Menyimpan..." : "Simpan"}
-                  </Button>
+                  <div className="flex gap-2">
+                    <Button 
+                      type="button" 
+                      variant="outline"
+                      onClick={() => {
+                        setIsDialogOpen(false);
+                        setEditingEmployee(null);
+                        form.reset();
+                      }}
+                      className="flex-1"
+                      data-testid="cancel-employee-button"
+                    >
+                      Batal
+                    </Button>
+                    <Button 
+                      type="submit" 
+                      className="flex-1"
+                      disabled={createMutation.isPending || updateMutation.isPending}
+                      data-testid="submit-employee-button"
+                    >
+                      {createMutation.isPending || updateMutation.isPending ? "Menyimpan..." : (editingEmployee ? "Update" : "Simpan")}
+                    </Button>
+                  </div>
                 </form>
               </Form>
             </DialogContent>

@@ -53,6 +53,10 @@ Preferred communication style: Simple, everyday language.
 - **Real-time Dashboard**: Live attendance statistics with visual charts for management overview
 
 ### Recent Changes
+- **August 18, 2025**: Enhanced employee save functionality with improved validation and user feedback messages
+- **August 18, 2025**: Added cancel button and better form handling for employee creation/editing dialog
+- **August 18, 2025**: Fixed duplicate field issue in employee form and improved button states (Save/Update)
+- **August 18, 2025**: Enhanced toast notifications to show employee name and ID after successful save/update operations
 - **August 18, 2025**: Enhanced dashboard with real-time attendance tracking and date filtering capabilities
 - **August 18, 2025**: Added dashboard API endpoints for attendance details and recent activities with date filtering
 - **August 18, 2025**: Implemented auto-refresh functionality (30-second intervals) for real-time dashboard updates
