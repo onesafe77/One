@@ -10,6 +10,7 @@ import {
   ClipboardList,
   User
 } from "lucide-react";
+import companyLogo from "@assets/WhatsApp Image 2024-11-30 at 13.08.33_1755505069008.jpeg";
 
 const navigation = [
   { name: "Dashboard", href: "/", icon: BarChart3 },
@@ -46,8 +47,27 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
         {/* Logo */}
         <div className="flex items-center justify-center h-16 px-4 bg-primary-600 dark:bg-primary-700">
           <div className="flex items-center space-x-2">
-            <div className="w-8 h-8 bg-white rounded-lg flex items-center justify-center">
-              <QrCode className="w-5 h-5 text-primary-600" />
+            <div className="w-10 h-10 bg-white rounded-lg overflow-hidden flex items-center justify-center">
+              <img 
+                src={companyLogo} 
+                alt="Company Logo" 
+                className="w-full h-full object-cover"
+                onError={(e) => {
+                  // Fallback to QR icon if image fails to load
+                  const target = e.target as HTMLImageElement;
+                  target.style.display = 'none';
+                  if (target.parentElement) {
+                    const fallbackDiv = document.createElement('div');
+                    fallbackDiv.className = 'w-5 h-5 text-primary-600 flex items-center justify-center';
+                    const qrIcon = document.createElement('svg');
+                    qrIcon.innerHTML = '<path d="M3 3h6v6H3V3zM15 3h6v6h-6V3zM3 15h6v6H3v-6zM15 15h6v6h-6v-6z" stroke="currentColor" fill="none" stroke-width="2"/>';
+                    qrIcon.setAttribute('viewBox', '0 0 24 24');
+                    qrIcon.className = 'w-full h-full';
+                    fallbackDiv.appendChild(qrIcon);
+                    target.parentElement.appendChild(fallbackDiv);
+                  }
+                }}
+              />
             </div>
             <span className="text-xl font-bold text-white">Attendance GECL</span>
           </div>
