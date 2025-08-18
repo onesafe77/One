@@ -19,6 +19,7 @@ export interface IStorage {
   createEmployee(employee: InsertEmployee): Promise<Employee>;
   updateEmployee(id: string, employee: Partial<InsertEmployee>): Promise<Employee | undefined>;
   deleteEmployee(id: string): Promise<boolean>;
+  deleteAllEmployees(): Promise<boolean>;
 
   // Attendance methods
   getAttendanceRecord(id: string): Promise<AttendanceRecord | undefined>;
@@ -130,6 +131,15 @@ export class MemStorage implements IStorage {
 
   async deleteEmployee(id: string): Promise<boolean> {
     return this.employees.delete(id);
+  }
+
+  async deleteAllEmployees(): Promise<boolean> {
+    this.employees.clear();
+    // Also clear related data when deleting all employees
+    this.attendanceRecords.clear();
+    this.rosterSchedules.clear();
+    this.qrTokens.clear();
+    return true;
   }
 
   // Attendance methods

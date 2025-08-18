@@ -82,6 +82,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Delete all employees
+  app.delete("/api/employees", async (req, res) => {
+    try {
+      const deleted = await storage.deleteAllEmployees();
+      if (deleted) {
+        res.json({ message: "Semua data karyawan berhasil dihapus" });
+      } else {
+        res.status(500).json({ message: "Gagal menghapus data karyawan" });
+      }
+    } catch (error) {
+      console.error("Error deleting all employees:", error);
+      res.status(500).json({ message: "Failed to delete all employees" });
+    }
+  });
+
   // Bulk upload employees
   app.post("/api/employees/bulk", async (req, res) => {
     try {
