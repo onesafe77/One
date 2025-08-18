@@ -18,7 +18,26 @@ export default function Reports() {
   const [reportType, setReportType] = useState("attendance");
   const [format, setFormat] = useState("pdf");
   const [shiftFilter, setShiftFilter] = useState("all");
+  const [isExporting, setIsExporting] = useState(false);
+  
+  // Form fields for report header
+  const [reportInfo, setReportInfo] = useState({
+    perusahaan: "PT Golden Energi Cemerlang Lestari",
+    namaPengawas: "",
+    hari: new Date().toLocaleDateString('id-ID', { weekday: 'long' }),
+    tanggal: new Date().toLocaleDateString('id-ID'),
+    waktu: "",
+    shift: "",
+    tempat: "",
+    diperiksaOleh: "",
+    tandaTangan: null as File | null
+  });
   const { toast } = useToast();
+
+  const handleExport = () => {
+    setIsExporting(true);
+    exportReport().finally(() => setIsExporting(false));
+  };
 
   const { data: employees = [] } = useQuery<Employee[]>({
     queryKey: ["/api/employees"],
@@ -93,15 +112,33 @@ export default function Reports() {
           return record.date >= startDate && record.date <= endDate;
         });
 
+        // Validate required report information for PDF
         if (format === "pdf") {
-          generateAttendancePDF({
+          const requiredFields = [];
+          if (!reportInfo.namaPengawas.trim()) requiredFields.push("Nama Pengawas");
+          if (!reportInfo.waktu.trim()) requiredFields.push("Waktu");
+          if (!reportInfo.shift.trim()) requiredFields.push("Shift");
+          if (!reportInfo.tempat.trim()) requiredFields.push("Tempat");
+          if (!reportInfo.diperiksaOleh.trim()) requiredFields.push("Diperiksa Oleh");
+          
+          if (requiredFields.length > 0) {
+            toast({
+              title: "Form Tidak Lengkap",
+              description: `Mohon isi field berikut: ${requiredFields.join(", ")}`,
+              variant: "destructive",
+            });
+            return;
+          }
+
+          await generateAttendancePDF({
             employees,
             attendance: filteredAttendance,
             roster: freshRoster,
             startDate,
             endDate,
             reportType: "attendance",
-            shiftFilter
+            shiftFilter,
+            reportInfo
           });
           
           toast({
@@ -223,6 +260,107 @@ export default function Reports() {
               </Select>
             </div>
           )}
+
+          {/* Report Information Form */}
+          <div className="space-y-4 p-4 border rounded-lg bg-gray-50 dark:bg-gray-800">
+            <h4 className="font-medium text-gray-900 dark:text-white">Informasi Laporan</h4>
+            
+            <div>
+              <Label className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                Perusahaan
+              </Label>
+              <Input
+                value={reportInfo.perusahaan}
+                onChange={(e) => setReportInfo(prev => ({...prev, perusahaan: e.target.value}))}
+                placeholder="Nama perusahaan"
+                data-testid="input-perusahaan"
+              />
+            </div>
+
+            <div>
+              <Label className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                Nama Pengawas
+              </Label>
+              <Input
+                value={reportInfo.namaPengawas}
+                onChange={(e) => setReportInfo(prev => ({...prev, namaPengawas: e.target.value}))}
+                placeholder="Nama pengawas"
+                data-testid="input-nama-pengawas"
+              />
+            </div>
+
+            <div className="grid grid-cols-2 gap-2">
+              <div>
+                <Label className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                  Waktu
+                </Label>
+                <Input
+                  value={reportInfo.waktu}
+                  onChange={(e) => setReportInfo(prev => ({...prev, waktu: e.target.value}))}
+                  placeholder="17:00 - 18:30"
+                  data-testid="input-waktu"
+                />
+              </div>
+              <div>
+                <Label className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                  Shift
+                </Label>
+                <Select value={reportInfo.shift} onValueChange={(value) => setReportInfo(prev => ({...prev, shift: value}))}>
+                  <SelectTrigger data-testid="select-shift">
+                    <SelectValue placeholder="Pilih Shift" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Shift 1">Shift 1</SelectItem>
+                    <SelectItem value="Shift 2">Shift 2</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            <div>
+              <Label className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                Tempat
+              </Label>
+              <Input
+                value={reportInfo.tempat}
+                onChange={(e) => setReportInfo(prev => ({...prev, tempat: e.target.value}))}
+                placeholder="Titik Kumpul Workshop GECL"
+                data-testid="input-tempat"
+              />
+            </div>
+
+            <div>
+              <Label className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                Diperiksa Oleh
+              </Label>
+              <Input
+                value={reportInfo.diperiksaOleh}
+                onChange={(e) => setReportInfo(prev => ({...prev, diperiksaOleh: e.target.value}))}
+                placeholder="Nama pengawas pool"
+                data-testid="input-diperiksa-oleh"
+              />
+            </div>
+
+            <div>
+              <Label className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                Upload Tanda Tangan
+              </Label>
+              <Input
+                type="file"
+                accept="image/*"
+                onChange={(e) => {
+                  const file = e.target.files?.[0] || null;
+                  setReportInfo(prev => ({...prev, tandaTangan: file}));
+                }}
+                data-testid="input-tanda-tangan"
+              />
+              {reportInfo.tandaTangan && (
+                <p className="text-xs text-green-600 dark:text-green-400 mt-1">
+                  File dipilih: {reportInfo.tandaTangan.name}
+                </p>
+              )}
+            </div>
+          </div>
           
           <div>
             <Label className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
@@ -245,12 +383,13 @@ export default function Reports() {
           </div>
           
           <Button 
-            onClick={exportReport} 
+            onClick={handleExport} 
             className="w-full bg-green-600 hover:bg-green-700"
             data-testid="download-report-button"
+            disabled={!startDate || !endDate || isExporting}
           >
             <Download className="w-4 h-4 mr-2" />
-            Download Laporan
+            {isExporting ? "Mengunduh..." : "Download Laporan"}
           </Button>
         </CardContent>
       </Card>

@@ -2,6 +2,18 @@ import jsPDF from 'jspdf';
 import type { AttendanceRecord, Employee, RosterSchedule } from '@shared/schema';
 import { determineShiftByTime } from './shift-utils';
 
+interface ReportInfo {
+  perusahaan: string;
+  namaPengawas: string;
+  hari: string;
+  tanggal: string;
+  waktu: string;
+  shift: string;
+  tempat: string;
+  diperiksaOleh: string;
+  tandaTangan: File | null;
+}
+
 export interface ReportData {
   employees: Employee[];
   attendance: AttendanceRecord[];
@@ -10,33 +22,102 @@ export interface ReportData {
   endDate: string;
   reportType: 'attendance' | 'summary' | 'leave';
   shiftFilter?: string;
+  reportInfo?: ReportInfo;
 }
 
-export function generateAttendancePDF(data: ReportData): void {
+// Helper function to convert file to base64
+function fileToBase64(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result as string);
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
+
+export async function generateAttendancePDF(data: ReportData): Promise<void> {
   try {
     const doc = new jsPDF('landscape'); // Use landscape orientation for more columns
     const pageWidth = doc.internal.pageSize.width;
     const pageHeight = doc.internal.pageSize.height;
     const margin = 20;
     
+    let yPosition = 20;
+    
+    // Company Header
+    if (data.reportInfo?.perusahaan) {
+      doc.setFontSize(14);
+      doc.setFont('helvetica', 'bold');
+      doc.text(data.reportInfo.perusahaan, margin, yPosition);
+      yPosition += 20;
+    }
+    
     // Title with shift filter info
     doc.setFontSize(16);
-    let title = 'LAPORAN ABSENSI HARIAN';
-    if (data.shiftFilter === 'Shift 1') {
-      title = 'LAPORAN ABSENSI HARIAN - SHIFT 1';
-    } else if (data.shiftFilter === 'Shift 2') {
-      title = 'LAPORAN ABSENSI HARIAN - SHIFT 2';
+    doc.setFont('helvetica', 'bold');
+    let title = 'FORMULIR PEMANTAUAN PERIODE KERJA KONTRAKTOR HAULING';
+    doc.text(title, pageWidth / 2, yPosition, { align: 'center' });
+    yPosition += 20;
+    
+    // Form Information
+    if (data.reportInfo) {
+      doc.setFontSize(10);
+      doc.setFont('helvetica', 'normal');
+      
+      // Left column information
+      const leftX = margin;
+      const rightX = pageWidth - 120;
+      let leftY = yPosition;
+      
+      // Left column
+      doc.text('Perusahaan:', leftX, leftY);
+      doc.text(data.reportInfo.perusahaan || '-', leftX + 40, leftY);
+      leftY += 15;
+      
+      doc.text('Nama Pengawas:', leftX, leftY);
+      doc.text(data.reportInfo.namaPengawas || '-', leftX + 40, leftY);
+      leftY += 15;
+      
+      doc.text('Hari/Tanggal/Waktu:', leftX, leftY);
+      const dateTimeInfo = `${data.reportInfo.hari}, ${data.reportInfo.tanggal} / ${data.reportInfo.waktu}`;
+      doc.text(dateTimeInfo || '-', leftX + 40, leftY);
+      leftY += 15;
+      
+      doc.text('Shift:', leftX, leftY);
+      doc.text(data.reportInfo.shift || '-', leftX + 40, leftY);
+      leftY += 15;
+      
+      doc.text('Tempat:', leftX, leftY);
+      doc.text(data.reportInfo.tempat || '-', leftX + 40, leftY);
+      
+      // Right column - Signature area
+      doc.text('Diperiksa Oleh,', rightX, yPosition);
+      
+      // Add signature image if provided
+      if (data.reportInfo.tandaTangan) {
+        try {
+          const base64Data = await fileToBase64(data.reportInfo.tandaTangan);
+          doc.addImage(base64Data, 'JPEG', rightX, yPosition + 10, 60, 30);
+        } catch (error) {
+          console.warn('Failed to add signature:', error);
+          doc.text('(Tanda Tangan)', rightX + 10, yPosition + 25);
+        }
+      }
+      
+      // Signature line and name
+      doc.line(rightX, yPosition + 45, rightX + 80, yPosition + 45);
+      doc.text(data.reportInfo.diperiksaOleh || 'Pengawas Pool', rightX, yPosition + 55);
+      
+      yPosition = leftY + 30;
     }
-    doc.text(title, pageWidth / 2, 25, { align: 'center' });
     
     // Date
     doc.setFontSize(12);
     const reportDate = data.startDate === data.endDate 
       ? `Tanggal: ${formatDateForPDF(data.startDate)}`
       : `Periode: ${formatDateForPDF(data.startDate)} - ${formatDateForPDF(data.endDate)}`;
-    doc.text(reportDate, pageWidth / 2, 35, { align: 'center' });
-    
-    let yPosition = 55;
+    doc.text(reportDate, pageWidth / 2, yPosition, { align: 'center' });
+    yPosition += 20;
     
     // Generate shift sections based on filter
     if (data.shiftFilter === 'all' || data.shiftFilter === 'Shift 1') {
@@ -56,6 +137,25 @@ export function generateAttendancePDF(data: ReportData): void {
       }
       
       yPosition = generateShiftSection(doc, data, 'Shift 2', yPosition, margin, pageWidth);
+    }
+    
+    // Summary at bottom
+    if (yPosition < pageHeight - 80) {
+      yPosition += 20;
+      doc.setFontSize(10);
+      doc.setFont('helvetica', 'bold');
+      
+      // Get summary data for the specific shift
+      const targetShift = data.shiftFilter === 'all' ? 'Shift 2' : data.shiftFilter;
+      const shiftScheduled = data.roster?.filter(r => r.shift === targetShift && r.date === data.startDate) || [];
+      const attendanceOnDate = data.attendance.filter(a => a.date === data.startDate);
+      const shiftAttended = shiftScheduled.filter(r => 
+        attendanceOnDate.some(a => a.employeeId === r.employeeId)
+      ).length;
+      const shiftAbsent = shiftScheduled.length - shiftAttended;
+      
+      const summaryText = `Ringkasan ${targetShift}: Dijadwalkan: ${shiftScheduled.length} | Hadir: ${shiftAttended} | Tidak Hadir: ${shiftAbsent}`;
+      doc.text(summaryText, margin, yPosition);
     }
     
     // Footer
