@@ -145,11 +145,33 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const results = [];
+      const secretKey = process.env.QR_SECRET_KEY || 'AttendanceQR2024';
+      
       for (const emp of employeeData) {
         try {
           // Validate each employee data
           const validatedEmployee = insertEmployeeSchema.parse(emp);
-          const employee = await storage.createEmployee(validatedEmployee);
+          
+          // Generate QR Code token for each employee
+          const tokenData = `${validatedEmployee.id || ''}${secretKey}Attend`;
+          const qrToken = Buffer.from(tokenData).toString('base64').slice(0, 16);
+          const qrData = JSON.stringify({ id: validatedEmployee.id, token: qrToken });
+          
+          // Add QR Code to employee data
+          const employeeWithQR = {
+            ...validatedEmployee,
+            qrCode: qrData
+          };
+          
+          const employee = await storage.createEmployee(employeeWithQR);
+          
+          // Also create QR token record
+          await storage.createQrToken({
+            employeeId: employee.id,
+            token: qrToken,
+            isActive: true
+          });
+          
           results.push(employee);
         } catch (validationError) {
           console.error("Validation error for employee:", emp, validationError);
@@ -158,7 +180,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       res.json({ 
-        message: `Successfully uploaded ${results.length} employees`,
+        message: `Successfully uploaded ${results.length} employees with QR codes`,
         employees: results
       });
     } catch (error) {

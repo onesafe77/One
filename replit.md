@@ -68,6 +68,10 @@ Preferred communication style: Simple, everyday language.
 - **August 18, 2025**: Implemented real-time report updates - reports now force refresh data before generation to ensure latest attendance data
 - **August 18, 2025**: Fixed PDF generation logic to group employees by scheduled shift rather than check-in time detection
 - **August 18, 2025**: Enhanced PDF reports to use actual attendance data (jam tidur, fit to work) instead of roster defaults
+- **August 18, 2025**: Migrated from MemStorage to DrizzleStorage using PostgreSQL for permanent data persistence
+- **August 18, 2025**: Implemented automatic QR Code generation for all new employees (both single creation and bulk upload via Excel)
+- **August 18, 2025**: Added visual QR Code display with View and Download buttons in employee table columns
+- **August 18, 2025**: Created QRCodeDisplay component for popup viewing and PNG download of QR codes with proper naming convention
 - **August 17, 2025**: Added Excel upload functionality for roster management with bulk import capabilities
 - **August 17, 2025**: Implemented shift filter on roster page with options: "Semua Shift", "Shift 1 saja", "Shift 2 saja"  
 - **August 17, 2025**: Added template Excel download feature for roster data with proper NIK format examples
