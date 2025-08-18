@@ -241,28 +241,40 @@ function generateShiftSection(
   // Get scheduled employees for this shift first
   const scheduledEmployees = data.roster?.filter(r => r.shift === shiftName && r.date === data.startDate) || [];
   
-  // Table headers with exact widths as requested
-  doc.setFontSize(9); // Slightly larger for better readability
+  // Table headers with proportional widths
+  doc.setFontSize(9); // Header font size
   doc.setFont('helvetica', 'bold');
   const headers = ['Nama', 'NIK', 'Shift', 'Jabatan', 'Nomor Lambung', 'Jam Tidur', 'Fit To Work', 'Status'];
-  const columnWidths = [100, 60, 40, 120, 80, 60, 60, 60]; // Exact widths as requested
+  const columnWidths = [110, 65, 50, 120, 80, 60, 60, 60]; // Proportional widths
   
-  // Calculate table dimensions
+  // Calculate table dimensions and check if it fits
   const tableWidth = columnWidths.reduce((sum, width) => sum + width, 0);
+  const availableWidth = pageWidth - (2 * margin);
+  let scaleFactor = 1;
+  
+  // Auto-scale if table too wide for page
+  if (tableWidth > availableWidth) {
+    scaleFactor = availableWidth / tableWidth;
+    for (let i = 0; i < columnWidths.length; i++) {
+      columnWidths[i] = Math.floor(columnWidths[i] * scaleFactor);
+    }
+  }
+  
+  const finalTableWidth = columnWidths.reduce((sum, width) => sum + width, 0);
   const rowHeight = 10;
   const headerHeight = 12;
   
   // Strong horizontal line above table header
   doc.setLineWidth(1.0);
-  doc.line(margin, yPosition - 3, margin + tableWidth, yPosition - 3);
+  doc.line(margin, yPosition - 3, margin + finalTableWidth, yPosition - 3);
   
   // Header background with proper height
   doc.setFillColor(220, 220, 220);
-  doc.rect(margin, yPosition - 2, tableWidth, headerHeight, 'F');
+  doc.rect(margin, yPosition - 2, finalTableWidth, headerHeight, 'F');
   
   // Main table border
   doc.setLineWidth(0.5);
-  doc.rect(margin, yPosition - 2, tableWidth, (scheduledEmployees.length + 1) * rowHeight + 2);
+  doc.rect(margin, yPosition - 2, finalTableWidth, (scheduledEmployees.length + 1) * rowHeight + 2);
   
   // Vertical grid lines for entire table
   let currentX = margin;
@@ -284,7 +296,7 @@ function generateShiftSection(
   
   // Strong horizontal line after header
   doc.setLineWidth(1.0);
-  doc.line(margin, yPosition - 2 + headerHeight, margin + tableWidth, yPosition - 2 + headerHeight);
+  doc.line(margin, yPosition - 2 + headerHeight, margin + finalTableWidth, yPosition - 2 + headerHeight);
   
   yPosition += headerHeight;
   doc.setFont('helvetica', 'normal');
@@ -333,7 +345,7 @@ function generateShiftSection(
     // Alternating row background
     if (rowIndex % 2 === 1) {
       doc.setFillColor(248, 248, 248);
-      doc.rect(margin, yPosition, tableWidth, rowHeight, 'F');
+      doc.rect(margin, yPosition, finalTableWidth, rowHeight, 'F');
     }
     
     // Draw row data with proper alignment
@@ -341,19 +353,21 @@ function generateShiftSection(
     rowData.forEach((cellData, columnIndex) => {
       const cellText = String(cellData);
       
-      if (columnIndex === 0) {
-        // Name column (Nama) - left aligned
+      if (columnIndex === 0 || columnIndex === 3) {
+        // Name (0) and Jabatan (3) columns - left aligned
         doc.text(cellText, currentX + 3, yPosition + 6);
       } else {
-        // All other columns - left aligned for better readability
-        doc.text(cellText, currentX + 3, yPosition + 6);
+        // Other columns - center aligned
+        const textWidth = doc.getTextWidth(cellText);
+        const centerX = currentX + (columnWidths[columnIndex] - textWidth) / 2;
+        doc.text(cellText, Math.max(currentX + 2, centerX), yPosition + 6);
       }
       currentX += columnWidths[columnIndex];
     });
     
     // Thin horizontal line after each row
     doc.setLineWidth(0.3);
-    doc.line(margin, yPosition + rowHeight, margin + tableWidth, yPosition + rowHeight);
+    doc.line(margin, yPosition + rowHeight, margin + finalTableWidth, yPosition + rowHeight);
     
     yPosition += rowHeight;
     
@@ -368,11 +382,11 @@ function generateShiftSection(
       
       // Strong horizontal line above repeated header
       doc.setLineWidth(1.0);
-      doc.line(margin, yPosition - 3, margin + tableWidth, yPosition - 3);
+      doc.line(margin, yPosition - 3, margin + finalTableWidth, yPosition - 3);
       
       // Header background
       doc.setFillColor(220, 220, 220);
-      doc.rect(margin, yPosition - 2, tableWidth, headerHeight, 'F');
+      doc.rect(margin, yPosition - 2, finalTableWidth, headerHeight, 'F');
       
       // Vertical grid lines for header
       let headerX = margin;
@@ -383,7 +397,7 @@ function generateShiftSection(
         }
       }
       
-      // Header text
+      // Header text - center aligned
       headerX = margin;
       headers.forEach((header, index) => {
         const textWidth = doc.getTextWidth(header);
@@ -394,7 +408,7 @@ function generateShiftSection(
       
       // Strong line after header
       doc.setLineWidth(1.0);
-      doc.line(margin, yPosition - 2 + headerHeight, margin + tableWidth, yPosition - 2 + headerHeight);
+      doc.line(margin, yPosition - 2 + headerHeight, margin + finalTableWidth, yPosition - 2 + headerHeight);
       
       yPosition += headerHeight;
       doc.setFont('helvetica', 'normal');
