@@ -41,7 +41,8 @@ export async function generateAttendancePDF(data: ReportData): Promise<void> {
     const doc = new jsPDF('landscape'); // Use landscape orientation for more columns
     const pageWidth = doc.internal.pageSize.width;
     const pageHeight = doc.internal.pageSize.height;
-    const margin = 20;
+    const margin = 25; // Top margin 2.5cm
+    const bottomMargin = 20; // Bottom margin 2cm
     
     let yPosition = 20;
     
@@ -228,44 +229,44 @@ function generateShiftSection(
   // Horizontal line before table section
   doc.setLineWidth(0.3);
   doc.line(margin, yPosition, pageWidth - margin, yPosition);
-  yPosition += 10;
+  yPosition += 12;
   
   // Shift title
   doc.setFontSize(12);
   doc.setFont('helvetica', 'bold');
   doc.text(shiftName.toUpperCase(), margin, yPosition);
-  yPosition += 12;
+  yPosition += 15; // Increased padding between shift title and table
   
   // Get scheduled employees for this shift first
   const scheduledEmployees = data.roster?.filter(r => r.shift === shiftName && r.date === data.startDate) || [];
   
-  // Table headers with optimized widths for landscape
-  doc.setFontSize(8);
+  // Table headers with exact widths as requested
+  doc.setFontSize(9); // Slightly larger for better readability
   doc.setFont('helvetica', 'bold');
-  const headers = ['Jam Masuk', 'Nama', 'NIK', 'Shift', 'Position', 'Nomor Lambung', 'Jam Tidur', 'Fit To Work', 'Status'];
-  const columnWidths = [24, 42, 24, 16, 34, 34, 20, 24, 28]; // Optimized for landscape fit
+  const headers = ['Nama', 'NIK', 'Shift', 'Jabatan', 'Nomor Lambung', 'Jam Tidur', 'Fit To Work', 'Status'];
+  const columnWidths = [100, 60, 40, 120, 80, 60, 60, 60]; // Exact widths as requested
   
   // Calculate table dimensions
   const tableWidth = columnWidths.reduce((sum, width) => sum + width, 0);
-  const rowHeight = 9;
-  const tableHeight = (scheduledEmployees.length + 1) * rowHeight;
+  const rowHeight = 10;
+  const headerHeight = 12;
   
-  // Horizontal line above table
-  doc.setLineWidth(0.3);
-  doc.line(margin, yPosition - 3, pageWidth - margin, yPosition - 3);
+  // Strong horizontal line above table header
+  doc.setLineWidth(1.0);
+  doc.line(margin, yPosition - 3, margin + tableWidth, yPosition - 3);
   
-  // Draw main table border
+  // Header background with proper height
+  doc.setFillColor(220, 220, 220);
+  doc.rect(margin, yPosition - 2, tableWidth, headerHeight, 'F');
+  
+  // Main table border
   doc.setLineWidth(0.5);
-  doc.rect(margin, yPosition - 2, tableWidth, tableHeight);
+  doc.rect(margin, yPosition - 2, tableWidth, (scheduledEmployees.length + 1) * rowHeight + 2);
   
-  // Header background
-  doc.setFillColor(235, 235, 235);
-  doc.rect(margin, yPosition - 2, tableWidth, rowHeight, 'F');
-  
-  // Vertical grid lines
+  // Vertical grid lines for entire table
   let currentX = margin;
   for (let i = 0; i <= headers.length; i++) {
-    doc.line(currentX, yPosition - 2, currentX, yPosition - 2 + tableHeight);
+    doc.line(currentX, yPosition - 2, currentX, yPosition - 2 + (scheduledEmployees.length + 1) * rowHeight + 2);
     if (i < headers.length) {
       currentX += columnWidths[i];
     }
@@ -276,16 +277,17 @@ function generateShiftSection(
   headers.forEach((header, index) => {
     const textWidth = doc.getTextWidth(header);
     const centerX = currentX + (columnWidths[index] - textWidth) / 2;
-    doc.text(header, centerX, yPosition + 4);
+    doc.text(header, centerX, yPosition + 6);
     currentX += columnWidths[index];
   });
   
-  // Horizontal line after header
-  doc.line(margin, yPosition - 2 + rowHeight, margin + tableWidth, yPosition - 2 + rowHeight);
+  // Strong horizontal line after header
+  doc.setLineWidth(1.0);
+  doc.line(margin, yPosition - 2 + headerHeight, margin + tableWidth, yPosition - 2 + headerHeight);
   
-  yPosition += rowHeight;
+  yPosition += headerHeight;
   doc.setFont('helvetica', 'normal');
-  doc.setFontSize(7);
+  doc.setFontSize(8); // Readable font size for data
   
   // Process scheduled employees and check if they attended
   scheduledEmployees.forEach((scheduleRecord, rowIndex) => {
@@ -295,7 +297,7 @@ function generateShiftSection(
     // Find attendance record for this employee
     const attendanceRecord = data.attendance.find(record => record.employeeId === employee.id);
     
-    // Prepare row data
+    // Prepare row data (removed Jam Masuk column as per new header structure)
     let rowData;
     if (attendanceRecord) {
       // Employee attended - use attendance data
@@ -304,11 +306,10 @@ function generateShiftSection(
       const attendanceStatus = attendanceRecord.status === 'present' ? 'Hadir' : 'Tidak Hadir';
       
       rowData = [
-        attendanceRecord.time || '-',
         employee.name || '-',
         employee.id || '-',
         shiftName || '-',
-        employee.position || '-',
+        employee.position || '-', // Jabatan
         employee.nomorLambung || '-',
         jamTidur,
         fitToWorkStatus,
@@ -317,11 +318,10 @@ function generateShiftSection(
     } else {
       // Employee didn't attend - show as absent
       rowData = [
-        '-',
         employee.name || '-',
         employee.id || '-',
         shiftName || '-',
-        employee.position || '-',
+        employee.position || '-', // Jabatan
         employee.nomorLambung || '-',
         '-',
         'Fit To Work',
@@ -332,7 +332,7 @@ function generateShiftSection(
     // Alternating row background
     if (rowIndex % 2 === 1) {
       doc.setFillColor(248, 248, 248);
-      doc.rect(margin, yPosition - 2, tableWidth, rowHeight, 'F');
+      doc.rect(margin, yPosition, tableWidth, rowHeight, 'F');
     }
     
     // Draw row data with proper alignment
@@ -340,31 +340,64 @@ function generateShiftSection(
     rowData.forEach((cellData, columnIndex) => {
       const cellText = String(cellData);
       
-      if (columnIndex === 1) {
-        // Name column - left aligned
-        doc.text(cellText, currentX + 2, yPosition + 4);
-      } else if (columnIndex === 0 || columnIndex === 2 || columnIndex === 6) {
-        // Time, NIK, Jam Tidur - right aligned for numbers
-        const textWidth = doc.getTextWidth(cellText);
-        doc.text(cellText, currentX + columnWidths[columnIndex] - textWidth - 2, yPosition + 4);
+      if (columnIndex === 0) {
+        // Name column (Nama) - left aligned
+        doc.text(cellText, currentX + 3, yPosition + 6);
       } else {
-        // Other columns - center aligned
-        const textWidth = doc.getTextWidth(cellText);
-        const centerX = currentX + (columnWidths[columnIndex] - textWidth) / 2;
-        doc.text(cellText, Math.max(currentX + 1, centerX), yPosition + 4);
+        // All other columns - left aligned for better readability
+        doc.text(cellText, currentX + 3, yPosition + 6);
       }
       currentX += columnWidths[columnIndex];
     });
     
-    // Horizontal line after each row
-    doc.line(margin, yPosition - 2 + rowHeight, margin + tableWidth, yPosition - 2 + rowHeight);
+    // Thin horizontal line after each row
+    doc.setLineWidth(0.3);
+    doc.line(margin, yPosition + rowHeight, margin + tableWidth, yPosition + rowHeight);
     
     yPosition += rowHeight;
     
-    // Check if we need a new page
-    if (yPosition > doc.internal.pageSize.height - 40) {
+    // Check if we need a new page with proper margins
+    if (yPosition > doc.internal.pageSize.height - bottomMargin - 20) {
       doc.addPage();
-      yPosition = 30;
+      yPosition = margin + 10;
+      
+      // Repeat table header on new page
+      doc.setFontSize(9);
+      doc.setFont('helvetica', 'bold');
+      
+      // Strong horizontal line above repeated header
+      doc.setLineWidth(1.0);
+      doc.line(margin, yPosition - 3, margin + tableWidth, yPosition - 3);
+      
+      // Header background
+      doc.setFillColor(220, 220, 220);
+      doc.rect(margin, yPosition - 2, tableWidth, headerHeight, 'F');
+      
+      // Vertical grid lines for header
+      let headerX = margin;
+      for (let i = 0; i <= headers.length; i++) {
+        doc.line(headerX, yPosition - 2, headerX, yPosition - 2 + headerHeight);
+        if (i < headers.length) {
+          headerX += columnWidths[i];
+        }
+      }
+      
+      // Header text
+      headerX = margin;
+      headers.forEach((header, index) => {
+        const textWidth = doc.getTextWidth(header);
+        const centerX = headerX + (columnWidths[index] - textWidth) / 2;
+        doc.text(header, centerX, yPosition + 6);
+        headerX += columnWidths[index];
+      });
+      
+      // Strong line after header
+      doc.setLineWidth(1.0);
+      doc.line(margin, yPosition - 2 + headerHeight, margin + tableWidth, yPosition - 2 + headerHeight);
+      
+      yPosition += headerHeight;
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(8);
     }
   });
   
