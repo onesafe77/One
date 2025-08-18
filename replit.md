@@ -81,6 +81,8 @@ Preferred communication style: Simple, everyday language.
 - **August 18, 2025**: Synchronized frontend and backend shift timing calculations for consistent user experience
 - **August 18, 2025**: Simplified jam tidur display format - removed "jam" suffix from dropdown options and table displays for cleaner UI
 - **August 18, 2025**: Enhanced shift check-in flexibility - Shift 1 (06:00-18:00 window) and Shift 2 (12:00-10:00 window) for better operational support
+- **August 18, 2025**: Fixed real-time timestamp capture - attendance now records exact check-in time (HH:MM:SS format) matching system clock
+- **August 18, 2025**: Implemented comprehensive real-time data updates - dashboard refreshes every 15 seconds with forced cache invalidation for immediate attendance visibility
 - **August 17, 2025**: Added Excel upload functionality for roster management with bulk import capabilities
 - **August 17, 2025**: Implemented shift filter on roster page with options: "Semua Shift", "Shift 1 saja", "Shift 2 saja"  
 - **August 17, 2025**: Added template Excel download feature for roster data with proper NIK format examples

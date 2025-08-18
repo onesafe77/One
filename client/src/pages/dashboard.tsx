@@ -69,28 +69,43 @@ export default function Dashboard() {
   const { data: stats, refetch: refetchStats } = useQuery<DashboardStats>({
     queryKey: ["/api/dashboard/stats", selectedDate],
     queryFn: async () => {
-      const response = await fetch(`/api/dashboard/stats?date=${selectedDate}`);
+      const response = await fetch(`/api/dashboard/stats?date=${selectedDate}`, {
+        cache: 'no-cache', // Force fresh data
+        headers: { 'Cache-Control': 'no-cache' }
+      });
       if (!response.ok) throw new Error('Failed to fetch stats');
       return response.json();
     },
+    staleTime: 0, // Data immediately stale for real-time updates
+    refetchOnWindowFocus: true,
   });
 
   const { data: recentActivities, refetch: refetchActivities } = useQuery<RecentActivity[]>({
     queryKey: ["/api/dashboard/recent-activities", selectedDate],
     queryFn: async () => {
-      const response = await fetch(`/api/dashboard/recent-activities?date=${selectedDate}`);
+      const response = await fetch(`/api/dashboard/recent-activities?date=${selectedDate}`, {
+        cache: 'no-cache',
+        headers: { 'Cache-Control': 'no-cache' }
+      });
       if (!response.ok) throw new Error('Failed to fetch activities');
       return response.json();
     },
+    staleTime: 0,
+    refetchOnWindowFocus: true,
   });
 
   const { data: attendanceDetails, refetch: refetchDetails } = useQuery<AttendanceDetail[]>({
     queryKey: ["/api/dashboard/attendance-details", selectedDate],
     queryFn: async () => {
-      const response = await fetch(`/api/dashboard/attendance-details?date=${selectedDate}`);
+      const response = await fetch(`/api/dashboard/attendance-details?date=${selectedDate}`, {
+        cache: 'no-cache',
+        headers: { 'Cache-Control': 'no-cache' }
+      });
       if (!response.ok) throw new Error('Failed to fetch attendance details');
       return response.json();
     },
+    staleTime: 0,
+    refetchOnWindowFocus: true,
   });
 
   const handleRefresh = () => {
@@ -99,11 +114,11 @@ export default function Dashboard() {
     refetchDetails();
   };
 
-  // Auto refresh every 30 seconds for real-time updates
+  // Auto refresh yang lebih responsif untuk real-time updates
   useEffect(() => {
     const interval = setInterval(() => {
       handleRefresh();
-    }, 30000); // 30 seconds
+    }, 15000); // 15 seconds untuk update lebih cepat
 
     return () => clearInterval(interval);
   }, [selectedDate]);

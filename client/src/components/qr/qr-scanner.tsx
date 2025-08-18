@@ -187,12 +187,10 @@ export function QRScanner() {
     setIsProcessing(true);
     setScanResult(prev => prev ? { ...prev, status: 'processing' } : null);
     try {
-      const today = new Date().toISOString().split('T')[0];
-      const currentTime = new Date().toLocaleTimeString('id-ID', {
-        hour: '2-digit',
-        minute: '2-digit',
-        second: '2-digit'
-      });
+      const now = new Date();
+      const today = now.toISOString().split('T')[0];
+      // Format waktu konsisten HH:MM:SS untuk database
+      const currentTime = now.toTimeString().split(' ')[0]; // Menggunakan format HH:MM:SS yang konsisten
 
       console.log("Processing attendance for:", scanResult.name);
 
@@ -222,13 +220,19 @@ export function QRScanner() {
         description: `✅ Absensi berhasil dicatat untuk ${scanResult.name}`,
       });
 
-      // Efficiently invalidate only necessary queries  
+      // Comprehensive real-time data invalidation
       const { queryClient } = await import("@/lib/queryClient");
       
-      // Invalidate specific queries instead of all
-      queryClient.invalidateQueries({ queryKey: ["/api/attendance", today] });
-      queryClient.invalidateQueries({ queryKey: ["/api/dashboard", "stats"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/dashboard", "attendance-details"] });
+      // Invalidate all attendance-related queries for real-time updates
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["/api/attendance"] }),
+        queryClient.invalidateQueries({ queryKey: ["/api/dashboard/stats"] }),
+        queryClient.invalidateQueries({ queryKey: ["/api/dashboard/attendance-details"] }),
+        queryClient.invalidateQueries({ queryKey: ["/api/dashboard/recent-activities"] }),
+        queryClient.invalidateQueries({ queryKey: ["/api/roster"] }),
+        queryClient.refetchQueries({ queryKey: ["/api/dashboard/stats"] }),
+        queryClient.refetchQueries({ queryKey: ["/api/dashboard/attendance-details"] })
+      ]);
       
       // Reset form and clear scan result after 3 seconds
       setTimeout(() => {
