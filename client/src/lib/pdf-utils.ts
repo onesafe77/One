@@ -121,13 +121,12 @@ function generateShiftSection(
     
     xPosition = margin;
     
-    // Get roster info for jam tidur
-    const rosterInfo = data.roster?.find(r => r.employeeId === employee.id && r.shift === shiftName);
-    const jamTidur = rosterInfo?.jamTidur ? `${rosterInfo.jamTidur} jam` : '-';
+    // Use actual attendance data for jam tidur and fit to work, not roster data
+    const jamTidur = record.jamTidur ? `${record.jamTidur} jam` : '-';
+    const fitToWorkStatus = record.fitToWork || 'Not Fit To Work';
     
     // Row data with Status and Fit To Work columns
     const attendanceStatus = record.status === 'present' ? 'Hadir' : 'Tidak Hadir';
-    const fitToWorkStatus = rosterInfo?.fitToWork || 'Not Fit To Work';
     
     const rowData = [
       record.time,
@@ -167,18 +166,15 @@ function generateShiftSection(
       
       xPosition = margin;
       
-      // Row data for absent employee with Jam Tidur, Fit To Work and Status columns
-      const jamTidur = scheduleRecord.jamTidur ? `${scheduleRecord.jamTidur} jam` : '-';
-      const fitToWorkStatus = scheduleRecord.fitToWork || 'Not Fit To Work';
-      
+      // Row data for absent employee with empty jam tidur and fit to work since they didn't attend
       const rowData = [
         '-', // No check-in time
         employee.name,
         employee.id, // NIK
         shiftName, // Current shift being processed
         employee.position || '-',
-        jamTidur,
-        fitToWorkStatus, // Fit To Work from roster
+        '-', // No jam tidur since absent
+        'Fit To Work', // Default fit to work from schedule
         'Tidak Hadir' // Status
       ];
       
