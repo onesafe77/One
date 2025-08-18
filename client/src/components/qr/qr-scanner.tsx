@@ -228,16 +228,16 @@ export function QRScanner() {
         
         if (message.includes("sudah melakukan absensi")) {
           errorTitle = "Sudah Absen Hari Ini";
-          errorMessage = `${employeeData.name} sudah melakukan absensi pada hari ini`;
+          errorMessage = `${scanResult.name} sudah melakukan absensi pada hari ini`;
         } else if (message.includes("tidak dijadwalkan")) {
           errorTitle = "Tidak Dijadwalkan";
-          errorMessage = `${employeeData.name} tidak dijadwalkan bekerja hari ini`;
+          errorMessage = `${scanResult.name} tidak dijadwalkan bekerja hari ini`;
         } else if (message.includes("tidak ditemukan")) {
           errorTitle = "Karyawan Tidak Ditemukan";
-          errorMessage = `Data karyawan ${employeeData.name} tidak ditemukan`;
+          errorMessage = `Data karyawan ${scanResult.name} tidak ditemukan`;
         } else if (message.includes("shift yang berbeda")) {
           errorTitle = "Shift Tidak Sesuai";
-          errorMessage = `Waktu check-in tidak sesuai dengan shift yang dijadwalkan untuk ${employeeData.name}`;
+          errorMessage = `Waktu check-in tidak sesuai dengan shift yang dijadwalkan untuk ${scanResult.name}`;
         } else {
           errorTitle = "Gagal Memproses";
           errorMessage = errorMsg;
@@ -260,10 +260,7 @@ export function QRScanner() {
     }
   };
 
-  const processAttendance = async () => {
-    if (!scanResult) return;
-    await processAttendanceAutomatically(scanResult);
-  };
+
 
   const currentShift = getCurrentShift();
   const currentTime = new Date().toLocaleTimeString('id-ID', {

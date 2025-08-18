@@ -292,7 +292,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 name: `Employee ${validatedData.employeeId}`,
                 nomorLambung: `GECL ${Math.random().toString().substr(2, 4)}`,
                 phone: '+628123456789',
-                shift: validatedData.shift,
                 status: 'active'
               });
               console.log(`Created new employee: ${newEmployee.id}`);
