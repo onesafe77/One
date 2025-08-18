@@ -25,17 +25,17 @@ function determineShiftByTime(time: string): string {
   }
 }
 
-// Strict shift time validation based on roster schedule
+// Strict shift time validation based on actual roster schedule
 function isValidShiftTime(currentTime: string, scheduledShift: string): boolean {
   const [hours, minutes] = currentTime.split(':').map(Number);
   const totalMinutes = hours * 60 + minutes;
   
   if (scheduledShift === "Shift 1") {
-    // Shift 1: Allow check-in from 06:00 to 17:59 (before Shift 2 starts)
-    return totalMinutes >= 360 && totalMinutes < 1080;
+    // Shift 1: 08:00-16:00 - Allow check-in only during shift hours (480-960 minutes)
+    return totalMinutes >= 480 && totalMinutes <= 960;
   } else if (scheduledShift === "Shift 2") {
-    // Shift 2: Allow check-in from 18:00 to 05:59 (covers night shift)
-    return totalMinutes >= 1080 || totalMinutes < 360;
+    // Shift 2: 18:00-06:00 - Allow check-in from 18:00 (1080 minutes) OR until 06:00 (360 minutes)
+    return totalMinutes >= 1080 || totalMinutes <= 360;
   }
   
   return false;
@@ -245,12 +245,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const now = new Date();
       const currentTime = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
       
+      console.log(`Validating shift for ${validatedData.employeeId}: Current time ${currentTime}, Scheduled ${scheduledEmployee.shift}`);
+      
       // Strict shift validation based on roster schedule
       const isValidTiming = isValidShiftTime(currentTime, scheduledEmployee.shift);
       
+      console.log(`Shift validation result: ${isValidTiming}`);
+      
       if (!isValidTiming) {
-        const shift1Window = "06:00-17:59";
-        const shift2Window = "18:00-05:59";
+        const shift1Window = "08:00-16:00";
+        const shift2Window = "18:00-06:00";
         const allowedWindow = scheduledEmployee.shift === "Shift 1" ? shift1Window : shift2Window;
         
         return res.status(400).json({ 
