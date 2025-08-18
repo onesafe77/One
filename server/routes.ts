@@ -524,9 +524,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Token QR tidak valid" });
       }
 
+      // Get today's roster for this employee
+      const today = new Date().toISOString().split('T')[0];
+      const todayRoster = await storage.getRosterByDate(today);
+      const employeeRoster = todayRoster.find(r => r.employeeId === employeeId);
+
       res.json({ 
         valid: true, 
         employee,
+        roster: employeeRoster || null,
         message: "QR token is valid" 
       });
     } catch (error) {

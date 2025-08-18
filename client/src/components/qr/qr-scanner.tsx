@@ -131,20 +131,37 @@ export function QRScanner() {
           minute: '2-digit'
         });
         
+        // Use roster time and shift if available, otherwise fall back to current time
+        let displayTime;
+        if (result.roster) {
+          displayTime = `${result.roster.startTime} - ${result.roster.endTime} (${result.roster.shift})`;
+        } else {
+          displayTime = formatTimeWithShift(currentTime);
+        }
+        
         const employeeData = {
           employeeId: result.employee.id,
           name: result.employee.name,
-          scanTime: formatTimeWithShift(currentTime),
+          scanTime: displayTime,
+          roster: result.roster,
           status: 'processing' as const
         };
         
         setScanResult({ ...employeeData, status: 'validated' });
         stopScanning();
         
-        toast({
-          title: "QR Code Valid",
-          description: `✅ QR Code valid untuk ${result.employee.name}. Silakan isi data absensi.`,
-        });
+        if (result.roster) {
+          toast({
+            title: "QR Code Valid",
+            description: `✅ QR Code valid untuk ${result.employee.name}. Shift: ${result.roster.shift}. Silakan isi data absensi.`,
+          });
+        } else {
+          toast({
+            title: "QR Code Valid - Peringatan",
+            description: `⚠️ QR Code valid untuk ${result.employee.name}, tetapi tidak ada roster hari ini. Silakan hubungi admin.`,
+            variant: "destructive",
+          });
+        }
       }
     } catch (error) {
       toast({
