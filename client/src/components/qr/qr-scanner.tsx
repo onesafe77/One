@@ -221,11 +221,16 @@ export function QRScanner() {
         description: `✅ Absensi berhasil dicatat untuk ${scanResult.name}`,
       });
 
-      // Invalidate queries to refresh roster and attendance data
+      // Invalidate queries to refresh roster, attendance, and reports data
       const { queryClient } = await import("@/lib/queryClient");
-      queryClient.invalidateQueries({ queryKey: ["/api/attendance", today] });
-      queryClient.invalidateQueries({ queryKey: ["/api/roster", today] });
+      queryClient.invalidateQueries({ queryKey: ["/api/attendance"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/roster"] });
       queryClient.invalidateQueries({ queryKey: ["/api/dashboard"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/employees"] });
+      
+      // Force refresh all attendance and roster queries
+      await queryClient.refetchQueries({ queryKey: ["/api/attendance"] });
+      await queryClient.refetchQueries({ queryKey: ["/api/roster"] });
       
       // Reset form and clear scan result after 3 seconds
       setTimeout(() => {
