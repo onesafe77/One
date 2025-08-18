@@ -4,15 +4,30 @@ export function determineShiftByTime(time: string): string {
   const [hours, minutes] = time.split(':').map(Number);
   const totalMinutes = hours * 60 + minutes;
   
-  // Berdasarkan data roster dan fleksibilitas operasional:
-  // Shift 1: 08:00-16:00 (check-in window: 06:00-18:00)
-  // Shift 2: 18:00-06:00 (check-in window: 12:00-10:00)
+  // Shift detection based on actual shift times:
+  // Shift 1: 08:00-16:00 (detection window: 06:00-17:59)
+  // Shift 2: 18:00-06:00 (detection window: 18:00-05:59)
   
-  if (totalMinutes >= 360 && totalMinutes < 720) {
+  if (totalMinutes >= 360 && totalMinutes < 1080) { // 06:00 to 17:59
     return "Shift 1";
-  } else {
+  } else { // 18:00 to 05:59
     return "Shift 2";
   }
+}
+
+export function isValidShiftTime(currentTime: string, scheduledShift: string): boolean {
+  const [hours, minutes] = currentTime.split(':').map(Number);
+  const totalMinutes = hours * 60 + minutes;
+  
+  if (scheduledShift === "Shift 1") {
+    // Shift 1: Allow check-in from 06:00 to 17:59 (before Shift 2 starts)
+    return totalMinutes >= 360 && totalMinutes < 1080;
+  } else if (scheduledShift === "Shift 2") {
+    // Shift 2: Allow check-in from 18:00 to 05:59 (covers night shift)
+    return totalMinutes >= 1080 || totalMinutes < 360;
+  }
+  
+  return false;
 }
 
 export function getShiftDescription(shift: string): string {

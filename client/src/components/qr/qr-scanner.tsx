@@ -260,6 +260,9 @@ export function QRScanner() {
         } else if (message.includes("tidak ditemukan")) {
           errorTitle = "Karyawan Tidak Ditemukan";
           errorMessage = `Data karyawan ${scanResult.name} tidak ditemukan`;
+        } else if (message.includes("tidak sesuai dengan jadwal shift") || message.includes("absensi ditolak")) {
+          errorTitle = "Absensi Ditolak - Waktu Tidak Sesuai";
+          errorMessage = errorMsg; // Use the full message from server
         } else if (message.includes("shift yang berbeda")) {
           errorTitle = "Shift Tidak Sesuai";
           errorMessage = `Waktu check-in tidak sesuai dengan shift yang dijadwalkan untuk ${scanResult.name}`;
