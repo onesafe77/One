@@ -67,13 +67,13 @@ export async function generateAttendancePDF(data: ReportData): Promise<void> {
       
       // Draw a border around the information section
       const infoBoxY = yPosition;
-      const infoBoxHeight = 80;
+      const infoBoxHeight = 100; // Increased height for catatan
       doc.rect(margin, infoBoxY, pageWidth - 2 * margin, infoBoxHeight);
       
       // Left column information
       const leftX = margin + 10;
-      const rightX = pageWidth - 140;
-      const labelWidth = 50;
+      const rightX = pageWidth - 160; // More space for signature box
+      const labelWidth = 55;
       let leftY = yPosition + 15;
       
       // Left column with aligned layout
@@ -112,28 +112,32 @@ export async function generateAttendancePDF(data: ReportData): Promise<void> {
       
       // Right column - Signature area with border
       const sigBoxX = rightX;
-      const sigBoxY = infoBoxY + 10;
-      const sigBoxWidth = 100;
-      const sigBoxHeight = 60;
+      const sigBoxY = infoBoxY + 15;
+      const sigBoxWidth = 120;
+      const sigBoxHeight = 70;
       
       doc.rect(sigBoxX, sigBoxY, sigBoxWidth, sigBoxHeight);
-      doc.text('Diperiksa Oleh,', sigBoxX + 5, sigBoxY + 10);
+      doc.text('Diperiksa Oleh,', sigBoxX + 10, sigBoxY + 12);
       
       // Add signature image if provided
       if (data.reportInfo.tandaTangan) {
         try {
           const base64Data = await fileToBase64(data.reportInfo.tandaTangan);
-          doc.addImage(base64Data, 'JPEG', sigBoxX + 5, sigBoxY + 15, 50, 25);
+          // Centered signature image
+          doc.addImage(base64Data, 'JPEG', sigBoxX + 10, sigBoxY + 18, 60, 30);
         } catch (error) {
           console.warn('Failed to add signature:', error);
-          doc.text('(Tanda Tangan)', sigBoxX + 20, sigBoxY + 30);
+          doc.text('(Tanda Tangan)', sigBoxX + 35, sigBoxY + 35);
         }
       }
       
-      // Signature line and name
-      doc.line(sigBoxX + 5, sigBoxY + 45, sigBoxX + 85, sigBoxY + 45);
+      // Signature line and name - better centered
+      doc.line(sigBoxX + 10, sigBoxY + 55, sigBoxX + 110, sigBoxY + 55);
       doc.setFontSize(8);
-      doc.text(data.reportInfo.diperiksaOleh || 'Pengawas Pool', sigBoxX + 5, sigBoxY + 52);
+      const nameText = data.reportInfo.diperiksaOleh || 'Syahrani';
+      const nameWidth = doc.getTextWidth(nameText);
+      const nameX = sigBoxX + (sigBoxWidth - nameWidth) / 2;
+      doc.text(nameText, nameX, sigBoxY + 63);
       doc.setFontSize(10);
       
       yPosition = infoBoxY + infoBoxHeight + 20;
