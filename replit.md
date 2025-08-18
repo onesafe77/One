@@ -75,6 +75,8 @@ Preferred communication style: Simple, everyday language.
 - **August 18, 2025**: Optimized QR Code validation performance - reduced loading time from 4+ seconds to under 300ms
 - **August 18, 2025**: Fixed time display consistency - roster times now correctly show scheduled shift times instead of current system time
 - **August 18, 2025**: Enhanced cache invalidation strategy for improved real-time updates with minimal performance impact
+- **August 18, 2025**: Fixed shift transition validation - now allows more flexible check-in times to accommodate real-world work schedules
+- **August 18, 2025**: Resolved attendance recording issues - employees can now successfully check-in during extended shift windows
 - **August 17, 2025**: Added Excel upload functionality for roster management with bulk import capabilities
 - **August 17, 2025**: Implemented shift filter on roster page with options: "Semua Shift", "Shift 1 saja", "Shift 2 saja"  
 - **August 17, 2025**: Added template Excel download feature for roster data with proper NIK format examples

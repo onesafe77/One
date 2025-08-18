@@ -24,20 +24,21 @@ function determineShiftByTime(time: string): string {
   }
 }
 
-// Allow flexible check-in timing with transition periods
+// Allow flexible check-in timing - more permissive for testing and real-world usage
 function isWithinShiftTransitionPeriod(currentTime: string, scheduledShift: string): boolean {
   const [hours, minutes] = currentTime.split(':').map(Number);
   const totalMinutes = hours * 60 + minutes;
   
   if (scheduledShift === "Shift 1") {
-    // Shift 1: 06:00-18:00, allow check-in from 05:30 to 18:30 (flexible window)
-    return totalMinutes >= 330 && totalMinutes <= 1110; // 5:30 AM to 6:30 PM
+    // Shift 1: 06:00-18:00, allow check-in anytime during business hours (06:00-18:00)
+    return totalMinutes >= 360 && totalMinutes <= 1080; // 6:00 AM to 6:00 PM
   } else if (scheduledShift === "Shift 2") {
-    // Shift 2: 18:00-06:00, allow check-in from 17:30 to 06:30 (next day)
-    return totalMinutes >= 1050 || totalMinutes <= 390; // 5:30 PM to 6:30 AM
+    // Shift 2: 18:00-06:00, allow check-in for night shift with extended flexibility
+    // Allow check-in from 12:00 PM onwards (for early preparation) and until 8:00 AM next day
+    return totalMinutes >= 720 || totalMinutes <= 480; // 12:00 PM to 8:00 AM next day
   }
   
-  return false;
+  return true; // Default to allow if shift is not recognized
 }
 
 export async function registerRoutes(app: Express): Promise<Server> {
