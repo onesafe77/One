@@ -1,18 +1,20 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Input } from "@/components/ui/input";
 import { generateQRCodeCanvas, downloadQRCode, printQRCode } from "@/lib/qr-utils";
 import { apiRequest } from "@/lib/queryClient";
 import { useQuery } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import type { Employee } from "@shared/schema";
-import { Download, Printer } from "lucide-react";
+import { Download, Printer, Search } from "lucide-react";
 
 export function QRGenerator() {
   const [selectedEmployeeId, setSelectedEmployeeId] = useState<string>("");
   const [qrData, setQrData] = useState<string>("");
   const [isGenerating, setIsGenerating] = useState(false);
+  const [searchQuery, setSearchQuery] = useState<string>("");
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const { toast } = useToast();
 
@@ -20,7 +22,25 @@ export function QRGenerator() {
     queryKey: ["/api/employees"],
   });
 
+  // Filter employees based on search query
+  const filteredEmployees = useMemo(() => {
+    if (!searchQuery.trim()) return employees;
+    
+    const query = searchQuery.toLowerCase();
+    return employees.filter(employee => 
+      employee.id.toLowerCase().includes(query) ||
+      employee.name.toLowerCase().includes(query)
+    );
+  }, [employees, searchQuery]);
+
   const selectedEmployee = employees.find(emp => emp.id === selectedEmployeeId);
+
+  // Reset selected employee if it's not in filtered results
+  useEffect(() => {
+    if (selectedEmployeeId && !filteredEmployees.find(emp => emp.id === selectedEmployeeId)) {
+      setSelectedEmployeeId("");
+    }
+  }, [filteredEmployees, selectedEmployeeId]);
 
   const generateQR = async () => {
     if (!selectedEmployeeId) {
@@ -97,6 +117,25 @@ export function QRGenerator() {
           <CardTitle>Generate QR Code Karyawan</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
+          {/* Search Input */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              Cari Karyawan
+            </label>
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+              <Input
+                type="text"
+                placeholder="Cari berdasarkan NIK atau nama..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-10"
+                data-testid="employee-search-input"
+              />
+            </div>
+          </div>
+
+          {/* Employee Selection Dropdown */}
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
               Pilih Karyawan
@@ -106,13 +145,24 @@ export function QRGenerator() {
                 <SelectValue placeholder="-- Pilih Karyawan --" />
               </SelectTrigger>
               <SelectContent>
-                {employees.map((employee) => (
-                  <SelectItem key={employee.id} value={employee.id}>
-                    {employee.id} - {employee.name}
+                {filteredEmployees.length === 0 ? (
+                  <SelectItem value="no-results" disabled>
+                    {searchQuery ? `Tidak ditemukan hasil untuk "${searchQuery}"` : "Tidak ada karyawan"}
                   </SelectItem>
-                ))}
+                ) : (
+                  filteredEmployees.map((employee) => (
+                    <SelectItem key={employee.id} value={employee.id}>
+                      {employee.id} - {employee.name}
+                    </SelectItem>
+                  ))
+                )}
               </SelectContent>
             </Select>
+            {searchQuery && filteredEmployees.length > 0 && (
+              <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                Menampilkan {filteredEmployees.length} dari {employees.length} karyawan
+              </p>
+            )}
           </div>
           
           {selectedEmployee && (
@@ -122,7 +172,8 @@ export function QRGenerator() {
                 <p><span className="font-medium">ID:</span> {selectedEmployee.id}</p>
                 <p><span className="font-medium">Nama:</span> {selectedEmployee.name}</p>
                 <p><span className="font-medium">WhatsApp:</span> {selectedEmployee.phone}</p>
-                <p><span className="font-medium">Shift:</span> {selectedEmployee.shift}</p>
+                <p><span className="font-medium">Posisi:</span> {selectedEmployee.position}</p>
+                <p><span className="font-medium">Departemen:</span> {selectedEmployee.department}</p>
               </div>
             </div>
           )}

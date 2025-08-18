@@ -72,6 +72,7 @@ Preferred communication style: Simple, everyday language.
 - **August 17, 2025**: Implemented auto save functionality with draft recovery for employee, roster, and leave request forms
 - **August 17, 2025**: Added auto save indicators showing "Menyimpan draft..." and "Draft tersimpan" status messages
 - **August 17, 2025**: Created auto save hook with localStorage persistence and 24-hour draft expiration
+- **August 17, 2025**: Added search functionality for employee name or NIK in QR Code generation page with real-time filtering
 - **August 17, 2025**: Updated shift system from "Pagi, Siang, Malam" to "Shift 1, Shift 2" across all components
 - **August 17, 2025**: Implemented time-based shift criteria: Shift 1 (06:00-18:00) and Shift 2 (18:00-06:00) with automatic shift detection during attendance
 - **QR Code System**: Implemented consistent token generation using stable employee-based tokens instead of timestamp-based
