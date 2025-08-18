@@ -53,6 +53,11 @@ Preferred communication style: Simple, everyday language.
 - **Real-time Dashboard**: Live attendance statistics with visual charts for management overview
 
 ### Recent Changes
+- **August 18, 2025**: Changed application color scheme from blue to red (#ff1100) - updated primary colors, accent colors, and chart colors across both light and dark themes
+- **August 18, 2025**: Fixed QR scan results to display roster-based time and shift instead of system-detected time
+- **August 18, 2025**: Implemented real-time report updates - reports now force refresh data before generation to ensure latest attendance data
+- **August 18, 2025**: Fixed PDF generation logic to group employees by scheduled shift rather than check-in time detection
+- **August 18, 2025**: Enhanced PDF reports to use actual attendance data (jam tidur, fit to work) instead of roster defaults
 - **August 17, 2025**: Added Excel upload functionality for roster management with bulk import capabilities
 - **August 17, 2025**: Implemented shift filter on roster page with options: "Semua Shift", "Shift 1 saja", "Shift 2 saja"  
 - **August 17, 2025**: Added template Excel download feature for roster data with proper NIK format examples
