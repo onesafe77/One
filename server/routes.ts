@@ -556,19 +556,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Employee ID and token are required" });
       }
 
-      // Check if employee exists
+      // Check if employee exists and get QR data directly (faster than separate queries)
       const employee = await storage.getEmployee(employeeId);
       if (!employee) {
         return res.status(404).json({ message: "Karyawan tidak ditemukan" });
       }
 
-      // Validate token
-      const isValid = await storage.validateQrToken(employeeId, token);
+      // Validate token directly from employee QR code (faster than database lookup)
+      let isValid = false;
+      if (employee.qrCode) {
+        try {
+          const qrData = JSON.parse(employee.qrCode);
+          isValid = qrData.token === token;
+        } catch (parseError) {
+          isValid = false;
+        }
+      }
+
       if (!isValid) {
         return res.status(400).json({ message: "Token QR tidak valid" });
       }
 
-      // Get today's roster for this employee
+      // Get today's roster for this employee (optimized query)
       const today = new Date().toISOString().split('T')[0];
       const todayRoster = await storage.getRosterByDate(today);
       const employeeRoster = todayRoster.find(r => r.employeeId === employeeId);
@@ -580,6 +589,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         message: "QR token is valid" 
       });
     } catch (error) {
+      console.error("QR validation error:", error);
       res.status(500).json({ message: "Failed to validate QR token" });
     }
   });

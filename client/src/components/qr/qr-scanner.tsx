@@ -7,7 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { validateQRData } from "@/lib/crypto-utils";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
-import { formatTimeWithShift, getCurrentShift } from "@/lib/shift-utils";
+import { determineShiftByTime, getCurrentShift } from "@/lib/shift-utils";
 import { Camera, CameraOff, CheckCircle, User, Clock, XCircle, Moon, Heart } from "lucide-react";
 import jsQR from "jsqr";
 
@@ -131,12 +131,14 @@ export function QRScanner() {
           minute: '2-digit'
         });
         
-        // Use roster time and shift if available, otherwise fall back to current time
+        // Always display roster time and shift if available
         let displayTime;
         if (result.roster) {
           displayTime = `${result.roster.startTime} - ${result.roster.endTime} (${result.roster.shift})`;
         } else {
-          displayTime = formatTimeWithShift(currentTime);
+          // Fallback to current time with detected shift
+          const shift = determineShiftByTime(currentTime);
+          displayTime = `${currentTime} (${shift})`;
         }
         
         const employeeData = {
@@ -204,8 +206,7 @@ export function QRScanner() {
           jamTidur: attendanceForm.jamTidur,
           fitToWork: attendanceForm.fitToWork,
           status: "present"
-        }),
-        credentials: "include"
+        })
       });
 
       if (!response.ok) {
@@ -221,16 +222,13 @@ export function QRScanner() {
         description: `✅ Absensi berhasil dicatat untuk ${scanResult.name}`,
       });
 
-      // Invalidate queries to refresh roster, attendance, and reports data
+      // Efficiently invalidate only necessary queries  
       const { queryClient } = await import("@/lib/queryClient");
-      queryClient.invalidateQueries({ queryKey: ["/api/attendance"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/roster"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/dashboard"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/employees"] });
       
-      // Force refresh all attendance and roster queries
-      await queryClient.refetchQueries({ queryKey: ["/api/attendance"] });
-      await queryClient.refetchQueries({ queryKey: ["/api/roster"] });
+      // Invalidate specific queries instead of all
+      queryClient.invalidateQueries({ queryKey: ["/api/attendance", today] });
+      queryClient.invalidateQueries({ queryKey: ["/api/dashboard", "stats"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/dashboard", "attendance-details"] });
       
       // Reset form and clear scan result after 3 seconds
       setTimeout(() => {
