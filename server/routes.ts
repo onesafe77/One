@@ -14,28 +14,28 @@ function determineShiftByTime(time: string): string {
   const [hours, minutes] = time.split(':').map(Number);
   const totalMinutes = hours * 60 + minutes;
   
-  // Shift 1: 06:00:00 - 18:00:00 (360 - 1080 minutes)
-  // Shift 2: 18:00:00 - 06:00:00 (1080 - 360 minutes next day)
+  // Berdasarkan data roster sesungguhnya:
+  // Shift 1: 08:00-16:00 (480 - 960 minutes)
+  // Shift 2: 18:00-06:00 (1080 - 360 minutes next day)
   
-  if (totalMinutes >= 360 && totalMinutes < 1080) {
+  if (totalMinutes >= 480 && totalMinutes < 1080) {
     return "Shift 1";
   } else {
     return "Shift 2";
   }
 }
 
-// Allow flexible check-in timing - more permissive for testing and real-world usage
+// Kriteria check-in berdasarkan data roster sesungguhnya
 function isWithinShiftTransitionPeriod(currentTime: string, scheduledShift: string): boolean {
   const [hours, minutes] = currentTime.split(':').map(Number);
   const totalMinutes = hours * 60 + minutes;
   
   if (scheduledShift === "Shift 1") {
-    // Shift 1: 06:00-18:00, allow check-in anytime during business hours (06:00-18:00)
-    return totalMinutes >= 360 && totalMinutes <= 1080; // 6:00 AM to 6:00 PM
+    // Shift 1: 08:00-16:00, allow check-in from 07:00 to 17:00 (flexible 1 hour window)
+    return totalMinutes >= 420 && totalMinutes <= 1020; // 7:00 AM to 5:00 PM
   } else if (scheduledShift === "Shift 2") {
-    // Shift 2: 18:00-06:00, allow check-in for night shift with extended flexibility
-    // Allow check-in from 12:00 PM onwards (for early preparation) and until 8:00 AM next day
-    return totalMinutes >= 720 || totalMinutes <= 480; // 12:00 PM to 8:00 AM next day
+    // Shift 2: 18:00-06:00, allow check-in from 17:00 to 07:00 next day (flexible 1 hour window)
+    return totalMinutes >= 1020 || totalMinutes <= 420; // 5:00 PM to 7:00 AM next day
   }
   
   return true; // Default to allow if shift is not recognized
