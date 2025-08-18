@@ -111,6 +111,7 @@ export class MemStorage implements IStorage {
       ...insertEmployee,
       id,
       position: insertEmployee.position || null,
+      nomorLambung: insertEmployee.nomorLambung || null,
       department: insertEmployee.department || null,
       investorGroup: insertEmployee.investorGroup || null,
       status: insertEmployee.status || "active",
@@ -162,6 +163,8 @@ export class MemStorage implements IStorage {
     const record: AttendanceRecord = {
       id: randomUUID(),
       ...insertRecord,
+      jamTidur: insertRecord.jamTidur || null,
+      fitToWork: insertRecord.fitToWork || null,
       status: insertRecord.status || "present",
       createdAt: new Date()
     };

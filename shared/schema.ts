@@ -20,6 +20,8 @@ export const attendanceRecords = pgTable("attendance_records", {
   employeeId: varchar("employee_id").notNull().references(() => employees.id),
   date: text("date").notNull(),
   time: text("time").notNull(),
+  jamTidur: text("jam_tidur"), // Jam tidur karyawan
+  fitToWork: text("fit_to_work"), // Status fit to work
   status: text("status").notNull().default("present"),
   createdAt: timestamp("created_at").default(sql`now()`),
 });

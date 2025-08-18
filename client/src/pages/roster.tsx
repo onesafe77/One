@@ -37,7 +37,7 @@ export default function Roster() {
     queryKey: ["/api/employees"],
   });
 
-  const { data: rosterSchedules = [], isLoading: isLoadingRoster } = useQuery<RosterSchedule[]>({
+  const { data: rosterSchedules = [], isLoading: isLoadingRoster } = useQuery<any[]>({
     queryKey: ["/api/roster", selectedDate],
     queryFn: async () => {
       const response = await fetch(`/api/roster?date=${selectedDate}`);
@@ -318,14 +318,6 @@ export default function Roster() {
     return employees.find(emp => emp.id === employeeId)?.name || 'Unknown';
   };
 
-  const getAttendanceStatus = (employeeId: string) => {
-    const attendanceRecord = attendance.find(att => att.employeeId === employeeId);
-    return attendanceRecord ? {
-      status: 'present',
-      time: attendanceRecord.time
-    } : { status: 'absent', time: null };
-  };
-
   const filteredRosterSchedules = rosterSchedules.filter(roster => {
     if (shiftFilter === "all") return true;
     return roster.shift === shiftFilter;
@@ -334,7 +326,10 @@ export default function Roster() {
   const rosterWithAttendance = filteredRosterSchedules.map(roster => ({
     ...roster,
     employee: employees.find(emp => emp.id === roster.employeeId),
-    attendance: getAttendanceStatus(roster.employeeId)
+    attendance: {
+      status: roster.hasAttended ? 'present' : 'absent',
+      time: roster.attendanceTime
+    }
   }));
 
   const stats = {
@@ -822,25 +817,25 @@ export default function Roster() {
                       {roster.shift}
                     </td>
                     <td className="py-3 px-4 text-sm text-gray-900 dark:text-white">
-                      {roster.jamTidur || '-'} jam
+                      {roster.actualJamTidur || roster.jamTidur || '-'} jam
                     </td>
                     <td className="py-3 px-4">
                       <Badge 
-                        variant={roster.fitToWork === "Fit To Work" ? "default" : "destructive"}
+                        variant={(roster.actualFitToWork || roster.fitToWork) === "Fit To Work" ? "default" : "destructive"}
                         data-testid={`roster-fit-to-work-${roster.employeeId}`}
                       >
-                        {roster.fitToWork || "Fit To Work"}
+                        {roster.actualFitToWork || roster.fitToWork || "Fit To Work"}
                       </Badge>
                     </td>
                     <td className="py-3 px-4">
                       <Badge 
-                        className={roster.attendance.status === 'present' ? 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300' : 'bg-gray-100 text-gray-700 dark:bg-gray-900 dark:text-gray-300'}
+                        className={roster.hasAttended ? 'bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300' : 'bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300'}
                       >
-                        {roster.attendance.status === 'present' ? 'Hadir' : 'Belum Hadir'}
+                        {roster.hasAttended ? 'Hadir' : 'Belum Hadir'}
                       </Badge>
                     </td>
                     <td className="py-3 px-4 text-sm text-gray-900 dark:text-white">
-                      {roster.attendance.time || '-'}
+                      {roster.attendanceTime || '-'}
                     </td>
                     <td className="py-3 px-4">
                       <div className="flex space-x-2">

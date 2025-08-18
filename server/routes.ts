@@ -228,8 +228,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!date) {
         return res.status(400).json({ message: "Date parameter is required" });
       }
+      
       const roster = await storage.getRosterByDate(date);
-      res.json(roster);
+      const attendance = await storage.getAllAttendance(date);
+      
+      // Enrich roster dengan data attendance
+      const enrichedRoster = roster.map(schedule => {
+        const attendanceRecord = attendance.find(att => att.employeeId === schedule.employeeId);
+        return {
+          ...schedule,
+          hasAttended: !!attendanceRecord,
+          attendanceTime: attendanceRecord?.time || null,
+          actualJamTidur: attendanceRecord?.jamTidur || schedule.jamTidur,
+          actualFitToWork: attendanceRecord?.fitToWork || schedule.fitToWork,
+          attendanceStatus: attendanceRecord ? "present" : "absent"
+        };
+      });
+      
+      res.json(enrichedRoster);
     } catch (error) {
       res.status(500).json({ message: "Failed to fetch roster" });
     }
