@@ -22,7 +22,7 @@ export default function Reports() {
   
   // Form fields for report header
   const [reportInfo, setReportInfo] = useState({
-    perusahaan: "PT Golden Energi Cemerlang Lestari",
+    perusahaan: "PT Bornoe Indobara",
     namaPengawas: "",
     hari: new Date().toLocaleDateString('id-ID', { weekday: 'long' }),
     tanggal: new Date().toLocaleDateString('id-ID'),
@@ -30,6 +30,7 @@ export default function Reports() {
     shift: "",
     tempat: "",
     diperiksaOleh: "",
+    catatan: "",
     tandaTangan: null as File | null
   });
   const { toast } = useToast();
@@ -338,6 +339,18 @@ export default function Reports() {
                 onChange={(e) => setReportInfo(prev => ({...prev, diperiksaOleh: e.target.value}))}
                 placeholder="Nama pengawas pool"
                 data-testid="input-diperiksa-oleh"
+              />
+            </div>
+
+            <div>
+              <Label className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                Catatan
+              </Label>
+              <Input
+                value={reportInfo.catatan || ""}
+                onChange={(e) => setReportInfo(prev => ({...prev, catatan: e.target.value}))}
+                placeholder="Catatan tambahan (opsional)"
+                data-testid="input-catatan"
               />
             </div>
 

@@ -11,6 +11,7 @@ interface ReportInfo {
   shift: string;
   tempat: string;
   diperiksaOleh: string;
+  catatan: string;
   tandaTangan: File | null;
 }
 
@@ -158,7 +159,7 @@ export async function generateAttendancePDF(data: ReportData): Promise<void> {
       yPosition = generateShiftSection(doc, data, 'Shift 2', yPosition, margin, pageWidth);
     }
     
-    // Summary at bottom
+    // Summary and notes at bottom
     if (yPosition < pageHeight - 80) {
       yPosition += 20;
       doc.setFontSize(10);
@@ -175,6 +176,14 @@ export async function generateAttendancePDF(data: ReportData): Promise<void> {
       
       const summaryText = `Ringkasan ${targetShift}: Dijadwalkan: ${shiftScheduled.length} | Hadir: ${shiftAttended} | Tidak Hadir: ${shiftAbsent}`;
       doc.text(summaryText, margin, yPosition);
+      
+      // Add notes if provided
+      if (data.reportInfo?.catatan && data.reportInfo.catatan.trim()) {
+        yPosition += 15;
+        doc.setFont('helvetica', 'normal');
+        doc.setFontSize(9);
+        doc.text(`Catatan: ${data.reportInfo.catatan}`, margin, yPosition);
+      }
     }
     
     // Footer
@@ -214,7 +223,7 @@ function generateShiftSection(
   doc.setFontSize(8);
   doc.setFont('helvetica', 'bold');
   const headers = ['Jam Masuk', 'Nama', 'NIK', 'Shift', 'Position', 'Nomor Lambung', 'Jam Tidur', 'Fit To Work', 'Status'];
-  const columnWidths = [30, 50, 30, 18, 40, 40, 25, 30, 25];
+  const columnWidths = [28, 48, 28, 16, 38, 38, 22, 28, 32];
   let xPosition = margin;
   
   // Draw complete table border first
