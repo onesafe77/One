@@ -817,7 +817,7 @@ export default function Roster() {
                       {roster.shift}
                     </td>
                     <td className="py-3 px-4 text-sm text-gray-900 dark:text-white">
-                      {roster.actualJamTidur || roster.jamTidur || '-'} jam
+                      {roster.actualJamTidur || roster.jamTidur || '-'}
                     </td>
                     <td className="py-3 px-4">
                       <Badge 

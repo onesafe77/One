@@ -271,7 +271,7 @@ export default function Dashboard() {
                         </div>
                         {detail.hasAttended && detail.jamTidur !== '-' && (
                           <div className="text-xs text-gray-500 dark:text-gray-400">
-                            Tidur: {detail.jamTidur} jam
+                            Tidur: {detail.jamTidur}
                           </div>
                         )}
                       </td>

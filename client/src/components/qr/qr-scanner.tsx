@@ -448,12 +448,12 @@ export function QRScanner() {
                         required
                       >
                         <option value="">Pilih jam tidur</option>
-                        <option value="4">4 jam</option>
-                        <option value="5">5 jam</option>
-                        <option value="6">6 jam</option>
-                        <option value="7">7 jam</option>
-                        <option value="8">8 jam</option>
-                        <option value="8+">8+ jam</option>
+                        <option value="4">4</option>
+                        <option value="5">5</option>
+                        <option value="6">6</option>
+                        <option value="7">7</option>
+                        <option value="8">8</option>
+                        <option value="8+">8+</option>
                       </select>
                     </div>
                     
