@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -7,13 +7,14 @@ import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { insertLeaveRequestSchema } from "@shared/schema";
 import type { Employee, LeaveRequest, InsertLeaveRequest } from "@shared/schema";
-import { CalendarDays, Clock, CheckCircle, XCircle } from "lucide-react";
+import { CalendarDays, Clock, CheckCircle, XCircle, Eye, User, Phone } from "lucide-react";
 import { z } from "zod";
 
 const formSchema = insertLeaveRequestSchema;
@@ -34,6 +35,8 @@ export default function Leave() {
     resolver: zodResolver(formSchema),
     defaultValues: {
       employeeId: "",
+      employeeName: "",
+      phoneNumber: "",
       startDate: "",
       endDate: "",
       leaveType: "",
@@ -41,6 +44,18 @@ export default function Leave() {
       status: "pending",
     },
   });
+
+  // Auto-fill nama dan nomor WhatsApp berdasarkan employee selection
+  const selectedEmployeeId = form.watch("employeeId");
+  useEffect(() => {
+    if (selectedEmployeeId && employees.length > 0) {
+      const selectedEmployee = employees.find(emp => emp.id === selectedEmployeeId);
+      if (selectedEmployee) {
+        form.setValue("employeeName", selectedEmployee.name);
+        form.setValue("phoneNumber", selectedEmployee.phone || "");
+      }
+    }
+  }, [selectedEmployeeId, employees, form]);
 
   const createMutation = useMutation({
     mutationFn: (data: InsertLeaveRequest) => apiRequest("POST", "/api/leave", data),
@@ -158,6 +173,46 @@ export default function Leave() {
                         ))}
                       </SelectContent>
                     </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="employeeName"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Nama Lengkap</FormLabel>
+                    <FormControl>
+                      <Input 
+                        {...field}
+                        placeholder="Nama akan terisi otomatis"
+                        readOnly
+                        className="bg-gray-50 dark:bg-gray-800"
+                        data-testid="leave-employee-name"
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="phoneNumber"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Nomor WhatsApp</FormLabel>
+                    <FormControl>
+                      <Input 
+                        {...field}
+                        placeholder="Nomor akan terisi otomatis"
+                        readOnly
+                        className="bg-gray-50 dark:bg-gray-800"
+                        data-testid="leave-phone-number"
+                      />
+                    </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
@@ -346,15 +401,111 @@ export default function Leave() {
                             </Button>
                           </div>
                         ) : (
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            className="text-blue-600 hover:text-blue-700"
-                            data-testid={`view-leave-${request.id}`}
-                          >
-                            <CalendarDays className="w-4 h-4 mr-1" />
-                            Detail
-                          </Button>
+                          <Dialog>
+                            <DialogTrigger asChild>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                className="text-blue-600 hover:text-blue-700"
+                                data-testid={`detail-leave-${request.id}`}
+                              >
+                                <Eye className="w-4 h-4 mr-1" />
+                                Detail
+                              </Button>
+                            </DialogTrigger>
+                            <DialogContent className="max-w-md">
+                              <DialogHeader>
+                                <DialogTitle>Detail Pengajuan Cuti</DialogTitle>
+                              </DialogHeader>
+                              <div className="space-y-4">
+                                <div className="flex items-center space-x-2">
+                                  <User className="w-4 h-4 text-gray-500" />
+                                  <div>
+                                    <p className="font-medium">{request.employeeName || getEmployeeName(request.employeeId)}</p>
+                                    <p className="text-sm text-gray-500">{request.employeeId}</p>
+                                  </div>
+                                </div>
+                                
+                                {request.phoneNumber && (
+                                  <div className="flex items-center space-x-2">
+                                    <Phone className="w-4 h-4 text-gray-500" />
+                                    <p className="text-sm">{request.phoneNumber}</p>
+                                  </div>
+                                )}
+                                
+                                <div className="flex items-center space-x-2">
+                                  <CalendarDays className="w-4 h-4 text-gray-500" />
+                                  <div>
+                                    <p className="text-sm">
+                                      {new Date(request.startDate).toLocaleDateString('id-ID', {
+                                        weekday: 'long',
+                                        year: 'numeric',
+                                        month: 'long',
+                                        day: 'numeric'
+                                      })}
+                                    </p>
+                                    <p className="text-sm">s/d</p>
+                                    <p className="text-sm">
+                                      {new Date(request.endDate).toLocaleDateString('id-ID', {
+                                        weekday: 'long',
+                                        year: 'numeric',
+                                        month: 'long',
+                                        day: 'numeric'
+                                      })}
+                                    </p>
+                                  </div>
+                                </div>
+                                
+                                <div className="flex items-center space-x-2">
+                                  <Clock className="w-4 h-4 text-gray-500" />
+                                  <div>
+                                    <p className="text-sm font-medium">{getLeaveTypeLabel(request.leaveType)}</p>
+                                    <p className="text-sm text-gray-500">
+                                      Durasi: {calculateDays(request.startDate, request.endDate)} hari
+                                    </p>
+                                  </div>
+                                </div>
+                                
+                                {request.reason && (
+                                  <div>
+                                    <p className="font-medium text-sm mb-1">Keterangan:</p>
+                                    <p className="text-sm text-gray-600 dark:text-gray-400 bg-gray-50 dark:bg-gray-800 p-3 rounded-lg">
+                                      {request.reason}
+                                    </p>
+                                  </div>
+                                )}
+                                
+                                <div className="flex items-center justify-between pt-4 border-t">
+                                  <span className="text-sm text-gray-500">Status:</span>
+                                  {getStatusBadge(request.status)}
+                                </div>
+                                
+                                {request.status === 'pending' && (
+                                  <div className="flex space-x-2 pt-2">
+                                    <Button
+                                      size="sm"
+                                      onClick={() => handleApprove(request.id)}
+                                      disabled={updateStatusMutation.isPending}
+                                      className="flex-1 bg-green-600 hover:bg-green-700"
+                                    >
+                                      <CheckCircle className="w-4 h-4 mr-1" />
+                                      Setujui
+                                    </Button>
+                                    <Button
+                                      size="sm"
+                                      variant="destructive"
+                                      onClick={() => handleReject(request.id)}
+                                      disabled={updateStatusMutation.isPending}
+                                      className="flex-1"
+                                    >
+                                      <XCircle className="w-4 h-4 mr-1" />
+                                      Tolak
+                                    </Button>
+                                  </div>
+                                )}
+                              </div>
+                            </DialogContent>
+                          </Dialog>
                         )}
                       </td>
                     </tr>

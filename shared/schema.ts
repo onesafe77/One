@@ -42,6 +42,8 @@ export const rosterSchedules = pgTable("roster_schedules", {
 export const leaveRequests = pgTable("leave_requests", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   employeeId: varchar("employee_id").notNull().references(() => employees.id),
+  employeeName: text("employee_name").notNull(),
+  phoneNumber: text("phone_number").notNull(),
   startDate: text("start_date").notNull(),
   endDate: text("end_date").notNull(),
   leaveType: text("leave_type").notNull(),
