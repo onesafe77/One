@@ -73,7 +73,22 @@ export function ObjectUploader({
     })
       .use(AwsS3, {
         shouldUseMultipart: false,
-        getUploadParameters: onGetUploadParameters,
+        getUploadParameters: async (file) => {
+          try {
+            const params = await onGetUploadParameters();
+            return {
+              method: params.method,
+              url: params.url,
+              fields: {},
+              headers: {
+                'Content-Type': file.type || 'application/pdf',
+              },
+            };
+          } catch (error) {
+            console.error('Error getting upload parameters:', error);
+            throw error;
+          }
+        },
       })
       .on("complete", (result) => {
         onComplete?.(result);

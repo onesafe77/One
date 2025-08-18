@@ -111,11 +111,24 @@ export default function Leave() {
   };
 
   const handleGetUploadParameters = async () => {
-    const response: any = await apiRequest("POST", "/api/objects/upload");
-    return {
-      method: 'PUT' as const,
-      url: response.uploadURL,
-    };
+    try {
+      setIsUploading(true);
+      const response: any = await apiRequest("POST", "/api/objects/upload");
+      console.log('Upload parameters response:', response);
+      return {
+        method: 'PUT' as const,
+        url: response.uploadURL,
+      };
+    } catch (error) {
+      setIsUploading(false);
+      console.error('Error getting upload parameters:', error);
+      toast({
+        title: "Error",
+        description: "Gagal mendapatkan URL upload",
+        variant: "destructive",
+      });
+      throw error;
+    }
   };
 
   const handleUploadComplete = async (result: UploadResult<Record<string, unknown>, Record<string, unknown>>) => {
