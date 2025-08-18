@@ -70,7 +70,26 @@ export default function Reports() {
           return;
         }
 
-        const filteredAttendance = attendance.filter(record => {
+        // Force refresh data before generating report to ensure latest attendance data
+        const { queryClient } = await import("@/lib/queryClient");
+        
+        console.log("Refreshing data before generating report...");
+        
+        // Force refresh all data
+        await queryClient.refetchQueries({ queryKey: ["/api/attendance"] });
+        await queryClient.refetchQueries({ queryKey: ["/api/roster"] });
+        await queryClient.refetchQueries({ queryKey: ["/api/employees"] });
+        
+        // Get fresh data directly from server
+        const [freshAttendance, freshRoster] = await Promise.all([
+          fetch(`/api/attendance?date=${startDate}`).then(res => res.json()),
+          fetch(`/api/roster?date=${startDate}`).then(res => res.json())
+        ]);
+
+        console.log("Fresh attendance data:", freshAttendance);
+        console.log("Fresh roster data:", freshRoster);
+
+        const filteredAttendance = freshAttendance.filter((record: any) => {
           return record.date >= startDate && record.date <= endDate;
         });
 
@@ -78,7 +97,7 @@ export default function Reports() {
           generateAttendancePDF({
             employees,
             attendance: filteredAttendance,
-            roster,
+            roster: freshRoster,
             startDate,
             endDate,
             reportType: "attendance",
