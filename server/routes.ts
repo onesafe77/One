@@ -24,6 +24,22 @@ function determineShiftByTime(time: string): string {
   }
 }
 
+// Allow flexible check-in timing with transition periods
+function isWithinShiftTransitionPeriod(currentTime: string, scheduledShift: string): boolean {
+  const [hours, minutes] = currentTime.split(':').map(Number);
+  const totalMinutes = hours * 60 + minutes;
+  
+  if (scheduledShift === "Shift 1") {
+    // Allow Shift 1 check-in from 05:00 to 19:00 (more flexible window)
+    return totalMinutes >= 300 && totalMinutes <= 1140; // 5:00 AM to 7:00 PM
+  } else if (scheduledShift === "Shift 2") {
+    // Allow Shift 2 check-in from 17:00 to 07:00 (next day)
+    return totalMinutes >= 1020 || totalMinutes <= 420; // 5:00 PM to 7:00 AM
+  }
+  
+  return false;
+}
+
 export async function registerRoutes(app: Express): Promise<Server> {
   // Employee routes
   app.get("/api/employees", async (req, res) => {
@@ -172,24 +188,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Karyawan sudah melakukan absensi hari ini" });
       }
 
-      // Determine shift based on check-in time
-      const detectedShift = determineShiftByTime(validatedData.time);
-      
-      // Check if employee is scheduled for today and correct shift
+      // Check if employee is scheduled for today
       const roster = await storage.getRosterByDate(validatedData.date);
-      const scheduledForShift = roster.find(r => 
-        r.employeeId === validatedData.employeeId && r.shift === detectedShift
-      );
+      const scheduledEmployee = roster.find(r => r.employeeId === validatedData.employeeId);
       
-      if (!scheduledForShift) {
-        const isScheduledAnyShift = roster.some(r => r.employeeId === validatedData.employeeId);
-        if (!isScheduledAnyShift) {
-          return res.status(400).json({ message: "Karyawan tidak dijadwalkan untuk hari ini" });
-        } else {
-          return res.status(400).json({ 
-            message: `Karyawan dijadwalkan untuk shift yang berbeda. Waktu check-in ${validatedData.time} menunjukkan ${detectedShift}, tetapi karyawan dijadwalkan untuk shift yang berbeda.` 
-          });
-        }
+      if (!scheduledEmployee) {
+        return res.status(400).json({ message: "Karyawan tidak dijadwalkan untuk hari ini" });
+      }
+
+      // Get current time to determine appropriate shift for validation
+      const now = new Date();
+      const currentTime = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
+      const detectedShift = determineShiftByTime(currentTime);
+      
+      // More flexible shift validation: allow check-in if:
+      // 1. Employee is scheduled for the detected shift, OR
+      // 2. It's within shift transition period (allow some flexibility)
+      const isValidShiftTiming = 
+        scheduledEmployee.shift === detectedShift || 
+        isWithinShiftTransitionPeriod(currentTime, scheduledEmployee.shift);
+      
+      if (!isValidShiftTiming) {
+        return res.status(400).json({ 
+          message: `Karyawan dijadwalkan untuk ${scheduledEmployee.shift}. Waktu check-in saat ini (${currentTime}) tidak sesuai dengan jadwal shift yang ditentukan.` 
+        });
       }
 
       const record = await storage.createAttendanceRecord(validatedData);
