@@ -208,31 +208,45 @@ function generateShiftSection(
   yPosition += 15;
   
   // Table headers with better spacing and alignment
-  doc.setFontSize(9);
+  doc.setFontSize(8);
   doc.setFont('helvetica', 'bold');
   const headers = ['Jam Masuk', 'Nama', 'NIK', 'Shift', 'Position', 'Nomor Lambung', 'Jam Tidur', 'Fit To Work', 'Status'];
-  const columnWidths = [28, 42, 28, 20, 35, 35, 25, 30, 25];
+  const columnWidths = [30, 50, 30, 18, 40, 40, 25, 30, 25];
   let xPosition = margin;
   
+  // Draw complete table border first
+  const tableWidth = columnWidths.reduce((sum, width) => sum + width, 0);
+  const tableHeight = (scheduledEmployees.length + 1) * 12; // +1 for header
+  
+  // Table background for better readability
+  doc.setFillColor(255, 255, 255); // White background
+  doc.rect(margin, yPosition - 8, tableWidth, tableHeight, 'F');
+  
+  // Draw table border
+  doc.setLineWidth(0.5);
+  doc.rect(margin, yPosition - 8, tableWidth, tableHeight);
+  
   // Draw table header background
-  doc.setFillColor(240, 240, 240); // Light gray background
-  doc.rect(margin, yPosition - 8, pageWidth - 2 * margin, 12, 'F');
+  doc.setFillColor(220, 220, 220); // Darker gray for header
+  doc.rect(margin, yPosition - 8, tableWidth, 12, 'F');
   doc.setTextColor(0, 0, 0); // Black text
   
+  // Draw vertical grid lines for header
+  let currentX = margin;
   headers.forEach((header, index) => {
-    // Draw vertical lines for table structure
-    if (index === 0) {
-      doc.line(margin, yPosition - 8, margin, yPosition + 4);
-    }
-    doc.text(header, xPosition + 2, yPosition);
-    xPosition += columnWidths[index];
-    doc.line(xPosition, yPosition - 8, xPosition, yPosition + 4);
+    // Center align header text
+    const textWidth = doc.getTextWidth(header);
+    const centerX = currentX + (columnWidths[index] - textWidth) / 2;
+    doc.text(header, centerX, yPosition);
+    
+    currentX += columnWidths[index];
+    // Draw vertical line after each column
+    doc.line(currentX, yPosition - 8, currentX, yPosition - 8 + tableHeight);
   });
   
-  // Draw horizontal line below header
-  doc.line(margin, yPosition + 4, pageWidth - margin, yPosition + 4);
   yPosition += 12;
   doc.setFont('helvetica', 'normal');
+  doc.setFontSize(8);
   
   // Get scheduled employees for this shift
   const scheduledEmployees = data.roster?.filter(r => r.shift === shiftName && r.date === data.startDate) || [];
@@ -265,18 +279,26 @@ function generateShiftSection(
         attendanceStatus
       ];
       
+      // Alternate row background for better readability
+      if ((scheduledEmployees.indexOf(scheduleRecord) + 1) % 2 === 0) {
+        doc.setFillColor(248, 248, 248); // Very light gray for even rows
+        doc.rect(margin, yPosition - 6, tableWidth, 12, 'F');
+      }
+      
       rowData.forEach((data, index) => {
-        // Draw vertical lines for table structure
-        if (index === 0) {
-          doc.line(margin, yPosition - 5, margin, yPosition + 5);
+        // Center align text in each cell (except name which is left-aligned)
+        if (index === 1) { // Name column - left align
+          doc.text(data, xPosition + 2, yPosition);
+        } else {
+          const textWidth = doc.getTextWidth(data);
+          const centerX = xPosition + (columnWidths[index] - textWidth) / 2;
+          doc.text(data, centerX, yPosition);
         }
-        doc.text(data, xPosition + 2, yPosition);
         xPosition += columnWidths[index];
-        doc.line(xPosition, yPosition - 5, xPosition, yPosition + 5);
       });
       
-      // Draw horizontal line below row
-      doc.line(margin, yPosition + 5, pageWidth - margin, yPosition + 5);
+      // Draw horizontal line below each row
+      doc.line(margin, yPosition + 6, margin + tableWidth, yPosition + 6);
     } else {
       // Employee didn't attend - show as absent
       const rowData = [
@@ -291,22 +313,30 @@ function generateShiftSection(
         'Tidak Hadir' // Status
       ];
       
+      // Alternate row background for better readability
+      if ((scheduledEmployees.indexOf(scheduleRecord) + 1) % 2 === 0) {
+        doc.setFillColor(248, 248, 248); // Very light gray for even rows
+        doc.rect(margin, yPosition - 6, tableWidth, 12, 'F');
+      }
+      
       rowData.forEach((data, index) => {
-        // Draw vertical lines for table structure
-        if (index === 0) {
-          doc.line(margin, yPosition - 5, margin, yPosition + 5);
+        // Center align text in each cell (except name which is left-aligned)
+        if (index === 1) { // Name column - left align
+          doc.text(data, xPosition + 2, yPosition);
+        } else {
+          const textWidth = doc.getTextWidth(data);
+          const centerX = xPosition + (columnWidths[index] - textWidth) / 2;
+          doc.text(data, centerX, yPosition);
         }
-        doc.text(data, xPosition + 2, yPosition);
         xPosition += columnWidths[index];
-        doc.line(xPosition, yPosition - 5, xPosition, yPosition + 5);
       });
       
-      // Draw horizontal line below row
-      doc.line(margin, yPosition + 5, pageWidth - margin, yPosition + 5);
+      // Draw horizontal line below each row
+      doc.line(margin, yPosition + 6, margin + tableWidth, yPosition + 6);
     }
     
     
-    yPosition += 12;
+    yPosition += 14;
     
     // Check if we need a new page
     if (yPosition > doc.internal.pageSize.height - 40) {
@@ -316,8 +346,8 @@ function generateShiftSection(
   });
   
   // Add shift summary
-  yPosition += 15;
-  doc.setFontSize(10);
+  yPosition += 20;
+  doc.setFontSize(9);
   doc.setFont('helvetica', 'bold');
   
   const attendedCount = scheduledEmployees.filter(scheduleRecord => {
