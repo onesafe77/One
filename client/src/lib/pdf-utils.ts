@@ -207,6 +207,9 @@ function generateShiftSection(
   doc.text(shiftName.toUpperCase(), margin, yPosition);
   yPosition += 15;
   
+  // Get scheduled employees for this shift first
+  const scheduledEmployees = data.roster?.filter(r => r.shift === shiftName && r.date === data.startDate) || [];
+  
   // Table headers with better spacing and alignment
   doc.setFontSize(8);
   doc.setFont('helvetica', 'bold');
@@ -247,9 +250,6 @@ function generateShiftSection(
   yPosition += 12;
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(8);
-  
-  // Get scheduled employees for this shift
-  const scheduledEmployees = data.roster?.filter(r => r.shift === shiftName && r.date === data.startDate) || [];
   
   // Process scheduled employees and check if they attended
   scheduledEmployees.forEach(scheduleRecord => {
