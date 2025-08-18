@@ -46,10 +46,10 @@ export async function generateAttendancePDF(data: ReportData): Promise<void> {
     
     let yPosition = 20;
     
-    // Company Header - PT Borneo Indobara
+    // Company Header - PT Goden Energi Cemerlang Lestari
     doc.setFontSize(12);
     doc.setFont('helvetica', 'bold');
-    doc.text('PT Borneo Indobara', margin, yPosition);
+    doc.text('PT Goden Energi Cemerlang Lestari', margin, yPosition);
     yPosition += 25;
     
     // Main Title
@@ -86,7 +86,7 @@ export async function generateAttendancePDF(data: ReportData): Promise<void> {
       
       doc.text('Perusahaan', leftX, leftY);
       doc.text(':', leftX + labelWidth, leftY);
-      doc.text('PT Borneo Indobara', leftX + labelWidth + 5, leftY);
+      doc.text('PT Goden Energi Cemerlang Lestari', leftX + labelWidth + 5, leftY);
       leftY += 10;
       
       doc.text('Nama Pengawas', leftX, leftY);
