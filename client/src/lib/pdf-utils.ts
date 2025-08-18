@@ -59,56 +59,75 @@ export async function generateAttendancePDF(data: ReportData): Promise<void> {
     doc.text(title, pageWidth / 2, yPosition, { align: 'center' });
     yPosition += 20;
     
-    // Form Information
+    // Form Information in a more structured layout
     if (data.reportInfo) {
       doc.setFontSize(10);
       doc.setFont('helvetica', 'normal');
       
+      // Draw a border around the information section
+      const infoBoxY = yPosition;
+      const infoBoxHeight = 80;
+      doc.rect(margin, infoBoxY, pageWidth - 2 * margin, infoBoxHeight);
+      
       // Left column information
-      const leftX = margin;
-      const rightX = pageWidth - 120;
-      let leftY = yPosition;
+      const leftX = margin + 10;
+      const rightX = pageWidth - 140;
+      const labelWidth = 50;
+      let leftY = yPosition + 15;
       
-      // Left column
-      doc.text('Perusahaan:', leftX, leftY);
-      doc.text(data.reportInfo.perusahaan || '-', leftX + 40, leftY);
-      leftY += 15;
+      // Left column with aligned layout
+      doc.text('Perusahaan', leftX, leftY);
+      doc.text(':', leftX + labelWidth, leftY);
+      doc.text(data.reportInfo.perusahaan || '-', leftX + labelWidth + 10, leftY);
+      leftY += 12;
       
-      doc.text('Nama Pengawas:', leftX, leftY);
-      doc.text(data.reportInfo.namaPengawas || '-', leftX + 40, leftY);
-      leftY += 15;
+      doc.text('Nama Pengawas', leftX, leftY);
+      doc.text(':', leftX + labelWidth, leftY);
+      doc.text(data.reportInfo.namaPengawas || '-', leftX + labelWidth + 10, leftY);
+      leftY += 12;
       
-      doc.text('Hari/Tanggal/Waktu:', leftX, leftY);
+      doc.text('Hari/Tanggal/Waktu', leftX, leftY);
+      doc.text(':', leftX + labelWidth, leftY);
       const dateTimeInfo = `${data.reportInfo.hari}, ${data.reportInfo.tanggal} / ${data.reportInfo.waktu}`;
-      doc.text(dateTimeInfo || '-', leftX + 40, leftY);
-      leftY += 15;
+      doc.text(dateTimeInfo || '-', leftX + labelWidth + 10, leftY);
+      leftY += 12;
       
-      doc.text('Shift:', leftX, leftY);
-      doc.text(data.reportInfo.shift || '-', leftX + 40, leftY);
-      leftY += 15;
+      doc.text('Shift', leftX, leftY);
+      doc.text(':', leftX + labelWidth, leftY);
+      doc.text(data.reportInfo.shift || '-', leftX + labelWidth + 10, leftY);
+      leftY += 12;
       
-      doc.text('Tempat:', leftX, leftY);
-      doc.text(data.reportInfo.tempat || '-', leftX + 40, leftY);
+      doc.text('Tempat', leftX, leftY);
+      doc.text(':', leftX + labelWidth, leftY);
+      doc.text(data.reportInfo.tempat || '-', leftX + labelWidth + 10, leftY);
       
-      // Right column - Signature area
-      doc.text('Diperiksa Oleh,', rightX, yPosition);
+      // Right column - Signature area with border
+      const sigBoxX = rightX;
+      const sigBoxY = infoBoxY + 10;
+      const sigBoxWidth = 100;
+      const sigBoxHeight = 60;
+      
+      doc.rect(sigBoxX, sigBoxY, sigBoxWidth, sigBoxHeight);
+      doc.text('Diperiksa Oleh,', sigBoxX + 5, sigBoxY + 10);
       
       // Add signature image if provided
       if (data.reportInfo.tandaTangan) {
         try {
           const base64Data = await fileToBase64(data.reportInfo.tandaTangan);
-          doc.addImage(base64Data, 'JPEG', rightX, yPosition + 10, 60, 30);
+          doc.addImage(base64Data, 'JPEG', sigBoxX + 5, sigBoxY + 15, 50, 25);
         } catch (error) {
           console.warn('Failed to add signature:', error);
-          doc.text('(Tanda Tangan)', rightX + 10, yPosition + 25);
+          doc.text('(Tanda Tangan)', sigBoxX + 20, sigBoxY + 30);
         }
       }
       
       // Signature line and name
-      doc.line(rightX, yPosition + 45, rightX + 80, yPosition + 45);
-      doc.text(data.reportInfo.diperiksaOleh || 'Pengawas Pool', rightX, yPosition + 55);
+      doc.line(sigBoxX + 5, sigBoxY + 45, sigBoxX + 85, sigBoxY + 45);
+      doc.setFontSize(8);
+      doc.text(data.reportInfo.diperiksaOleh || 'Pengawas Pool', sigBoxX + 5, sigBoxY + 52);
+      doc.setFontSize(10);
       
-      yPosition = leftY + 30;
+      yPosition = infoBoxY + infoBoxHeight + 20;
     }
     
     // Date
@@ -188,20 +207,30 @@ function generateShiftSection(
   doc.text(shiftName.toUpperCase(), margin, yPosition);
   yPosition += 15;
   
-  // Table headers with Position, Nomor Lambung and Status columns (updated for new employee structure)
+  // Table headers with better spacing and alignment
   doc.setFontSize(9);
   doc.setFont('helvetica', 'bold');
   const headers = ['Jam Masuk', 'Nama', 'NIK', 'Shift', 'Position', 'Nomor Lambung', 'Jam Tidur', 'Fit To Work', 'Status'];
-  const columnWidths = [25, 40, 25, 18, 28, 28, 22, 28, 22];
+  const columnWidths = [28, 42, 28, 20, 35, 35, 25, 30, 25];
   let xPosition = margin;
   
+  // Draw table header background
+  doc.setFillColor(240, 240, 240); // Light gray background
+  doc.rect(margin, yPosition - 8, pageWidth - 2 * margin, 12, 'F');
+  doc.setTextColor(0, 0, 0); // Black text
+  
   headers.forEach((header, index) => {
-    doc.text(header, xPosition, yPosition);
+    // Draw vertical lines for table structure
+    if (index === 0) {
+      doc.line(margin, yPosition - 8, margin, yPosition + 4);
+    }
+    doc.text(header, xPosition + 2, yPosition);
     xPosition += columnWidths[index];
+    doc.line(xPosition, yPosition - 8, xPosition, yPosition + 4);
   });
   
-  // Draw header line
-  doc.line(margin, yPosition + 3, pageWidth - margin, yPosition + 3);
+  // Draw horizontal line below header
+  doc.line(margin, yPosition + 4, pageWidth - margin, yPosition + 4);
   yPosition += 12;
   doc.setFont('helvetica', 'normal');
   
@@ -237,9 +266,17 @@ function generateShiftSection(
       ];
       
       rowData.forEach((data, index) => {
-        doc.text(data, xPosition, yPosition);
+        // Draw vertical lines for table structure
+        if (index === 0) {
+          doc.line(margin, yPosition - 5, margin, yPosition + 5);
+        }
+        doc.text(data, xPosition + 2, yPosition);
         xPosition += columnWidths[index];
+        doc.line(xPosition, yPosition - 5, xPosition, yPosition + 5);
       });
+      
+      // Draw horizontal line below row
+      doc.line(margin, yPosition + 5, pageWidth - margin, yPosition + 5);
     } else {
       // Employee didn't attend - show as absent
       const rowData = [
@@ -255,13 +292,21 @@ function generateShiftSection(
       ];
       
       rowData.forEach((data, index) => {
-        doc.text(data, xPosition, yPosition);
+        // Draw vertical lines for table structure
+        if (index === 0) {
+          doc.line(margin, yPosition - 5, margin, yPosition + 5);
+        }
+        doc.text(data, xPosition + 2, yPosition);
         xPosition += columnWidths[index];
+        doc.line(xPosition, yPosition - 5, xPosition, yPosition + 5);
       });
+      
+      // Draw horizontal line below row
+      doc.line(margin, yPosition + 5, pageWidth - margin, yPosition + 5);
     }
     
     
-    yPosition += 10;
+    yPosition += 12;
     
     // Check if we need a new page
     if (yPosition > doc.internal.pageSize.height - 40) {
