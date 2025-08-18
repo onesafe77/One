@@ -48,6 +48,7 @@ export function QRScanner() {
       setIsScanning(true);
       scanningRef.current = true;
       setScanResult(null);
+      setAttendanceForm({ jamTidur: '', fitToWork: '' });
       
       if (videoRef.current) {
         videoRef.current.srcObject = mediaStream;
@@ -407,10 +408,78 @@ export function QRScanner() {
                 </div>
               </div>
               
+              {/* Form pengisian jam tidur dan fit to work - tampil setelah QR valid */}
+              {scanResult.status === 'validated' && (
+                <div className="space-y-4 border-t pt-4">
+                  <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+                    Form Absensi
+                  </h3>
+                  
+                  <div className="grid grid-cols-1 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                        Jam Tidur <span className="text-red-500">*</span>
+                      </label>
+                      <select
+                        value={attendanceForm.jamTidur}
+                        onChange={(e) => setAttendanceForm(prev => ({ ...prev, jamTidur: e.target.value }))}
+                        className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                        data-testid="jam-tidur-select"
+                        required
+                      >
+                        <option value="">Pilih jam tidur</option>
+                        <option value="4">4 jam</option>
+                        <option value="5">5 jam</option>
+                        <option value="6">6 jam</option>
+                        <option value="7">7 jam</option>
+                        <option value="8">8 jam</option>
+                        <option value="8+">8+ jam</option>
+                      </select>
+                    </div>
+                    
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                        Status Fit To Work <span className="text-red-500">*</span>
+                      </label>
+                      <select
+                        value={attendanceForm.fitToWork}
+                        onChange={(e) => setAttendanceForm(prev => ({ ...prev, fitToWork: e.target.value }))}
+                        className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                        data-testid="fit-to-work-select"
+                        required
+                      >
+                        <option value="">Pilih status</option>
+                        <option value="Fit To Work">Fit To Work</option>
+                        <option value="Unfit To Work">Unfit To Work</option>
+                      </select>
+                    </div>
+                  </div>
+                  
+                  <Button 
+                    onClick={processAttendance}
+                    disabled={!attendanceForm.jamTidur || !attendanceForm.fitToWork || isProcessing}
+                    className="w-full"
+                    data-testid="process-attendance-button"
+                  >
+                    {isProcessing ? (
+                      <>
+                        <div className="w-4 h-4 mr-2 animate-spin rounded-full border-2 border-white border-t-transparent"></div>
+                        Memproses...
+                      </>
+                    ) : (
+                      'Proses Absensi'
+                    )}
+                  </Button>
+                </div>
+              )}
+              
               {/* Show action buttons based on status */}
               {(scanResult.status === 'success' || scanResult.status === 'error') && (
                 <Button 
-                  onClick={() => setScanResult(null)} 
+                  onClick={() => {
+                    setScanResult(null);
+                    setAttendanceForm({ jamTidur: '', fitToWork: '' });
+                  }} 
                   className="w-full"
                   variant={scanResult.status === 'error' ? 'destructive' : 'default'}
                   data-testid="scan-again-button"
