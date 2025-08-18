@@ -45,19 +45,22 @@ export async function generateAttendancePDF(data: ReportData): Promise<void> {
     
     let yPosition = 20;
     
-    // Company Header
-    if (data.reportInfo?.perusahaan) {
-      doc.setFontSize(14);
-      doc.setFont('helvetica', 'bold');
-      doc.text(data.reportInfo.perusahaan, margin, yPosition);
-      yPosition += 20;
-    }
-    
-    // Title with shift filter info
-    doc.setFontSize(16);
+    // Company Header - PT Borneo Indobara
+    doc.setFontSize(12);
     doc.setFont('helvetica', 'bold');
-    let title = 'FORMULIR PEMANTAUAN PERIODE KERJA KONTRAKTOR HAULING';
+    doc.text('PT Borneo Indobara', margin, yPosition);
+    yPosition += 25;
+    
+    // Main Title
+    doc.setFontSize(14);
+    doc.setFont('helvetica', 'bold');
+    const title = 'FORMULIR PEMANTAUAN PERIODE KERJA KONTRAKTOR HAULING';
     doc.text(title, pageWidth / 2, yPosition, { align: 'center' });
+    yPosition += 8;
+    
+    // Horizontal line under title
+    doc.setLineWidth(0.5);
+    doc.line(margin, yPosition, pageWidth - margin, yPosition);
     yPosition += 20;
     
     // Form Information in a more structured layout
@@ -67,77 +70,85 @@ export async function generateAttendancePDF(data: ReportData): Promise<void> {
       
       // Draw a border around the information section
       const infoBoxY = yPosition;
-      const infoBoxHeight = 100; // Increased height for catatan
+      const infoBoxHeight = 75; // Reduced height for compact layout
       doc.rect(margin, infoBoxY, pageWidth - 2 * margin, infoBoxHeight);
       
       // Left column information
-      const leftX = margin + 10;
-      const rightX = pageWidth - 160; // More space for signature box
-      const labelWidth = 55;
+      const leftX = margin + 8;
+      const rightX = pageWidth - 140;
+      const labelWidth = 60; // Increased for better alignment
       let leftY = yPosition + 15;
       
-      // Left column with aligned layout
+      // Left column with properly aligned layout
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(9);
+      
       doc.text('Perusahaan', leftX, leftY);
       doc.text(':', leftX + labelWidth, leftY);
-      doc.text(data.reportInfo.perusahaan || '-', leftX + labelWidth + 10, leftY);
-      leftY += 12;
+      doc.text('PT Borneo Indobara', leftX + labelWidth + 5, leftY);
+      leftY += 10;
       
       doc.text('Nama Pengawas', leftX, leftY);
       doc.text(':', leftX + labelWidth, leftY);
-      doc.text(data.reportInfo.namaPengawas || '-', leftX + labelWidth + 10, leftY);
-      leftY += 12;
+      doc.text(data.reportInfo.namaPengawas || '-', leftX + labelWidth + 5, leftY);
+      leftY += 10;
       
       doc.text('Hari/Tanggal/Waktu', leftX, leftY);
       doc.text(':', leftX + labelWidth, leftY);
-      const dateTimeInfo = `${data.reportInfo.hari}, ${data.reportInfo.tanggal} / ${data.reportInfo.waktu}`;
-      doc.text(dateTimeInfo || '-', leftX + labelWidth + 10, leftY);
-      leftY += 12;
+      const dateTimeInfo = `${data.reportInfo.hari || ''}, ${data.reportInfo.tanggal || ''} / ${data.reportInfo.waktu || ''}`;
+      doc.text(dateTimeInfo, leftX + labelWidth + 5, leftY);
+      leftY += 10;
       
       doc.text('Shift', leftX, leftY);
       doc.text(':', leftX + labelWidth, leftY);
-      doc.text(data.reportInfo.shift || '-', leftX + labelWidth + 10, leftY);
-      leftY += 12;
+      doc.text(data.reportInfo.shift || '-', leftX + labelWidth + 5, leftY);
+      leftY += 10;
       
       doc.text('Tempat', leftX, leftY);
       doc.text(':', leftX + labelWidth, leftY);
-      doc.text(data.reportInfo.tempat || '-', leftX + labelWidth + 10, leftY);
-      leftY += 12;
+      doc.text(data.reportInfo.tempat || '-', leftX + labelWidth + 5, leftY);
+      leftY += 10;
       
       // Add Catatan if provided
       if (data.reportInfo?.catatan && data.reportInfo.catatan.trim()) {
         doc.text('Catatan', leftX, leftY);
         doc.text(':', leftX + labelWidth, leftY);
-        doc.text(data.reportInfo.catatan, leftX + labelWidth + 10, leftY);
+        doc.text(data.reportInfo.catatan, leftX + labelWidth + 5, leftY);
       }
       
-      // Right column - Signature area with border
+      // Right column - Compact signature area
       const sigBoxX = rightX;
-      const sigBoxY = infoBoxY + 15;
-      const sigBoxWidth = 120;
-      const sigBoxHeight = 70;
+      const sigBoxY = infoBoxY + 10;
+      const sigBoxWidth = 100;
+      const sigBoxHeight = 55;
       
       doc.rect(sigBoxX, sigBoxY, sigBoxWidth, sigBoxHeight);
-      doc.text('Diperiksa Oleh,', sigBoxX + 10, sigBoxY + 12);
+      
+      // Center-aligned signature content
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(9);
+      const signatureText = 'Diperiksa Oleh,';
+      const signatureTextWidth = doc.getTextWidth(signatureText);
+      doc.text(signatureText, sigBoxX + (sigBoxWidth - signatureTextWidth) / 2, sigBoxY + 10);
       
       // Add signature image if provided
       if (data.reportInfo.tandaTangan) {
         try {
           const base64Data = await fileToBase64(data.reportInfo.tandaTangan);
-          // Centered signature image
-          doc.addImage(base64Data, 'JPEG', sigBoxX + 10, sigBoxY + 18, 60, 30);
+          doc.addImage(base64Data, 'JPEG', sigBoxX + 20, sigBoxY + 15, 60, 25);
         } catch (error) {
           console.warn('Failed to add signature:', error);
-          doc.text('(Tanda Tangan)', sigBoxX + 35, sigBoxY + 35);
         }
       }
       
-      // Signature line and name - better centered
-      doc.line(sigBoxX + 10, sigBoxY + 55, sigBoxX + 110, sigBoxY + 55);
+      // Signature line
+      doc.line(sigBoxX + 15, sigBoxY + 42, sigBoxX + 85, sigBoxY + 42);
+      
+      // Name - center aligned
       doc.setFontSize(8);
       const nameText = data.reportInfo.diperiksaOleh || 'Syahrani';
       const nameWidth = doc.getTextWidth(nameText);
-      const nameX = sigBoxX + (sigBoxWidth - nameWidth) / 2;
-      doc.text(nameText, nameX, sigBoxY + 63);
+      doc.text(nameText, sigBoxX + (sigBoxWidth - nameWidth) / 2, sigBoxY + 50);
       doc.setFontSize(10);
       
       yPosition = infoBoxY + infoBoxHeight + 20;
@@ -214,58 +225,67 @@ function generateShiftSection(
 ): number {
   let yPosition = startY;
   
+  // Horizontal line before table section
+  doc.setLineWidth(0.3);
+  doc.line(margin, yPosition, pageWidth - margin, yPosition);
+  yPosition += 10;
+  
   // Shift title
-  doc.setFontSize(14);
+  doc.setFontSize(12);
   doc.setFont('helvetica', 'bold');
   doc.text(shiftName.toUpperCase(), margin, yPosition);
-  yPosition += 15;
+  yPosition += 12;
   
   // Get scheduled employees for this shift first
   const scheduledEmployees = data.roster?.filter(r => r.shift === shiftName && r.date === data.startDate) || [];
   
-  // Table headers with proper alignment
+  // Table headers with optimized widths for landscape
   doc.setFontSize(8);
   doc.setFont('helvetica', 'bold');
   const headers = ['Jam Masuk', 'Nama', 'NIK', 'Shift', 'Position', 'Nomor Lambung', 'Jam Tidur', 'Fit To Work', 'Status'];
-  const columnWidths = [26, 46, 26, 18, 36, 36, 24, 26, 30]; // Adjusted for better proportions
+  const columnWidths = [24, 42, 24, 16, 34, 34, 20, 24, 28]; // Optimized for landscape fit
   
   // Calculate table dimensions
   const tableWidth = columnWidths.reduce((sum, width) => sum + width, 0);
-  const rowHeight = 10;
-  const tableHeight = (scheduledEmployees.length + 1) * rowHeight; // +1 for header
+  const rowHeight = 9;
+  const tableHeight = (scheduledEmployees.length + 1) * rowHeight;
+  
+  // Horizontal line above table
+  doc.setLineWidth(0.3);
+  doc.line(margin, yPosition - 3, pageWidth - margin, yPosition - 3);
   
   // Draw main table border
-  doc.setLineWidth(0.8);
-  doc.rect(margin, yPosition - 6, tableWidth, tableHeight);
+  doc.setLineWidth(0.5);
+  doc.rect(margin, yPosition - 2, tableWidth, tableHeight);
   
-  // Draw header background
-  doc.setFillColor(240, 240, 240);
-  doc.rect(margin, yPosition - 6, tableWidth, rowHeight, 'F');
+  // Header background
+  doc.setFillColor(235, 235, 235);
+  doc.rect(margin, yPosition - 2, tableWidth, rowHeight, 'F');
   
-  // Draw vertical grid lines for all columns
+  // Vertical grid lines
   let currentX = margin;
   for (let i = 0; i <= headers.length; i++) {
-    doc.line(currentX, yPosition - 6, currentX, yPosition - 6 + tableHeight);
+    doc.line(currentX, yPosition - 2, currentX, yPosition - 2 + tableHeight);
     if (i < headers.length) {
       currentX += columnWidths[i];
     }
   }
   
-  // Draw horizontal header line
-  doc.line(margin, yPosition - 6 + rowHeight, margin + tableWidth, yPosition - 6 + rowHeight);
-  
-  // Add header text (centered)
+  // Header text - center aligned and bold
   currentX = margin;
   headers.forEach((header, index) => {
     const textWidth = doc.getTextWidth(header);
     const centerX = currentX + (columnWidths[index] - textWidth) / 2;
-    doc.text(header, centerX, yPosition - 1);
+    doc.text(header, centerX, yPosition + 4);
     currentX += columnWidths[index];
   });
   
+  // Horizontal line after header
+  doc.line(margin, yPosition - 2 + rowHeight, margin + tableWidth, yPosition - 2 + rowHeight);
+  
   yPosition += rowHeight;
   doc.setFont('helvetica', 'normal');
-  doc.setFontSize(7); // Slightly smaller for data rows
+  doc.setFontSize(7);
   
   // Process scheduled employees and check if they attended
   scheduledEmployees.forEach((scheduleRecord, rowIndex) => {
@@ -309,10 +329,10 @@ function generateShiftSection(
       ];
     }
     
-    // Alternate row background
+    // Alternating row background
     if (rowIndex % 2 === 1) {
-      doc.setFillColor(250, 250, 250);
-      doc.rect(margin, yPosition - 4, tableWidth, rowHeight, 'F');
+      doc.setFillColor(248, 248, 248);
+      doc.rect(margin, yPosition - 2, tableWidth, rowHeight, 'F');
     }
     
     // Draw row data with proper alignment
@@ -321,19 +341,23 @@ function generateShiftSection(
       const cellText = String(cellData);
       
       if (columnIndex === 1) {
-        // Name column - left aligned with padding
-        doc.text(cellText, currentX + 2, yPosition + 2);
+        // Name column - left aligned
+        doc.text(cellText, currentX + 2, yPosition + 4);
+      } else if (columnIndex === 0 || columnIndex === 2 || columnIndex === 6) {
+        // Time, NIK, Jam Tidur - right aligned for numbers
+        const textWidth = doc.getTextWidth(cellText);
+        doc.text(cellText, currentX + columnWidths[columnIndex] - textWidth - 2, yPosition + 4);
       } else {
-        // All other columns - center aligned
+        // Other columns - center aligned
         const textWidth = doc.getTextWidth(cellText);
         const centerX = currentX + (columnWidths[columnIndex] - textWidth) / 2;
-        doc.text(cellText, Math.max(currentX + 1, centerX), yPosition + 2);
+        doc.text(cellText, Math.max(currentX + 1, centerX), yPosition + 4);
       }
       currentX += columnWidths[columnIndex];
     });
     
-    // Draw horizontal line after each row
-    doc.line(margin, yPosition + rowHeight - 4, margin + tableWidth, yPosition + rowHeight - 4);
+    // Horizontal line after each row
+    doc.line(margin, yPosition - 2 + rowHeight, margin + tableWidth, yPosition - 2 + rowHeight);
     
     yPosition += rowHeight;
     
@@ -344,8 +368,12 @@ function generateShiftSection(
     }
   });
   
+  // Horizontal line below table
+  doc.setLineWidth(0.3);
+  doc.line(margin, yPosition + 3, pageWidth - margin, yPosition + 3);
+  yPosition += 10;
+  
   // Add shift summary
-  yPosition += 20;
   doc.setFontSize(9);
   doc.setFont('helvetica', 'bold');
   
@@ -358,7 +386,7 @@ function generateShiftSection(
   const summaryText = `Ringkasan ${shiftName}: Dijadwalkan: ${scheduledCount} | Hadir: ${attendedCount} | Tidak Hadir: ${absentCount}`;
   doc.text(summaryText, margin, yPosition);
   
-  return yPosition + 10;
+  return yPosition + 25;
 }
 
 
