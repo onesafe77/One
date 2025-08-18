@@ -10,6 +10,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
+import { ObjectUploader } from "@/components/ObjectUploader";
+import type { UploadResult } from "@uppy/core";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { insertLeaveRequestSchema } from "@shared/schema";
@@ -21,6 +23,8 @@ const formSchema = insertLeaveRequestSchema;
 
 export default function Leave() {
   const [statusFilter, setStatusFilter] = useState("all");
+  const [uploadedAttachmentPath, setUploadedAttachmentPath] = useState<string>("");
+  const [isUploading, setIsUploading] = useState(false);
   const { toast } = useToast();
 
   const { data: employees = [] } = useQuery<Employee[]>({
@@ -62,6 +66,8 @@ export default function Leave() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/leave"] });
       form.reset();
+      setUploadedAttachmentPath("");
+      setIsUploading(false);
       toast({
         title: "Berhasil",
         description: "Pengajuan cuti berhasil dibuat",
@@ -95,8 +101,41 @@ export default function Leave() {
     },
   });
 
-  const onSubmit = (values: z.infer<typeof formSchema>) => {
-    createMutation.mutate(values);
+  const onSubmit = async (values: z.infer<typeof formSchema>) => {
+    // Add attachment path if file was uploaded
+    const submitData = {
+      ...values,
+      attachmentPath: uploadedAttachmentPath || undefined
+    };
+    createMutation.mutate(submitData);
+  };
+
+  const handleGetUploadParameters = async () => {
+    const response: any = await apiRequest("POST", "/api/objects/upload");
+    return {
+      method: 'PUT' as const,
+      url: response.uploadURL,
+    };
+  };
+
+  const handleUploadComplete = async (result: UploadResult<Record<string, unknown>, Record<string, unknown>>) => {
+    setIsUploading(false);
+    if (result.successful && result.successful.length > 0) {
+      const uploadURL = result.successful[0].uploadURL;
+      if (uploadURL) {
+        setUploadedAttachmentPath(uploadURL);
+        toast({
+          title: "Berhasil",
+          description: "File PDF berhasil diupload",
+        });
+      }
+    } else if (result.failed && result.failed.length > 0) {
+      toast({
+        title: "Error",
+        description: "Gagal mengupload file PDF",
+        variant: "destructive",
+      });
+    }
   };
 
   const getEmployeeName = (employeeId: string) => {
@@ -297,6 +336,36 @@ export default function Leave() {
                   </FormItem>
                 )}
               />
+
+              {/* File Upload Section */}
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Lampiran Dokumen (Opsional)</label>
+                <div className="flex flex-col gap-2">
+                  <ObjectUploader
+                    maxNumberOfFiles={1}
+                    maxFileSize={10485760} // 10MB
+                    allowedFileTypes={['.pdf']}
+                    onGetUploadParameters={handleGetUploadParameters}
+                    onComplete={handleUploadComplete}
+                    buttonClassName="w-full"
+                  >
+                    📎 Upload File PDF
+                  </ObjectUploader>
+                  {uploadedAttachmentPath && (
+                    <p className="text-sm text-green-600 dark:text-green-400">
+                      ✓ File berhasil diupload
+                    </p>
+                  )}
+                  {isUploading && (
+                    <p className="text-sm text-blue-600 dark:text-blue-400">
+                      Mengupload file...
+                    </p>
+                  )}
+                </div>
+                <p className="text-xs text-gray-500 dark:text-gray-400">
+                  Format: PDF, Maksimal 10MB (contoh: surat dokter, surat izin)
+                </p>
+              </div>
               
               <Button 
                 type="submit" 
@@ -339,6 +408,7 @@ export default function Leave() {
                   <th className="text-left py-3 px-4 font-medium text-gray-900 dark:text-white">Tanggal</th>
                   <th className="text-left py-3 px-4 font-medium text-gray-900 dark:text-white">Jenis</th>
                   <th className="text-left py-3 px-4 font-medium text-gray-900 dark:text-white">Durasi</th>
+                  <th className="text-left py-3 px-4 font-medium text-gray-900 dark:text-white">Lampiran</th>
                   <th className="text-left py-3 px-4 font-medium text-gray-900 dark:text-white">Status</th>
                   <th className="text-left py-3 px-4 font-medium text-gray-900 dark:text-white">Aksi</th>
                 </tr>
@@ -346,13 +416,13 @@ export default function Leave() {
               <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
                 {isLoading ? (
                   <tr>
-                    <td colSpan={6} className="py-8 text-center text-gray-500 dark:text-gray-400">
+                    <td colSpan={7} className="py-8 text-center text-gray-500 dark:text-gray-400">
                       Loading...
                     </td>
                   </tr>
                 ) : filteredLeaveRequests.length === 0 ? (
                   <tr>
-                    <td colSpan={6} className="py-8 text-center text-gray-500 dark:text-gray-400">
+                    <td colSpan={7} className="py-8 text-center text-gray-500 dark:text-gray-400">
                       Tidak ada data cuti
                     </td>
                   </tr>
@@ -370,6 +440,21 @@ export default function Leave() {
                       </td>
                       <td className="py-3 px-4 text-sm text-gray-900 dark:text-white">
                         {calculateDays(request.startDate, request.endDate)} hari
+                      </td>
+                      <td className="py-3 px-4 text-sm text-center">
+                        {request.attachmentPath ? (
+                          <a 
+                            href={request.attachmentPath} 
+                            target="_blank" 
+                            rel="noopener noreferrer"
+                            className="text-red-600 hover:text-red-700 dark:text-red-400"
+                            title="Lihat lampiran PDF"
+                          >
+                            📎 PDF
+                          </a>
+                        ) : (
+                          <span className="text-gray-400 dark:text-gray-500">-</span>
+                        )}
                       </td>
                       <td className="py-3 px-4">
                         {getStatusBadge(request.status)}
@@ -472,6 +557,21 @@ export default function Leave() {
                                     <p className="text-sm text-gray-600 dark:text-gray-400 bg-gray-50 dark:bg-gray-800 p-3 rounded-lg">
                                       {request.reason}
                                     </p>
+                                  </div>
+                                )}
+
+                                {request.attachmentPath && (
+                                  <div>
+                                    <p className="font-medium text-sm mb-2">Lampiran Dokumen:</p>
+                                    <a 
+                                      href={request.attachmentPath} 
+                                      target="_blank" 
+                                      rel="noopener noreferrer"
+                                      className="flex items-center space-x-2 text-red-600 hover:text-red-700 dark:text-red-400 bg-gray-50 dark:bg-gray-800 p-3 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                                    >
+                                      <span>📎</span>
+                                      <span className="text-sm">Lihat File PDF</span>
+                                    </a>
                                   </div>
                                 )}
                                 

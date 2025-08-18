@@ -1,5 +1,9 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
+import {
+  ObjectStorageService,
+  ObjectNotFoundError,
+} from "./objectStorage";
 import { storage } from "./storage";
 import { 
   insertEmployeeSchema, 
@@ -698,6 +702,54 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(attendanceDetails);
     } catch (error) {
       res.status(500).json({ message: "Failed to fetch attendance details" });
+    }
+  });
+
+  // Object storage routes for file uploads
+  app.get("/objects/:objectPath(*)", async (req, res) => {
+    const objectStorageService = new ObjectStorageService();
+    try {
+      const objectFile = await objectStorageService.getObjectEntityFile(
+        req.path,
+      );
+      objectStorageService.downloadObject(objectFile, res);
+    } catch (error) {
+      console.error("Error accessing object:", error);
+      if (error instanceof ObjectNotFoundError) {
+        return res.sendStatus(404);
+      }
+      return res.sendStatus(500);
+    }
+  });
+
+  app.post("/api/objects/upload", async (req, res) => {
+    const objectStorageService = new ObjectStorageService();
+    const uploadURL = await objectStorageService.getObjectEntityUploadURL();
+    res.json({ uploadURL });
+  });
+
+  app.put("/api/leave/:id/attachment", async (req, res) => {
+    if (!req.body.attachmentURL) {
+      return res.status(400).json({ error: "attachmentURL is required" });
+    }
+
+    try {
+      const objectStorageService = new ObjectStorageService();
+      const objectPath = objectStorageService.normalizeObjectEntityPath(
+        req.body.attachmentURL,
+      );
+
+      // Update leave request with attachment path
+      await storage.updateLeaveRequest(req.params.id, { 
+        attachmentPath: objectPath 
+      });
+
+      res.status(200).json({
+        objectPath: objectPath,
+      });
+    } catch (error) {
+      console.error("Error setting attachment:", error);
+      res.status(500).json({ error: "Internal server error" });
     }
   });
 
