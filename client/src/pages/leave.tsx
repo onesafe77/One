@@ -100,7 +100,6 @@ export default function Leave() {
   });
 
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
-    // Find the selected employee to get their name
     const selectedEmployee = employees.find(emp => emp.id === values.employeeId);
     if (!selectedEmployee) {
       toast({
@@ -111,7 +110,6 @@ export default function Leave() {
       return;
     }
 
-    // Add attachment path and employee name
     const submitData = {
       ...values,
       employeeName: selectedEmployee.name,
@@ -131,14 +129,12 @@ export default function Leave() {
       }
       
       const data = await response.json();
-      console.log('Upload parameters response:', data);
       return {
         method: 'PUT' as const,
         url: data.uploadURL,
       };
     } catch (error) {
       setIsUploading(false);
-      console.error('Error getting upload parameters:', error);
       toast({
         title: "Error", 
         description: error instanceof Error ? error.message : "Layanan upload tidak tersedia saat ini",
@@ -153,7 +149,6 @@ export default function Leave() {
     if (result.successful && result.successful.length > 0) {
       const uploadURL = result.successful[0].uploadURL;
       if (uploadURL) {
-        // Send the upload URL to server to normalize and set ACL
         try {
           const normalizeResponse = await apiRequest("POST", "/api/objects/normalize", {
             uploadURL: uploadURL
@@ -166,8 +161,6 @@ export default function Leave() {
             description: "File PDF berhasil diupload",
           });
         } catch (normalizeError) {
-          console.error("Error normalizing path:", normalizeError);
-          // Fallback to direct URL if normalize fails
           setUploadedAttachmentPath(uploadURL);
           toast({
             title: "Berhasil",
@@ -221,11 +214,9 @@ export default function Leave() {
       return attachmentPath;
     }
     
-    // Extract the object ID from the Google Storage URL
     const url = new URL(attachmentPath);
     const pathname = url.pathname;
     
-    // Find the uploads path
     const uploadsIndex = pathname.indexOf("/.private/uploads/");
     if (uploadsIndex !== -1) {
       const objectId = pathname.substring(uploadsIndex + "/.private/uploads/".length);
@@ -248,419 +239,424 @@ export default function Leave() {
   };
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-      {/* Leave Form */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Ajukan Cuti</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-              <FormField
-                control={form.control}
-                name="employeeId"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Karyawan</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value}>
-                      <FormControl>
-                        <SelectTrigger data-testid="leave-employee-select">
-                          <SelectValue placeholder="-- Pilih Karyawan --" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        {employees.map((employee) => (
-                          <SelectItem key={employee.id} value={employee.id}>
-                            {employee.id} - {employee.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+    <div className="container mx-auto p-4 space-y-4">
+      <div className="flex items-center justify-between mb-4">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Manajemen Cuti</h1>
+          <p className="text-sm text-gray-600 dark:text-gray-400">Kelola permohonan cuti karyawan</p>
+        </div>
+      </div>
 
-              <FormField
-                control={form.control}
-                name="phoneNumber"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Nomor WhatsApp</FormLabel>
-                    <FormControl>
-                      <Input 
-                        {...field}
-                        placeholder="Nomor akan terisi otomatis"
-                        readOnly
-                        className="bg-gray-50 dark:bg-gray-800"
-                        data-testid="leave-phone-number"
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              
-              <FormField
-                control={form.control}
-                name="startDate"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Tanggal Mulai</FormLabel>
-                    <FormControl>
-                      <Input 
-                        type="date" 
-                        {...field} 
-                        data-testid="leave-start-date-input"
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              
-              <FormField
-                control={form.control}
-                name="endDate"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Tanggal Selesai</FormLabel>
-                    <FormControl>
-                      <Input 
-                        type="date" 
-                        {...field} 
-                        data-testid="leave-end-date-input"
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              
-              <FormField
-                control={form.control}
-                name="leaveType"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Jenis Cuti</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value}>
-                      <FormControl>
-                        <SelectTrigger data-testid="leave-type-select">
-                          <SelectValue placeholder="-- Pilih Jenis Cuti --" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        <SelectItem value="annual">Cuti Tahunan</SelectItem>
-                        <SelectItem value="sick">Cuti Sakit</SelectItem>
-                        <SelectItem value="personal">Cuti Pribadi</SelectItem>
-                        <SelectItem value="maternity">Cuti Melahirkan</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              
-              <FormField
-                control={form.control}
-                name="reason"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Keterangan</FormLabel>
-                    <FormControl>
-                      <Textarea 
-                        rows={3} 
-                        placeholder="Keterangan cuti..." 
-                        {...field}
-                        value={field.value || ""} 
-                        data-testid="leave-reason-textarea"
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+      <div className="grid grid-cols-1 xl:grid-cols-4 gap-4">
+        {/* Compact Leave Form */}
+        <Card className="xl:col-span-1">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-lg">Ajukan Cuti</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <Form {...form}>
+              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-3">
+                <FormField
+                  control={form.control}
+                  name="employeeId"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="text-sm">Karyawan</FormLabel>
+                      <Select onValueChange={field.onChange} defaultValue={field.value}>
+                        <FormControl>
+                          <SelectTrigger className="h-9" data-testid="leave-employee-select">
+                            <SelectValue placeholder="-- Pilih Karyawan --" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {employees.map((employee) => (
+                            <SelectItem key={employee.id} value={employee.id}>
+                              {employee.id} - {employee.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
 
-              {/* File Upload Section */}
-              <div className="space-y-2">
-                <label className="text-sm font-medium">Lampiran Dokumen (Opsional)</label>
-                <div className="flex flex-col gap-2">
+                <FormField
+                  control={form.control}
+                  name="phoneNumber"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="text-sm">Nomor WhatsApp</FormLabel>
+                      <FormControl>
+                        <Input 
+                          {...field}
+                          className="h-9 bg-gray-50 dark:bg-gray-800"
+                          placeholder="Nomor akan terisi otomatis"
+                          readOnly
+                          data-testid="leave-phone-number"
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                
+                <FormField
+                  control={form.control}
+                  name="startDate"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="text-sm">Tanggal Mulai</FormLabel>
+                      <FormControl>
+                        <Input 
+                          type="date" 
+                          {...field} 
+                          className="h-9"
+                          data-testid="leave-start-date-input"
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                
+                <FormField
+                  control={form.control}
+                  name="endDate"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="text-sm">Tanggal Selesai</FormLabel>
+                      <FormControl>
+                        <Input 
+                          type="date" 
+                          {...field} 
+                          className="h-9"
+                          data-testid="leave-end-date-input"
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                
+                <FormField
+                  control={form.control}
+                  name="leaveType"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="text-sm">Jenis Cuti</FormLabel>
+                      <Select onValueChange={field.onChange} defaultValue={field.value}>
+                        <FormControl>
+                          <SelectTrigger className="h-9" data-testid="leave-type-select">
+                            <SelectValue placeholder="-- Pilih Jenis Cuti --" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="annual">Cuti Tahunan</SelectItem>
+                          <SelectItem value="sick">Cuti Sakit</SelectItem>
+                          <SelectItem value="personal">Cuti Pribadi</SelectItem>
+                          <SelectItem value="maternity">Cuti Melahirkan</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                
+                <FormField
+                  control={form.control}
+                  name="reason"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="text-sm">Keterangan</FormLabel>
+                      <FormControl>
+                        <Textarea 
+                          rows={2} 
+                          className="resize-none"
+                          placeholder="Keterangan cuti..." 
+                          {...field}
+                          value={field.value || ""} 
+                          data-testid="leave-reason-textarea"
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                {/* Compact File Upload */}
+                <div className="space-y-2">
+                  <label className="text-xs font-medium text-gray-600 dark:text-gray-400">Lampiran (Opsional)</label>
                   <ObjectUploader
                     maxNumberOfFiles={1}
-                    maxFileSize={10485760} // 10MB
+                    maxFileSize={10485760}
                     allowedFileTypes={['.pdf']}
                     onGetUploadParameters={handleGetUploadParameters}
                     onComplete={handleUploadComplete}
-                    buttonClassName="w-full"
+                    buttonClassName="w-full h-8 text-xs"
                   >
-                    📎 Upload File PDF
+                    📎 Upload PDF
                   </ObjectUploader>
                   {uploadedAttachmentPath && (
-                    <p className="text-sm text-green-600 dark:text-green-400">
-                      ✓ File berhasil diupload
-                    </p>
+                    <p className="text-xs text-green-600 dark:text-green-400">✓ File uploaded</p>
                   )}
                   {isUploading && (
-                    <p className="text-sm text-blue-600 dark:text-blue-400">
-                      Mengupload file...
-                    </p>
+                    <p className="text-xs text-blue-600 dark:text-blue-400">Uploading...</p>
                   )}
                 </div>
-                <p className="text-xs text-gray-500 dark:text-gray-400">
-                  Format: PDF, Maksimal 10MB (contoh: surat dokter, surat izin)
-                </p>
-              </div>
-              
-              <Button 
-                type="submit" 
-                className="w-full"
-                disabled={createMutation.isPending}
-                data-testid="submit-leave-button"
-              >
-                {createMutation.isPending ? "Mengajukan..." : "Ajukan Cuti"}
-              </Button>
-            </form>
-          </Form>
-        </CardContent>
-      </Card>
-      
-      {/* Leave List */}
-      <Card className="lg:col-span-2">
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <CardTitle>Daftar Cuti</CardTitle>
-            <Select value={statusFilter} onValueChange={setStatusFilter}>
-              <SelectTrigger className="w-[180px]" data-testid="leave-status-filter">
-                <SelectValue placeholder="Semua Status" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Semua Status</SelectItem>
-                <SelectItem value="pending">Menunggu</SelectItem>
-                <SelectItem value="approved">Disetujui</SelectItem>
-                <SelectItem value="rejected">Ditolak</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-        </CardHeader>
+                
+                <Button 
+                  type="submit" 
+                  className="w-full h-9"
+                  disabled={createMutation.isPending}
+                  data-testid="submit-leave-button"
+                >
+                  {createMutation.isPending ? "Mengajukan..." : "Ajukan Cuti"}
+                </Button>
+              </form>
+            </Form>
+          </CardContent>
+        </Card>
         
-        <CardContent>
-          <div className="overflow-x-auto">
-            <table className="w-full table-auto">
-              <thead>
-                <tr className="border-b border-gray-200 dark:border-gray-700">
-                  <th className="text-left py-3 px-4 font-medium text-gray-900 dark:text-white">Karyawan</th>
-                  <th className="text-left py-3 px-4 font-medium text-gray-900 dark:text-white">Tanggal</th>
-                  <th className="text-left py-3 px-4 font-medium text-gray-900 dark:text-white">Jenis</th>
-                  <th className="text-left py-3 px-4 font-medium text-gray-900 dark:text-white">Durasi</th>
-                  <th className="text-left py-3 px-4 font-medium text-gray-900 dark:text-white">Lampiran</th>
-                  <th className="text-left py-3 px-4 font-medium text-gray-900 dark:text-white">Status</th>
-                  <th className="text-left py-3 px-4 font-medium text-gray-900 dark:text-white">Aksi</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
-                {isLoading ? (
-                  <tr>
-                    <td colSpan={7} className="py-8 text-center text-gray-500 dark:text-gray-400">
-                      Loading...
-                    </td>
+        {/* Compact Leave List */}
+        <Card className="xl:col-span-3">
+          <CardHeader className="pb-3">
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-lg">Daftar Cuti</CardTitle>
+              <Select value={statusFilter} onValueChange={setStatusFilter}>
+                <SelectTrigger className="w-36 h-9" data-testid="leave-status-filter">
+                  <SelectValue placeholder="Semua Status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Semua Status</SelectItem>
+                  <SelectItem value="pending">Menunggu</SelectItem>
+                  <SelectItem value="approved">Disetujui</SelectItem>
+                  <SelectItem value="rejected">Ditolak</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </CardHeader>
+          
+          <CardContent className="p-3">
+            <div className="overflow-x-auto">
+              <table className="w-full table-auto text-sm">
+                <thead>
+                  <tr className="border-b border-gray-200 dark:border-gray-700">
+                    <th className="text-left py-2 px-2 font-medium text-gray-900 dark:text-white text-xs">Karyawan</th>
+                    <th className="text-left py-2 px-2 font-medium text-gray-900 dark:text-white text-xs">Tanggal</th>
+                    <th className="text-left py-2 px-2 font-medium text-gray-900 dark:text-white text-xs">Jenis</th>
+                    <th className="text-left py-2 px-2 font-medium text-gray-900 dark:text-white text-xs">Durasi</th>
+                    <th className="text-left py-2 px-2 font-medium text-gray-900 dark:text-white text-xs">Lampiran</th>
+                    <th className="text-left py-2 px-2 font-medium text-gray-900 dark:text-white text-xs">Status</th>
+                    <th className="text-left py-2 px-2 font-medium text-gray-900 dark:text-white text-xs">Aksi</th>
                   </tr>
-                ) : filteredLeaveRequests.length === 0 ? (
-                  <tr>
-                    <td colSpan={7} className="py-8 text-center text-gray-500 dark:text-gray-400">
-                      Tidak ada data cuti
-                    </td>
-                  </tr>
-                ) : (
-                  filteredLeaveRequests.map((request) => (
-                    <tr key={request.id} data-testid={`leave-row-${request.id}`}>
-                      <td className="py-3 px-4 text-sm text-gray-900 dark:text-white">
-                        {getEmployeeName(request.employeeId)}
+                </thead>
+                <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
+                  {isLoading ? (
+                    <tr>
+                      <td colSpan={7} className="py-4 text-center text-gray-500 dark:text-gray-400 text-sm">
+                        Loading...
                       </td>
-                      <td className="py-3 px-4 text-sm text-gray-900 dark:text-white">
-                        {new Date(request.startDate).toLocaleDateString('id-ID')} - {new Date(request.endDate).toLocaleDateString('id-ID')}
+                    </tr>
+                  ) : filteredLeaveRequests.length === 0 ? (
+                    <tr>
+                      <td colSpan={7} className="py-4 text-center text-gray-500 dark:text-gray-400 text-sm">
+                        Tidak ada data cuti
                       </td>
-                      <td className="py-3 px-4 text-sm text-gray-900 dark:text-white">
-                        {getLeaveTypeLabel(request.leaveType)}
-                      </td>
-                      <td className="py-3 px-4 text-sm text-gray-900 dark:text-white">
-                        {calculateDays(request.startDate, request.endDate)} hari
-                      </td>
-                      <td className="py-3 px-4 text-sm text-center">
-                        {request.attachmentPath ? (
-                          <a 
-                            href={convertToProxyPath(request.attachmentPath)} 
-                            target="_blank" 
-                            rel="noopener noreferrer"
-                            className="text-red-600 hover:text-red-700 dark:text-red-400"
-                            title="Lihat lampiran PDF"
-                          >
-                            📎 PDF
-                          </a>
-                        ) : (
-                          <span className="text-gray-400 dark:text-gray-500">-</span>
-                        )}
-                      </td>
-                      <td className="py-3 px-4">
-                        {getStatusBadge(request.status)}
-                      </td>
-                      <td className="py-3 px-4">
-                        {request.status === 'pending' ? (
-                          <div className="flex space-x-2">
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={() => handleApprove(request.id)}
-                              disabled={updateStatusMutation.isPending}
-                              className="text-green-600 hover:text-green-700"
-                              data-testid={`approve-leave-${request.id}`}
+                    </tr>
+                  ) : (
+                    filteredLeaveRequests.map((request) => (
+                      <tr key={request.id} data-testid={`leave-row-${request.id}`}>
+                        <td className="py-2 px-2 text-xs text-gray-900 dark:text-white">
+                          <div className="font-medium">{getEmployeeName(request.employeeId)}</div>
+                        </td>
+                        <td className="py-2 px-2 text-xs text-gray-900 dark:text-white">
+                          <div>{new Date(request.startDate).toLocaleDateString('id-ID')}</div>
+                          <div className="text-gray-500">-</div>
+                          <div>{new Date(request.endDate).toLocaleDateString('id-ID')}</div>
+                        </td>
+                        <td className="py-2 px-2 text-xs text-gray-900 dark:text-white">
+                          {getLeaveTypeLabel(request.leaveType)}
+                        </td>
+                        <td className="py-2 px-2 text-xs text-gray-900 dark:text-white text-center">
+                          <span className="font-medium">{calculateDays(request.startDate, request.endDate)}</span> hari
+                        </td>
+                        <td className="py-2 px-2 text-xs text-center">
+                          {request.attachmentPath ? (
+                            <a 
+                              href={convertToProxyPath(request.attachmentPath)} 
+                              target="_blank" 
+                              rel="noopener noreferrer"
+                              className="text-red-600 hover:text-red-700 dark:text-red-400 text-xs"
+                              title="Lihat lampiran PDF"
                             >
-                              <CheckCircle className="w-4 h-4 mr-1" />
-                              Setujui
-                            </Button>
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={() => handleReject(request.id)}
-                              disabled={updateStatusMutation.isPending}
-                              className="text-red-600 hover:text-red-700"
-                              data-testid={`reject-leave-${request.id}`}
-                            >
-                              <XCircle className="w-4 h-4 mr-1" />
-                              Tolak
-                            </Button>
-                          </div>
-                        ) : (
-                          <Dialog>
-                            <DialogTrigger asChild>
+                              📎
+                            </a>
+                          ) : (
+                            <span className="text-gray-400 dark:text-gray-500">-</span>
+                          )}
+                        </td>
+                        <td className="py-2 px-2">
+                          {getStatusBadge(request.status)}
+                        </td>
+                        <td className="py-2 px-2">
+                          {request.status === 'pending' ? (
+                            <div className="flex flex-col space-y-1">
                               <Button
                                 size="sm"
                                 variant="outline"
-                                className="text-blue-600 hover:text-blue-700"
-                                data-testid={`detail-leave-${request.id}`}
+                                onClick={() => handleApprove(request.id)}
+                                disabled={updateStatusMutation.isPending}
+                                className="text-green-600 hover:text-green-700 h-7 text-xs"
+                                data-testid={`approve-leave-${request.id}`}
                               >
-                                <Eye className="w-4 h-4 mr-1" />
-                                Detail
+                                <CheckCircle className="w-3 h-3 mr-1" />
+                                Setujui
                               </Button>
-                            </DialogTrigger>
-                            <DialogContent className="max-w-md">
-                              <DialogHeader>
-                                <DialogTitle>Detail Pengajuan Cuti</DialogTitle>
-                              </DialogHeader>
-                              <div className="space-y-4">
-                                <div className="flex items-center space-x-2">
-                                  <User className="w-4 h-4 text-gray-500" />
-                                  <div>
-                                    <p className="font-medium">{request.employeeName || getEmployeeName(request.employeeId)}</p>
-                                    <p className="text-sm text-gray-500">{request.employeeId}</p>
-                                  </div>
-                                </div>
-                                
-                                {request.phoneNumber && (
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => handleReject(request.id)}
+                                disabled={updateStatusMutation.isPending}
+                                className="text-red-600 hover:text-red-700 h-7 text-xs"
+                                data-testid={`reject-leave-${request.id}`}
+                              >
+                                <XCircle className="w-3 h-3 mr-1" />
+                                Tolak
+                              </Button>
+                            </div>
+                          ) : (
+                            <Dialog>
+                              <DialogTrigger asChild>
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  className="text-blue-600 hover:text-blue-700 h-7 text-xs"
+                                  data-testid={`detail-leave-${request.id}`}
+                                >
+                                  <Eye className="w-3 h-3 mr-1" />
+                                  Detail
+                                </Button>
+                              </DialogTrigger>
+                              <DialogContent className="max-w-md">
+                                <DialogHeader>
+                                  <DialogTitle>Detail Pengajuan Cuti</DialogTitle>
+                                </DialogHeader>
+                                <div className="space-y-4">
                                   <div className="flex items-center space-x-2">
-                                    <Phone className="w-4 h-4 text-gray-500" />
-                                    <p className="text-sm">{request.phoneNumber}</p>
+                                    <User className="w-4 h-4 text-gray-500" />
+                                    <div>
+                                      <p className="font-medium">{request.employeeName || getEmployeeName(request.employeeId)}</p>
+                                      <p className="text-sm text-gray-500">{request.employeeId}</p>
+                                    </div>
                                   </div>
-                                )}
-                                
-                                <div className="flex items-center space-x-2">
-                                  <CalendarDays className="w-4 h-4 text-gray-500" />
-                                  <div>
-                                    <p className="text-sm">
-                                      {new Date(request.startDate).toLocaleDateString('id-ID', {
-                                        weekday: 'long',
-                                        year: 'numeric',
-                                        month: 'long',
-                                        day: 'numeric'
-                                      })}
-                                    </p>
-                                    <p className="text-sm">s/d</p>
-                                    <p className="text-sm">
-                                      {new Date(request.endDate).toLocaleDateString('id-ID', {
-                                        weekday: 'long',
-                                        year: 'numeric',
-                                        month: 'long',
-                                        day: 'numeric'
-                                      })}
-                                    </p>
+                                  
+                                  {request.phoneNumber && (
+                                    <div className="flex items-center space-x-2">
+                                      <Phone className="w-4 h-4 text-gray-500" />
+                                      <p className="text-sm">{request.phoneNumber}</p>
+                                    </div>
+                                  )}
+                                  
+                                  <div className="flex items-center space-x-2">
+                                    <CalendarDays className="w-4 h-4 text-gray-500" />
+                                    <div>
+                                      <p className="text-sm">
+                                        {new Date(request.startDate).toLocaleDateString('id-ID', {
+                                          weekday: 'long',
+                                          year: 'numeric',
+                                          month: 'long',
+                                          day: 'numeric'
+                                        })}
+                                      </p>
+                                      <p className="text-sm">s/d</p>
+                                      <p className="text-sm">
+                                        {new Date(request.endDate).toLocaleDateString('id-ID', {
+                                          weekday: 'long',
+                                          year: 'numeric',
+                                          month: 'long',
+                                          day: 'numeric'
+                                        })}
+                                      </p>
+                                    </div>
                                   </div>
-                                </div>
-                                
-                                <div className="flex items-center space-x-2">
-                                  <Clock className="w-4 h-4 text-gray-500" />
-                                  <div>
-                                    <p className="text-sm font-medium">{getLeaveTypeLabel(request.leaveType)}</p>
-                                    <p className="text-sm text-gray-500">
-                                      Durasi: {calculateDays(request.startDate, request.endDate)} hari
-                                    </p>
+                                  
+                                  <div className="flex items-center space-x-2">
+                                    <Clock className="w-4 h-4 text-gray-500" />
+                                    <div>
+                                      <p className="text-sm font-medium">{getLeaveTypeLabel(request.leaveType)}</p>
+                                      <p className="text-sm text-gray-500">
+                                        Durasi: {calculateDays(request.startDate, request.endDate)} hari
+                                      </p>
+                                    </div>
                                   </div>
-                                </div>
-                                
-                                {request.reason && (
-                                  <div>
-                                    <p className="font-medium text-sm mb-1">Keterangan:</p>
-                                    <p className="text-sm text-gray-600 dark:text-gray-400 bg-gray-50 dark:bg-gray-800 p-3 rounded-lg">
-                                      {request.reason}
-                                    </p>
-                                  </div>
-                                )}
+                                  
+                                  {request.reason && (
+                                    <div>
+                                      <p className="font-medium text-sm mb-1">Keterangan:</p>
+                                      <p className="text-sm text-gray-600 dark:text-gray-400 bg-gray-50 dark:bg-gray-800 p-3 rounded-lg">
+                                        {request.reason}
+                                      </p>
+                                    </div>
+                                  )}
 
-                                {request.attachmentPath && (
-                                  <div>
-                                    <p className="font-medium text-sm mb-2">Lampiran Dokumen:</p>
-                                    <a 
-                                      href={convertToProxyPath(request.attachmentPath)} 
-                                      target="_blank" 
-                                      rel="noopener noreferrer"
-                                      className="flex items-center space-x-2 text-red-600 hover:text-red-700 dark:text-red-400 bg-gray-50 dark:bg-gray-800 p-3 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
-                                    >
-                                      <span>📎</span>
-                                      <span className="text-sm">Lihat File PDF</span>
-                                    </a>
+                                  {request.attachmentPath && (
+                                    <div>
+                                      <p className="font-medium text-sm mb-2">Lampiran Dokumen:</p>
+                                      <a 
+                                        href={convertToProxyPath(request.attachmentPath)} 
+                                        target="_blank" 
+                                        rel="noopener noreferrer"
+                                        className="flex items-center space-x-2 text-red-600 hover:text-red-700 dark:text-red-400 bg-gray-50 dark:bg-gray-800 p-3 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                                      >
+                                        <span>📎</span>
+                                        <span className="text-sm">Lihat File PDF</span>
+                                      </a>
+                                    </div>
+                                  )}
+                                  
+                                  <div className="flex items-center justify-between pt-4 border-t">
+                                    <span className="text-sm text-gray-500">Status:</span>
+                                    {getStatusBadge(request.status)}
                                   </div>
-                                )}
-                                
-                                <div className="flex items-center justify-between pt-4 border-t">
-                                  <span className="text-sm text-gray-500">Status:</span>
-                                  {getStatusBadge(request.status)}
+                                  
+                                  {request.status === 'pending' && (
+                                    <div className="flex space-x-2 pt-2">
+                                      <Button
+                                        size="sm"
+                                        onClick={() => handleApprove(request.id)}
+                                        disabled={updateStatusMutation.isPending}
+                                        className="flex-1 bg-green-600 hover:bg-green-700"
+                                      >
+                                        <CheckCircle className="w-4 h-4 mr-1" />
+                                        Setujui
+                                      </Button>
+                                      <Button
+                                        size="sm"
+                                        variant="destructive"
+                                        onClick={() => handleReject(request.id)}
+                                        disabled={updateStatusMutation.isPending}
+                                        className="flex-1"
+                                      >
+                                        <XCircle className="w-4 h-4 mr-1" />
+                                        Tolak
+                                      </Button>
+                                    </div>
+                                  )}
                                 </div>
-                                
-                                {request.status === 'pending' && (
-                                  <div className="flex space-x-2 pt-2">
-                                    <Button
-                                      size="sm"
-                                      onClick={() => handleApprove(request.id)}
-                                      disabled={updateStatusMutation.isPending}
-                                      className="flex-1 bg-green-600 hover:bg-green-700"
-                                    >
-                                      <CheckCircle className="w-4 h-4 mr-1" />
-                                      Setujui
-                                    </Button>
-                                    <Button
-                                      size="sm"
-                                      variant="destructive"
-                                      onClick={() => handleReject(request.id)}
-                                      disabled={updateStatusMutation.isPending}
-                                      className="flex-1"
-                                    >
-                                      <XCircle className="w-4 h-4 mr-1" />
-                                      Tolak
-                                    </Button>
-                                  </div>
-                                )}
-                              </div>
-                            </DialogContent>
-                          </Dialog>
-                        )}
-                      </td>
-                    </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
-          </div>
-        </CardContent>
-      </Card>
+                              </DialogContent>
+                            </Dialog>
+                          )}
+                        </td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
     </div>
   );
 }
