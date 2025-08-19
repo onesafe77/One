@@ -200,6 +200,25 @@ export default function Leave() {
     return Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
   };
 
+  const convertToProxyPath = (attachmentPath: string): string => {
+    if (!attachmentPath || !attachmentPath.startsWith("https://storage.googleapis.com/")) {
+      return attachmentPath;
+    }
+    
+    // Extract the object ID from the Google Storage URL
+    const url = new URL(attachmentPath);
+    const pathname = url.pathname;
+    
+    // Find the uploads path
+    const uploadsIndex = pathname.indexOf("/.private/uploads/");
+    if (uploadsIndex !== -1) {
+      const objectId = pathname.substring(uploadsIndex + "/.private/uploads/".length);
+      return `/objects/uploads/${objectId}`;
+    }
+    
+    return attachmentPath;
+  };
+
   const filteredLeaveRequests = leaveRequests.filter(request => 
     statusFilter === "all" || request.status === statusFilter
   );
@@ -474,7 +493,7 @@ export default function Leave() {
                       <td className="py-3 px-4 text-sm text-center">
                         {request.attachmentPath ? (
                           <a 
-                            href={request.attachmentPath} 
+                            href={convertToProxyPath(request.attachmentPath)} 
                             target="_blank" 
                             rel="noopener noreferrer"
                             className="text-red-600 hover:text-red-700 dark:text-red-400"
@@ -594,7 +613,7 @@ export default function Leave() {
                                   <div>
                                     <p className="font-medium text-sm mb-2">Lampiran Dokumen:</p>
                                     <a 
-                                      href={request.attachmentPath} 
+                                      href={convertToProxyPath(request.attachmentPath)} 
                                       target="_blank" 
                                       rel="noopener noreferrer"
                                       className="flex items-center space-x-2 text-red-600 hover:text-red-700 dark:text-red-400 bg-gray-50 dark:bg-gray-800 p-3 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
