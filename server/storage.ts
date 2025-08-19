@@ -241,6 +241,7 @@ export class MemStorage implements IStorage {
       id: randomUUID(),
       ...insertRequest,
       reason: insertRequest.reason || null, // Ensure reason is string | null, not undefined
+      attachmentPath: insertRequest.attachmentPath || null, // Ensure attachmentPath is string | null, not undefined
       status: insertRequest.status || "pending",
       createdAt: new Date()
     };
