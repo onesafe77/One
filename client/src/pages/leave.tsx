@@ -113,11 +113,12 @@ export default function Leave() {
   const handleGetUploadParameters = async () => {
     try {
       setIsUploading(true);
-      const response: any = await apiRequest("POST", "/api/objects/upload");
-      console.log('Upload parameters response:', response);
+      const response = await apiRequest("POST", "/api/objects/upload");
+      const data = await response.json();
+      console.log('Upload parameters response:', data);
       return {
         method: 'PUT' as const,
-        url: response.uploadURL,
+        url: data.uploadURL,
       };
     } catch (error) {
       setIsUploading(false);
