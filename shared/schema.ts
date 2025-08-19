@@ -53,6 +53,39 @@ export const leaveRequests = pgTable("leave_requests", {
   createdAt: timestamp("created_at").default(sql`now()`),
 });
 
+// Table untuk tracking saldo cuti karyawan
+export const leaveBalances = pgTable("leave_balances", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  employeeId: varchar("employee_id").notNull().references(() => employees.id),
+  year: integer("year").notNull(),
+  totalDays: integer("total_days").notNull().default(0), // Total hari cuti yang berhak
+  usedDays: integer("used_days").notNull().default(0), // Hari cuti yang sudah digunakan
+  remainingDays: integer("remaining_days").notNull().default(0), // Sisa hari cuti
+  workingDaysCompleted: integer("working_days_completed").notNull().default(0), // Hari kerja yang sudah diselesaikan
+  lastWorkDate: text("last_work_date"), // Tanggal kerja terakhir
+  lastLeaveDate: text("last_leave_date"), // Tanggal cuti terakhir
+  nextLeaveEligible: text("next_leave_eligible"), // Tanggal kapan boleh cuti lagi
+  status: text("status").notNull().default("active"), // active, expired
+  createdAt: timestamp("created_at").default(sql`now()`),
+  updatedAt: timestamp("updated_at").default(sql`now()`),
+});
+
+// Table untuk history cuti karyawan  
+export const leaveHistory = pgTable("leave_history", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  employeeId: varchar("employee_id").notNull().references(() => employees.id),
+  leaveRequestId: varchar("leave_request_id").references(() => leaveRequests.id),
+  leaveType: text("leave_type").notNull(),
+  startDate: text("start_date").notNull(),
+  endDate: text("end_date").notNull(),
+  totalDays: integer("total_days").notNull(),
+  balanceBeforeLeave: integer("balance_before_leave").notNull(),
+  balanceAfterLeave: integer("balance_after_leave").notNull(),
+  status: text("status").notNull(), // taken, cancelled, pending
+  remarks: text("remarks"),
+  createdAt: timestamp("created_at").default(sql`now()`),
+});
+
 export const qrTokens = pgTable("qr_tokens", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   employeeId: varchar("employee_id").notNull().references(() => employees.id),
@@ -100,6 +133,17 @@ export const insertLeaveReminderSchema = createInsertSchema(leaveReminders).omit
   createdAt: true,
 });
 
+export const insertLeaveBalanceSchema = createInsertSchema(leaveBalances).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const insertLeaveHistorySchema = createInsertSchema(leaveHistory).omit({
+  id: true,
+  createdAt: true,
+});
+
 // Types
 export type Employee = typeof employees.$inferSelect;
 export type InsertEmployee = z.infer<typeof insertEmployeeSchema>;
@@ -113,3 +157,7 @@ export type QrToken = typeof qrTokens.$inferSelect;
 export type InsertQrToken = z.infer<typeof insertQrTokenSchema>;
 export type LeaveReminder = typeof leaveReminders.$inferSelect;
 export type InsertLeaveReminder = z.infer<typeof insertLeaveReminderSchema>;
+export type LeaveBalance = typeof leaveBalances.$inferSelect;
+export type InsertLeaveBalance = z.infer<typeof insertLeaveBalanceSchema>;
+export type LeaveHistory = typeof leaveHistory.$inferSelect;
+export type InsertLeaveHistory = z.infer<typeof insertLeaveHistorySchema>;

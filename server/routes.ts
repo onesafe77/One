@@ -818,6 +818,195 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Leave balance endpoints
+  app.get("/api/leave-balances", async (req, res) => {
+    try {
+      const balances = await storage.getLeaveBalances();
+      res.json(balances);
+    } catch (error) {
+      console.error("Error fetching leave balances:", error);
+      res.status(500).json({ error: "Failed to fetch leave balances" });
+    }
+  });
+
+  app.get("/api/leave-balances/:employeeId", async (req, res) => {
+    try {
+      const { employeeId } = req.params;
+      const year = req.query.year ? parseInt(req.query.year as string) : new Date().getFullYear();
+      const balance = await storage.getLeaveBalanceByEmployee(employeeId, year);
+      res.json(balance);
+    } catch (error) {
+      console.error("Error fetching employee leave balance:", error);
+      res.status(500).json({ error: "Failed to fetch employee leave balance" });
+    }
+  });
+
+  // Leave history endpoints
+  app.get("/api/leave-history", async (req, res) => {
+    try {
+      const history = await storage.getLeaveHistory();
+      res.json(history);
+    } catch (error) {
+      console.error("Error fetching leave history:", error);
+      res.status(500).json({ error: "Failed to fetch leave history" });
+    }
+  });
+
+  app.get("/api/leave-history/:employeeId", async (req, res) => {
+    try {
+      const { employeeId } = req.params;
+      const history = await storage.getLeaveHistoryByEmployee(employeeId);
+      res.json(history);
+    } catch (error) {
+      console.error("Error fetching employee leave history:", error);
+      res.status(500).json({ error: "Failed to fetch employee leave history" });
+    }
+  });
+
+  // Bulk upload leave roster
+  app.post("/api/leave-roster/bulk-upload", async (req, res) => {
+    try {
+      const { leaveData } = req.body;
+      
+      if (!Array.isArray(leaveData)) {
+        return res.status(400).json({ error: "Invalid data format" });
+      }
+
+      const result = await storage.bulkUploadLeaveRoster(leaveData);
+      res.json(result);
+    } catch (error) {
+      console.error("Error bulk uploading leave roster:", error);
+      res.status(500).json({ error: "Failed to upload leave roster" });
+    }
+  });
+
+  // Dashboard Evaluasi Cuti API endpoints
+  app.get("/api/leave-analytics/overview", async (req, res) => {
+    try {
+      const employees = await storage.getAllEmployees();
+      const leaveRequests = await storage.getAllLeaveRequests();
+      const leaveBalances = await storage.getLeaveBalances();
+      
+      // Statistik umum
+      const totalEmployees = employees.length;
+      const totalLeaveRequests = leaveRequests.length;
+      const pendingRequests = leaveRequests.filter(req => req.status === 'pending').length;
+      const approvedRequests = leaveRequests.filter(req => req.status === 'approved').length;
+      const totalLeaveDaysTaken = leaveBalances.reduce((sum, balance) => sum + balance.usedDays, 0);
+      
+      // Karyawan dengan cuti paling banyak
+      const topLeaveEmployees = leaveBalances
+        .sort((a, b) => b.usedDays - a.usedDays)
+        .slice(0, 5)
+        .map(balance => {
+          const employee = employees.find(emp => emp.nik === balance.employeeId);
+          return {
+            employeeId: balance.employeeId,
+            employeeName: employee?.name || 'Unknown',
+            usedDays: balance.usedDays,
+            remainingDays: balance.remainingDays,
+            percentage: Math.round((balance.usedDays / balance.totalDays) * 100)
+          };
+        });
+
+      // Tren cuti per bulan (6 bulan terakhir)
+      const sixMonthsAgo = new Date();
+      sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
+      
+      const monthlyLeaveData = [];
+      for (let i = 5; i >= 0; i--) {
+        const date = new Date();
+        date.setMonth(date.getMonth() - i);
+        const monthYear = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+        
+        const monthRequests = leaveRequests.filter(req => {
+          return req.startDate.startsWith(monthYear);
+        });
+        
+        monthlyLeaveData.push({
+          month: date.toLocaleDateString('id-ID', { month: 'short' }),
+          requests: monthRequests.length,
+          totalDays: monthRequests.reduce((sum, req) => {
+            const start = new Date(req.startDate);
+            const end = new Date(req.endDate);
+            return sum + Math.ceil((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)) + 1;
+          }, 0)
+        });
+      }
+
+      // Distribusi jenis cuti
+      const leaveTypeDistribution = leaveRequests.reduce((acc, req) => {
+        acc[req.leaveType] = (acc[req.leaveType] || 0) + 1;
+        return acc;
+      }, {} as Record<string, number>);
+
+      res.json({
+        overview: {
+          totalEmployees,
+          totalLeaveRequests,
+          pendingRequests,
+          approvedRequests,
+          totalLeaveDaysTaken,
+          averageLeaveDays: totalEmployees > 0 ? Math.round(totalLeaveDaysTaken / totalEmployees) : 0
+        },
+        topLeaveEmployees,
+        monthlyLeaveData,
+        leaveTypeDistribution
+      });
+    } catch (error) {
+      console.error("Error fetching leave analytics overview:", error);
+      res.status(500).json({ message: "Failed to fetch leave analytics" });
+    }
+  });
+
+  app.get("/api/leave-analytics/department", async (req, res) => {
+    try {
+      const employees = await storage.getAllEmployees();
+      const leaveBalances = await storage.getLeaveBalances();
+      
+      // Grup by department
+      const departmentStats = employees.reduce((acc, employee) => {
+        const dept = employee.department || 'Unknown';
+        if (!acc[dept]) {
+          acc[dept] = {
+            department: dept,
+            totalEmployees: 0,
+            totalLeaveDays: 0,
+            averageLeaveDays: 0,
+            employees: []
+          };
+        }
+        
+        const balance = leaveBalances.find(b => b.employeeId === employee.nik);
+        const usedDays = balance?.usedDays || 0;
+        
+        acc[dept].totalEmployees++;
+        acc[dept].totalLeaveDays += usedDays;
+        acc[dept].employees.push({
+          nik: employee.nik,
+          name: employee.name,
+          position: employee.position,
+          usedDays,
+          remainingDays: balance?.remainingDays || 0
+        });
+        
+        return acc;
+      }, {} as Record<string, any>);
+
+      // Calculate averages
+      Object.values(departmentStats).forEach((dept: any) => {
+        dept.averageLeaveDays = dept.totalEmployees > 0 
+          ? Math.round(dept.totalLeaveDays / dept.totalEmployees) 
+          : 0;
+      });
+
+      res.json(Object.values(departmentStats));
+    } catch (error) {
+      console.error("Error fetching department analytics:", error);
+      res.status(500).json({ message: "Failed to fetch department analytics" });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }

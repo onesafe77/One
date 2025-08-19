@@ -11,12 +11,18 @@ import {
   type InsertQrToken,
   type LeaveReminder,
   type InsertLeaveReminder,
+  type LeaveBalance,
+  type InsertLeaveBalance,
+  type LeaveHistory,
+  type InsertLeaveHistory,
   employees,
   attendanceRecords,
   rosterSchedules,
   leaveRequests,
   qrTokens,
-  leaveReminders
+  leaveReminders,
+  leaveBalances,
+  leaveHistory
 } from "@shared/schema";
 import { randomUUID } from "crypto";
 import { drizzle } from "drizzle-orm/neon-http";
@@ -66,6 +72,21 @@ export interface IStorage {
   getLeaveReminder(leaveRequestId: string, reminderType: string): Promise<LeaveReminder | undefined>;
   getLeaveReminders(): Promise<LeaveReminder[]>;
   saveLeaveReminder(reminder: InsertLeaveReminder): Promise<LeaveReminder>;
+
+  // Leave Balance methods
+  getLeaveBalances(): Promise<LeaveBalance[]>;
+  getLeaveBalanceByEmployee(employeeId: string, year?: number): Promise<LeaveBalance | undefined>;
+  createLeaveBalance(balance: InsertLeaveBalance): Promise<LeaveBalance>;
+  updateLeaveBalance(id: string, balance: Partial<InsertLeaveBalance>): Promise<LeaveBalance | undefined>;
+  calculateLeaveEligibility(employeeId: string): Promise<{ eligible: boolean; daysEarned: number; nextEligibleDate: string | null }>;
+
+  // Leave History methods
+  getLeaveHistory(): Promise<LeaveHistory[]>;
+  getLeaveHistoryByEmployee(employeeId: string): Promise<LeaveHistory[]>;
+  createLeaveHistory(history: InsertLeaveHistory): Promise<LeaveHistory>;
+
+  // Bulk upload methods
+  bulkUploadLeaveRoster(data: Array<{ nik: string; leaveType: string; startDate: string; endDate: string; totalDays: number }>): Promise<{ success: number; errors: string[] }>;
 }
 
 export class MemStorage implements IStorage {
@@ -473,6 +494,170 @@ export class DrizzleStorage implements IStorage {
   async saveLeaveReminder(reminder: InsertLeaveReminder): Promise<LeaveReminder> {
     const result = await this.db.insert(leaveReminders).values(reminder).returning();
     return result[0];
+  }
+
+  // Leave Balance methods
+  async getLeaveBalances(): Promise<LeaveBalance[]> {
+    return await this.db.select().from(leaveBalances);
+  }
+
+  async getLeaveBalanceByEmployee(employeeId: string, year?: number): Promise<LeaveBalance | undefined> {
+    const currentYear = year || new Date().getFullYear();
+    const result = await this.db.select().from(leaveBalances)
+      .where(and(eq(leaveBalances.employeeId, employeeId), eq(leaveBalances.year, currentYear)));
+    return result[0];
+  }
+
+  async createLeaveBalance(balance: InsertLeaveBalance): Promise<LeaveBalance> {
+    const result = await this.db.insert(leaveBalances).values(balance).returning();
+    return result[0];
+  }
+
+  async updateLeaveBalance(id: string, balance: Partial<InsertLeaveBalance>): Promise<LeaveBalance | undefined> {
+    const result = await this.db.update(leaveBalances).set(balance).where(eq(leaveBalances.id, id)).returning();
+    return result[0];
+  }
+
+  async calculateLeaveEligibility(employeeId: string): Promise<{ eligible: boolean; daysEarned: number; nextEligibleDate: string | null }> {
+    // Implementasi perhitungan cuti berdasarkan kebijakan perusahaan
+    // 70 hari kerja = 14 hari cuti, 35 hari kerja = 7 hari cuti
+    
+    const currentYear = new Date().getFullYear();
+    const balance = await this.getLeaveBalanceByEmployee(employeeId, currentYear);
+    
+    if (!balance) {
+      return { eligible: false, daysEarned: 0, nextEligibleDate: null };
+    }
+
+    const workingDays = balance.workingDaysCompleted;
+    let daysEarned = 0;
+    
+    // Hitung cuti berdasarkan hari kerja
+    if (workingDays >= 70) {
+      daysEarned = Math.floor(workingDays / 70) * 14;
+      const remainder = workingDays % 70;
+      if (remainder >= 35) {
+        daysEarned += 7;
+      }
+    } else if (workingDays >= 35) {
+      daysEarned = 7;
+    }
+
+    const nextEligibleWorkDays = workingDays < 35 ? 35 : (Math.floor(workingDays / 35) + 1) * 35;
+    const daysUntilEligible = nextEligibleWorkDays - workingDays;
+    
+    const nextEligibleDate = new Date();
+    nextEligibleDate.setDate(nextEligibleDate.getDate() + daysUntilEligible);
+
+    return {
+      eligible: daysEarned > balance.usedDays,
+      daysEarned,
+      nextEligibleDate: daysUntilEligible > 0 ? nextEligibleDate.toISOString().split('T')[0] : null
+    };
+  }
+
+  // Leave History methods
+  async getLeaveHistory(): Promise<LeaveHistory[]> {
+    return await this.db.select().from(leaveHistory);
+  }
+
+  async getLeaveHistoryByEmployee(employeeId: string): Promise<LeaveHistory[]> {
+    return await this.db.select().from(leaveHistory).where(eq(leaveHistory.employeeId, employeeId));
+  }
+
+  async createLeaveHistory(history: InsertLeaveHistory): Promise<LeaveHistory> {
+    const result = await this.db.insert(leaveHistory).values(history).returning();
+    return result[0];
+  }
+
+  // Bulk upload methods
+  async bulkUploadLeaveRoster(data: Array<{ nik: string; leaveType: string; startDate: string; endDate: string; totalDays: number }>): Promise<{ success: number; errors: string[] }> {
+    const errors: string[] = [];
+    let successCount = 0;
+
+    for (let i = 0; i < data.length; i++) {
+      try {
+        const item = data[i];
+        
+        // Validasi employee exists
+        const employee = await this.getEmployee(item.nik);
+        if (!employee) {
+          errors.push(`Baris ${i + 1}: Karyawan dengan NIK ${item.nik} tidak ditemukan`);
+          continue;
+        }
+
+        // Validasi format tanggal
+        const startDate = new Date(item.startDate);
+        const endDate = new Date(item.endDate);
+        
+        if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) {
+          errors.push(`Baris ${i + 1}: Format tanggal tidak valid`);
+          continue;
+        }
+
+        if (startDate > endDate) {
+          errors.push(`Baris ${i + 1}: Tanggal mulai tidak boleh lebih besar dari tanggal selesai`);
+          continue;
+        }
+
+        // Create leave request
+        const leaveRequest = await this.createLeaveRequest({
+          employeeId: item.nik,
+          employeeName: employee.name,
+          phoneNumber: employee.phone,
+          startDate: item.startDate,
+          endDate: item.endDate,
+          leaveType: item.leaveType,
+          reason: 'Bulk upload roster cuti',
+          status: 'approved' // Auto-approve bulk uploads
+        });
+
+        // Update/create leave balance
+        const currentYear = new Date().getFullYear();
+        let balance = await this.getLeaveBalanceByEmployee(item.nik, currentYear);
+        
+        if (!balance) {
+          // Create initial balance
+          balance = await this.createLeaveBalance({
+            employeeId: item.nik,
+            year: currentYear,
+            totalDays: 14, // Default berdasarkan kebijakan 70 hari kerja = 14 hari cuti
+            usedDays: item.totalDays,
+            remainingDays: 14 - item.totalDays,
+            workingDaysCompleted: 70, // Asumsi sudah bekerja 70 hari
+            lastLeaveDate: item.endDate
+          });
+        } else {
+          // Update existing balance
+          await this.updateLeaveBalance(balance.id, {
+            usedDays: balance.usedDays + item.totalDays,
+            remainingDays: balance.remainingDays - item.totalDays,
+            lastLeaveDate: item.endDate
+          });
+        }
+
+        // Create leave history
+        await this.createLeaveHistory({
+          employeeId: item.nik,
+          leaveRequestId: leaveRequest.id,
+          leaveType: item.leaveType,
+          startDate: item.startDate,
+          endDate: item.endDate,
+          totalDays: item.totalDays,
+          balanceBeforeLeave: balance.remainingDays,
+          balanceAfterLeave: balance.remainingDays - item.totalDays,
+          status: 'taken'
+        });
+
+        successCount++;
+
+      } catch (error) {
+        console.error(`Error processing row ${i + 1}:`, error);
+        errors.push(`Baris ${i + 1}: ${error instanceof Error ? error.message : 'Error tidak diketahui'}`);
+      }
+    }
+
+    return { success: successCount, errors };
   }
 }
 

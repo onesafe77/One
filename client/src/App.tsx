@@ -18,6 +18,8 @@ import Leave from "@/pages/leave";
 import Reports from "@/pages/reports";
 import AttendanceDetails from "@/pages/attendance-details";
 import LeaveMonitoring from "@/pages/leave-monitoring";
+import LeaveRosterUpload from "@/pages/leave-roster-upload";
+import LeaveEvaluation from "@/pages/leave-evaluation";
 import NotFound from "@/pages/not-found";
 
 const routes = [
@@ -30,6 +32,8 @@ const routes = [
   { path: "/reports", component: Reports, title: "Laporan" },
   { path: "/attendance-details", component: AttendanceDetails, title: "Dashboard HR " },
   { path: "/leave-monitoring", component: LeaveMonitoring, title: "Monitoring Cuti" },
+  { path: "/leave-roster-upload", component: LeaveRosterUpload, title: "Upload Roster Cuti" },
+  { path: "/leave-evaluation", component: LeaveEvaluation, title: "Dashboard Evaluasi Cuti" },
 ];
 
 function Router() {
