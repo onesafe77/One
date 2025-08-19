@@ -20,11 +20,11 @@ export function isValidShiftTime(currentTime: string, scheduledShift: string): b
   const totalMinutes = hours * 60 + minutes;
   
   if (scheduledShift === "Shift 1") {
-    // Shift 1: Allow check-in from 06:00 to 17:59 (before Shift 2 starts)
+    // Shift 1: Allow flexible check-in from 06:00 to 18:00 (360-1080 minutes)
     return totalMinutes >= 360 && totalMinutes < 1080;
   } else if (scheduledShift === "Shift 2") {
-    // Shift 2: Allow check-in from 18:00 to 05:59 (covers night shift)
-    return totalMinutes >= 1080 || totalMinutes < 360;
+    // Shift 2: Allow check-in from 12:00 to 10:00 next day (720 minutes to 600 minutes next day)
+    return totalMinutes >= 720 || totalMinutes < 600;
   }
   
   return false;

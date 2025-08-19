@@ -35,11 +35,11 @@ function isValidShiftTime(currentTime: string, scheduledShift: string): boolean 
   const totalMinutes = hours * 60 + minutes;
   
   if (scheduledShift === "Shift 1") {
-    // Shift 1: 08:00-16:00 - Allow check-in only during shift hours (480-960 minutes)
-    return totalMinutes >= 480 && totalMinutes <= 960;
+    // Shift 1: Allow flexible check-in from 06:00 to 18:00 (360-1080 minutes)
+    return totalMinutes >= 360 && totalMinutes < 1080;
   } else if (scheduledShift === "Shift 2") {
-    // Shift 2: 18:00-06:00 - Allow check-in from 18:00 (1080 minutes) OR until 06:00 (360 minutes)
-    return totalMinutes >= 1080 || totalMinutes <= 360;
+    // Shift 2: Allow check-in from 12:00 to 10:00 next day (720 minutes to 600 minutes next day)
+    return totalMinutes >= 720 || totalMinutes < 600;
   }
   
   return false;
@@ -257,8 +257,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log(`Shift validation result: ${isValidTiming}`);
       
       if (!isValidTiming) {
-        const shift1Window = "08:00-16:00";
-        const shift2Window = "18:00-06:00";
+        const shift1Window = "06:00-18:00";
+        const shift2Window = "12:00-10:00 (keesokan hari)";
         const allowedWindow = scheduledEmployee.shift === "Shift 1" ? shift1Window : shift2Window;
         
         return res.status(400).json({ 
