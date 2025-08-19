@@ -16,6 +16,7 @@ import Employees from "@/pages/employees";
 import Roster from "@/pages/roster";
 import Leave from "@/pages/leave";
 import Reports from "@/pages/reports";
+import AttendanceDetails from "@/pages/attendance-details";
 import NotFound from "@/pages/not-found";
 
 const routes = [
@@ -26,6 +27,7 @@ const routes = [
   { path: "/roster", component: Roster, title: "Roster Kerja" },
   { path: "/leave", component: Leave, title: "Manajemen Cuti" },
   { path: "/reports", component: Reports, title: "Laporan" },
+  { path: "/attendance-details", component: AttendanceDetails, title: "Detail Kehadiran Hari Ini" },
 ];
 
 function Router() {
