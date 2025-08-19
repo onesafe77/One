@@ -19,7 +19,7 @@ import type { Employee, LeaveRequest, InsertLeaveRequest } from "@shared/schema"
 import { CalendarDays, Clock, CheckCircle, XCircle, Eye, User, Phone } from "lucide-react";
 import { z } from "zod";
 
-const formSchema = insertLeaveRequestSchema;
+const formSchema = insertLeaveRequestSchema.omit({ employeeName: true });
 
 export default function Leave() {
   const [statusFilter, setStatusFilter] = useState("all");
@@ -39,7 +39,6 @@ export default function Leave() {
     resolver: zodResolver(formSchema),
     defaultValues: {
       employeeId: "",
-      employeeName: "",
       phoneNumber: "",
       startDate: "",
       endDate: "",
@@ -49,13 +48,12 @@ export default function Leave() {
     },
   });
 
-  // Auto-fill nama dan nomor WhatsApp berdasarkan employee selection
+  // Auto-fill nomor WhatsApp berdasarkan employee selection
   const selectedEmployeeId = form.watch("employeeId");
   useEffect(() => {
     if (selectedEmployeeId && employees.length > 0) {
       const selectedEmployee = employees.find(emp => emp.id === selectedEmployeeId);
       if (selectedEmployee) {
-        form.setValue("employeeName", selectedEmployee.name);
         form.setValue("phoneNumber", selectedEmployee.phone || "");
       }
     }
@@ -261,26 +259,6 @@ export default function Leave() {
                         ))}
                       </SelectContent>
                     </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="employeeName"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Nama Lengkap</FormLabel>
-                    <FormControl>
-                      <Input 
-                        {...field}
-                        placeholder="Nama akan terisi otomatis"
-                        readOnly
-                        className="bg-gray-50 dark:bg-gray-800"
-                        data-testid="leave-employee-name"
-                      />
-                    </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}

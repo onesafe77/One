@@ -19,7 +19,7 @@ import Reports from "@/pages/reports";
 import NotFound from "@/pages/not-found";
 
 const routes = [
-  { path: "/", component: Dashboard, title: "Dashboard" },
+  { path: "/", component: Dashboard, title: "Dashboard Karyawan PT.GECL" },
   { path: "/qr-generator", component: QRGenerator, title: "Generate QR Code" },
   { path: "/scanner", component: Scanner, title: "Scan QR Code" },
   { path: "/employees", component: Employees, title: "Data Karyawan" },

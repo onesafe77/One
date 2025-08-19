@@ -152,8 +152,8 @@ export default function Employees() {
     exclude: ['id'], // Don't auto save ID field
   });
 
-  const createMutation = useMutation({
-    mutationFn: (data: InsertEmployee) => apiRequest("POST", "/api/employees", data),
+  const createMutation = useMutation<Employee, Error, InsertEmployee>({
+    mutationFn: (data: InsertEmployee) => apiRequest("POST", "/api/employees", data).then(res => res.json()),
     onSuccess: (result) => {
       queryClient.invalidateQueries({ queryKey: ["/api/employees"] });
       setIsDialogOpen(false);
@@ -165,7 +165,7 @@ export default function Employees() {
         description: `Karyawan ${result.name} (${result.id}) berhasil ditambahkan`,
       });
     },
-    onError: (error: any) => {
+    onError: (error: Error) => {
       toast({
         title: "Error",
         description: error.message || "Gagal menambahkan karyawan",
@@ -174,9 +174,9 @@ export default function Employees() {
     },
   });
 
-  const updateMutation = useMutation({
+  const updateMutation = useMutation<Employee, Error, { id: string; data: Partial<InsertEmployee> }>({
     mutationFn: ({ id, data }: { id: string; data: Partial<InsertEmployee> }) =>
-      apiRequest("PUT", `/api/employees/${id}`, data),
+      apiRequest("PUT", `/api/employees/${id}`, data).then(res => res.json()),
     onSuccess: (result) => {
       queryClient.invalidateQueries({ queryKey: ["/api/employees"] });
       setIsDialogOpen(false);
@@ -188,7 +188,7 @@ export default function Employees() {
         description: `Data karyawan ${result.name} (${result.id}) berhasil diperbarui`,
       });
     },
-    onError: (error: any) => {
+    onError: (error: Error) => {
       toast({
         title: "Error",
         description: error.message || "Gagal memperbarui data karyawan",
@@ -197,8 +197,8 @@ export default function Employees() {
     },
   });
 
-  const deleteMutation = useMutation({
-    mutationFn: (id: string) => apiRequest("DELETE", `/api/employees/${id}`),
+  const deleteMutation = useMutation<void, Error, string>({
+    mutationFn: (id: string) => apiRequest("DELETE", `/api/employees/${id}`).then(() => {}),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/employees"] });
       toast({
@@ -206,10 +206,10 @@ export default function Employees() {
         description: "Karyawan berhasil dihapus",
       });
     },
-    onError: () => {
+    onError: (error: Error) => {
       toast({
         title: "Error",
-        description: "Gagal menghapus karyawan",
+        description: error.message || "Gagal menghapus karyawan",
         variant: "destructive",
       });
     },
@@ -272,9 +272,9 @@ export default function Employees() {
     setIsDialogOpen(true);
   };
 
-  const uploadExcelMutation = useMutation({
+  const uploadExcelMutation = useMutation<void, Error, InsertEmployee[]>({
     mutationFn: (employeeData: InsertEmployee[]) => 
-      apiRequest("POST", "/api/employees/bulk", { employees: employeeData }),
+      apiRequest("POST", "/api/employees/bulk", { employees: employeeData }).then(() => {}),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/employees"] });
       setIsUploadDialogOpen(false);
@@ -283,7 +283,7 @@ export default function Employees() {
         description: "Data karyawan berhasil diupload",
       });
     },
-    onError: (error: any) => {
+    onError: (error: Error) => {
       toast({
         title: "Error",
         description: error.message || "Gagal mengupload data karyawan",
