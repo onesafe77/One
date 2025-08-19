@@ -61,6 +61,17 @@ export const qrTokens = pgTable("qr_tokens", {
   createdAt: timestamp("created_at").default(sql`now()`),
 });
 
+export const leaveReminders = pgTable("leave_reminders", {
+  id: varchar("id").primaryKey(),
+  leaveRequestId: varchar("leave_request_id").notNull().references(() => leaveRequests.id),
+  employeeId: varchar("employee_id").notNull().references(() => employees.id),
+  reminderType: text("reminder_type").notNull(), // '7_days', '3_days', '1_day'
+  sentAt: timestamp("sent_at").notNull(),
+  phoneNumber: text("phone_number").notNull(),
+  message: text("message").notNull(),
+  createdAt: timestamp("created_at").default(sql`now()`),
+});
+
 // Insert schemas
 export const insertEmployeeSchema = createInsertSchema(employees).omit({
   createdAt: true,
@@ -85,6 +96,10 @@ export const insertQrTokenSchema = createInsertSchema(qrTokens).omit({
   createdAt: true,
 });
 
+export const insertLeaveReminderSchema = createInsertSchema(leaveReminders).omit({
+  createdAt: true,
+});
+
 // Types
 export type Employee = typeof employees.$inferSelect;
 export type InsertEmployee = z.infer<typeof insertEmployeeSchema>;
@@ -96,3 +111,5 @@ export type LeaveRequest = typeof leaveRequests.$inferSelect;
 export type InsertLeaveRequest = z.infer<typeof insertLeaveRequestSchema>;
 export type QrToken = typeof qrTokens.$inferSelect;
 export type InsertQrToken = z.infer<typeof insertQrTokenSchema>;
+export type LeaveReminder = typeof leaveReminders.$inferSelect;
+export type InsertLeaveReminder = z.infer<typeof insertLeaveReminderSchema>;

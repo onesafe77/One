@@ -781,6 +781,43 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // WhatsApp Leave Monitoring endpoints
+  app.get("/api/leave-monitoring/upcoming", async (req, res) => {
+    try {
+      const { LeaveMonitoringService } = await import('./leaveMonitoringService');
+      const monitoringService = new LeaveMonitoringService(storage as any);
+      const upcomingLeaves = await monitoringService.checkUpcomingLeaves();
+      res.json(upcomingLeaves);
+    } catch (error) {
+      console.error("Error fetching upcoming leaves:", error);
+      res.status(500).json({ error: "Failed to fetch upcoming leaves" });
+    }
+  });
+
+  app.post("/api/leave-monitoring/send-reminders", async (req, res) => {
+    try {
+      const { LeaveMonitoringService } = await import('./leaveMonitoringService');
+      const monitoringService = new LeaveMonitoringService(storage as any);
+      const result = await monitoringService.sendLeaveReminders();
+      res.json(result);
+    } catch (error) {
+      console.error("Error sending reminders:", error);
+      res.status(500).json({ error: "Failed to send reminders" });
+    }
+  });
+
+  app.get("/api/leave-monitoring/history", async (req, res) => {
+    try {
+      const { LeaveMonitoringService } = await import('./leaveMonitoringService');
+      const monitoringService = new LeaveMonitoringService(storage as any);
+      const history = await monitoringService.getLeaveReminderHistory();
+      res.json(history);
+    } catch (error) {
+      console.error("Error fetching reminder history:", error);
+      res.status(500).json({ error: "Failed to fetch reminder history" });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }

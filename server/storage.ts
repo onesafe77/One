@@ -9,11 +9,14 @@ import {
   type InsertLeaveRequest,
   type QrToken,
   type InsertQrToken,
+  type LeaveReminder,
+  type InsertLeaveReminder,
   employees,
   attendanceRecords,
   rosterSchedules,
   leaveRequests,
-  qrTokens
+  qrTokens,
+  leaveReminders
 } from "@shared/schema";
 import { randomUUID } from "crypto";
 import { drizzle } from "drizzle-orm/neon-http";
@@ -25,6 +28,7 @@ export interface IStorage {
   // Employee methods
   getEmployee(id: string): Promise<Employee | undefined>;
   getAllEmployees(): Promise<Employee[]>;
+  getEmployees(): Promise<Employee[]>; // Alias for compatibility
   createEmployee(employee: InsertEmployee): Promise<Employee>;
   updateEmployee(id: string, employee: Partial<InsertEmployee>): Promise<Employee | undefined>;
   deleteEmployee(id: string): Promise<boolean>;
@@ -48,6 +52,7 @@ export interface IStorage {
   getLeaveRequest(id: string): Promise<LeaveRequest | undefined>;
   getLeaveByEmployee(employeeId: string): Promise<LeaveRequest[]>;
   getAllLeaveRequests(): Promise<LeaveRequest[]>;
+  getLeaveRequests(): Promise<LeaveRequest[]>; // Alias for compatibility
   createLeaveRequest(request: InsertLeaveRequest): Promise<LeaveRequest>;
   updateLeaveRequest(id: string, request: Partial<InsertLeaveRequest>): Promise<LeaveRequest | undefined>;
   
@@ -56,6 +61,11 @@ export interface IStorage {
   getQrTokensByEmployee(employeeId: string): Promise<QrToken[]>;
   createQrToken(token: InsertQrToken): Promise<QrToken>;
   validateQrToken(employeeId: string, token: string): Promise<boolean>;
+
+  // Leave Reminder methods
+  getLeaveReminder(leaveRequestId: string, reminderType: string): Promise<LeaveReminder | undefined>;
+  getLeaveReminders(): Promise<LeaveReminder[]>;
+  saveLeaveReminder(reminder: InsertLeaveReminder): Promise<LeaveReminder>;
 }
 
 export class MemStorage implements IStorage {
@@ -438,6 +448,31 @@ export class DrizzleStorage implements IStorage {
   async validateQrToken(employeeId: string, token: string): Promise<boolean> {
     const qrToken = await this.getQrToken(employeeId);
     return qrToken ? qrToken.token === token && qrToken.isActive : false;
+  }
+
+  // Compatibility methods
+  async getEmployees(): Promise<Employee[]> {
+    return this.getAllEmployees();
+  }
+
+  async getLeaveRequests(): Promise<LeaveRequest[]> {
+    return this.getAllLeaveRequests();
+  }
+
+  // Leave Reminder methods
+  async getLeaveReminder(leaveRequestId: string, reminderType: string): Promise<LeaveReminder | undefined> {
+    const reminderId = `${leaveRequestId}_${reminderType}`;
+    const result = await this.db.select().from(leaveReminders).where(eq(leaveReminders.id, reminderId));
+    return result[0];
+  }
+
+  async getLeaveReminders(): Promise<LeaveReminder[]> {
+    return await this.db.select().from(leaveReminders);
+  }
+
+  async saveLeaveReminder(reminder: InsertLeaveReminder): Promise<LeaveReminder> {
+    const result = await this.db.insert(leaveReminders).values(reminder).returning();
+    return result[0];
   }
 }
 

@@ -89,8 +89,8 @@ export default function AttendanceDetails() {
   const attendanceRate = totalScheduled > 0 ? Math.round((totalPresent / totalScheduled) * 100) : 0;
 
   // Force refresh data
-  const handleRefresh = () => {
-    const { queryClient } = require("@/lib/queryClient");
+  const handleRefresh = async () => {
+    const { queryClient } = await import("@/lib/queryClient");
     queryClient.invalidateQueries({ queryKey: ["/api/attendance"] });
     queryClient.invalidateQueries({ queryKey: ["/api/roster"] });
     queryClient.invalidateQueries({ queryKey: ["/api/employees"] });
