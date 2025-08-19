@@ -100,9 +100,21 @@ export default function Leave() {
   });
 
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
-    // Add attachment path if file was uploaded
+    // Find the selected employee to get their name
+    const selectedEmployee = employees.find(emp => emp.id === values.employeeId);
+    if (!selectedEmployee) {
+      toast({
+        title: "Error",
+        description: "Karyawan tidak ditemukan",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Add attachment path and employee name
     const submitData = {
       ...values,
+      employeeName: selectedEmployee.name,
       attachmentPath: uploadedAttachmentPath || undefined
     };
     createMutation.mutate(submitData);
@@ -112,6 +124,12 @@ export default function Leave() {
     try {
       setIsUploading(true);
       const response = await apiRequest("POST", "/api/objects/upload");
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Upload service unavailable');
+      }
+      
       const data = await response.json();
       console.log('Upload parameters response:', data);
       return {
@@ -122,8 +140,8 @@ export default function Leave() {
       setIsUploading(false);
       console.error('Error getting upload parameters:', error);
       toast({
-        title: "Error",
-        description: "Gagal mendapatkan URL upload",
+        title: "Error", 
+        description: error instanceof Error ? error.message : "Layanan upload tidak tersedia saat ini",
         variant: "destructive",
       });
       throw error;
