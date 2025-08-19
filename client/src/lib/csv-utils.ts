@@ -7,7 +7,7 @@ export function exportAttendanceToCSV(
   // Only export attendance records that exist (employees who scanned QR code)
   const actualAttendance = attendance.filter(record => record.status === 'present');
   
-  const headers = ['No', 'ID Karyawan', 'Nama', 'Tanggal', 'Jam', 'Jam Tidur', 'Fit To Work', 'Status'];
+  const headers = ['No', 'ID Karyawan', 'Nama', 'Tanggal', 'Jam Masuk', 'Jam Tidur', 'Fit To Work', 'Status'];
   
   const csvData = [
     headers,

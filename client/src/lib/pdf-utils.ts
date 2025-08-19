@@ -244,8 +244,8 @@ function generateShiftSection(
   // Table headers with proportional widths
   doc.setFontSize(9); // Header font size
   doc.setFont('helvetica', 'bold');
-  const headers = ['Nama', 'NIK', 'Shift', 'Jabatan', 'Nomor Lambung', 'Jam Tidur', 'Fit To Work', 'Status'];
-  const columnWidths = [110, 65, 50, 120, 80, 60, 60, 60]; // Proportional widths
+  const headers = ['Nama', 'NIK', 'Shift', 'Jam Masuk', 'Nomor Lambung', 'Jam Tidur', 'Fit To Work', 'Status'];
+  const columnWidths = [110, 65, 50, 80, 80, 60, 60, 60]; // Proportional widths
   
   // Calculate table dimensions and check if it fits
   const tableWidth = columnWidths.reduce((sum, width) => sum + width, 0);
@@ -328,7 +328,7 @@ function generateShiftSection(
       employee.name || '-',
       employee.id || '-',
       shiftName || '-',
-      employee.position || '-', // Jabatan
+      attendanceRecord.time || '-', // Jam Masuk
       employee.nomorLambung || '-',
       jamTidur,
       fitToWorkStatus,
@@ -346,8 +346,8 @@ function generateShiftSection(
     rowData.forEach((cellData, columnIndex) => {
       const cellText = String(cellData);
       
-      if (columnIndex === 0 || columnIndex === 3) {
-        // Name (0) and Jabatan (3) columns - left aligned
+      if (columnIndex === 0) {
+        // Name (0) column - left aligned
         doc.text(cellText, currentX + 3, yPosition + 6);
       } else {
         // Other columns - center aligned
