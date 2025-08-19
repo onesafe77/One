@@ -32,7 +32,8 @@ export default function LeaveRosterUpload() {
 
   const uploadMutation = useMutation({
     mutationFn: async (data: LeaveRosterData[]): Promise<{ success: number; errors: string[] }> => {
-      return apiRequest("/api/leave-roster/bulk-upload", "POST", { leaveData: data });
+      const response = await apiRequest("POST", "/api/leave-roster/bulk-upload", { leaveData: data });
+      return await response.json();
     },
     onSuccess: (result: { success: number; errors: string[] }) => {
       setUploadResults(result);
@@ -209,21 +210,15 @@ export default function LeaveRosterUpload() {
   };
 
   const downloadTemplate = () => {
-    const templateData = [
-      ["NIK", "Nama Karyawan", "Jenis Cuti", "Tanggal Mulai", "Tanggal Selesai", "Total Hari", "Keterangan"],
-      ["C-00001", "John Doe", "Cuti Tahunan", "2024-08-20", "2024-08-22", 3, "Liburan keluarga"],
-      ["C-00002", "Jane Smith", "Cuti Sakit", "2024-08-21", "2024-08-21", 1, "Sakit demam"],
-      ["C-00003", "Bob Johnson", "Cuti Tahunan", "2024-08-25", "2024-08-27", 3, "Urusan pribadi"]
-    ];
-
-    const ws = XLSX.utils.aoa_to_sheet(templateData);
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, "Template Roster Cuti");
-    XLSX.writeFile(wb, "template_roster_cuti.xlsx");
-
+    // Download template dari server
+    const link = document.createElement('a');
+    link.href = '/api/leave-roster/template';
+    link.download = 'template-roster-cuti.csv';
+    link.click();
+    
     toast({
       title: "Template Downloaded",
-      description: "Template Excel berhasil didownload",
+      description: "Template CSV berhasil didownload",
     });
   };
 

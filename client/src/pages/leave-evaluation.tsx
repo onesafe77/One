@@ -30,7 +30,8 @@ import {
   Legend,
   ArcElement,
   LineElement,
-  PointElement
+  PointElement,
+  Filler
 } from 'chart.js';
 import { Bar, Doughnut, Line } from 'react-chartjs-2';
 
@@ -43,7 +44,8 @@ ChartJS.register(
   Legend,
   ArcElement,
   LineElement,
-  PointElement
+  PointElement,
+  Filler
 );
 
 interface LeaveAnalyticsOverview {

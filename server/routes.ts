@@ -880,6 +880,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Download template for leave roster upload
+  app.get("/api/leave-roster/template", async (req, res) => {
+    try {
+      const templateData = [
+        ["NIK", "Jenis Cuti", "Tanggal Mulai", "Tanggal Selesai", "Total Hari"],
+        ["C-015227", "Cuti Tahunan", "2025-08-25", "2025-08-27", "3"],
+        ["C-030015", "Cuti Sakit", "2025-08-28", "2025-08-29", "2"],
+        ["C-045123", "Cuti Melahirkan", "2025-09-01", "2025-11-01", "61"]
+      ];
+
+      const csvContent = templateData.map(row => row.join(',')).join('\n');
+      
+      res.setHeader('Content-Type', 'text/csv');
+      res.setHeader('Content-Disposition', 'attachment; filename="template-roster-cuti.csv"');
+      res.send(csvContent);
+    } catch (error) {
+      console.error("Error generating template:", error);
+      res.status(500).json({ error: "Failed to generate template" });
+    }
+  });
+
   // Dashboard Evaluasi Cuti API endpoints
   app.get("/api/leave-analytics/overview", async (req, res) => {
     try {
@@ -899,7 +920,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         .sort((a, b) => b.usedDays - a.usedDays)
         .slice(0, 5)
         .map(balance => {
-          const employee = employees.find(emp => emp.nik === balance.employeeId);
+          const employee = employees.find(emp => emp.id === balance.employeeId);
           return {
             employeeId: balance.employeeId,
             employeeName: employee?.name || 'Unknown',
@@ -977,13 +998,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
           };
         }
         
-        const balance = leaveBalances.find(b => b.employeeId === employee.nik);
+        const balance = leaveBalances.find(b => b.employeeId === employee.id);
         const usedDays = balance?.usedDays || 0;
         
         acc[dept].totalEmployees++;
         acc[dept].totalLeaveDays += usedDays;
         acc[dept].employees.push({
-          nik: employee.nik,
+          nik: employee.id,
           name: employee.name,
           position: employee.position,
           usedDays,
