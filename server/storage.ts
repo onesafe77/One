@@ -575,12 +575,29 @@ export class DrizzleStorage implements IStorage {
     const errors: string[] = [];
     let successCount = 0;
 
-    for (let i = 0; i < data.length; i++) {
-      try {
+    try {
+      // Batch fetch all employees at once to avoid N+1 queries
+      const allEmployees = await this.getAllEmployees();
+      const employeeMap = new Map(allEmployees.map(emp => [emp.id, emp]));
+
+      // Batch fetch all existing leave balances
+      const currentYear = new Date().getFullYear();
+      const allBalances = await db.select().from(leaveBalances).where(eq(leaveBalances.year, currentYear));
+      const balanceMap = new Map(allBalances.map(balance => [balance.employeeId, balance]));
+
+      // Prepare data for bulk operations
+      const validItems: Array<{
+        item: typeof data[0];
+        employee: any;
+        rowIndex: number;
+      }> = [];
+
+      // Pre-validate all data
+      for (let i = 0; i < data.length; i++) {
         const item = data[i];
         
         // Validasi employee exists
-        const employee = await this.getEmployee(item.nik);
+        const employee = employeeMap.get(item.nik);
         if (!employee) {
           errors.push(`Baris ${i + 1}: Karyawan dengan NIK ${item.nik} tidak ditemukan`);
           continue;
@@ -600,61 +617,91 @@ export class DrizzleStorage implements IStorage {
           continue;
         }
 
-        // Create leave request
-        const leaveRequest = await this.createLeaveRequest({
-          employeeId: item.nik,
-          employeeName: employee.name,
-          phoneNumber: employee.phone,
-          startDate: item.startDate,
-          endDate: item.endDate,
-          leaveType: item.leaveType,
-          reason: 'Bulk upload roster cuti',
-          status: 'approved' // Auto-approve bulk uploads
-        });
+        validItems.push({ item, employee, rowIndex: i + 1 });
+      }
 
-        // Update/create leave balance
-        const currentYear = new Date().getFullYear();
-        let balance = await this.getLeaveBalanceByEmployee(item.nik, currentYear);
-        
-        if (!balance) {
-          // Create initial balance
-          balance = await this.createLeaveBalance({
+      // Process items in smaller batches for better performance
+      const BATCH_SIZE = 50;
+      const batches = [];
+      for (let i = 0; i < validItems.length; i += BATCH_SIZE) {
+        batches.push(validItems.slice(i, i + BATCH_SIZE));
+      }
+
+      for (const batch of batches) {
+        // Create leave requests for this batch
+        const leaveRequests = await Promise.all(
+          batch.map(({ item, employee }) =>
+            this.createLeaveRequest({
+              employeeId: item.nik,
+              employeeName: employee.name,
+              phoneNumber: employee.phone,
+              startDate: item.startDate,
+              endDate: item.endDate,
+              leaveType: item.leaveType,
+              reason: 'Bulk upload roster cuti',
+              status: 'approved'
+            })
+          )
+        );
+
+        // Process balances and histories for this batch
+        const batchOperations: Array<Promise<any>> = [];
+
+        for (let i = 0; i < batch.length; i++) {
+          const { item } = batch[i];
+          const leaveRequest = leaveRequests[i];
+
+          let balance = balanceMap.get(item.nik);
+          let balanceBeforeLeave = 14;
+          let balanceAfterLeave = 14 - item.totalDays;
+
+          if (!balance) {
+            const newBalance = this.createLeaveBalance({
+              employeeId: item.nik,
+              year: currentYear,
+              totalDays: 14,
+              usedDays: item.totalDays,
+              remainingDays: 14 - item.totalDays,
+              workingDaysCompleted: 70,
+              lastLeaveDate: item.endDate
+            });
+            batchOperations.push(newBalance);
+          } else {
+            balanceBeforeLeave = balance.remainingDays;
+            balanceAfterLeave = balance.remainingDays - item.totalDays;
+            
+            const updateBalance = this.updateLeaveBalance(balance.id, {
+              usedDays: balance.usedDays + item.totalDays,
+              remainingDays: balance.remainingDays - item.totalDays,
+              lastLeaveDate: item.endDate
+            });
+            batchOperations.push(updateBalance);
+          }
+
+          // Create leave history
+          const historyCreation = this.createLeaveHistory({
             employeeId: item.nik,
-            year: currentYear,
-            totalDays: 14, // Default berdasarkan kebijakan 70 hari kerja = 14 hari cuti
-            usedDays: item.totalDays,
-            remainingDays: 14 - item.totalDays,
-            workingDaysCompleted: 70, // Asumsi sudah bekerja 70 hari
-            lastLeaveDate: item.endDate
+            leaveRequestId: leaveRequest.id,
+            leaveType: item.leaveType,
+            startDate: item.startDate,
+            endDate: item.endDate,
+            totalDays: item.totalDays,
+            balanceBeforeLeave,
+            balanceAfterLeave,
+            status: 'taken'
           });
-        } else {
-          // Update existing balance
-          await this.updateLeaveBalance(balance.id, {
-            usedDays: balance.usedDays + item.totalDays,
-            remainingDays: balance.remainingDays - item.totalDays,
-            lastLeaveDate: item.endDate
-          });
+          batchOperations.push(historyCreation);
         }
 
-        // Create leave history
-        await this.createLeaveHistory({
-          employeeId: item.nik,
-          leaveRequestId: leaveRequest.id,
-          leaveType: item.leaveType,
-          startDate: item.startDate,
-          endDate: item.endDate,
-          totalDays: item.totalDays,
-          balanceBeforeLeave: balance.remainingDays,
-          balanceAfterLeave: balance.remainingDays - item.totalDays,
-          status: 'taken'
-        });
-
-        successCount++;
-
-      } catch (error) {
-        console.error(`Error processing row ${i + 1}:`, error);
-        errors.push(`Baris ${i + 1}: ${error instanceof Error ? error.message : 'Error tidak diketahui'}`);
+        // Execute batch operations
+        await Promise.all(batchOperations);
       }
+
+      successCount = validItems.length;
+
+    } catch (error) {
+      console.error('Error in bulk upload:', error);
+      errors.push(`Error sistem: ${error instanceof Error ? error.message : 'Error tidak diketahui'}`);
     }
 
     return { success: successCount, errors };

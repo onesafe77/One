@@ -184,10 +184,10 @@ export default function LeaveRosterUpload() {
     setUploadProgress(0);
 
     try {
-      // Simulasi progress
+      // Progress tracking yang lebih realistis
       const progressInterval = setInterval(() => {
-        setUploadProgress(prev => Math.min(prev + 10, 90));
-      }, 200);
+        setUploadProgress(prev => Math.min(prev + 5, 85));
+      }, 1000);
 
       const leaveData = await processExcelFile(file);
       
