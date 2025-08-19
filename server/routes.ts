@@ -728,6 +728,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.json({ uploadURL });
   });
 
+  // Endpoint untuk normalize upload URL dan set ACL
+  app.post("/api/objects/normalize", async (req, res) => {
+    try {
+      const { uploadURL } = req.body;
+      if (!uploadURL) {
+        return res.status(400).json({ error: "uploadURL is required" });
+      }
+
+      const objectStorageService = new ObjectStorageService();
+      const objectPath = objectStorageService.normalizeObjectEntityPath(uploadURL);
+      
+      res.json({ objectPath });
+    } catch (error) {
+      console.error("Error normalizing object path:", error);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
   // Endpoint untuk mengakses file PDF yang diupload
   app.get("/objects/:objectPath(*)", async (req, res) => {
     const objectStorageService = new ObjectStorageService();
