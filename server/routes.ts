@@ -887,7 +887,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         ["NIK", "Jenis Cuti", "Tanggal Mulai", "Tanggal Selesai", "Total Hari"],
         ["C-015227", "Cuti Tahunan", "2025-08-25", "2025-08-27", "3"],
         ["C-030015", "Cuti Sakit", "2025-08-28", "2025-08-29", "2"],
-        ["C-045123", "Cuti Melahirkan", "2025-09-01", "2025-11-01", "61"]
+        ["C-045123", "Cuti Melahirkan", "2025-09-01", "2025-11-01", "61"],
+        ["", "", "", "", ""],
+        ["Format tanggal: YYYY-MM-DD (contoh: 2025-08-25)", "", "", "", ""],
+        ["Jenis cuti: Cuti Tahunan, Cuti Sakit, Cuti Melahirkan, dll", "", "", "", ""]
       ];
 
       const csvContent = templateData.map(row => row.join(',')).join('\n');

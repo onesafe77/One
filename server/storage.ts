@@ -29,6 +29,7 @@ import { drizzle } from "drizzle-orm/neon-http";
 import { neon } from "@neondatabase/serverless";
 import { eq, and } from "drizzle-orm";
 import { sql as drizzleSql } from "drizzle-orm";
+import { db } from "./db";
 
 export interface IStorage {
   // Employee methods

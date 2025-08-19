@@ -99,11 +99,11 @@ export default function LeaveRosterUpload() {
           const dataRows = jsonData.slice(1) as any[][];
           
           const leaveData: LeaveRosterData[] = dataRows
-            .filter(row => row.length >= 6 && row[0]) // Pastikan ada data NIK
+            .filter(row => row.length >= 5 && row[0]) // Minimal 5 kolom: NIK, Jenis Cuti, Tanggal Mulai, Tanggal Selesai, Total Hari
             .map((row, index) => {
-              // Validasi format tanggal
-              const startDate = parseExcelDate(row[3]);
-              const endDate = parseExcelDate(row[4]);
+              // Format yang diharapkan: NIK, Jenis Cuti, Tanggal Mulai, Tanggal Selesai, Total Hari
+              const startDate = parseExcelDate(row[2]); // Kolom C
+              const endDate = parseExcelDate(row[3]);   // Kolom D
               
               if (!startDate || !endDate) {
                 throw new Error(`Baris ${index + 2}: Format tanggal tidak valid`);
@@ -111,12 +111,12 @@ export default function LeaveRosterUpload() {
 
               return {
                 nik: String(row[0]).trim(),
-                nama: String(row[1] || "").trim(),
-                leaveType: String(row[2] || "Cuti Tahunan").trim(),
+                nama: "", // Nama akan dicari dari database
+                leaveType: String(row[1] || "Cuti Tahunan").trim(),
                 startDate: startDate,
                 endDate: endDate,
-                totalDays: parseInt(String(row[5])) || calculateDaysBetween(startDate, endDate),
-                reason: String(row[6] || "").trim(),
+                totalDays: parseInt(String(row[4])) || calculateDaysBetween(startDate, endDate),
+                reason: String(row[5] || "Bulk upload roster cuti").trim(),
               };
             });
 
