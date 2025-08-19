@@ -137,7 +137,32 @@ export default function Leave() {
     if (result.successful && result.successful.length > 0) {
       const uploadURL = result.successful[0].uploadURL;
       if (uploadURL) {
-        setUploadedAttachmentPath(uploadURL);
+        // Convert the Google Storage URL to our local proxy URL
+        const objectStorageService = {
+          normalizeObjectEntityPath: (rawPath: string): string => {
+            if (!rawPath.startsWith("https://storage.googleapis.com/")) {
+              return rawPath;
+            }
+          
+            // Extract the path from the URL by removing query parameters and domain
+            const url = new URL(rawPath);
+            const rawObjectPath = url.pathname;
+          
+            // Find the private object directory pattern
+            const privatePattern = "/.private/";
+            const privateIndex = rawObjectPath.indexOf(privatePattern);
+            if (privateIndex === -1) {
+              return rawObjectPath;
+            }
+          
+            // Extract the entity ID from the path
+            const entityId = rawObjectPath.slice(privateIndex + privatePattern.length);
+            return `/objects/${entityId}`;
+          }
+        };
+        
+        const normalizedPath = objectStorageService.normalizeObjectEntityPath(uploadURL);
+        setUploadedAttachmentPath(normalizedPath);
         toast({
           title: "Berhasil",
           description: "File PDF berhasil diupload",
