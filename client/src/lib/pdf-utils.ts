@@ -272,14 +272,20 @@ function generateShiftSection(
   doc.setFillColor(220, 220, 220);
   doc.rect(margin, yPosition - 2, finalTableWidth, headerHeight, 'F');
   
+  // Calculate number of attended employees for this shift
+  const attendedEmployeesForShift = data.attendance.filter(record => {
+    const scheduleRecord = scheduledEmployees.find(s => s.employeeId === record.employeeId);
+    return scheduleRecord && scheduleRecord.shift === shiftName;
+  });
+
   // Main table border
   doc.setLineWidth(0.5);
-  doc.rect(margin, yPosition - 2, finalTableWidth, (scheduledEmployees.length + 1) * rowHeight + 2);
+  doc.rect(margin, yPosition - 2, finalTableWidth, (attendedEmployeesForShift.length + 1) * rowHeight + 2);
   
   // Vertical grid lines for entire table
   let currentX = margin;
   for (let i = 0; i <= headers.length; i++) {
-    doc.line(currentX, yPosition - 2, currentX, yPosition - 2 + (scheduledEmployees.length + 1) * rowHeight + 2);
+    doc.line(currentX, yPosition - 2, currentX, yPosition - 2 + (attendedEmployeesForShift.length + 1) * rowHeight + 2);
     if (i < headers.length) {
       currentX += columnWidths[i];
     }
@@ -302,45 +308,32 @@ function generateShiftSection(
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(8); // Readable font size for data
   
-  // Process scheduled employees and check if they attended
-  scheduledEmployees.forEach((scheduleRecord, rowIndex) => {
-    const employee = data.employees.find(emp => emp.id === scheduleRecord.employeeId);
+  // Only process employees who actually attended (have attendance records)
+  const attendedEmployees = data.attendance.filter(record => {
+    // Check if this attendance record matches the current shift
+    const scheduleRecord = scheduledEmployees.find(s => s.employeeId === record.employeeId);
+    return scheduleRecord && scheduleRecord.shift === shiftName;
+  });
+
+  attendedEmployees.forEach((attendanceRecord, rowIndex) => {
+    const employee = data.employees.find(emp => emp.id === attendanceRecord.employeeId);
     if (!employee) return;
     
-    // Find attendance record for this employee
-    const attendanceRecord = data.attendance.find(record => record.employeeId === employee.id);
+    // Prepare row data - only show employees who scanned QR code
+    const jamTidur = attendanceRecord.jamTidur || '-';
+    const fitToWorkStatus = attendanceRecord.fitToWork || 'Not Fit To Work';
+    const attendanceStatus = attendanceRecord.status === 'present' ? 'Hadir' : 'Tidak Hadir';
     
-    // Prepare row data (removed Jam Masuk column as per new header structure)
-    let rowData;
-    if (attendanceRecord) {
-      // Employee attended - use attendance data
-      const jamTidur = attendanceRecord.jamTidur || '-';
-      const fitToWorkStatus = attendanceRecord.fitToWork || 'Not Fit To Work';
-      const attendanceStatus = attendanceRecord.status === 'present' ? 'Hadir' : 'Tidak Hadir';
-      
-      rowData = [
-        employee.name || '-',
-        employee.id || '-',
-        shiftName || '-',
-        employee.position || '-', // Jabatan
-        employee.nomorLambung || '-',
-        jamTidur,
-        fitToWorkStatus,
-        attendanceStatus
-      ];
-    } else {
-      // Employee didn't attend - show as absent
-      rowData = [
-        employee.name || '-',
-        employee.id || '-',
-        shiftName || '-',
-        employee.position || '-', // Jabatan
-        employee.nomorLambung || '-',
-        '-',
-        'Fit To Work',
-        'Tidak Hadir'
-      ];
-    }
+    const rowData = [
+      employee.name || '-',
+      employee.id || '-',
+      shiftName || '-',
+      employee.position || '-', // Jabatan
+      employee.nomorLambung || '-',
+      jamTidur,
+      fitToWorkStatus,
+      attendanceStatus
+    ];
     
     // Alternating row background
     if (rowIndex % 2 === 1) {

@@ -4,11 +4,14 @@ export function exportAttendanceToCSV(
   attendance: AttendanceRecord[], 
   employees: Employee[]
 ): void {
-  const headers = ['No', 'ID Karyawan', 'Nama', 'Tanggal', 'Jam', 'Status'];
+  // Only export attendance records that exist (employees who scanned QR code)
+  const actualAttendance = attendance.filter(record => record.status === 'present');
+  
+  const headers = ['No', 'ID Karyawan', 'Nama', 'Tanggal', 'Jam', 'Jam Tidur', 'Fit To Work', 'Status'];
   
   const csvData = [
     headers,
-    ...attendance.map((record, index) => {
+    ...actualAttendance.map((record, index) => {
       const employee = employees.find(emp => emp.id === record.employeeId);
       return [
         (index + 1).toString(),
@@ -16,7 +19,9 @@ export function exportAttendanceToCSV(
         employee?.name || 'Unknown',
         formatDateForCSV(record.date),
         record.time,
-        record.status === 'present' ? 'Hadir' : 'Tidak Hadir'
+        record.jamTidur || '-',
+        record.fitToWork || 'Not Set',
+        'Hadir'
       ];
     })
   ];
