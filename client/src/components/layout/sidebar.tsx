@@ -9,10 +9,7 @@ import {
   BarChart3,
   ClipboardList,
   User,
-  Clock,
-  Bell,
-  Upload,
-  TrendingUp
+  Clock
 } from "lucide-react";
 import companyLogo from "@assets/WhatsApp Image 2024-11-30 at 13.08.33_1755505069008.jpeg";
 
@@ -24,9 +21,6 @@ const navigation = [
   { name: "Karyawan", href: "/employees", icon: Users },
   { name: "Roster", href: "/roster", icon: Calendar },
   { name: "Cuti", href: "/leave", icon: ClipboardList },
-  { name: "Monitoring Cuti", href: "/leave-monitoring", icon: Bell },
-  { name: "Upload Roster Cuti", href: "/leave-roster-upload", icon: Upload },
-  { name: "Evaluasi Cuti", href: "/leave-evaluation", icon: TrendingUp },
   { name: "Laporan", href: "/reports", icon: FileText },
 ];
 

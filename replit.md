@@ -53,6 +53,12 @@ Preferred communication style: Simple, everyday language.
 - **Real-time Dashboard**: Live attendance statistics with visual charts for management overview
 
 ### Recent Changes
+- **August 19, 2025**: Consolidated all leave management features into unified main Cuti page with attractive tabbed interface
+- **August 19, 2025**: Removed separate pages for leave monitoring, leave evaluation, and leave roster upload
+- **August 19, 2025**: Created 5-tab system: Pengajuan, Upload Roster, Evaluasi, Monitoring, and Daftar Cuti
+- **August 19, 2025**: Integrated comprehensive leave analytics dashboard with charts and statistics
+- **August 19, 2025**: Added automated WhatsApp monitoring with reminder history tracking
+- **August 19, 2025**: Streamlined navigation by removing redundant leave management pages
 - **August 18, 2025**: Enhanced employee save functionality with improved validation and user feedback messages
 - **August 18, 2025**: Added cancel button and better form handling for employee creation/editing dialog
 - **August 18, 2025**: Fixed duplicate field issue in employee form and improved button states (Save/Update)
