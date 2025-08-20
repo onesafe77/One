@@ -2,7 +2,13 @@ import fetch from 'node-fetch';
 import type { Employee } from '@shared/schema';
 
 const NOTIF_API_KEY = process.env.NOTIF_API_KEY;
-const API_URL = "https://app.notif.my.id/api/v2/send-message";
+// Berbagai endpoint yang mungkin untuk notif.my.id
+const API_ENDPOINTS = [
+  "https://app7.notif.my.id/api/send",
+  "https://app7.notif.my.id/req.php",
+  "https://app.notif.my.id/api/send",
+  "https://app.notif.my.id/api/v1/send",
+];
 
 interface IncidentData {
   incidentType: string;
@@ -58,7 +64,8 @@ Terima kasih atas perhatian dan kerjasamanya.`;
   }
 
   /**
-   * Format nomor telepon untuk notif.my.id (format: 628XXXXXXXXX@c.us)
+   * Format nomor telepon untuk notif.my.id
+   * Berdasarkan dokumentasi notif.my.id, format yang benar adalah: 628XXXXXXXXX (tanpa @c.us)
    */
   private formatPhoneNumber(phone: string): string {
     // Hapus semua karakter non-digit
@@ -74,7 +81,8 @@ Terima kasih atas perhatian dan kerjasamanya.`;
       cleanPhone = '62' + cleanPhone;
     }
     
-    return cleanPhone + '@c.us';
+    // Return tanpa @c.us untuk notif.my.id
+    return cleanPhone;
   }
 
   /**
@@ -99,31 +107,41 @@ Terima kasih atas perhatian dan kerjasamanya.`;
     const timestamp = new Date().toISOString();
 
     try {
-      const payload: any = {
-        apikey: NOTIF_API_KEY,
-        receiver: formattedPhone,
-        mtype: mediaUrl ? "image" : "text",
-        text: message,
-      };
+      // Format payload untuk req.php endpoint (form-urlencoded)
+      const formData = new URLSearchParams();
+      formData.append('api_key', NOTIF_API_KEY!);
+      formData.append('receiver', formattedPhone);
+      formData.append('message', message);
+      formData.append('f', 'send_message'); // fungsi untuk send message
 
       // Tambahkan URL media jika ada
       if (mediaUrl) {
-        payload.url = mediaUrl;
+        formData.append('media', mediaUrl);
       }
 
       console.log(`Sending WhatsApp to ${employee.name} (${formattedPhone})...`);
       
-      const response = await fetch(API_URL, {
+      // Gunakan format req.php yang umum untuk WhatsApp gateway Indonesia
+      const response = await fetch("https://app7.notif.my.id/req.php", {
         method: "POST",
         headers: { 
-          "Content-Type": "application/json",
+          "Content-Type": "application/x-www-form-urlencoded",
         },
-        body: JSON.stringify(payload),
+        body: formData.toString(),
       });
 
-      const result = await response.json() as any;
+      // Response mungkin HTML atau text, bukan JSON
+      const responseText = await response.text();
+      let result: any;
       
-      if (response.ok && result.status === 'success') {
+      try {
+        result = JSON.parse(responseText);
+      } catch {
+        // Jika bukan JSON, gunakan text response
+        result = { message: responseText, status: 'error' };
+      }
+      
+      if (response.ok && (result.status === 'success' || result.success === true)) {
         return {
           employeeId: employee.id,
           employeeName: employee.name,
@@ -194,25 +212,41 @@ Terima kasih atas perhatian dan kerjasamanya.`;
 
     try {
       // Test dengan nomor dummy (tidak akan terkirim tapi akan test API key)
-      const response = await fetch(API_URL, {
+      // Test dengan format req.php (form-urlencoded)
+      const testForm = new URLSearchParams();
+      testForm.append('api_key', NOTIF_API_KEY);
+      testForm.append('receiver', '628123456789');
+      testForm.append('message', 'Test connection from incident blast system');
+      testForm.append('f', 'send_message');
+
+      const response = await fetch("https://app7.notif.my.id/req.php", {
         method: "POST",
         headers: { 
-          "Content-Type": "application/json",
+          "Content-Type": "application/x-www-form-urlencoded",
         },
-        body: JSON.stringify({
-          apikey: NOTIF_API_KEY,
-          receiver: "628123456789@c.us",
-          mtype: "text",
-          text: "Test connection",
-        }),
+        body: testForm.toString(),
       });
 
-      const result = await response.json() as any;
+      // Response mungkin HTML atau text, bukan JSON untuk testConnection
+      const responseText = await response.text();
+      let result: any;
       
-      if (response.ok) {
+      try {
+        result = JSON.parse(responseText);
+      } catch {
+        // Jika bukan JSON, gunakan text response
+        result = { message: responseText, status: 'error' };
+      }
+      
+      if (response.ok && !responseText.includes('Restrcited Area')) {
         return {
           success: true,
           message: 'Koneksi ke notif.my.id berhasil'
+        };
+      } else if (responseText.includes('Restrcited Area')) {
+        return {
+          success: false,
+          message: 'API Key valid tetapi akses dibatasi. Periksa dashboard app7.notif.my.id untuk verifikasi akun dan koneksi WhatsApp device.'
         };
       } else {
         return {

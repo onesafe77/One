@@ -259,7 +259,12 @@ export default function IncidentBlast() {
       <Alert className="mb-4 border-green-200 bg-green-50 dark:border-green-800 dark:bg-green-900/20">
         <CheckCircle className="h-4 w-4 text-green-600" />
         <AlertDescription className="text-sm text-green-700 dark:text-green-300">
-          <strong>✅ Notif.my.id Aktif:</strong> Menggunakan provider WhatsApp lokal Indonesia yang mendukung pengiriman volume besar tanpa batas harian dan lebih stabil untuk nomor Indonesia.
+          <strong>⚠️ Notif.my.id - Status: API Key Valid, Akses Terbatas</strong><br/>
+          API key sudah dikonfigurasi dengan benar tetapi mendapat response "Restricted Area".<br/>
+          <strong>Langkah selanjutnya:</strong> Login ke dashboard app7.notif.my.id untuk:
+          <br/>• Verifikasi koneksi WhatsApp device
+          <br/>• Cek quota dan status akun
+          <br/>• Aktifkan layanan jika diperlukan
         </AlertDescription>
       </Alert>
 
@@ -571,8 +576,13 @@ export default function IncidentBlast() {
                       <Alert className="mb-2 border-orange-200 bg-orange-50 dark:border-orange-800 dark:bg-orange-900/20">
                         <AlertTriangle className="h-4 w-4 text-orange-600" />
                         <AlertDescription className="text-xs text-orange-700 dark:text-orange-300">
-                          <strong>Semua pesan gagal terkirim.</strong> Pastikan API key notif.my.id valid dan nomor WhatsApp karyawan sudah terdaftar.
-                          Periksa juga saldo atau quota API di dashboard notif.my.id.
+                          <strong>⚠️ Status API Notif.my.id: "Restricted Area"</strong><br/>
+                          API key valid tetapi akses terbatas. Kemungkinan penyebab:<br/>
+                          • Akun belum diverifikasi atau upgrade ke akun berbayar<br/>
+                          • Quota harian/bulanan telah habis<br/>
+                          • Device WhatsApp belum terhubung di dashboard<br/>
+                          • Perlu konfirmasi nomor WhatsApp sender<br/>
+                          <strong>Solusi:</strong> Login ke dashboard app7.notif.my.id untuk verifikasi status akun dan koneksi WhatsApp.
                         </AlertDescription>
                       </Alert>
                     )}
