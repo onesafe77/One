@@ -58,25 +58,43 @@ Terima kasih atas perhatian dan kerjasamanya.`;
   }
 
   /**
-   * Format nomor telepon untuk notif.my.id v2
-   * Berdasarkan contoh: receiver: "120363043283436111@g.us" - bisa individual (@c.us) atau group (@g.us)
+   * Format nomor telepon untuk notif.my.id v2 dengan validasi ketat
    */
   private formatPhoneNumber(phone: string): string {
-    // Hapus semua karakter non-digit
-    let cleanPhone = phone.replace(/\D/g, '');
+    console.log(`Original phone: "${phone}"`);
     
-    // Jika dimulai dengan 0, ganti dengan 62
+    // Hapus semua karakter non-digit dan spasi
+    let cleanPhone = phone.replace(/\D/g, '');
+    console.log(`Clean digits: "${cleanPhone}"`);
+    
+    // Validasi: harus ada digits
+    if (!cleanPhone || cleanPhone.length < 10) {
+      console.log(`❌ INVALID: Phone too short or empty: "${cleanPhone}"`);
+      throw new Error(`Invalid phone number: "${phone}" -> "${cleanPhone}"`);
+    }
+    
+    // Jika dimulai dengan 0 (format lokal Indonesia), ganti dengan 62
     if (cleanPhone.startsWith('0')) {
       cleanPhone = '62' + cleanPhone.substring(1);
+      console.log(`Converted from local: "${cleanPhone}"`);
     }
     
-    // Jika belum dimulai dengan 62, tambahkan 62
+    // Jika belum dimulai dengan 62, tambahkan 62 (asumsi Indonesia)
     if (!cleanPhone.startsWith('62')) {
       cleanPhone = '62' + cleanPhone;
+      console.log(`Added country code: "${cleanPhone}"`);
     }
     
-    // Return dengan @c.us untuk individual WhatsApp ID
-    return cleanPhone + '@c.us';
+    // Validasi final: nomor Indonesia harus 62 + 10-13 digit
+    if (cleanPhone.length < 12 || cleanPhone.length > 15) {
+      console.log(`❌ INVALID: Phone length ${cleanPhone.length} not in valid range: "${cleanPhone}"`);
+      throw new Error(`Invalid Indonesian phone number length: "${cleanPhone}"`);
+    }
+    
+    const formatted = cleanPhone + '@c.us';
+    console.log(`Final formatted: "${formatted}"`);
+    
+    return formatted;
   }
 
   /**
@@ -97,7 +115,21 @@ Terima kasih atas perhatian dan kerjasamanya.`;
       };
     }
 
-    const formattedPhone = this.formatPhoneNumber(employee.phone);
+    let formattedPhone: string;
+    try {
+      formattedPhone = this.formatPhoneNumber(employee.phone);
+      console.log(`✅ Phone formatted: ${employee.name} -> ${formattedPhone}`);
+    } catch (formatError) {
+      console.log(`❌ Phone format error: ${employee.name} -> ${formatError}`);
+      return {
+        employeeId: employee.id,
+        employeeName: employee.name,
+        phoneNumber: employee.phone,
+        status: 'gagal',
+        errorMessage: `Format nomor tidak valid: ${employee.phone}`,
+      };
+    }
+
     const timestamp = new Date().toISOString();
 
     try {
@@ -135,7 +167,11 @@ Terima kasih atas perhatian dan kerjasamanya.`;
         result = { message: responseText, status: 'error' };
       }
       
-      if (response.ok && (result.status === 'success' || result.success === true)) {
+      // notif.my.id responses: success biasanya status 200, gagal bisa 500 dengan detail
+      console.log(`Response for ${employee.name}: Status ${response.status}, Message: ${result.message}`);
+      
+      if (response.ok && (result.status === 'success' || result.success === true || responseText.includes('sent'))) {
+        console.log(`✅ SUCCESS: ${employee.name} (${formattedPhone})`);
         return {
           employeeId: employee.id,
           employeeName: employee.name,
@@ -144,23 +180,26 @@ Terima kasih atas perhatian dan kerjasamanya.`;
           sentAt: timestamp,
         };
       } else {
-        // Jika nomor WhatsApp tidak terdaftar
-        if (responseText.includes('is not registered on Whatsapp')) {
+        // Jika nomor WhatsApp tidak terdaftar (ini error paling umum)
+        if (responseText.includes('is not registered on Whatsapp') || responseText.includes('not registered')) {
+          console.log(`❌ NOT REGISTERED: ${employee.name} (${formattedPhone})`);
           return {
             employeeId: employee.id,
             employeeName: employee.name,
             phoneNumber: employee.phone,
             status: 'gagal',
-            errorMessage: `Nomor WhatsApp tidak terdaftar: ${formattedPhone}`,
+            errorMessage: `Nomor WhatsApp ${formattedPhone} tidak terdaftar`,
           };
         }
         
+        // Error lain (quota, unauthorized, dll)
+        console.log(`❌ ERROR: ${employee.name} (${formattedPhone}) - ${result.message}`);
         return {
           employeeId: employee.id,
           employeeName: employee.name,
           phoneNumber: employee.phone,
           status: 'gagal',
-          errorMessage: result.message || 'Gagal mengirim pesan',
+          errorMessage: result.message || responseText || 'Gagal mengirim pesan',
         };
       }
     } catch (error) {
@@ -189,12 +228,53 @@ Terima kasih atas perhatian dan kerjasamanya.`;
 
     console.log(`Starting WhatsApp blast to ${employees.length} employees using notif.my.id...`);
 
-    // Kirim pesan ke semua karyawan secara paralel
-    const results = await Promise.all(
-      employees.map(employee => 
+    // Test sample dulu dengan 3 karyawan untuk debug
+    console.log(`=== TESTING BLAST WITH FIRST 3 EMPLOYEES ===`);
+    const testEmployees = employees.slice(0, 3);
+    
+    const testResults: BlastResult[] = [];
+    for (const employee of testEmployees) {
+      console.log(`\n--- Testing ${employee.name} ---`);
+      const result = await this.sendWhatsAppToEmployee(employee, message, mediaUrl);
+      testResults.push(result);
+      
+      // Wait 1 detik antara request untuk menghindari rate limit
+      await new Promise(resolve => setTimeout(resolve, 1000));
+    }
+    
+    console.log(`=== TEST RESULTS ===`);
+    const testSuccess = testResults.filter(r => r.status === 'terkirim').length;
+    const testFailed = testResults.filter(r => r.status === 'gagal').length;
+    console.log(`Test: ${testSuccess} success, ${testFailed} failed out of ${testEmployees.length}`);
+    
+    // Jika test gagal semua, jangan lanjut blast ke semua
+    if (testSuccess === 0) {
+      console.log(`❌ ALL TEST FAILED - ABORTING FULL BLAST`);
+      
+      // Tambahkan error message untuk semua employee lain
+      const remainingResults: BlastResult[] = employees.slice(3).map(emp => ({
+        employeeId: emp.id,
+        employeeName: emp.name,
+        phoneNumber: emp.phone,
+        status: 'gagal',
+        errorMessage: 'Blast dibatalkan karena test sampel gagal semua',
+      }));
+      
+      return [...testResults, ...remainingResults];
+    }
+    
+    // Jika ada yang berhasil, lanjut blast ke semua
+    console.log(`✅ Test partially successful - continuing with full blast`);
+    
+    // Blast ke sisanya (skip yang sudah di test)
+    const remainingEmployees = employees.slice(3);
+    const remainingResults = await Promise.all(
+      remainingEmployees.map(employee => 
         this.sendWhatsAppToEmployee(employee, message, mediaUrl)
       )
     );
+    
+    const results = [...testResults, ...remainingResults];
 
     const successCount = results.filter(r => r.status === 'terkirim').length;
     const failedCount = results.filter(r => r.status === 'gagal').length;
