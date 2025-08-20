@@ -35,7 +35,11 @@ import {
   Download,
   Upload,
   X,
-  Image
+  Image,
+  BarChart3,
+  Calendar,
+  TrendingUp,
+  Wifi
 } from "lucide-react";
 import { format } from "date-fns";
 import { id as localeId } from "date-fns/locale";
@@ -83,6 +87,7 @@ export default function IncidentBlast() {
   const [lastBlastResult, setLastBlastResult] = useState<BlastReport | null>(null);
   const [showReport, setShowReport] = useState(false);
   const [selectedProvider, setSelectedProvider] = useState<'notif'>('notif');
+  const [connectionStatus, setConnectionStatus] = useState<{success: boolean; message: string} | null>(null);
   const { toast } = useToast();
 
   // Query untuk mengambil data karyawan
@@ -131,6 +136,33 @@ export default function IncidentBlast() {
       toast({
         title: "Gagal Mengirim Blast",
         description: error instanceof Error ? error.message : "Terjadi kesalahan saat mengirim blast",
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Test connection mutation
+  const testConnectionMutation = useMutation({
+    mutationFn: () => apiRequest("/api/incident-blast/test-connection", {
+      method: "POST",
+    }),
+    onSuccess: (data: any) => {
+      setConnectionStatus(data);
+      toast({
+        title: data.success ? "Koneksi Berhasil" : "Koneksi Gagal",
+        description: data.message,
+        variant: data.success ? "default" : "destructive",
+      });
+    },
+    onError: (error) => {
+      const errorMessage = error instanceof Error ? error.message : "Test koneksi gagal";
+      setConnectionStatus({
+        success: false,
+        message: errorMessage
+      });
+      toast({
+        title: "Test Gagal",
+        description: errorMessage,
         variant: "destructive",
       });
     },
@@ -260,7 +292,7 @@ export default function IncidentBlast() {
         <CheckCircle className="h-4 w-4 text-green-600" />
         <AlertDescription className="text-sm text-green-700 dark:text-green-300">
           <strong>✅ Notif.my.id API v2 - Siap Digunakan</strong><br/>
-          API endpoint v2 dikonfigurasi dengan format yang benar. Sistem siap mengirim pesan blast ke 264 karyawan.
+          API endpoint v2 dikonfigurasi dengan format yang benar. Sistem siap mengirim pesan blast ke {employees.length} karyawan.
         </AlertDescription>
       </Alert>
 
@@ -501,7 +533,143 @@ export default function IncidentBlast() {
           </CardContent>
         </Card>
 
-        {/* Blast History */}
+        {/* Dashboard Evaluasi */}
+        <div className="space-y-4">
+          {/* Stats Cards */}
+          <div className="grid grid-cols-2 gap-3">
+            <Card className="p-3">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-xs text-gray-600 dark:text-gray-400">Total Karyawan</p>
+                  <p className="text-lg font-bold text-gray-900 dark:text-gray-100">
+                    {employees.length}
+                  </p>
+                </div>
+                <Users className="h-6 w-6 text-blue-600" />
+              </div>
+            </Card>
+            
+            <Card className="p-3">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-xs text-gray-600 dark:text-gray-400">Total Blast</p>
+                  <p className="text-lg font-bold text-gray-900 dark:text-gray-100">
+                    {blastHistory.length}
+                  </p>
+                </div>
+                <MessageSquare className="h-6 w-6 text-green-600" />
+              </div>
+            </Card>
+          </div>
+
+          {/* Test Connection */}
+          <Card className="p-3">
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <h3 className="text-sm font-medium">Status Koneksi API</h3>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => testConnectionMutation.mutate()}
+                  disabled={testConnectionMutation.isPending}
+                  className="h-7 px-2"
+                >
+                  {testConnectionMutation.isPending ? (
+                    <Loader2 className="h-3 w-3 animate-spin" />
+                  ) : (
+                    <Wifi className="h-3 w-3" />
+                  )}
+                  Test
+                </Button>
+              </div>
+              {connectionStatus && (
+                <div className={`p-2 rounded text-xs ${
+                  connectionStatus.success 
+                    ? 'bg-green-50 text-green-700 dark:bg-green-900/20 dark:text-green-300' 
+                    : 'bg-red-50 text-red-700 dark:bg-red-900/20 dark:text-red-300'
+                }`}>
+                  {connectionStatus.success ? '✅' : '❌'} {connectionStatus.message}
+                </div>
+              )}
+            </div>
+          </Card>
+
+          {/* Performance Chart */}
+          {blastHistory.length > 0 && (
+            <Card className="p-3">
+              <div className="space-y-3">
+                <h3 className="text-sm font-medium flex items-center gap-2">
+                  <BarChart3 className="h-4 w-4" />
+                  Performance Terakhir
+                </h3>
+                {(() => {
+                  const totalSent = blastHistory.reduce((sum, blast) => sum + blast.successCount, 0);
+                  const totalFailed = blastHistory.reduce((sum, blast) => sum + blast.failedCount, 0);
+                  const successRate = totalSent + totalFailed > 0 ? (totalSent / (totalSent + totalFailed) * 100) : 0;
+                  
+                  return (
+                    <div className="space-y-2">
+                      <div className="grid grid-cols-2 gap-2 text-xs">
+                        <div className="text-center p-2 bg-green-50 dark:bg-green-900/20 rounded">
+                          <p className="font-medium text-green-700 dark:text-green-300">{totalSent}</p>
+                          <p className="text-green-600 dark:text-green-400">Terkirim</p>
+                        </div>
+                        <div className="text-center p-2 bg-red-50 dark:bg-red-900/20 rounded">
+                          <p className="font-medium text-red-700 dark:text-red-300">{totalFailed}</p>
+                          <p className="text-red-600 dark:text-red-400">Gagal</p>
+                        </div>
+                      </div>
+                      <div className="text-center">
+                        <p className="text-xs font-medium">
+                          Success Rate: {successRate.toFixed(1)}%
+                        </p>
+                        <div className="w-full bg-gray-200 rounded-full h-2 mt-1">
+                          <div 
+                            className="bg-green-600 h-2 rounded-full transition-all duration-300"
+                            style={{ width: `${successRate}%` }}
+                          ></div>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })()}
+              </div>
+            </Card>
+          )}
+
+          {/* Recent Activity */}
+          <Card className="p-3">
+            <div className="space-y-2">
+              <h3 className="text-sm font-medium flex items-center gap-2">
+                <Clock className="h-4 w-4" />
+                Aktivitas Terbaru
+              </h3>
+              {blastHistory.length === 0 ? (
+                <p className="text-xs text-gray-500">Belum ada aktivitas</p>
+              ) : (
+                <div className="space-y-2">
+                  {blastHistory.slice(0, 3).map((blast) => (
+                    <div key={blast.id} className="text-xs border rounded p-2">
+                      <div className="flex justify-between items-start">
+                        <div>
+                          <p className="font-medium">{blast.incidentType}</p>
+                          <p className="text-gray-500 truncate">{blast.location}</p>
+                        </div>
+                        <Badge variant={blast.successCount > blast.failedCount ? "default" : "destructive"} className="text-xs">
+                          {blast.successCount}/{blast.successCount + blast.failedCount}
+                        </Badge>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </Card>
+        </div>
+      </div>
+
+      {/* History Section */}
+      <div className="mt-8">
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-lg">
