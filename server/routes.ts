@@ -1103,97 +1103,86 @@ export async function registerRoutes(app: Express): Promise<Server> {
       let successCount = 0;
       let failedCount = 0;
 
-      // Send messages with reduced batch size for better reliability
-      const batchSize = 5; // Process 5 messages at a time for better success rate
-      const batches = [];
+      // Use sequential processing instead of parallel to avoid API connection issues
+      console.log(`Starting WhatsApp blast for ${targetEmployees.length} employees (sequential mode)`);
       
-      console.log(`Starting WhatsApp blast for ${targetEmployees.length} employees`);
-      
-      for (let i = 0; i < targetEmployees.length; i += batchSize) {
-        batches.push(targetEmployees.slice(i, i + batchSize));
-      }
-      
-      console.log(`Created ${batches.length} batches of ${batchSize} messages each`);
-
-      for (let batchIndex = 0; batchIndex < batches.length; batchIndex++) {
-        const batch = batches[batchIndex];
-        
-        // Process batch in parallel
-        const promises = batch.map(async (employee) => {
-          try {
-            const rawPhone = employee.phone;
-            
-            if (!rawPhone || !whatsappService.isValidPhoneNumber(rawPhone)) {
-              throw new Error(`Invalid phone number: ${rawPhone}`);
-            }
-            
-            const phoneNumber = whatsappService.formatPhoneNumber(rawPhone);
-            console.log(`Sending to ${employee.name} (${employee.id}): ${phoneNumber}`);
-            
-            let result;
-            if (blast.imageUrl) {
-              // Send image message
-              const imageUrl = `${req.protocol}://${req.get('host')}${blast.imageUrl}`;
-              result = await whatsappService.sendImageMessage(phoneNumber, blast.message, imageUrl);
-            } else {
-              // Send text message
-              result = await whatsappService.sendTextMessage(phoneNumber, blast.message);
-            }
-
-            console.log(`Message sent successfully to ${employee.name}`);
-
-            // Save successful result
-            await storage.createWhatsappBlastResult({
-              blastId: id,
-              employeeId: employee.id,
-              phoneNumber: phoneNumber,
-              status: "sent",
-              errorMessage: null
-            });
-
-            return { success: true, employee: employee.id };
-          } catch (error) {
-            console.error(`Failed to send to ${employee.name} (${employee.id}):`, error);
-            
-            // Save failed result
-            await storage.createWhatsappBlastResult({
-              blastId: id,
-              employeeId: employee.id,
-              phoneNumber: whatsappService.formatPhoneNumber(employee.phone) || "invalid",
-              status: "failed",
-              errorMessage: error instanceof Error ? error.message : "Unknown error"
-            });
-
-            return { success: false, employee: employee.id, error };
-          }
-        });
-
-        // Wait for batch to complete
-        const results = await Promise.allSettled(promises);
-        
-        // Count results
-        results.forEach(result => {
-          if (result.status === 'fulfilled' && result.value.success) {
-            successCount++;
-          } else {
+      // Process employees one by one to avoid connection issues
+      for (let i = 0; i < targetEmployees.length; i++) {
+        const employee = targetEmployees[i];
+        try {
+          const rawPhone = employee.phone;
+          
+          if (!rawPhone || !whatsappService.isValidPhoneNumber(rawPhone)) {
+            console.error(`Invalid phone number for ${employee.name}: ${rawPhone}`);
             failedCount++;
+            continue;
           }
-        });
+          
+          const phoneNumber = whatsappService.formatPhoneNumber(rawPhone);
+          console.log(`[${i+1}/${targetEmployees.length}] Sending to ${employee.name}: ${phoneNumber}`);
+          
+          let result;
+          if (blast.imageUrl) {
+            // For image messages, try text-only first if image fails
+            try {
+              const imageUrl = `${req.protocol}://${req.get('host')}${blast.imageUrl}`;
+              console.log(`Attempting to send image: ${imageUrl}`);
+              result = await whatsappService.sendImageMessage(phoneNumber, blast.message, imageUrl);
+            } catch (imageError) {
+              console.warn(`Image send failed for ${employee.name}, falling back to text:`, imageError);
+              // Fallback to text message if image fails
+              result = await whatsappService.sendTextMessage(phoneNumber, `${blast.message}\n\n[Gambar tidak dapat dikirim]`);
+            }
+          } else {
+            // Send text message
+            result = await whatsappService.sendTextMessage(phoneNumber, blast.message);
+          }
 
-        console.log(`Batch ${batchIndex + 1}/${batches.length} completed: ${successCount + failedCount}/${targetEmployees.length} total processed`);
-        
-        // Longer delay between batches for better API stability
-        if (batchIndex < batches.length - 1) {
-          await new Promise(resolve => setTimeout(resolve, 2000)); // 2 seconds between batches
+          console.log(`✓ Message sent successfully to ${employee.name}`);
+
+          // Save successful result
+          await storage.createWhatsappBlastResult({
+            blastId: id,
+            employeeId: employee.id,
+            phoneNumber: phoneNumber,
+            status: "sent",
+            errorMessage: null
+          });
+
+          successCount++;
+          
+        } catch (error) {
+          console.error(`✗ Failed to send to ${employee.name}:`, error);
+          
+          // Save failed result
+          await storage.createWhatsappBlastResult({
+            blastId: id,
+            employeeId: employee.id,
+            phoneNumber: whatsappService.formatPhoneNumber(employee.phone) || "invalid",
+            status: "failed",
+            errorMessage: error instanceof Error ? error.message : "Unknown error"
+          });
+
+          failedCount++;
         }
-        
-        // Update progress in database
-        await storage.updateWhatsappBlast(id, {
-          successCount,
-          failedCount,
-          totalRecipients: targetEmployees.length
-        });
+
+        // Update progress every 5 messages
+        if ((i + 1) % 5 === 0 || i === targetEmployees.length - 1) {
+          await storage.updateWhatsappBlast(id, {
+            successCount,
+            failedCount,
+            totalRecipients: targetEmployees.length
+          });
+          console.log(`Progress: ${successCount + failedCount}/${targetEmployees.length} processed (${successCount} success, ${failedCount} failed)`);
+        }
+
+        // Add delay between messages to avoid rate limiting
+        if (i < targetEmployees.length - 1) {
+          await new Promise(resolve => setTimeout(resolve, 3000)); // 3 seconds between each message
+        }
       }
+
+      console.log(`WhatsApp blast completed: ${successCount} sent, ${failedCount} failed out of ${targetEmployees.length} total`);
 
       // Update blast with final results
       await storage.updateWhatsappBlast(id, {

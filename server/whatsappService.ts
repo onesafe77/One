@@ -10,8 +10,8 @@ export class WhatsAppService {
     }
   }
 
-  // Send text message
-  async sendTextMessage(receiver: string, message: string): Promise<any> {
+  // Send text message with retry mechanism
+  async sendTextMessage(receiver: string, message: string, retries: number = 2): Promise<any> {
     const payload = {
       apikey: this.apiKey,
       receiver: receiver,
@@ -19,31 +19,41 @@ export class WhatsAppService {
       text: message
     };
 
-    console.log("Sending WhatsApp message:", { receiver, message: message.substring(0, 50) + "..." });
+    for (let attempt = 0; attempt <= retries; attempt++) {
+      try {
+        if (attempt > 0) {
+          console.log(`Retry attempt ${attempt} for ${receiver}`);
+          // Wait before retry
+          await new Promise(resolve => setTimeout(resolve, 1000 * attempt));
+        }
 
-    try {
-      const response = await fetch(this.apiUrl, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      });
+        const response = await fetch(this.apiUrl, {
+          method: "POST",
+          headers: { 
+            "Content-Type": "application/json",
+            "Connection": "keep-alive"
+          },
+          body: JSON.stringify(payload),
+        });
 
-      const result = await response.json();
-      console.log("WhatsApp API response:", result);
-      
-      if (!response.ok) {
-        throw new Error(`WhatsApp API error: ${result.message || response.statusText}`);
+        const result = await response.json();
+        
+        if (result.status === false) {
+          throw new Error(`WhatsApp API error: ${result.message || 'Unknown error'}`);
+        }
+        
+        return result;
+      } catch (error) {
+        console.error(`Text message attempt ${attempt + 1} failed:`, error);
+        if (attempt === retries) {
+          throw error;
+        }
       }
-      
-      return result;
-    } catch (error) {
-      console.error("Error sending text message:", error);
-      throw error;
     }
   }
 
-  // Send image message
-  async sendImageMessage(receiver: string, caption: string, imageUrl: string): Promise<any> {
+  // Send image message with retry and fallback
+  async sendImageMessage(receiver: string, caption: string, imageUrl: string, retries: number = 1): Promise<any> {
     const payload = {
       apikey: this.apiKey,
       receiver: receiver,
@@ -52,26 +62,37 @@ export class WhatsAppService {
       url: imageUrl
     };
 
-    console.log("Sending WhatsApp image:", { receiver, caption: caption.substring(0, 50) + "...", imageUrl });
+    for (let attempt = 0; attempt <= retries; attempt++) {
+      try {
+        if (attempt > 0) {
+          console.log(`Image retry attempt ${attempt} for ${receiver}`);
+          // Wait before retry
+          await new Promise(resolve => setTimeout(resolve, 2000 * attempt));
+        }
 
-    try {
-      const response = await fetch(this.apiUrl, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      });
+        const response = await fetch(this.apiUrl, {
+          method: "POST",
+          headers: { 
+            "Content-Type": "application/json",
+            "Connection": "keep-alive"
+          },
+          body: JSON.stringify(payload),
+          // Add timeout to avoid hanging connections
+        });
 
-      const result = await response.json();
-      console.log("WhatsApp API response:", result);
-      
-      if (!response.ok) {
-        throw new Error(`WhatsApp API error: ${result.message || response.statusText}`);
+        const result = await response.json();
+        
+        if (result.status === false) {
+          throw new Error(`WhatsApp API error: ${result.message || 'Unknown error'}`);
+        }
+        
+        return result;
+      } catch (error) {
+        console.error(`Image message attempt ${attempt + 1} failed:`, error);
+        if (attempt === retries) {
+          throw error;
+        }
       }
-      
-      return result;
-    } catch (error) {
-      console.error("Error sending image message:", error);
-      throw error;
     }
   }
 
