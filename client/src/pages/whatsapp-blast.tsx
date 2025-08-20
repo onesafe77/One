@@ -354,7 +354,7 @@ export default function WhatsAppBlast() {
                       </SelectTrigger>
                       <SelectContent>
                         {departments.filter(dept => dept).map((dept) => (
-                          <SelectItem key={dept} value={dept}>{dept}</SelectItem>
+                          <SelectItem key={dept} value={dept!}>{dept}</SelectItem>
                         ))}
                       </SelectContent>
                     </Select>

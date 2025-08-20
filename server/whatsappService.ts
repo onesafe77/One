@@ -107,4 +107,29 @@ export class WhatsAppService {
     const cleanPhone = phone.replace(/\D/g, '');
     return cleanPhone.length >= 10 && cleanPhone.length <= 15;
   }
+
+  // Format phone number to WhatsApp format
+  formatPhoneNumber(phone: string): string {
+    if (!phone) return "";
+    
+    // Remove all non-digit characters
+    let cleaned = phone.replace(/\D/g, "");
+    
+    // Add country code if not present
+    if (!cleaned.startsWith("62")) {
+      if (cleaned.startsWith("0")) {
+        cleaned = "62" + cleaned.substring(1);
+      } else {
+        cleaned = "62" + cleaned;
+      }
+    }
+    
+    return cleaned + "@c.us";
+  }
+
+  // Static version for backward compatibility
+  static formatPhoneNumber(phone: string): string {
+    const service = new WhatsAppService();
+    return service.formatPhoneNumber(phone);
+  }
 }

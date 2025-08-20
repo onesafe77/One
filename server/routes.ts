@@ -1103,53 +1103,91 @@ export async function registerRoutes(app: Express): Promise<Server> {
       let successCount = 0;
       let failedCount = 0;
 
-      // Send messages to each employee
-      for (const employee of targetEmployees) {
-        try {
-          const phoneNumber = whatsappService.formatPhoneNumber(employee.phone);
-          
-          let result;
-          if (blast.imageUrl) {
-            // Send image message
-            const imageUrl = `${req.protocol}://${req.get('host')}${blast.imageUrl}`;
-            result = await whatsappService.sendImageMessage(phoneNumber, imageUrl, blast.message);
-          } else {
-            // Send text message
-            result = await whatsappService.sendTextMessage(phoneNumber, blast.message);
+      // Send messages to all employees in parallel with batching
+      const batchSize = 10; // Process 10 messages at a time
+      const batches = [];
+      
+      for (let i = 0; i < targetEmployees.length; i += batchSize) {
+        batches.push(targetEmployees.slice(i, i + batchSize));
+      }
+
+      for (let batchIndex = 0; batchIndex < batches.length; batchIndex++) {
+        const batch = batches[batchIndex];
+        
+        // Process batch in parallel
+        const promises = batch.map(async (employee) => {
+          try {
+            const phoneNumber = whatsappService.formatPhoneNumber(employee.phoneNumber || employee.phone);
+            
+            if (!phoneNumber) {
+              throw new Error("Invalid phone number");
+            }
+            
+            let result;
+            if (blast.imageUrl) {
+              // Send image message
+              const imageUrl = `${req.protocol}://${req.get('host')}${blast.imageUrl}`;
+              result = await whatsappService.sendImageMessage(phoneNumber, blast.message, imageUrl);
+            } else {
+              // Send text message
+              result = await whatsappService.sendTextMessage(phoneNumber, blast.message);
+            }
+
+            // Save successful result
+            await storage.createWhatsappBlastResult({
+              blastId: id,
+              employeeId: employee.id,
+              phoneNumber: phoneNumber,
+              status: "sent",
+              errorMessage: null
+            });
+
+            return { success: true, employee: employee.id };
+          } catch (error) {
+            // Save failed result
+            await storage.createWhatsappBlastResult({
+              blastId: id,
+              employeeId: employee.id,
+              phoneNumber: whatsappService.formatPhoneNumber(employee.phoneNumber || employee.phone) || "invalid",
+              status: "failed",
+              errorMessage: error instanceof Error ? error.message : "Unknown error"
+            });
+
+            return { success: false, employee: employee.id, error };
           }
+        });
 
-          // Save result
-          await storage.createWhatsappBlastResult({
-            blastId: id,
-            employeeId: employee.id,
-            phoneNumber: phoneNumber,
-            status: "sent",
-            errorMessage: null
-          });
+        // Wait for batch to complete
+        const results = await Promise.allSettled(promises);
+        
+        // Count results
+        results.forEach(result => {
+          if (result.status === 'fulfilled' && result.value.success) {
+            successCount++;
+          } else {
+            failedCount++;
+          }
+        });
 
-          successCount++;
-        } catch (error) {
-          // Save failed result
-          await storage.createWhatsappBlastResult({
-            blastId: id,
-            employeeId: employee.id,
-            phoneNumber: whatsappService.formatPhoneNumber(employee.phone),
-            status: "failed",
-            errorMessage: error instanceof Error ? error.message : "Unknown error"
-          });
-
-          failedCount++;
+        // Small delay between batches to avoid rate limiting
+        if (batchIndex < batches.length - 1) {
+          await new Promise(resolve => setTimeout(resolve, 500));
         }
-
-        // Add small delay between messages
-        await new Promise(resolve => setTimeout(resolve, 1000));
+        
+        // Update progress in database
+        await storage.updateWhatsappBlast(id, {
+          successCount,
+          failedCount,
+          totalRecipients: targetEmployees.length
+        });
       }
 
       // Update blast with final results
       await storage.updateWhatsappBlast(id, {
-        status: failedCount === 0 ? "completed" : "failed",
+        status: failedCount === 0 ? "completed" : "partial",
         successCount,
         failedCount,
+        totalRecipients: targetEmployees.length,
         completedAt: new Date()
       });
 
@@ -1157,6 +1195,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         success: true, 
         successCount, 
         failedCount,
+        totalRecipients: targetEmployees.length,
         message: `Blast completed: ${successCount} sent, ${failedCount} failed`
       });
 
