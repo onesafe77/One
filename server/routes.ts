@@ -1038,12 +1038,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { notifMyIdService } = await import("./notifMyIdService");
       const testResult = await notifMyIdService.testConnection();
-      res.json(testResult);
+      
+      if (testResult.success) {
+        res.json({ 
+          success: true, 
+          message: "✅ Koneksi ke notif.my.id berhasil! API siap digunakan." 
+        });
+      } else {
+        res.json({ 
+          success: false, 
+          message: "❌ Koneksi ke notif.my.id gagal. Periksa API key atau jaringan." 
+        });
+      }
     } catch (error) {
       console.error("Error testing notif.my.id connection:", error);
-      res.status(500).json({ 
+      res.status(200).json({ 
         success: false, 
-        message: "Failed to test notif.my.id connection" 
+        message: "❌ Gagal menghubungi notif.my.id API. Periksa koneksi internet dan API key." 
       });
     }
   });

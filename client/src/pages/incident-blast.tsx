@@ -579,32 +579,47 @@ export default function IncidentBlast() {
           </div>
 
           {/* Test Connection */}
-          <Card className="p-3">
-            <div className="space-y-2">
+          <Card className="p-4">
+            <div className="space-y-3">
               <div className="flex items-center justify-between">
-                <h3 className="text-sm font-medium">Status Koneksi API</h3>
+                <h3 className="text-sm font-medium flex items-center gap-2">
+                  <Wifi className="h-4 w-4" />
+                  Status Koneksi API
+                </h3>
                 <Button
                   variant="outline"
                   size="sm"
                   onClick={() => testConnectionMutation.mutate()}
                   disabled={testConnectionMutation.isPending}
-                  className="h-7 px-2"
+                  className="h-8 px-3"
                 >
                   {testConnectionMutation.isPending ? (
-                    <Loader2 className="h-3 w-3 animate-spin" />
+                    <>
+                      <Loader2 className="h-3 w-3 animate-spin mr-1" />
+                      Testing...
+                    </>
                   ) : (
-                    <Wifi className="h-3 w-3" />
+                    <>
+                      <Wifi className="h-3 w-3 mr-1" />
+                      Test API
+                    </>
                   )}
-                  Test
                 </Button>
               </div>
               {connectionStatus && (
-                <div className={`p-2 rounded text-xs ${
+                <div className={`p-3 rounded-md text-sm border ${
                   connectionStatus.success 
-                    ? 'bg-green-50 text-green-700 dark:bg-green-900/20 dark:text-green-300' 
-                    : 'bg-red-50 text-red-700 dark:bg-red-900/20 dark:text-red-300'
+                    ? 'bg-green-50 text-green-800 border-green-200 dark:bg-green-900/20 dark:text-green-200 dark:border-green-800' 
+                    : 'bg-red-50 text-red-800 border-red-200 dark:bg-red-900/20 dark:text-red-200 dark:border-red-800'
                 }`}>
-                  {connectionStatus.success ? '✅' : '❌'} {connectionStatus.message}
+                  <div className="flex items-center gap-2">
+                    {connectionStatus.success ? (
+                      <CheckCircle className="h-4 w-4 flex-shrink-0" />
+                    ) : (
+                      <X className="h-4 w-4 flex-shrink-0" />
+                    )}
+                    <span>{connectionStatus.message}</span>
+                  </div>
                 </div>
               )}
             </div>
