@@ -11,7 +11,7 @@ export class WhatsAppService {
   }
 
   // Send text message with retry mechanism
-  async sendTextMessage(receiver: string, message: string, retries: number = 2): Promise<any> {
+  async sendTextMessage(receiver: string, message: string, retries: number = 1): Promise<any> {
     const payload = {
       apikey: this.apiKey,
       receiver: receiver,
@@ -24,16 +24,17 @@ export class WhatsAppService {
         if (attempt > 0) {
           console.log(`Retry attempt ${attempt} for ${receiver}`);
           // Wait before retry
-          await new Promise(resolve => setTimeout(resolve, 1000 * attempt));
+          await new Promise(resolve => setTimeout(resolve, 2000));
         }
 
         const response = await fetch(this.apiUrl, {
           method: "POST",
           headers: { 
             "Content-Type": "application/json",
-            "Connection": "keep-alive"
+            "User-Agent": "WhatsApp-Blast-Service/1.0"
           },
           body: JSON.stringify(payload),
+          timeout: 30000 // 30 second timeout
         });
 
         const result = await response.json();

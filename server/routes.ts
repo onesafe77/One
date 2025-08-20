@@ -1121,22 +1121,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
           const phoneNumber = whatsappService.formatPhoneNumber(rawPhone);
           console.log(`[${i+1}/${targetEmployees.length}] Sending to ${employee.name}: ${phoneNumber}`);
           
-          let result;
+          // Send text message only for now to ensure reliability
+          let finalMessage = blast.message;
           if (blast.imageUrl) {
-            // For image messages, try text-only first if image fails
-            try {
-              const imageUrl = `${req.protocol}://${req.get('host')}${blast.imageUrl}`;
-              console.log(`Attempting to send image: ${imageUrl}`);
-              result = await whatsappService.sendImageMessage(phoneNumber, blast.message, imageUrl);
-            } catch (imageError) {
-              console.warn(`Image send failed for ${employee.name}, falling back to text:`, imageError);
-              // Fallback to text message if image fails
-              result = await whatsappService.sendTextMessage(phoneNumber, `${blast.message}\n\n[Gambar tidak dapat dikirim]`);
-            }
-          } else {
-            // Send text message
-            result = await whatsappService.sendTextMessage(phoneNumber, blast.message);
+            // Include image info in text message
+            finalMessage = `${blast.message}\n\n📷 Gambar terlampir di pesan terpisah\n${req.protocol}://${req.get('host')}${blast.imageUrl}`;
           }
+          
+          const result = await whatsappService.sendTextMessage(phoneNumber, finalMessage);
 
           console.log(`✓ Message sent successfully to ${employee.name}`);
 
@@ -1176,9 +1168,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
           console.log(`Progress: ${successCount + failedCount}/${targetEmployees.length} processed (${successCount} success, ${failedCount} failed)`);
         }
 
-        // Add delay between messages to avoid rate limiting
+        // Shorter delay since we're only sending text messages now
         if (i < targetEmployees.length - 1) {
-          await new Promise(resolve => setTimeout(resolve, 3000)); // 3 seconds between each message
+          await new Promise(resolve => setTimeout(resolve, 1000)); // 1 second between messages
         }
       }
 
