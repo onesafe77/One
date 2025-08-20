@@ -240,7 +240,7 @@ export default function IncidentBlast() {
             Blast WhatsApp Insiden
           </h1>
           <p className="text-sm text-gray-600 dark:text-gray-400">
-            Sistem notifikasi darurat untuk seluruh karyawan via WhatsApp
+            Sistem notifikasi darurat untuk seluruh karyawan via WhatsApp menggunakan Twilio
           </p>
         </div>
         <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
@@ -248,6 +248,15 @@ export default function IncidentBlast() {
           <span>{employees.length} Karyawan Terdaftar</span>
         </div>
       </div>
+
+      {/* Info Alert untuk Twilio */}
+      <Alert className="border-blue-200 bg-blue-50 dark:border-blue-800 dark:bg-blue-900/20">
+        <AlertTriangle className="h-4 w-4 text-blue-600" />
+        <AlertDescription className="text-sm text-blue-700 dark:text-blue-300">
+          <strong>Info Twilio:</strong> Sistem menggunakan akun Twilio trial dengan batas 9 pesan WhatsApp per hari. 
+          Untuk penggunaan tanpa batas, upgrade ke akun Twilio berbayar dan perbarui credentials.
+        </AlertDescription>
+      </Alert>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
         {/* Form Incident */}
@@ -438,7 +447,7 @@ export default function IncidentBlast() {
               Riwayat Blast
             </CardTitle>
             <CardDescription>
-              History pengiriman notifikasi insiden
+              History pengiriman notifikasi insiden. Sistem terhubung dengan Twilio untuk WhatsApp blast.
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -495,6 +504,17 @@ export default function IncidentBlast() {
                         </div>
                       </div>
                     </div>
+                    
+                    {/* Pesan khusus untuk batas harian Twilio */}
+                    {blast.failedCount > 0 && blast.successCount === 0 && blast.failedCount >= 200 && (
+                      <Alert className="mb-2 border-orange-200 bg-orange-50 dark:border-orange-800 dark:bg-orange-900/20">
+                        <AlertTriangle className="h-4 w-4 text-orange-600" />
+                        <AlertDescription className="text-xs text-orange-700 dark:text-orange-300">
+                          <strong>Batas harian Twilio tercapai.</strong> Sistem berfungsi normal, namun akun Twilio trial memiliki batas 9 pesan per hari. 
+                          Upgrade ke akun Twilio berbayar untuk mengirim pesan tanpa batas.
+                        </AlertDescription>
+                      </Alert>
+                    )}
                     
                     <div className="text-xs text-gray-500">
                       {format(new Date(blast.createdAt), "dd MMM yyyy, HH:mm", { locale: localeId })}
