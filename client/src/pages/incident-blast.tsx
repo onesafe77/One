@@ -324,10 +324,10 @@ export default function IncidentBlast() {
           
           {selectedProvider === 'notif' && (
             <Alert className="mt-4 border-green-200 bg-green-50 dark:border-green-800 dark:bg-green-900/20">
-              <AlertTriangle className="h-4 w-4 text-green-600" />
+              <CheckCircle className="h-4 w-4 text-green-600" />
               <AlertDescription className="text-sm text-green-700 dark:text-green-300">
-                <strong>Info Notif.my.id:</strong> Pastikan API key sudah dikonfigurasi dengan benar di environment variables (NOTIF_API_KEY).
-                Provider ini mendukung pengiriman volume besar tanpa batas harian.
+                <strong>✅ Notif.my.id Aktif:</strong> API key sudah dikonfigurasi dengan benar. 
+                Provider lokal Indonesia ini mendukung pengiriman volume besar tanpa batas harian dan lebih stabil untuk nomor Indonesia.
               </AlertDescription>
             </Alert>
           )}
