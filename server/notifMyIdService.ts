@@ -148,13 +148,41 @@ Terima kasih atas perhatian dan kerjasamanya.`;
 
       console.log(`Sending WhatsApp to ${employee.name} (${formattedPhone})...`);
       
-      const response = await fetch(API_URL, {
-        method: "POST",
-        headers: { 
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(payload),
-      });
+      // Tambahkan retry logic untuk handle timeout
+      let response: any;
+      let retryCount = 0;
+      const maxRetries = 2;
+      
+      while (retryCount <= maxRetries) {
+        try {
+          console.log(`Attempt ${retryCount + 1}/${maxRetries + 1} for ${employee.name}`);
+          
+          response = await fetch(API_URL, {
+            method: "POST",
+            headers: { 
+              "Content-Type": "application/json",
+              "User-Agent": "AttendanceQR-BlastSystem/1.0",
+            },
+            body: JSON.stringify(payload),
+          });
+          
+          break; // Keluar dari loop jika berhasil
+        } catch (fetchError) {
+          console.log(`Fetch attempt ${retryCount + 1} failed:`, fetchError);
+          retryCount++;
+          
+          if (retryCount > maxRetries) {
+            throw fetchError;
+          }
+          
+          // Wait 2 detik sebelum retry
+          await new Promise(resolve => setTimeout(resolve, 2000));
+        }
+      }
+
+      if (!response) {
+        throw new Error("Failed to get response after retries");
+      }
 
       // Response mungkin HTML atau text, bukan JSON
       const responseText = await response.text();
@@ -169,6 +197,18 @@ Terima kasih atas perhatian dan kerjasamanya.`;
       
       // notif.my.id responses: success biasanya status 200, gagal bisa 500 dengan detail
       console.log(`Response for ${employee.name}: Status ${response.status}, Message: ${result.message}`);
+      
+      // Khusus handle "Timed Out" response dari notif.my.id
+      if (responseText.includes('Timed Out') || result.message === 'Timed Out') {
+        console.log(`⏰ TIMEOUT: ${employee.name} - Server notif.my.id lambat merespons`);
+        return {
+          employeeId: employee.id,
+          employeeName: employee.name,
+          phoneNumber: employee.phone,
+          status: 'gagal',
+          errorMessage: 'Server notif.my.id timeout - coba lagi nanti',
+        };
+      }
       
       if (response.ok && (result.status === 'success' || result.success === true || responseText.includes('sent'))) {
         console.log(`✅ SUCCESS: ${employee.name} (${formattedPhone})`);
@@ -238,8 +278,8 @@ Terima kasih atas perhatian dan kerjasamanya.`;
       const result = await this.sendWhatsAppToEmployee(employee, message, mediaUrl);
       testResults.push(result);
       
-      // Wait 1 detik antara request untuk menghindari rate limit
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      // Wait 3 detik antara request untuk menghindari rate limit dan timeout
+      await new Promise(resolve => setTimeout(resolve, 3000));
     }
     
     console.log(`=== TEST RESULTS ===`);
@@ -319,6 +359,7 @@ Terima kasih atas perhatian dan kerjasamanya.`;
         method: "POST",
         headers: { 
           "Content-Type": "application/json",
+          "User-Agent": "AttendanceQR-ConnectionTest/1.0",
         },
         body: JSON.stringify(testPayload),
       });
