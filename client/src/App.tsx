@@ -17,6 +17,7 @@ import Roster from "@/pages/roster";
 import Leave from "@/pages/leave";
 import Reports from "@/pages/reports";
 import AttendanceDetails from "@/pages/attendance-details";
+import WhatsAppBlast from "@/pages/whatsapp-blast";
 
 import NotFound from "@/pages/not-found";
 
@@ -29,6 +30,7 @@ const routes = [
   { path: "/leave", component: Leave, title: "Manajemen Cuti" },
   { path: "/reports", component: Reports, title: "Laporan" },
   { path: "/attendance-details", component: AttendanceDetails, title: "Dashboard HR " },
+  { path: "/whatsapp-blast", component: WhatsAppBlast, title: "Blast WhatsApp" },
 ];
 
 function Router() {

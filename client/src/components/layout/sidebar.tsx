@@ -9,7 +9,8 @@ import {
   BarChart3,
   ClipboardList,
   User,
-  Clock
+  Clock,
+  MessageSquare
 } from "lucide-react";
 import companyLogo from "@assets/WhatsApp Image 2024-11-30 at 13.08.33_1755505069008.jpeg";
 
@@ -22,6 +23,7 @@ const navigation = [
   { name: "Roster", href: "/roster", icon: Calendar },
   { name: "Cuti", href: "/leave", icon: ClipboardList },
   { name: "Laporan", href: "/reports", icon: FileText },
+  { name: "Blast WhatsApp", href: "/whatsapp-blast", icon: MessageSquare },
 ];
 
 interface SidebarProps {

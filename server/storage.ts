@@ -15,6 +15,10 @@ import {
   type InsertLeaveBalance,
   type LeaveHistory,
   type InsertLeaveHistory,
+  type WhatsappBlast,
+  type InsertWhatsappBlast,
+  type WhatsappBlastResult,
+  type InsertWhatsappBlastResult,
   employees,
   attendanceRecords,
   rosterSchedules,
@@ -22,7 +26,9 @@ import {
   qrTokens,
   leaveReminders,
   leaveBalances,
-  leaveHistory
+  leaveHistory,
+  whatsappBlasts,
+  whatsappBlastResults
 } from "@shared/schema";
 import { randomUUID } from "crypto";
 import { drizzle } from "drizzle-orm/neon-http";
@@ -89,7 +95,15 @@ export interface IStorage {
   // Bulk upload methods
   bulkUploadLeaveRoster(data: Array<{ nik: string; leaveType: string; startDate: string; endDate: string; totalDays: number }>): Promise<{ success: number; errors: string[] }>;
 
-
+  // WhatsApp Blast methods
+  createWhatsappBlast(blast: InsertWhatsappBlast): Promise<WhatsappBlast>;
+  getAllWhatsappBlasts(): Promise<WhatsappBlast[]>;
+  getWhatsappBlast(id: string): Promise<WhatsappBlast | undefined>;
+  updateWhatsappBlast(id: string, updates: Partial<WhatsappBlast>): Promise<WhatsappBlast | undefined>;
+  deleteWhatsappBlast(id: string): Promise<boolean>;
+  createWhatsappBlastResult(result: InsertWhatsappBlastResult): Promise<WhatsappBlastResult>;
+  getWhatsappBlastResults(blastId: string): Promise<WhatsappBlastResult[]>;
+  updateWhatsappBlastResult(id: string, updates: Partial<WhatsappBlastResult>): Promise<WhatsappBlastResult | undefined>;
 }
 
 export class MemStorage implements IStorage {
@@ -335,6 +349,51 @@ export class MemStorage implements IStorage {
   async validateQrToken(employeeId: string, token: string): Promise<boolean> {
     const qrToken = await this.getQrToken(employeeId);
     return qrToken ? qrToken.token === token && qrToken.isActive : false;
+  }
+
+  // WhatsApp Blast methods
+  async createWhatsappBlast(blast: InsertWhatsappBlast): Promise<WhatsappBlast> {
+    const whatsappBlast: WhatsappBlast = {
+      id: randomUUID(),
+      ...blast,
+      createdAt: new Date(),
+      completedAt: null
+    };
+    return whatsappBlast;
+  }
+
+  async getAllWhatsappBlasts(): Promise<WhatsappBlast[]> {
+    return [];
+  }
+
+  async getWhatsappBlast(id: string): Promise<WhatsappBlast | undefined> {
+    return undefined;
+  }
+
+  async updateWhatsappBlast(id: string, updates: Partial<WhatsappBlast>): Promise<WhatsappBlast | undefined> {
+    return undefined;
+  }
+
+  async deleteWhatsappBlast(id: string): Promise<boolean> {
+    return false;
+  }
+
+  async createWhatsappBlastResult(result: InsertWhatsappBlastResult): Promise<WhatsappBlastResult> {
+    const blastResult: WhatsappBlastResult = {
+      id: randomUUID(),
+      ...result,
+      createdAt: new Date(),
+      sentAt: null
+    };
+    return blastResult;
+  }
+
+  async getWhatsappBlastResults(blastId: string): Promise<WhatsappBlastResult[]> {
+    return [];
+  }
+
+  async updateWhatsappBlastResult(id: string, updates: Partial<WhatsappBlastResult>): Promise<WhatsappBlastResult | undefined> {
+    return undefined;
   }
 
   // Stub implementations for MemStorage (not used in production)
@@ -786,7 +845,70 @@ export class DrizzleStorage implements IStorage {
     return { success: successCount, errors };
   }
 
+  // WhatsApp Blast methods implementation
+  async createWhatsappBlast(blast: InsertWhatsappBlast): Promise<WhatsappBlast> {
+    const [result] = await this.db
+      .insert(whatsappBlasts)
+      .values(blast)
+      .returning();
+    return result;
+  }
 
+  async getAllWhatsappBlasts(): Promise<WhatsappBlast[]> {
+    return await this.db
+      .select()
+      .from(whatsappBlasts)
+      .orderBy(drizzleSql`created_at DESC`);
+  }
+
+  async getWhatsappBlast(id: string): Promise<WhatsappBlast | undefined> {
+    const [result] = await this.db
+      .select()
+      .from(whatsappBlasts)
+      .where(eq(whatsappBlasts.id, id));
+    return result;
+  }
+
+  async updateWhatsappBlast(id: string, updates: Partial<WhatsappBlast>): Promise<WhatsappBlast | undefined> {
+    const [result] = await this.db
+      .update(whatsappBlasts)
+      .set(updates)
+      .where(eq(whatsappBlasts.id, id))
+      .returning();
+    return result;
+  }
+
+  async deleteWhatsappBlast(id: string): Promise<boolean> {
+    const result = await this.db
+      .delete(whatsappBlasts)
+      .where(eq(whatsappBlasts.id, id));
+    return result.rowCount > 0;
+  }
+
+  async createWhatsappBlastResult(result: InsertWhatsappBlastResult): Promise<WhatsappBlastResult> {
+    const [blastResult] = await this.db
+      .insert(whatsappBlastResults)
+      .values(result)
+      .returning();
+    return blastResult;
+  }
+
+  async getWhatsappBlastResults(blastId: string): Promise<WhatsappBlastResult[]> {
+    return await this.db
+      .select()
+      .from(whatsappBlastResults)
+      .where(eq(whatsappBlastResults.blastId, blastId))
+      .orderBy(drizzleSql`created_at DESC`);
+  }
+
+  async updateWhatsappBlastResult(id: string, updates: Partial<WhatsappBlastResult>): Promise<WhatsappBlastResult | undefined> {
+    const [result] = await this.db
+      .update(whatsappBlastResults)
+      .set(updates)
+      .where(eq(whatsappBlastResults.id, id))
+      .returning();
+    return result;
+  }
 }
 
 // Use DrizzleStorage for PostgreSQL database

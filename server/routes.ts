@@ -2,12 +2,15 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 
 import { storage } from "./storage";
+import { ObjectStorageService, ObjectNotFoundError } from "./objectStorage";
+import { WhatsAppService } from "./whatsappService";
 import { 
   insertEmployeeSchema, 
   insertAttendanceSchema, 
   insertRosterSchema, 
   insertLeaveRequestSchema,
-  insertQrTokenSchema
+  insertQrTokenSchema,
+  insertWhatsappBlastSchema
 } from "@shared/schema";
 
 
@@ -960,6 +963,221 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
 
+
+  // Object storage routes for file uploads
+  app.get("/objects/:objectPath(*)", async (req, res) => {
+    const objectStorageService = new ObjectStorageService();
+    try {
+      const objectFile = await objectStorageService.getObjectEntityFile(
+        req.path,
+      );
+      objectStorageService.downloadObject(objectFile, res);
+    } catch (error) {
+      console.error("Error accessing object:", error);
+      if (error instanceof ObjectNotFoundError) {
+        return res.sendStatus(404);
+      }
+      return res.sendStatus(500);
+    }
+  });
+
+  app.post("/api/objects/upload", async (req, res) => {
+    try {
+      const objectStorageService = new ObjectStorageService();
+      const uploadURL = await objectStorageService.getObjectEntityUploadURL();
+      res.json({ uploadURL });
+    } catch (error) {
+      console.error("Object storage not configured:", error);
+      res.status(503).json({ 
+        error: "Object storage not configured",
+        message: "File upload is temporarily unavailable. Please contact administrator."
+      });
+    }
+  });
+
+  // Endpoint untuk normalize upload URL
+  app.post("/api/objects/normalize", async (req, res) => {
+    try {
+      const { uploadURL } = req.body;
+      if (!uploadURL) {
+        return res.status(400).json({ error: "uploadURL is required" });
+      }
+
+      const objectStorageService = new ObjectStorageService();
+      const objectPath = objectStorageService.normalizeObjectEntityPath(uploadURL);
+      
+      res.json({ objectPath });
+    } catch (error) {
+      console.error("Error normalizing object path:", error);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
+  // WhatsApp API routes
+  app.post("/api/whatsapp/test-connection", async (req, res) => {
+    try {
+      const whatsappService = new WhatsAppService();
+      const result = await whatsappService.testConnection();
+      res.json(result);
+    } catch (error) {
+      console.error("WhatsApp test connection error:", error);
+      res.status(500).json({ 
+        success: false, 
+        message: "WhatsApp API test gagal: " + (error instanceof Error ? error.message : 'Unknown error')
+      });
+    }
+  });
+
+  // WhatsApp Blast API routes
+  app.get("/api/whatsapp-blasts", async (req, res) => {
+    try {
+      const blasts = await storage.getAllWhatsappBlasts();
+      res.json(blasts);
+    } catch (error) {
+      console.error("Error fetching WhatsApp blasts:", error);
+      res.status(500).json({ error: "Failed to fetch WhatsApp blasts" });
+    }
+  });
+
+  app.post("/api/whatsapp-blasts", async (req, res) => {
+    try {
+      const validatedData = insertWhatsappBlastSchema.parse(req.body);
+      const blast = await storage.createWhatsappBlast(validatedData);
+      res.json(blast);
+    } catch (error) {
+      console.error("Error creating WhatsApp blast:", error);
+      res.status(500).json({ error: "Failed to create WhatsApp blast" });
+    }
+  });
+
+  app.get("/api/whatsapp-blasts/:id", async (req, res) => {
+    try {
+      const { id } = req.params;
+      const blast = await storage.getWhatsappBlast(id);
+      if (!blast) {
+        return res.status(404).json({ error: "WhatsApp blast not found" });
+      }
+      res.json(blast);
+    } catch (error) {
+      console.error("Error fetching WhatsApp blast:", error);
+      res.status(500).json({ error: "Failed to fetch WhatsApp blast" });
+    }
+  });
+
+  app.post("/api/whatsapp-blasts/:id/send", async (req, res) => {
+    try {
+      const { id } = req.params;
+      const blast = await storage.getWhatsappBlast(id);
+      
+      if (!blast) {
+        return res.status(404).json({ error: "WhatsApp blast not found" });
+      }
+
+      if (blast.status !== "pending") {
+        return res.status(400).json({ error: "Blast is not in pending status" });
+      }
+
+      // Update blast status to processing
+      await storage.updateWhatsappBlast(id, { status: "processing" });
+
+      // Get target employees
+      const employees = await storage.getAllEmployees();
+      let targetEmployees = [];
+
+      if (blast.targetType === "all") {
+        targetEmployees = employees;
+      } else if (blast.targetType === "department") {
+        targetEmployees = employees.filter(emp => emp.department === blast.targetValue);
+      } else if (blast.targetType === "specific") {
+        const targetIds = JSON.parse(blast.targetValue || "[]");
+        targetEmployees = employees.filter(emp => targetIds.includes(emp.id));
+      }
+
+      // Initialize WhatsApp service
+      const whatsappService = new WhatsAppService();
+      let successCount = 0;
+      let failedCount = 0;
+
+      // Send messages to each employee
+      for (const employee of targetEmployees) {
+        try {
+          const phoneNumber = whatsappService.formatPhoneNumber(employee.phone);
+          
+          let result;
+          if (blast.imageUrl) {
+            // Send image message
+            const imageUrl = `${req.protocol}://${req.get('host')}${blast.imageUrl}`;
+            result = await whatsappService.sendImageMessage(phoneNumber, imageUrl, blast.message);
+          } else {
+            // Send text message
+            result = await whatsappService.sendTextMessage(phoneNumber, blast.message);
+          }
+
+          // Save result
+          await storage.createWhatsappBlastResult({
+            blastId: id,
+            employeeId: employee.id,
+            phoneNumber: phoneNumber,
+            status: "sent",
+            errorMessage: null
+          });
+
+          successCount++;
+        } catch (error) {
+          // Save failed result
+          await storage.createWhatsappBlastResult({
+            blastId: id,
+            employeeId: employee.id,
+            phoneNumber: whatsappService.formatPhoneNumber(employee.phone),
+            status: "failed",
+            errorMessage: error instanceof Error ? error.message : "Unknown error"
+          });
+
+          failedCount++;
+        }
+
+        // Add small delay between messages
+        await new Promise(resolve => setTimeout(resolve, 1000));
+      }
+
+      // Update blast with final results
+      await storage.updateWhatsappBlast(id, {
+        status: failedCount === 0 ? "completed" : "failed",
+        successCount,
+        failedCount,
+        completedAt: new Date()
+      });
+
+      res.json({ 
+        success: true, 
+        successCount, 
+        failedCount,
+        message: `Blast completed: ${successCount} sent, ${failedCount} failed`
+      });
+
+    } catch (error) {
+      console.error("Error sending WhatsApp blast:", error);
+      
+      // Update blast status to failed
+      await storage.updateWhatsappBlast(req.params.id, { 
+        status: "failed",
+        completedAt: new Date()
+      });
+      
+      res.status(500).json({ error: "Failed to send WhatsApp blast" });
+    }
+  });
+
+  app.get("/api/whatsapp-blasts/:id/results", async (req, res) => {
+    try {
+      const { id } = req.params;
+      const results = await storage.getWhatsappBlastResults(id);
+      res.json(results);
+    } catch (error) {
+      console.error("Error fetching WhatsApp blast results:", error);
+      res.status(500).json({ error: "Failed to fetch WhatsApp blast results" });
+    }
+  });
 
   const httpServer = createServer(app);
   return httpServer;
