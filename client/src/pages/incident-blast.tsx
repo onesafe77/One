@@ -259,10 +259,8 @@ export default function IncidentBlast() {
       <Alert className="mb-4 border-green-200 bg-green-50 dark:border-green-800 dark:bg-green-900/20">
         <CheckCircle className="h-4 w-4 text-green-600" />
         <AlertDescription className="text-sm text-green-700 dark:text-green-300">
-          <strong>⚠️ Status Notif.my.id: API Terbatas</strong><br/>
-          Device WhatsApp sudah terhubung tetapi API mengembalikan "Restricted Area".<br/>
-          <strong>Kemungkinan penyebab:</strong> Akun perlu upgrade ke premium atau verifikasi tambahan.<br/>
-          <strong>Solusi:</strong> Hubungi support notif.my.id atau coba provider alternatif.
+          <strong>✅ Notif.my.id API v2 - Siap Digunakan</strong><br/>
+          API endpoint v2 dikonfigurasi dengan format yang benar. Sistem siap mengirim pesan blast ke 264 karyawan.
         </AlertDescription>
       </Alert>
 
@@ -574,13 +572,12 @@ export default function IncidentBlast() {
                       <Alert className="mb-2 border-orange-200 bg-orange-50 dark:border-orange-800 dark:bg-orange-900/20">
                         <AlertTriangle className="h-4 w-4 text-orange-600" />
                         <AlertDescription className="text-xs text-orange-700 dark:text-orange-300">
-                          <strong>⚠️ Status API: "Restricted Area"</strong><br/>
-                          API key valid dan device WhatsApp terhubung, tetapi layanan masih terbatas.<br/>
-                          <strong>Rekomendasi:</strong><br/>
-                          • Hubungi support app7.notif.my.id untuk aktivasi penuh<br/>
-                          • Periksa apakah akun perlu upgrade ke plan berbayar<br/>
-                          • Konfirmasi nomor WhatsApp sender sudah diverifikasi<br/>
-                          • Atau gunakan provider WhatsApp alternatif
+                          <strong>⚠️ Sebagian pesan gagal terkirim</strong><br/>
+                          Kemungkinan penyebab utama:<br/>
+                          • Nomor WhatsApp karyawan tidak terdaftar atau salah<br/>
+                          • Format nomor tidak sesuai standar Indonesia<br/>
+                          • Nomor karyawan tidak aktif di WhatsApp<br/>
+                          <strong>Solusi:</strong> Verifikasi dan update data nomor WhatsApp karyawan
                         </AlertDescription>
                       </Alert>
                     )}

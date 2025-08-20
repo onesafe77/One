@@ -2,13 +2,7 @@ import fetch from 'node-fetch';
 import type { Employee } from '@shared/schema';
 
 const NOTIF_API_KEY = process.env.NOTIF_API_KEY;
-// Berbagai endpoint yang mungkin untuk notif.my.id
-const API_ENDPOINTS = [
-  "https://app7.notif.my.id/api/send",
-  "https://app7.notif.my.id/req.php",
-  "https://app.notif.my.id/api/send",
-  "https://app.notif.my.id/api/v1/send",
-];
+const API_URL = "https://app.notif.my.id/api/v2/send-message";
 
 interface IncidentData {
   incidentType: string;
@@ -64,8 +58,8 @@ Terima kasih atas perhatian dan kerjasamanya.`;
   }
 
   /**
-   * Format nomor telepon untuk notif.my.id
-   * Berdasarkan dokumentasi notif.my.id, format yang benar adalah: 628XXXXXXXXX (tanpa @c.us)
+   * Format nomor telepon untuk notif.my.id v2
+   * Berdasarkan contoh: receiver: "120363043283436111@g.us" - bisa individual (@c.us) atau group (@g.us)
    */
   private formatPhoneNumber(phone: string): string {
     // Hapus semua karakter non-digit
@@ -81,8 +75,8 @@ Terima kasih atas perhatian dan kerjasamanya.`;
       cleanPhone = '62' + cleanPhone;
     }
     
-    // Return tanpa @c.us untuk notif.my.id
-    return cleanPhone;
+    // Return dengan @c.us untuk individual WhatsApp ID
+    return cleanPhone + '@c.us';
   }
 
   /**
@@ -107,28 +101,27 @@ Terima kasih atas perhatian dan kerjasamanya.`;
     const timestamp = new Date().toISOString();
 
     try {
-      // Format payload untuk req.php endpoint (form-urlencoded)
-      const formData = new URLSearchParams();
-      // Format yang konsisten dengan test connection
-      formData.append('apikey', NOTIF_API_KEY!);
-      formData.append('number', formattedPhone);
-      formData.append('text', message);
-      formData.append('action', 'send');
+      // Format payload sesuai dokumentasi notif.my.id v2
+      const payload: any = {
+        apikey: NOTIF_API_KEY!,
+        receiver: formattedPhone,
+        mtype: mediaUrl ? "image" : "text",
+        text: message
+      };
 
       // Tambahkan URL media jika ada
       if (mediaUrl) {
-        formData.append('media', mediaUrl);
+        payload.url = mediaUrl;
       }
 
       console.log(`Sending WhatsApp to ${employee.name} (${formattedPhone})...`);
       
-      // Gunakan format req.php yang umum untuk WhatsApp gateway Indonesia
-      const response = await fetch("https://app7.notif.my.id/req.php", {
+      const response = await fetch(API_URL, {
         method: "POST",
         headers: { 
-          "Content-Type": "application/x-www-form-urlencoded",
+          "Content-Type": "application/json",
         },
-        body: formData.toString(),
+        body: JSON.stringify(payload),
       });
 
       // Response mungkin HTML atau text, bukan JSON
@@ -151,6 +144,17 @@ Terima kasih atas perhatian dan kerjasamanya.`;
           sentAt: timestamp,
         };
       } else {
+        // Jika nomor WhatsApp tidak terdaftar
+        if (responseText.includes('is not registered on Whatsapp')) {
+          return {
+            employeeId: employee.id,
+            employeeName: employee.name,
+            phoneNumber: employee.phone,
+            status: 'gagal',
+            errorMessage: `Nomor WhatsApp tidak terdaftar: ${formattedPhone}`,
+          };
+        }
+        
         return {
           employeeId: employee.id,
           employeeName: employee.name,
@@ -212,21 +216,20 @@ Terima kasih atas perhatian dan kerjasamanya.`;
     }
 
     try {
-      // Test dengan nomor dummy (tidak akan terkirim tapi akan test API key)
-      // Test dengan format req.php (form-urlencoded)
-      const testForm = new URLSearchParams();
-      // Format yang lebih umum untuk WhatsApp gateway Indonesia
-      testForm.append('apikey', NOTIF_API_KEY); // beberapa menggunakan 'apikey' bukan 'api_key'
-      testForm.append('number', '6281234567890'); // nomor Indonesia yang lebih valid
-      testForm.append('text', 'Test connection from incident blast system'); // beberapa menggunakan 'text' bukan 'message'
-      testForm.append('action', 'send'); // mungkin menggunakan 'action' bukan 'f'
+      // Test dengan format API v2 yang benar
+      const testPayload = {
+        apikey: NOTIF_API_KEY,
+        receiver: "6281234567890@c.us", // format WhatsApp ID yang benar
+        mtype: "text",
+        text: "Test connection from incident blast system"
+      };
 
-      const response = await fetch("https://app7.notif.my.id/req.php", {
+      const response = await fetch(API_URL, {
         method: "POST",
         headers: { 
-          "Content-Type": "application/x-www-form-urlencoded",
+          "Content-Type": "application/json",
         },
-        body: testForm.toString(),
+        body: JSON.stringify(testPayload),
       });
 
       // Response mungkin HTML atau text, bukan JSON untuk testConnection
@@ -240,7 +243,7 @@ Terima kasih atas perhatian dan kerjasamanya.`;
         result = { message: responseText, status: 'error' };
       }
       
-      if (response.ok && !responseText.includes('Restrcited Area')) {
+      if (response.ok && (result.status === 'success' || result.success === true)) {
         return {
           success: true,
           message: 'Koneksi ke notif.my.id berhasil'
@@ -251,9 +254,19 @@ Terima kasih atas perhatian dan kerjasamanya.`;
           message: 'API Key valid tetapi akses dibatasi. Periksa dashboard app7.notif.my.id untuk verifikasi akun dan koneksi WhatsApp device.'
         };
       } else {
+        // Jika response berisi "is not registered on Whatsapp", berarti API bekerja dengan baik
+        if (responseText.includes('is not registered on Whatsapp')) {
+          return {
+            success: true,
+            message: 'Koneksi ke notif.my.id berhasil. API bekerja dengan baik.'
+          };
+        }
+        
+        // Log response untuk debugging
+        console.log('Test connection response:', responseText);
         return {
           success: false,
-          message: result.message || 'Gagal terhubung ke notif.my.id'
+          message: result.message || result.error || responseText || 'Gagal terhubung ke notif.my.id'
         };
       }
     } catch (error) {
