@@ -1069,7 +1069,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Save incident blast record
       const blastRecord = await storage.createIncidentBlast({
-        ...validatedData,
+        incidentType: validatedData.incidentType,
+        location: validatedData.location,
+        description: validatedData.description,
+        currentStatus: validatedData.currentStatus,
+        instructions: validatedData.instructions,
+        mediaPath: validatedData.mediaPath,
         totalEmployees: activeEmployees.length,
         successCount,
         failedCount,
@@ -1079,7 +1084,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       for (const result of blastResults) {
         await storage.createIncidentBlastResult({
           blastId: blastRecord.id,
-          ...result,
+          employeeId: result.employeeId,
+          employeeName: result.employeeName,
+          phoneNumber: result.phoneNumber,
+          status: result.status,
+          sentAt: result.sentAt ? new Date(result.sentAt) : null,
+          errorMessage: result.errorMessage,
         });
       }
       

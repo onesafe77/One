@@ -174,6 +174,9 @@ export const insertLeaveHistorySchema = createInsertSchema(leaveHistory).omit({
 
 export const insertIncidentBlastSchema = createInsertSchema(incidentBlasts).omit({
   id: true,
+  totalEmployees: true,
+  successCount: true,
+  failedCount: true,
   createdAt: true,
 });
 

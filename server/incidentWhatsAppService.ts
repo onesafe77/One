@@ -17,7 +17,7 @@ interface IncidentData {
   description: string;
   currentStatus: string;
   instructions: string;
-  mediaPath?: string;
+  mediaPath?: string | null;
 }
 
 interface BlastResult {
