@@ -257,6 +257,17 @@ Terima kasih atas perhatian dan kerjasamanya.`;
         result = { message: responseText, rawText: responseText };
       }
       
+      // PENTING: notif.my.id mengirim status 500 untuk "not registered" - ini NORMAL!
+      // "Not registered" berarti API key valid dan berfungsi, hanya nomor test tidak terdaftar
+      if (responseText.includes('is not registered on Whatsapp') || 
+          responseText.includes('not registered')) {
+        console.log("✅ API WORKS PERFECT! (test number not registered - this is NORMAL)");
+        return {
+          success: true,
+          message: '✅ API berfungsi sempurna! Nomor test tidak terdaftar WhatsApp (ini normal). API siap blast karyawan!'
+        };
+      }
+      
       // Analisa berbagai kemungkinan response
       if (response.status === 200) {
         // Success cases
@@ -264,17 +275,7 @@ Terima kasih atas perhatian dan kerjasamanya.`;
           console.log("✅ PERFECT SUCCESS");
           return {
             success: true,
-            message: '✅ Koneksi perfect! API notif.my.id siap mengirim blast.'
-          };
-        }
-        
-        // "Not registered" adalah response normal untuk test number
-        if (responseText.includes('is not registered on Whatsapp') || 
-            responseText.includes('not registered')) {
-          console.log("✅ API WORKS (test number not registered - normal)");
-          return {
-            success: true,
-            message: '✅ API bekerja normal! Nomor test tidak terdaftar (ini wajar). Siap untuk blast real.'
+            message: '✅ Test message terkirim! API notif.my.id siap mengirim blast.'
           };
         }
         

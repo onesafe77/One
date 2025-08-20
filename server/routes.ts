@@ -1039,17 +1039,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { notifMyIdService } = await import("./notifMyIdService");
       const testResult = await notifMyIdService.testConnection();
       
-      if (testResult.success) {
-        res.json({ 
-          success: true, 
-          message: "✅ Koneksi ke notif.my.id berhasil! API siap digunakan." 
-        });
-      } else {
-        res.json({ 
-          success: false, 
-          message: "❌ Koneksi ke notif.my.id gagal. Periksa API key atau jaringan." 
-        });
-      }
+      // Langsung forward response dari notifMyIdService
+      res.json(testResult);
     } catch (error) {
       console.error("Error testing notif.my.id connection:", error);
       res.status(200).json({ 
