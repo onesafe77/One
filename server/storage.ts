@@ -15,6 +15,10 @@ import {
   type InsertLeaveBalance,
   type LeaveHistory,
   type InsertLeaveHistory,
+  type IncidentBlast,
+  type InsertIncidentBlast,
+  type IncidentBlastResult,
+  type InsertIncidentBlastResult,
   employees,
   attendanceRecords,
   rosterSchedules,
@@ -22,7 +26,9 @@ import {
   qrTokens,
   leaveReminders,
   leaveBalances,
-  leaveHistory
+  leaveHistory,
+  incidentBlasts,
+  incidentBlastResults
 } from "@shared/schema";
 import { randomUUID } from "crypto";
 import { drizzle } from "drizzle-orm/neon-http";
@@ -88,6 +94,12 @@ export interface IStorage {
 
   // Bulk upload methods
   bulkUploadLeaveRoster(data: Array<{ nik: string; leaveType: string; startDate: string; endDate: string; totalDays: number }>): Promise<{ success: number; errors: string[] }>;
+
+  // Incident Blast methods
+  createIncidentBlast(blast: InsertIncidentBlast): Promise<IncidentBlast>;
+  createIncidentBlastResult(result: InsertIncidentBlastResult): Promise<IncidentBlastResult>;
+  getIncidentBlastHistory(): Promise<IncidentBlast[]>;
+  getIncidentBlastResults(blastId: string): Promise<IncidentBlastResult[]>;
 }
 
 export class MemStorage implements IStorage {
@@ -126,6 +138,10 @@ export class MemStorage implements IStorage {
 
   async getAllEmployees(): Promise<Employee[]> {
     return Array.from(this.employees.values());
+  }
+
+  async getEmployees(): Promise<Employee[]> {
+    return this.getAllEmployees();
   }
 
   private generateNextNIK(): string {
@@ -268,6 +284,10 @@ export class MemStorage implements IStorage {
     return Array.from(this.leaveRequests.values());
   }
 
+  async getLeaveRequests(): Promise<LeaveRequest[]> {
+    return this.getAllLeaveRequests();
+  }
+
   async createLeaveRequest(insertRequest: InsertLeaveRequest): Promise<LeaveRequest> {
     const request: LeaveRequest = {
       id: randomUUID(),
@@ -326,6 +346,96 @@ export class MemStorage implements IStorage {
     const qrToken = await this.getQrToken(employeeId);
     return qrToken ? qrToken.token === token && qrToken.isActive : false;
   }
+
+  // Stub implementations for MemStorage (not used in production)
+  async getLeaveReminder(leaveRequestId: string, reminderType: string): Promise<LeaveReminder | undefined> {
+    return undefined;
+  }
+
+  async getLeaveReminders(): Promise<LeaveReminder[]> {
+    return [];
+  }
+
+  async saveLeaveReminder(reminder: InsertLeaveReminder): Promise<LeaveReminder> {
+    const leaveReminder: LeaveReminder = {
+      ...reminder,
+      createdAt: new Date()
+    };
+    return leaveReminder;
+  }
+
+  async getLeaveBalances(): Promise<LeaveBalance[]> {
+    return [];
+  }
+
+  async getLeaveBalanceByEmployee(employeeId: string, year?: number): Promise<LeaveBalance | undefined> {
+    return undefined;
+  }
+
+  async createLeaveBalance(balance: InsertLeaveBalance): Promise<LeaveBalance> {
+    const leaveBalance: LeaveBalance = {
+      id: randomUUID(),
+      ...balance,
+      createdAt: new Date(),
+      updatedAt: new Date()
+    };
+    return leaveBalance;
+  }
+
+  async updateLeaveBalance(id: string, balance: Partial<InsertLeaveBalance>): Promise<LeaveBalance | undefined> {
+    return undefined;
+  }
+
+  async calculateLeaveEligibility(employeeId: string): Promise<{ eligible: boolean; daysEarned: number; nextEligibleDate: string | null }> {
+    return { eligible: false, daysEarned: 0, nextEligibleDate: null };
+  }
+
+  async getLeaveHistory(): Promise<LeaveHistory[]> {
+    return [];
+  }
+
+  async getLeaveHistoryByEmployee(employeeId: string): Promise<LeaveHistory[]> {
+    return [];
+  }
+
+  async createLeaveHistory(history: InsertLeaveHistory): Promise<LeaveHistory> {
+    const leaveHistory: LeaveHistory = {
+      id: randomUUID(),
+      ...history,
+      createdAt: new Date()
+    };
+    return leaveHistory;
+  }
+
+  async bulkUploadLeaveRoster(data: Array<{ nik: string; leaveType: string; startDate: string; endDate: string; totalDays: number }>): Promise<{ success: number; errors: string[] }> {
+    return { success: 0, errors: ["MemStorage does not support bulk operations"] };
+  }
+
+  async createIncidentBlast(blast: InsertIncidentBlast): Promise<IncidentBlast> {
+    const incidentBlast: IncidentBlast = {
+      id: randomUUID(),
+      ...blast,
+      createdAt: new Date()
+    };
+    return incidentBlast;
+  }
+
+  async createIncidentBlastResult(result: InsertIncidentBlastResult): Promise<IncidentBlastResult> {
+    const incidentBlastResult: IncidentBlastResult = {
+      id: randomUUID(),
+      ...result,
+      createdAt: new Date()
+    };
+    return incidentBlastResult;
+  }
+
+  async getIncidentBlastHistory(): Promise<IncidentBlast[]> {
+    return [];
+  }
+
+  async getIncidentBlastResults(blastId: string): Promise<IncidentBlastResult[]> {
+    return [];
+  }
 }
 
 // DrizzleStorage implementation using PostgreSQL
@@ -345,6 +455,10 @@ export class DrizzleStorage implements IStorage {
 
   async getAllEmployees(): Promise<Employee[]> {
     return await this.db.select().from(employees);
+  }
+
+  async getEmployees(): Promise<Employee[]> {
+    return this.getAllEmployees();
   }
 
   async createEmployee(insertEmployee: InsertEmployee): Promise<Employee> {
@@ -473,10 +587,6 @@ export class DrizzleStorage implements IStorage {
   }
 
   // Compatibility methods
-  async getEmployees(): Promise<Employee[]> {
-    return this.getAllEmployees();
-  }
-
   async getLeaveRequests(): Promise<LeaveRequest[]> {
     return this.getAllLeaveRequests();
   }
@@ -706,6 +816,31 @@ export class DrizzleStorage implements IStorage {
     }
 
     return { success: successCount, errors };
+  }
+
+  // Incident Blast methods
+  async createIncidentBlast(blast: InsertIncidentBlast): Promise<IncidentBlast> {
+    const [created] = await db.insert(incidentBlasts).values(blast).returning();
+    return created;
+  }
+
+  async createIncidentBlastResult(result: InsertIncidentBlastResult): Promise<IncidentBlastResult> {
+    const [created] = await db.insert(incidentBlastResults).values(result).returning();
+    return created;
+  }
+
+  async getIncidentBlastHistory(): Promise<IncidentBlast[]> {
+    return await db
+      .select()
+      .from(incidentBlasts)
+      .orderBy(drizzleSql`${incidentBlasts.createdAt} DESC`);
+  }
+
+  async getIncidentBlastResults(blastId: string): Promise<IncidentBlastResult[]> {
+    return await db
+      .select()
+      .from(incidentBlastResults)
+      .where(eq(incidentBlastResults.blastId, blastId));
   }
 }
 

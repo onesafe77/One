@@ -17,6 +17,7 @@ import Roster from "@/pages/roster";
 import Leave from "@/pages/leave";
 import Reports from "@/pages/reports";
 import AttendanceDetails from "@/pages/attendance-details";
+import IncidentBlast from "@/pages/incident-blast";
 import NotFound from "@/pages/not-found";
 
 const routes = [
@@ -26,6 +27,7 @@ const routes = [
   { path: "/employees", component: Employees, title: "Data Karyawan" },
   { path: "/roster", component: Roster, title: "Roster Kerja" },
   { path: "/leave", component: Leave, title: "Manajemen Cuti" },
+  { path: "/incident-blast", component: IncidentBlast, title: "Blast WhatsApp Insiden" },
   { path: "/reports", component: Reports, title: "Laporan" },
   { path: "/attendance-details", component: AttendanceDetails, title: "Dashboard HR " },
 ];

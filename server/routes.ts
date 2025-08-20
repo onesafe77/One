@@ -10,8 +10,10 @@ import {
   insertAttendanceSchema, 
   insertRosterSchema, 
   insertLeaveRequestSchema,
-  insertQrTokenSchema 
+  insertQrTokenSchema,
+  insertIncidentBlastSchema
 } from "@shared/schema";
+import { incidentWhatsAppService } from "./incidentWhatsAppService";
 
 // Utility function to determine shift based on time
 function determineShiftByTime(time: string): string {
@@ -1028,6 +1030,114 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error fetching department analytics:", error);
       res.status(500).json({ message: "Failed to fetch department analytics" });
+    }
+  });
+
+  // Incident Blast WhatsApp routes
+  app.get("/api/incident-blast/history", async (req, res) => {
+    try {
+      const history = await storage.getIncidentBlastHistory();
+      res.json(history);
+    } catch (error) {
+      console.error("Error fetching incident blast history:", error);
+      res.status(500).json({ error: "Failed to fetch incident blast history" });
+    }
+  });
+
+  app.post("/api/incident-blast/send", async (req, res) => {
+    try {
+      const validatedData = insertIncidentBlastSchema.parse(req.body);
+      
+      // Get all active employees
+      const employees = await storage.getAllEmployees();
+      const activeEmployees = employees.filter(emp => 
+        emp.status === 'active' && emp.phone && emp.phone.trim() !== ''
+      );
+      
+      if (activeEmployees.length === 0) {
+        return res.status(400).json({ error: "No active employees with phone numbers found" });
+      }
+      
+      // Send WhatsApp blast
+      const blastResults = await incidentWhatsAppService.sendIncidentBlast(
+        activeEmployees,
+        validatedData
+      );
+      
+      const successCount = blastResults.filter(r => r.status === 'terkirim').length;
+      const failedCount = blastResults.filter(r => r.status === 'gagal').length;
+      
+      // Save incident blast record
+      const blastRecord = await storage.createIncidentBlast({
+        ...validatedData,
+        totalEmployees: activeEmployees.length,
+        successCount,
+        failedCount,
+      });
+      
+      // Save individual results
+      for (const result of blastResults) {
+        await storage.createIncidentBlastResult({
+          blastId: blastRecord.id,
+          ...result,
+        });
+      }
+      
+      const response = {
+        id: blastRecord.id,
+        incidentType: blastRecord.incidentType,
+        location: blastRecord.location,
+        description: blastRecord.description,
+        totalEmployees: blastRecord.totalEmployees,
+        successCount: blastRecord.successCount,
+        failedCount: blastRecord.failedCount,
+        createdAt: blastRecord.createdAt,
+        results: blastResults,
+        mediaPath: blastRecord.mediaPath,
+      };
+      
+      res.status(200).json(response);
+    } catch (error) {
+      console.error("Error sending incident blast:", error);
+      res.status(500).json({ 
+        error: "Failed to send incident blast",
+        details: error instanceof Error ? error.message : "Unknown error"
+      });
+    }
+  });
+
+  app.put("/api/incident-media", async (req, res) => {
+    if (!req.body.mediaURL) {
+      return res.status(400).json({ error: "mediaURL is required" });
+    }
+
+    try {
+      const objectStorageService = new ObjectStorageService();
+      const objectPath = await objectStorageService.trySetObjectEntityAclPolicy(
+        req.body.mediaURL,
+        {
+          owner: "system", // System-owned incident media
+          visibility: "public", // Public untuk bisa diakses dalam WhatsApp
+        }
+      );
+
+      res.status(200).json({
+        objectPath: objectPath,
+      });
+    } catch (error) {
+      console.error("Error setting incident media:", error);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
+  // Test Twilio connection
+  app.get("/api/incident-blast/test-twilio", async (req, res) => {
+    try {
+      const isConnected = await incidentWhatsAppService.testTwilioConnection();
+      res.json({ connected: isConnected });
+    } catch (error) {
+      console.error("Error testing Twilio connection:", error);
+      res.status(500).json({ error: "Failed to test Twilio connection" });
     }
   });
 

@@ -11,7 +11,6 @@ import { Button } from "@/components/ui/button";
 interface ObjectUploaderProps {
   maxNumberOfFiles?: number;
   maxFileSize?: number;
-  allowedFileTypes?: string[];
   onGetUploadParameters: () => Promise<{
     method: "PUT";
     url: string;
@@ -42,7 +41,6 @@ interface ObjectUploaderProps {
  * @param props.maxNumberOfFiles - Maximum number of files allowed to be uploaded
  *   (default: 1)
  * @param props.maxFileSize - Maximum file size in bytes (default: 10MB)
- * @param props.allowedFileTypes - Allowed file types (default: ['.pdf'])
  * @param props.onGetUploadParameters - Function to get upload parameters (method and URL).
  *   Typically used to fetch a presigned URL from the backend server for direct-to-S3
  *   uploads.
@@ -55,7 +53,6 @@ interface ObjectUploaderProps {
 export function ObjectUploader({
   maxNumberOfFiles = 1,
   maxFileSize = 10485760, // 10MB default
-  allowedFileTypes = ['.pdf'],
   onGetUploadParameters,
   onComplete,
   buttonClassName,
@@ -67,43 +64,21 @@ export function ObjectUploader({
       restrictions: {
         maxNumberOfFiles,
         maxFileSize,
-        allowedFileTypes,
       },
       autoProceed: false,
     })
       .use(AwsS3, {
         shouldUseMultipart: false,
-        getUploadParameters: async (file) => {
-          try {
-            const params = await onGetUploadParameters();
-            return {
-              method: params.method,
-              url: params.url,
-              fields: {},
-              headers: {
-                'Content-Type': file.type || 'application/pdf',
-              },
-            };
-          } catch (error) {
-            console.error('Error getting upload parameters:', error);
-            throw error;
-          }
-        },
+        getUploadParameters: onGetUploadParameters,
       })
       .on("complete", (result) => {
         onComplete?.(result);
-        setShowModal(false);
       })
   );
 
   return (
     <div>
-      <Button 
-        type="button"
-        onClick={() => setShowModal(true)} 
-        className={buttonClassName}
-        variant="outline"
-      >
+      <Button onClick={() => setShowModal(true)} className={buttonClassName}>
         {children}
       </Button>
 
@@ -112,7 +87,6 @@ export function ObjectUploader({
         open={showModal}
         onRequestClose={() => setShowModal(false)}
         proudlyDisplayPoweredByUppy={false}
-        note="Hanya file PDF yang diperbolehkan, maksimal 10MB"
       />
     </div>
   );
