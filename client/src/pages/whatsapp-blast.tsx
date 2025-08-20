@@ -11,6 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { ObjectUploader } from "@/components/ObjectUploader";
+import { Progress } from "@/components/ui/progress";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { MessageSquare, Send, Users, Image, Calendar, CheckCircle, XCircle, Clock, AlertCircle } from "lucide-react";
@@ -26,6 +27,7 @@ export default function WhatsAppBlast() {
     targetValue: ""
   });
   const [selectedEmployees, setSelectedEmployees] = useState<string[]>([]);
+  const [sendingProgress, setSendingProgress] = useState<{[key: string]: { sent: number, total: number, status: string }}>({});
 
   // Fetch data
   const { data: blasts = [], isLoading: blastsLoading } = useQuery({
@@ -79,24 +81,63 @@ export default function WhatsAppBlast() {
     },
   });
 
-  // Send blast mutation
+  // Send blast mutation with progress tracking
   const sendBlastMutation = useMutation({
     mutationFn: async (blastId: string) => {
+      // Initialize progress
+      setSendingProgress(prev => ({
+        ...prev,
+        [blastId]: { sent: 0, total: 0, status: 'starting' }
+      }));
+
       return apiRequest(`/api/whatsapp-blasts/${blastId}/send`, "POST");
     },
-    onSuccess: () => {
-      toast({
-        title: "Blast Terkirim",
-        description: "Blast WhatsApp berhasil dikirim",
-      });
+    onSuccess: (data: any, blastId: string) => {
+      // Set final progress
+      setSendingProgress(prev => ({
+        ...prev,
+        [blastId]: { 
+          sent: data.successCount || 0, 
+          total: data.totalRecipients || 0, 
+          status: 'completed' 
+        }
+      }));
+
       queryClient.invalidateQueries({ queryKey: ["/api/whatsapp-blasts"] });
-    },
-    onError: (error) => {
       toast({
-        title: "Error",
+        title: "Blast Selesai",
+        description: `WhatsApp blast berhasil dikirim ke ${data.successCount || 0} dari ${data.totalRecipients || 0} penerima`,
+      });
+
+      // Clear progress after 5 seconds
+      setTimeout(() => {
+        setSendingProgress(prev => {
+          const newProgress = { ...prev };
+          delete newProgress[blastId];
+          return newProgress;
+        });
+      }, 5000);
+    },
+    onError: (error: any, blastId: string) => {
+      setSendingProgress(prev => ({
+        ...prev,
+        [blastId]: { sent: 0, total: 0, status: 'failed' }
+      }));
+
+      toast({
+        title: "Gagal Mengirim",
         description: "Gagal mengirim blast WhatsApp",
         variant: "destructive",
       });
+
+      // Clear progress after 3 seconds
+      setTimeout(() => {
+        setSendingProgress(prev => {
+          const newProgress = { ...prev };
+          delete newProgress[blastId];
+          return newProgress;
+        });
+      }, 3000);
     },
   });
 
@@ -339,7 +380,7 @@ export default function WhatsAppBlast() {
                             }}
                           />
                           <label htmlFor={employee.id} className="text-sm">
-                            {employee.name} - {employee.department}
+                            {employee.name} - {employee.department || ""}
                           </label>
                         </div>
                       ))}
@@ -406,13 +447,33 @@ export default function WhatsAppBlast() {
                         </TableCell>
                         <TableCell>
                           {blast.status === "pending" && (
-                            <Button
-                              size="sm"
-                              onClick={() => sendBlastMutation.mutate(blast.id)}
-                              disabled={sendBlastMutation.isPending}
-                            >
-                              Kirim
-                            </Button>
+                            <div className="space-y-2">
+                              <Button
+                                size="sm"
+                                onClick={() => sendBlastMutation.mutate(blast.id)}
+                                disabled={sendBlastMutation.isPending || !!sendingProgress[blast.id]}
+                              >
+                                <Send className="h-4 w-4 mr-1" />
+                                {sendingProgress[blast.id] ? 'Mengirim...' : 'Kirim'}
+                              </Button>
+                              {sendingProgress[blast.id] && (
+                                <div className="w-32 space-y-1">
+                                  <Progress 
+                                    value={sendingProgress[blast.id]?.total > 0 ? 
+                                      (sendingProgress[blast.id].sent / sendingProgress[blast.id].total * 100) : 0
+                                    } 
+                                    className="w-full h-2" 
+                                  />
+                                  <div className="text-xs text-gray-600 text-center">
+                                    {sendingProgress[blast.id]?.status === 'starting' ? 'Memulai...' :
+                                     sendingProgress[blast.id]?.status === 'completed' ? 
+                                     `✓ ${sendingProgress[blast.id].sent}/${sendingProgress[blast.id].total}` :
+                                     sendingProgress[blast.id]?.status === 'failed' ? '✗ Gagal' :
+                                     `${sendingProgress[blast.id]?.sent || 0}/${sendingProgress[blast.id]?.total || 0}`}
+                                  </div>
+                                </div>
+                              )}
+                            </div>
                           )}
                         </TableCell>
                       </TableRow>
