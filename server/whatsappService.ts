@@ -19,6 +19,8 @@ export class WhatsAppService {
       text: message
     };
 
+    console.log("Sending WhatsApp message:", { receiver, message: message.substring(0, 50) + "..." });
+
     try {
       const response = await fetch(this.apiUrl, {
         method: "POST",
@@ -27,6 +29,12 @@ export class WhatsAppService {
       });
 
       const result = await response.json();
+      console.log("WhatsApp API response:", result);
+      
+      if (!response.ok) {
+        throw new Error(`WhatsApp API error: ${result.message || response.statusText}`);
+      }
+      
       return result;
     } catch (error) {
       console.error("Error sending text message:", error);
@@ -35,7 +43,7 @@ export class WhatsAppService {
   }
 
   // Send image message
-  async sendImageMessage(receiver: string, imageUrl: string, caption?: string): Promise<any> {
+  async sendImageMessage(receiver: string, caption: string, imageUrl: string): Promise<any> {
     const payload = {
       apikey: this.apiKey,
       receiver: receiver,
@@ -43,6 +51,8 @@ export class WhatsAppService {
       text: caption || "Ini adalah image",
       url: imageUrl
     };
+
+    console.log("Sending WhatsApp image:", { receiver, caption: caption.substring(0, 50) + "...", imageUrl });
 
     try {
       const response = await fetch(this.apiUrl, {
@@ -52,6 +62,12 @@ export class WhatsAppService {
       });
 
       const result = await response.json();
+      console.log("WhatsApp API response:", result);
+      
+      if (!response.ok) {
+        throw new Error(`WhatsApp API error: ${result.message || response.statusText}`);
+      }
+      
       return result;
     } catch (error) {
       console.error("Error sending image message:", error);
@@ -88,28 +104,6 @@ export class WhatsAppService {
 
   // Format phone number for WhatsApp
   formatPhoneNumber(phone: string): string {
-    // Remove all non-digit characters
-    let cleanPhone = phone.replace(/\D/g, '');
-    
-    // Add country code if missing (assuming Indonesia +62)
-    if (!cleanPhone.startsWith('62') && cleanPhone.startsWith('0')) {
-      cleanPhone = '62' + cleanPhone.substring(1);
-    } else if (!cleanPhone.startsWith('62') && !cleanPhone.startsWith('0')) {
-      cleanPhone = '62' + cleanPhone;
-    }
-    
-    // Add @c.us suffix for individual numbers
-    return cleanPhone + '@c.us';
-  }
-
-  // Validate phone number format
-  isValidPhoneNumber(phone: string): boolean {
-    const cleanPhone = phone.replace(/\D/g, '');
-    return cleanPhone.length >= 10 && cleanPhone.length <= 15;
-  }
-
-  // Format phone number to WhatsApp format
-  formatPhoneNumber(phone: string): string {
     if (!phone) return "";
     
     // Remove all non-digit characters
@@ -125,6 +119,12 @@ export class WhatsAppService {
     }
     
     return cleaned + "@c.us";
+  }
+
+  // Validate phone number format
+  isValidPhoneNumber(phone: string): boolean {
+    const cleanPhone = phone.replace(/\D/g, '');
+    return cleanPhone.length >= 10 && cleanPhone.length <= 15;
   }
 
   // Static version for backward compatibility

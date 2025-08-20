@@ -1103,13 +1103,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
       let successCount = 0;
       let failedCount = 0;
 
-      // Send messages to all employees in parallel with batching
-      const batchSize = 10; // Process 10 messages at a time
+      // Send messages with reduced batch size for better reliability
+      const batchSize = 5; // Process 5 messages at a time for better success rate
       const batches = [];
+      
+      console.log(`Starting WhatsApp blast for ${targetEmployees.length} employees`);
       
       for (let i = 0; i < targetEmployees.length; i += batchSize) {
         batches.push(targetEmployees.slice(i, i + batchSize));
       }
+      
+      console.log(`Created ${batches.length} batches of ${batchSize} messages each`);
 
       for (let batchIndex = 0; batchIndex < batches.length; batchIndex++) {
         const batch = batches[batchIndex];
@@ -1117,11 +1121,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // Process batch in parallel
         const promises = batch.map(async (employee) => {
           try {
-            const phoneNumber = whatsappService.formatPhoneNumber(employee.phoneNumber || employee.phone);
+            const rawPhone = employee.phone;
             
-            if (!phoneNumber) {
-              throw new Error("Invalid phone number");
+            if (!rawPhone || !whatsappService.isValidPhoneNumber(rawPhone)) {
+              throw new Error(`Invalid phone number: ${rawPhone}`);
             }
+            
+            const phoneNumber = whatsappService.formatPhoneNumber(rawPhone);
+            console.log(`Sending to ${employee.name} (${employee.id}): ${phoneNumber}`);
             
             let result;
             if (blast.imageUrl) {
@@ -1132,6 +1139,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
               // Send text message
               result = await whatsappService.sendTextMessage(phoneNumber, blast.message);
             }
+
+            console.log(`Message sent successfully to ${employee.name}`);
 
             // Save successful result
             await storage.createWhatsappBlastResult({
@@ -1144,11 +1153,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
             return { success: true, employee: employee.id };
           } catch (error) {
+            console.error(`Failed to send to ${employee.name} (${employee.id}):`, error);
+            
             // Save failed result
             await storage.createWhatsappBlastResult({
               blastId: id,
               employeeId: employee.id,
-              phoneNumber: whatsappService.formatPhoneNumber(employee.phoneNumber || employee.phone) || "invalid",
+              phoneNumber: whatsappService.formatPhoneNumber(employee.phone) || "invalid",
               status: "failed",
               errorMessage: error instanceof Error ? error.message : "Unknown error"
             });
@@ -1169,9 +1180,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
           }
         });
 
-        // Small delay between batches to avoid rate limiting
+        console.log(`Batch ${batchIndex + 1}/${batches.length} completed: ${successCount + failedCount}/${targetEmployees.length} total processed`);
+        
+        // Longer delay between batches for better API stability
         if (batchIndex < batches.length - 1) {
-          await new Promise(resolve => setTimeout(resolve, 500));
+          await new Promise(resolve => setTimeout(resolve, 2000)); // 2 seconds between batches
         }
         
         // Update progress in database
