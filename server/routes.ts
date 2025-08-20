@@ -1172,6 +1172,83 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // JSON manual blast endpoint
+  app.post("/api/incident-blast/send-json", async (req, res) => {
+    try {
+      const { apikey, receiver, mtype, text, url } = req.body;
+      
+      // Validasi input
+      if (!apikey || !receiver || !mtype || !text) {
+        return res.status(400).json({
+          success: false,
+          message: "Missing required fields: apikey, receiver, mtype, text"
+        });
+      }
+
+      console.log("=== JSON BLAST REQUEST ===");
+      console.log("Payload:", {
+        apikey: `${apikey.substring(0, 8)}***`,
+        receiver,
+        mtype,
+        text: text.substring(0, 100) + "...",
+        url
+      });
+
+      // Buat payload sesuai format notif.my.id
+      const payload: any = {
+        apikey,
+        receiver,
+        mtype,
+        text
+      };
+
+      if (url && mtype === 'image') {
+        payload.url = url;
+      }
+
+      // Kirim ke notif.my.id API
+      const API_URL = "https://app.notif.my.id/api/v2/send-message";
+      const response = await fetch(API_URL, {
+        method: "POST",
+        headers: { 
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(payload),
+      });
+
+      const responseText = await response.text();
+      console.log(`Response Status: ${response.status}`);
+      console.log(`Response Text: ${responseText}`);
+
+      let result: any;
+      try {
+        result = JSON.parse(responseText);
+      } catch {
+        result = { message: responseText };
+      }
+
+      if (response.ok || responseText.includes('sent') || result.status === 'success') {
+        res.json({
+          success: true,
+          message: "JSON blast sent successfully",
+          response: result
+        });
+      } else {
+        res.status(500).json({
+          success: false,
+          message: result.message || responseText || "Failed to send JSON blast",
+          response: result
+        });
+      }
+    } catch (error) {
+      console.error("Error sending JSON blast:", error);
+      res.status(500).json({
+        success: false,
+        message: error instanceof Error ? error.message : "Unknown error"
+      });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }

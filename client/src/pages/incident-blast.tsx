@@ -44,7 +44,7 @@ import {
 import { format } from "date-fns";
 import { id as localeId } from "date-fns/locale";
 
-// Schema untuk incident notification
+// Schema untuk incident notification (form mode)
 const incidentSchema = z.object({
   incidentType: z.string().min(1, "Jenis insiden harus diisi"),
   location: z.string().min(1, "Lokasi kejadian harus diisi"),
@@ -55,7 +55,17 @@ const incidentSchema = z.object({
   provider: z.enum(['notif']).optional(),
 });
 
+// Schema untuk JSON manual mode
+const jsonBlastSchema = z.object({
+  apikey: z.string().min(1, "API key harus diisi"),
+  receiver: z.string().min(1, "Receiver harus diisi (contoh: 120363043283436111@g.us)"),
+  mtype: z.enum(['text', 'image'], { required_error: "Pilih text atau image" }),
+  text: z.string().min(1, "Text pesan harus diisi"),
+  url: z.string().url("URL harus valid").optional(),
+});
+
 type IncidentForm = z.infer<typeof incidentSchema>;
+type JsonBlastForm = z.infer<typeof jsonBlastSchema>;
 
 interface BlastResult {
   employeeId: string;
@@ -88,6 +98,7 @@ export default function IncidentBlast() {
   const [showReport, setShowReport] = useState(false);
   const [selectedProvider, setSelectedProvider] = useState<'notif'>('notif');
   const [connectionStatus, setConnectionStatus] = useState<{success: boolean; message: string} | null>(null);
+  const [inputMode, setInputMode] = useState<'form' | 'json'>('form'); // Toggle between form and JSON input
   const { toast } = useToast();
 
   // Query untuk mengambil data karyawan - optimized loading
@@ -116,7 +127,19 @@ export default function IncidentBlast() {
     },
   });
 
-  // Mutation untuk mengirim blast WhatsApp
+  // Form untuk mode JSON manual
+  const jsonForm = useForm<JsonBlastForm>({
+    resolver: zodResolver(jsonBlastSchema),
+    defaultValues: {
+      apikey: "U7tu87RGNgXcvdpgqNDXuGYEI6u9j8wh1719260547002", // Pre-fill dengan API key yang ada
+      receiver: "",
+      mtype: "text",
+      text: "",
+      url: "",
+    },
+  });
+
+  // Mutation untuk mengirim blast WhatsApp (mode form)
   const sendBlastMutation = useMutation({
     mutationFn: async (data: IncidentForm & { mediaPath?: string }): Promise<BlastReport> => {
       const response = await apiRequest("POST", "/api/incident-blast/send", data);
@@ -138,6 +161,29 @@ export default function IncidentBlast() {
     onError: (error) => {
       toast({
         title: "Gagal Mengirim Blast",
+        description: error instanceof Error ? error.message : "Terjadi kesalahan saat mengirim blast",
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Mutation untuk mengirim blast JSON manual
+  const sendJsonBlastMutation = useMutation({
+    mutationFn: async (data: JsonBlastForm): Promise<any> => {
+      const response = await apiRequest("POST", "/api/incident-blast/send-json", data);
+      return await response.json();
+    },
+    onSuccess: (result: any) => {
+      toast({
+        title: "Blast JSON Berhasil",
+        description: `Response: ${result.message || 'Success'}`,
+      });
+      
+      jsonForm.reset();
+    },
+    onError: (error) => {
+      toast({
+        title: "Gagal Mengirim Blast JSON",
         description: error instanceof Error ? error.message : "Terjadi kesalahan saat mengirim blast",
         variant: "destructive",
       });
@@ -301,21 +347,49 @@ export default function IncidentBlast() {
         </AlertDescription>
       </Alert>
 
+      {/* Mode Toggle */}
+      <Card className="mb-4">
+        <CardContent className="pt-4">
+          <div className="flex items-center justify-center gap-4">
+            <Button
+              variant={inputMode === 'form' ? 'default' : 'outline'}
+              onClick={() => setInputMode('form')}
+              className="flex items-center gap-2"
+            >
+              <FileText className="h-4 w-4" />
+              Form Mode
+            </Button>
+            <Button
+              variant={inputMode === 'json' ? 'default' : 'outline'}
+              onClick={() => setInputMode('json')}
+              className="flex items-center gap-2"
+            >
+              <MessageSquare className="h-4 w-4" />
+              JSON Manual Mode
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-        {/* Form Incident */}
+        {/* Form Incident atau JSON Manual */}
         <Card className="lg:col-span-2">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <MessageSquare className="h-5 w-5 text-red-600" />
-              Form Notifikasi Insiden
+              {inputMode === 'form' ? 'Form Notifikasi Insiden' : 'JSON Manual Blast'}
             </CardTitle>
             <CardDescription>
-              Isi detail insiden yang akan dikirim ke seluruh karyawan
+              {inputMode === 'form' 
+                ? 'Isi detail insiden yang akan dikirim ke seluruh karyawan'
+                : 'Input manual dalam format JSON sesuai API notif.my.id'
+              }
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <Form {...form}>
-              <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
+            {inputMode === 'form' ? (
+              <Form {...form}>
+                <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <FormField
                     control={form.control}
@@ -546,6 +620,121 @@ export default function IncidentBlast() {
                 </Button>
               </form>
             </Form>
+            ) : (
+              // JSON Manual Mode
+              <Form {...jsonForm}>
+                <form onSubmit={jsonForm.handleSubmit((data) => sendJsonBlastMutation.mutate(data))} className="space-y-4">
+                  <div className="bg-gray-50 dark:bg-gray-800 p-4 rounded-lg mb-4">
+                    <h4 className="font-medium text-sm mb-2">Format JSON API notif.my.id:</h4>
+                    <pre className="text-xs text-gray-600 dark:text-gray-400 bg-gray-100 dark:bg-gray-700 p-2 rounded">
+{`{
+  "apikey": "your_api_key",
+  "receiver": "120363043283436111@g.us",
+  "mtype": "image",
+  "text": "Ini adalah image", 
+  "url": "https://example.com/image.jpg"
+}`}
+                    </pre>
+                  </div>
+
+                  <FormField
+                    control={jsonForm.control}
+                    name="apikey"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>API Key *</FormLabel>
+                        <FormControl>
+                          <Input {...field} placeholder="Masukkan API key notif.my.id" />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={jsonForm.control}
+                    name="receiver"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Receiver *</FormLabel>
+                        <FormControl>
+                          <Input {...field} placeholder="contoh: 120363043283436111@g.us atau 6281234567890@c.us" />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={jsonForm.control}
+                    name="mtype"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Message Type *</FormLabel>
+                        <Select value={field.value} onValueChange={field.onChange}>
+                          <FormControl>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Pilih tipe pesan" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            <SelectItem value="text">Text</SelectItem>
+                            <SelectItem value="image">Image</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={jsonForm.control}
+                    name="text"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Text Message *</FormLabel>
+                        <FormControl>
+                          <Textarea {...field} placeholder="Masukkan pesan text" rows={4} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={jsonForm.control}
+                    name="url"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>URL (Opsional)</FormLabel>
+                        <FormControl>
+                          <Input {...field} placeholder="URL gambar atau file (untuk mtype: image)" />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <Button
+                    type="submit"
+                    disabled={sendJsonBlastMutation.isPending}
+                    className="w-full"
+                  >
+                    {sendJsonBlastMutation.isPending ? (
+                      <>
+                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                        Mengirim...
+                      </>
+                    ) : (
+                      <>
+                        <Send className="h-4 w-4 mr-2" />
+                        Kirim JSON Blast
+                      </>
+                    )}
+                  </Button>
+                </form>
+              </Form>
+            )}
           </CardContent>
         </Card>
 
