@@ -53,6 +53,14 @@ Preferred communication style: Simple, everyday language.
 - **Real-time Dashboard**: Live attendance statistics with visual charts for management overview
 
 ### Recent Changes
+- **August 20, 2025**: CRITICAL BUG FIXES - Fixed photo upload auto-blast issue and optimized loading performance
+- **August 20, 2025**: Photo upload now only uploads without triggering automatic blast sending
+- **August 20, 2025**: Added clear UI indicators: "Hanya upload foto, tidak akan auto-blast" 
+- **August 20, 2025**: Improved loading states with proper upload progress indicators
+- **August 20, 2025**: Optimized query caching - employee data cached for 5 minutes, blast history cached for 30 seconds
+- **August 20, 2025**: Added dashboard evaluasi with real-time statistics, performance tracking, and API connection test
+- **August 20, 2025**: Enhanced incident blast form with better upload feedback and status indicators
+- **August 20, 2025**: Disabled button during upload to prevent accidental blast sending
 - **August 19, 2025**: Consolidated all leave management features into unified main Cuti page with attractive tabbed interface
 - **August 19, 2025**: Removed separate pages for leave monitoring, leave evaluation, and leave roster upload
 - **August 19, 2025**: Created 5-tab system: Pengajuan, Upload Roster, Evaluasi, Monitoring, and Daftar Cuti

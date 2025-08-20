@@ -90,15 +90,18 @@ export default function IncidentBlast() {
   const [connectionStatus, setConnectionStatus] = useState<{success: boolean; message: string} | null>(null);
   const { toast } = useToast();
 
-  // Query untuk mengambil data karyawan
+  // Query untuk mengambil data karyawan - optimized loading
   const { data: employees = [], isLoading: loadingEmployees } = useQuery<Employee[]>({
     queryKey: ["/api/employees"],
+    staleTime: 300000, // Cache for 5 minutes
+    refetchOnWindowFocus: false, // Don't refetch on window focus
   });
 
-  // Query untuk blast history
+  // Query untuk blast history - optimized loading
   const { data: blastHistory = [], isLoading: loadingHistory } = useQuery<BlastReport[]>({
     queryKey: ["/api/incident-blast/history"],
-    refetchInterval: 30000,
+    refetchInterval: 60000, // Reduced from 30s to 60s
+    staleTime: 30000, // Cache for 30 seconds
   });
 
   const form = useForm<IncidentForm>({
@@ -143,9 +146,7 @@ export default function IncidentBlast() {
 
   // Test connection mutation
   const testConnectionMutation = useMutation({
-    mutationFn: () => apiRequest("/api/incident-blast/test-connection", {
-      method: "POST",
-    }),
+    mutationFn: () => apiRequest("POST", "/api/incident-blast/test-connection"),
     onSuccess: (data: any) => {
       setConnectionStatus(data);
       toast({
@@ -222,6 +223,8 @@ export default function IncidentBlast() {
       const uploadedFile = result.successful[0];
       const uploadURL = uploadedFile.uploadURL as string;
       
+      setIsUploading(true);
+      
       try {
         // Set ACL untuk media incident
         const response = await apiRequest("PUT", "/api/incident-media", { 
@@ -232,15 +235,17 @@ export default function IncidentBlast() {
         setUploadedMediaPath(data.objectPath);
         
         toast({
-          title: "Media Berhasil Diupload",
-          description: "Foto insiden siap untuk disertakan dalam notifikasi",
+          title: "Foto Berhasil Diupload",
+          description: "Foto sudah siap. Isi form dan klik 'Kirim Blast' untuk mengirim notifikasi.",
         });
       } catch (error) {
         toast({
-          title: "Gagal Menyimpan Media",
-          description: "Media berhasil diupload tapi gagal disimpan",
+          title: "Gagal Menyimpan Foto",
+          description: "Foto berhasil diupload tapi gagal disimpan. Coba lagi.",
           variant: "destructive",
         });
+      } finally {
+        setIsUploading(false);
       }
     }
   };
@@ -434,7 +439,7 @@ export default function IncidentBlast() {
                               Foto berhasil diupload
                             </p>
                             <p className="text-xs text-green-600 dark:text-green-300 mt-1">
-                              Foto akan disertakan dalam pesan WhatsApp
+                              ✅ Foto akan disertakan saat Anda klik "Kirim Blast"
                             </p>
                             <Button
                               type="button"
@@ -476,11 +481,22 @@ export default function IncidentBlast() {
                       buttonClassName="w-full h-32 border-2 border-dashed border-gray-300 hover:border-gray-400 bg-gray-50 hover:bg-gray-100 dark:bg-gray-800 dark:border-gray-600 dark:hover:border-gray-500 dark:hover:bg-gray-700 transition-colors"
                     >
                       <div className="flex flex-col items-center justify-center gap-2 text-gray-600 dark:text-gray-400">
-                        <Upload className="h-8 w-8" />
-                        <div className="text-center">
-                          <p className="font-medium">Upload Foto Insiden</p>
-                          <p className="text-xs">JPG, PNG, atau GIF (maksimal 5MB)</p>
-                        </div>
+                        {isUploading ? (
+                          <>
+                            <Loader2 className="h-8 w-8 animate-spin" />
+                            <p className="font-medium">Mengupload foto...</p>
+                            <p className="text-xs">Jangan tutup halaman ini</p>
+                          </>
+                        ) : (
+                          <>
+                            <Upload className="h-8 w-8" />
+                            <div className="text-center">
+                              <p className="font-medium">Upload Foto Insiden (Opsional)</p>
+                              <p className="text-xs">JPG, PNG, atau GIF (maksimal 5MB)</p>
+                              <p className="text-xs text-blue-600 font-medium">📋 Hanya upload foto, tidak akan auto-blast</p>
+                            </div>
+                          </>
+                        )}
                       </div>
                     </ObjectUploader>
                   )}
@@ -512,7 +528,7 @@ export default function IncidentBlast() {
 
                 <Button
                   type="submit"
-                  disabled={isSending || sendBlastMutation.isPending || loadingEmployees}
+                  disabled={isSending || sendBlastMutation.isPending || loadingEmployees || isUploading}
                   className="w-full bg-red-600 hover:bg-red-700"
                   data-testid="button-send-blast"
                 >
