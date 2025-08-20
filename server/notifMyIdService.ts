@@ -205,24 +205,35 @@ Terima kasih atas perhatian dan kerjasamanya.`;
   }
 
   /**
-   * Test koneksi ke notif.my.id API
+   * Test koneksi ke notif.my.id API dengan debugging detail
    */
   async testConnection(): Promise<{ success: boolean; message: string }> {
+    console.log("=== NOTIF.MY.ID CONNECTION TEST START ===");
+    
     if (!NOTIF_API_KEY) {
+      console.log("❌ API KEY NOT FOUND");
       return {
         success: false,
-        message: 'NOTIF_API_KEY tidak ditemukan di environment variables'
+        message: '❌ NOTIF_API_KEY tidak ditemukan. Silakan set API key terlebih dahulu.'
       };
     }
+
+    console.log(`✅ API Key found: ${NOTIF_API_KEY.substring(0, 10)}...`);
+    console.log(`🔗 Testing URL: ${API_URL}`);
 
     try {
       // Test dengan format API v2 yang benar
       const testPayload = {
         apikey: NOTIF_API_KEY,
-        receiver: "6281234567890@c.us", // format WhatsApp ID yang benar
+        receiver: "6281234567890@c.us", // format WhatsApp ID Indonesia
         mtype: "text",
-        text: "Test connection from incident blast system"
+        text: "🔥 Test koneksi sistem AttendanceQR - " + new Date().toLocaleString('id-ID')
       };
+
+      console.log('📤 Sending test payload:', {
+        ...testPayload,
+        apikey: `${NOTIF_API_KEY.substring(0, 8)}***`
+      });
 
       const response = await fetch(API_URL, {
         method: "POST",
@@ -232,47 +243,103 @@ Terima kasih atas perhatian dan kerjasamanya.`;
         body: JSON.stringify(testPayload),
       });
 
-      // Response mungkin HTML atau text, bukan JSON untuk testConnection
+      console.log(`📡 Response Status: ${response.status} ${response.statusText}`);
+
       const responseText = await response.text();
-      let result: any;
+      console.log('📥 Raw Response:', responseText);
       
+      let result: any;
       try {
         result = JSON.parse(responseText);
+        console.log('📄 Parsed JSON:', result);
       } catch {
-        // Jika bukan JSON, gunakan text response
-        result = { message: responseText, status: 'error' };
+        console.log('📄 Not JSON, treating as text');
+        result = { message: responseText, rawText: responseText };
       }
       
-      if (response.ok && (result.status === 'success' || result.success === true)) {
-        return {
-          success: true,
-          message: 'Koneksi ke notif.my.id berhasil'
-        };
-      } else if (responseText.includes('Restrcited Area')) {
-        return {
-          success: false,
-          message: 'API Key valid tetapi akses dibatasi. Periksa dashboard app7.notif.my.id untuk verifikasi akun dan koneksi WhatsApp device.'
-        };
-      } else {
-        // Jika response berisi "is not registered on Whatsapp", berarti API bekerja dengan baik
-        if (responseText.includes('is not registered on Whatsapp')) {
+      // Analisa berbagai kemungkinan response
+      if (response.status === 200) {
+        // Success cases
+        if (result.status === 'success' || result.success === true) {
+          console.log("✅ PERFECT SUCCESS");
           return {
             success: true,
-            message: 'Koneksi ke notif.my.id berhasil. API bekerja dengan baik.'
+            message: '✅ Koneksi perfect! API notif.my.id siap mengirim blast.'
           };
         }
         
-        // Log response untuk debugging
-        console.log('Test connection response:', responseText);
+        // "Not registered" adalah response normal untuk test number
+        if (responseText.includes('is not registered on Whatsapp') || 
+            responseText.includes('not registered')) {
+          console.log("✅ API WORKS (test number not registered - normal)");
+          return {
+            success: true,
+            message: '✅ API bekerja normal! Nomor test tidak terdaftar (ini wajar). Siap untuk blast real.'
+          };
+        }
+        
+        // API working but with different message
+        if (responseText.includes('sent') || responseText.includes('delivered')) {
+          console.log("✅ MESSAGE SENT");
+          return {
+            success: true,
+            message: '✅ Test message berhasil dikirim! API siap digunakan.'
+          };
+        }
+        
+        console.log("⚠️ STATUS 200 but unknown response");
         return {
           success: false,
-          message: result.message || result.error || responseText || 'Gagal terhubung ke notif.my.id'
+          message: `⚠️ Response tidak dikenal. Status: 200. Response: ${responseText.substring(0, 200)}`
+        };
+      } 
+      
+      // Handle error statuses
+      if (response.status === 401 || responseText.includes('Unauthorized')) {
+        console.log("❌ UNAUTHORIZED - API KEY ISSUE");
+        return {
+          success: false,
+          message: '❌ API key tidak valid atau expired. Silakan periksa API key di dashboard notif.my.id'
         };
       }
-    } catch (error) {
+      
+      if (responseText.includes('Restricted Area') || responseText.includes('restricted')) {
+        console.log("❌ RESTRICTED ACCESS");
+        return {
+          success: false,
+          message: '❌ Akses dibatasi. Periksa status akun dan device di dashboard notif.my.id'
+        };
+      }
+      
+      if (responseText.includes('quota') || responseText.includes('limit')) {
+        console.log("❌ QUOTA/LIMIT EXCEEDED");
+        return {
+          success: false,
+          message: '❌ Quota API habis atau limit tercapai. Periksa dashboard notif.my.id'
+        };
+      }
+      
+      console.log(`❌ UNKNOWN ERROR - Status: ${response.status}`);
       return {
         success: false,
-        message: `Error: ${error instanceof Error ? error.message : 'Unknown error'}`
+        message: `❌ Error tidak dikenal. Status: ${response.status}. Response: ${responseText.substring(0, 150)}`
+      };
+      
+    } catch (error) {
+      console.log("❌ EXCEPTION:", error);
+      
+      const errorMsg = error instanceof Error ? error.message : 'Unknown error';
+      let friendlyMsg = errorMsg;
+      
+      if (errorMsg.includes('fetch')) {
+        friendlyMsg = 'Tidak dapat menghubungi server notif.my.id - periksa internet';
+      } else if (errorMsg.includes('timeout')) {
+        friendlyMsg = 'Timeout - server notif.my.id lambat merespons';
+      }
+      
+      return {
+        success: false,
+        message: `❌ Connection error: ${friendlyMsg}`
       };
     }
   }
