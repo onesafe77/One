@@ -45,6 +45,7 @@ const incidentSchema = z.object({
   currentStatus: z.string().min(1, "Status terkini harus diisi"),
   instructions: z.string().min(1, "Instruksi untuk karyawan harus diisi"),
   mediaPath: z.string().optional(),
+  provider: z.enum(['twilio', 'notif']).optional(),
 });
 
 type IncidentForm = z.infer<typeof incidentSchema>;
@@ -78,6 +79,7 @@ export default function IncidentBlast() {
   const [sendingProgress, setSendingProgress] = useState(0);
   const [lastBlastResult, setLastBlastResult] = useState<BlastReport | null>(null);
   const [showReport, setShowReport] = useState(false);
+  const [selectedProvider, setSelectedProvider] = useState<'twilio' | 'notif'>('twilio');
   const { toast } = useToast();
 
   // Query untuk mengambil data karyawan
@@ -153,6 +155,7 @@ export default function IncidentBlast() {
       await sendBlastMutation.mutateAsync({
         ...data,
         mediaPath: uploadedMediaPath,
+        provider: selectedProvider,
       });
 
       clearInterval(progressInterval);
@@ -249,14 +252,87 @@ export default function IncidentBlast() {
         </div>
       </div>
 
-      {/* Info Alert untuk Twilio */}
-      <Alert className="border-blue-200 bg-blue-50 dark:border-blue-800 dark:bg-blue-900/20">
-        <AlertTriangle className="h-4 w-4 text-blue-600" />
-        <AlertDescription className="text-sm text-blue-700 dark:text-blue-300">
-          <strong>Info Twilio:</strong> Sistem menggunakan akun Twilio trial dengan batas 9 pesan WhatsApp per hari. 
-          Untuk penggunaan tanpa batas, upgrade ke akun Twilio berbayar dan perbarui credentials.
-        </AlertDescription>
-      </Alert>
+      {/* Provider Selection */}
+      <Card className="mb-4">
+        <CardHeader>
+          <CardTitle className="text-lg">Pilih Provider WhatsApp</CardTitle>
+          <CardDescription>
+            Pilih layanan WhatsApp yang akan digunakan untuk mengirim notifikasi
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div 
+              className={`p-4 border-2 rounded-lg cursor-pointer transition-all ${
+                selectedProvider === 'twilio' 
+                  ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20' 
+                  : 'border-gray-200 hover:border-gray-300'
+              }`}
+              onClick={() => setSelectedProvider('twilio')}
+              data-testid="provider-twilio"
+            >
+              <div className="flex items-center gap-3">
+                <div className={`w-4 h-4 rounded-full border-2 ${
+                  selectedProvider === 'twilio' 
+                    ? 'border-blue-500 bg-blue-500' 
+                    : 'border-gray-300'
+                }`} />
+                <div>
+                  <h3 className="font-semibold text-sm">Twilio</h3>
+                  <p className="text-xs text-gray-600 dark:text-gray-400">
+                    Provider internasional, trial limit 9 pesan/hari
+                  </p>
+                </div>
+              </div>
+            </div>
+            
+            <div 
+              className={`p-4 border-2 rounded-lg cursor-pointer transition-all ${
+                selectedProvider === 'notif' 
+                  ? 'border-green-500 bg-green-50 dark:bg-green-900/20' 
+                  : 'border-gray-200 hover:border-gray-300'
+              }`}
+              onClick={() => setSelectedProvider('notif')}
+              data-testid="provider-notif"
+            >
+              <div className="flex items-center gap-3">
+                <div className={`w-4 h-4 rounded-full border-2 ${
+                  selectedProvider === 'notif' 
+                    ? 'border-green-500 bg-green-500' 
+                    : 'border-gray-300'
+                }`} />
+                <div>
+                  <h3 className="font-semibold text-sm">Notif.my.id</h3>
+                  <p className="text-xs text-gray-600 dark:text-gray-400">
+                    Provider lokal Indonesia, lebih stabil untuk volume besar
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          {/* Provider Info */}
+          {selectedProvider === 'twilio' && (
+            <Alert className="mt-4 border-blue-200 bg-blue-50 dark:border-blue-800 dark:bg-blue-900/20">
+              <AlertTriangle className="h-4 w-4 text-blue-600" />
+              <AlertDescription className="text-sm text-blue-700 dark:text-blue-300">
+                <strong>Info Twilio:</strong> Akun trial memiliki batas 9 pesan WhatsApp per hari. 
+                Upgrade ke akun berbayar untuk penggunaan tanpa batas.
+              </AlertDescription>
+            </Alert>
+          )}
+          
+          {selectedProvider === 'notif' && (
+            <Alert className="mt-4 border-green-200 bg-green-50 dark:border-green-800 dark:bg-green-900/20">
+              <AlertTriangle className="h-4 w-4 text-green-600" />
+              <AlertDescription className="text-sm text-green-700 dark:text-green-300">
+                <strong>Info Notif.my.id:</strong> Pastikan API key sudah dikonfigurasi dengan benar di environment variables (NOTIF_API_KEY).
+                Provider ini mendukung pengiriman volume besar tanpa batas harian.
+              </AlertDescription>
+            </Alert>
+          )}
+        </CardContent>
+      </Card>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
         {/* Form Incident */}
@@ -430,7 +506,7 @@ export default function IncidentBlast() {
                   ) : (
                     <>
                       <Send className="h-4 w-4 mr-2" />
-                      Kirim ke {employees.length} Karyawan
+                      Kirim via {selectedProvider === 'twilio' ? 'Twilio' : 'Notif.my.id'} ke {employees.length} Karyawan
                     </>
                   )}
                 </Button>

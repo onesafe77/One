@@ -1034,6 +1034,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Incident Blast WhatsApp routes
+  app.post("/api/incident-blast/test-notif", async (req, res) => {
+    try {
+      const { notifMyIdService } = await import("./notifMyIdService");
+      const testResult = await notifMyIdService.testConnection();
+      res.json(testResult);
+    } catch (error) {
+      console.error("Error testing notif.my.id connection:", error);
+      res.status(500).json({ 
+        success: false, 
+        message: "Failed to test notif.my.id connection" 
+      });
+    }
+  });
+
   app.get("/api/incident-blast/history", async (req, res) => {
     try {
       const history = await storage.getIncidentBlastHistory();
@@ -1046,7 +1060,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/incident-blast/send", async (req, res) => {
     try {
-      const validatedData = insertIncidentBlastSchema.parse(req.body);
+      const { provider = 'twilio', ...otherData } = req.body;
+      const validatedData = insertIncidentBlastSchema.parse(otherData);
       
       // Get all active employees
       const employees = await storage.getAllEmployees();
@@ -1058,27 +1073,41 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: "No active employees with phone numbers found" });
       }
       
-      // Send WhatsApp blast
-      const blastResults = await incidentWhatsAppService.sendIncidentBlast(
-        activeEmployees,
-        validatedData
-      );
+      let blastResults;
+      
+      // Pilih provider WhatsApp
+      if (provider === 'notif') {
+        const { notifMyIdService } = await import("./notifMyIdService");
+        blastResults = await notifMyIdService.sendIncidentBlast(
+          activeEmployees,
+          validatedData
+        );
+      } else {
+        // Default menggunakan Twilio
+        blastResults = await incidentWhatsAppService.sendIncidentBlast(
+          activeEmployees,
+          validatedData
+        );
+      }
       
       const successCount = blastResults.filter(r => r.status === 'terkirim').length;
       const failedCount = blastResults.filter(r => r.status === 'gagal').length;
       
-      // Save incident blast record
-      const blastRecord = await storage.createIncidentBlast({
+      // Prepare incident data with required fields
+      const incidentBlastData = {
         incidentType: validatedData.incidentType,
         location: validatedData.location,
         description: validatedData.description,
         currentStatus: validatedData.currentStatus,
         instructions: validatedData.instructions,
-        mediaPath: validatedData.mediaPath,
+        mediaPath: validatedData.mediaPath || null,
         totalEmployees: activeEmployees.length,
         successCount,
         failedCount,
-      });
+      };
+      
+      // Save incident blast record
+      const blastRecord = await storage.createIncidentBlast(incidentBlastData);
       
       // Save individual results
       for (const result of blastResults) {
