@@ -32,7 +32,10 @@ import {
   Loader2,
   MessageSquare,
   Eye,
-  Download
+  Download,
+  Upload,
+  X,
+  Image
 } from "lucide-react";
 import { format } from "date-fns";
 import { id as localeId } from "date-fns/locale";
@@ -45,7 +48,7 @@ const incidentSchema = z.object({
   currentStatus: z.string().min(1, "Status terkini harus diisi"),
   instructions: z.string().min(1, "Instruksi untuk karyawan harus diisi"),
   mediaPath: z.string().optional(),
-  provider: z.enum(['twilio', 'notif']).optional(),
+  provider: z.enum(['notif']).optional(),
 });
 
 type IncidentForm = z.infer<typeof incidentSchema>;
@@ -79,7 +82,7 @@ export default function IncidentBlast() {
   const [sendingProgress, setSendingProgress] = useState(0);
   const [lastBlastResult, setLastBlastResult] = useState<BlastReport | null>(null);
   const [showReport, setShowReport] = useState(false);
-  const [selectedProvider, setSelectedProvider] = useState<'twilio' | 'notif'>('twilio');
+  const [selectedProvider, setSelectedProvider] = useState<'notif'>('notif');
   const { toast } = useToast();
 
   // Query untuk mengambil data karyawan
@@ -243,7 +246,7 @@ export default function IncidentBlast() {
             Blast WhatsApp Insiden
           </h1>
           <p className="text-sm text-gray-600 dark:text-gray-400">
-            Sistem notifikasi darurat untuk seluruh karyawan via WhatsApp menggunakan Twilio
+            Sistem notifikasi darurat untuk seluruh karyawan via WhatsApp menggunakan Notif.my.id
           </p>
         </div>
         <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
@@ -252,87 +255,13 @@ export default function IncidentBlast() {
         </div>
       </div>
 
-      {/* Provider Selection */}
-      <Card className="mb-4">
-        <CardHeader>
-          <CardTitle className="text-lg">Pilih Provider WhatsApp</CardTitle>
-          <CardDescription>
-            Pilih layanan WhatsApp yang akan digunakan untuk mengirim notifikasi
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div 
-              className={`p-4 border-2 rounded-lg cursor-pointer transition-all ${
-                selectedProvider === 'twilio' 
-                  ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20' 
-                  : 'border-gray-200 hover:border-gray-300'
-              }`}
-              onClick={() => setSelectedProvider('twilio')}
-              data-testid="provider-twilio"
-            >
-              <div className="flex items-center gap-3">
-                <div className={`w-4 h-4 rounded-full border-2 ${
-                  selectedProvider === 'twilio' 
-                    ? 'border-blue-500 bg-blue-500' 
-                    : 'border-gray-300'
-                }`} />
-                <div>
-                  <h3 className="font-semibold text-sm">Twilio</h3>
-                  <p className="text-xs text-gray-600 dark:text-gray-400">
-                    Provider internasional, trial limit 9 pesan/hari
-                  </p>
-                </div>
-              </div>
-            </div>
-            
-            <div 
-              className={`p-4 border-2 rounded-lg cursor-pointer transition-all ${
-                selectedProvider === 'notif' 
-                  ? 'border-green-500 bg-green-50 dark:bg-green-900/20' 
-                  : 'border-gray-200 hover:border-gray-300'
-              }`}
-              onClick={() => setSelectedProvider('notif')}
-              data-testid="provider-notif"
-            >
-              <div className="flex items-center gap-3">
-                <div className={`w-4 h-4 rounded-full border-2 ${
-                  selectedProvider === 'notif' 
-                    ? 'border-green-500 bg-green-500' 
-                    : 'border-gray-300'
-                }`} />
-                <div>
-                  <h3 className="font-semibold text-sm">Notif.my.id</h3>
-                  <p className="text-xs text-gray-600 dark:text-gray-400">
-                    Provider lokal Indonesia, lebih stabil untuk volume besar
-                  </p>
-                </div>
-              </div>
-            </div>
-          </div>
-          
-          {/* Provider Info */}
-          {selectedProvider === 'twilio' && (
-            <Alert className="mt-4 border-blue-200 bg-blue-50 dark:border-blue-800 dark:bg-blue-900/20">
-              <AlertTriangle className="h-4 w-4 text-blue-600" />
-              <AlertDescription className="text-sm text-blue-700 dark:text-blue-300">
-                <strong>Info Twilio:</strong> Akun trial memiliki batas 9 pesan WhatsApp per hari. 
-                Upgrade ke akun berbayar untuk penggunaan tanpa batas.
-              </AlertDescription>
-            </Alert>
-          )}
-          
-          {selectedProvider === 'notif' && (
-            <Alert className="mt-4 border-green-200 bg-green-50 dark:border-green-800 dark:bg-green-900/20">
-              <CheckCircle className="h-4 w-4 text-green-600" />
-              <AlertDescription className="text-sm text-green-700 dark:text-green-300">
-                <strong>✅ Notif.my.id Aktif:</strong> API key sudah dikonfigurasi dengan benar. 
-                Provider lokal Indonesia ini mendukung pengiriman volume besar tanpa batas harian dan lebih stabil untuk nomor Indonesia.
-              </AlertDescription>
-            </Alert>
-          )}
-        </CardContent>
-      </Card>
+      {/* Provider Info */}
+      <Alert className="mb-4 border-green-200 bg-green-50 dark:border-green-800 dark:bg-green-900/20">
+        <CheckCircle className="h-4 w-4 text-green-600" />
+        <AlertDescription className="text-sm text-green-700 dark:text-green-300">
+          <strong>✅ Notif.my.id Aktif:</strong> Menggunakan provider WhatsApp lokal Indonesia yang mendukung pengiriman volume besar tanpa batas harian dan lebih stabil untuk nomor Indonesia.
+        </AlertDescription>
+      </Alert>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
         {/* Form Incident */}
@@ -456,30 +385,86 @@ export default function IncidentBlast() {
                 />
 
                 {/* Media Upload */}
-                <div className="space-y-2">
+                <div className="space-y-3">
                   <Label className="text-sm">Foto Insiden (Opsional)</Label>
-                  <div className="flex items-center gap-4">
+                  
+                  {/* Show current uploaded photo preview */}
+                  {uploadedMediaPath && (
+                    <div className="relative border-2 border-dashed border-green-300 rounded-lg p-4 bg-green-50 dark:bg-green-900/10">
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="flex items-center gap-3">
+                          <div className="w-16 h-16 bg-green-100 dark:bg-green-800 rounded-lg flex items-center justify-center">
+                            <Image className="h-8 w-8 text-green-600" />
+                          </div>
+                          <div className="flex-1">
+                            <p className="text-sm font-medium text-green-800 dark:text-green-200">
+                              Foto berhasil diupload
+                            </p>
+                            <p className="text-xs text-green-600 dark:text-green-300 mt-1">
+                              Foto akan disertakan dalam pesan WhatsApp
+                            </p>
+                            <Button
+                              type="button"
+                              variant="link"
+                              size="sm"
+                              className="p-0 h-auto text-green-600 hover:text-green-700"
+                              onClick={() => window.open(uploadedMediaPath!, '_blank')}
+                            >
+                              Lihat foto
+                            </Button>
+                          </div>
+                        </div>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => {
+                            setUploadedMediaPath('');
+                            toast({
+                              title: "Foto dihapus",
+                              description: "Foto telah dihapus dari form",
+                            });
+                          }}
+                          className="h-8 w-8 p-0 text-green-600 hover:text-red-600"
+                        >
+                          <X className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </div>
+                  )}
+                  
+                  {/* Upload button */}
+                  {!uploadedMediaPath && (
                     <ObjectUploader
                       maxNumberOfFiles={1}
                       maxFileSize={5242880} // 5MB
                       onGetUploadParameters={handleGetUploadParameters}
                       onComplete={handleUploadComplete}
-                      buttonClassName="h-9"
+                      buttonClassName="w-full h-32 border-2 border-dashed border-gray-300 hover:border-gray-400 bg-gray-50 hover:bg-gray-100 dark:bg-gray-800 dark:border-gray-600 dark:hover:border-gray-500 dark:hover:bg-gray-700 transition-colors"
+                    >
+                      <div className="flex flex-col items-center justify-center gap-2 text-gray-600 dark:text-gray-400">
+                        <Upload className="h-8 w-8" />
+                        <div className="text-center">
+                          <p className="font-medium">Upload Foto Insiden</p>
+                          <p className="text-xs">JPG, PNG, atau GIF (maksimal 5MB)</p>
+                        </div>
+                      </div>
+                    </ObjectUploader>
+                  )}
+                  
+                  {/* Replace existing photo button */}
+                  {uploadedMediaPath && (
+                    <ObjectUploader
+                      maxNumberOfFiles={1}
+                      maxFileSize={5242880}
+                      onGetUploadParameters={handleGetUploadParameters}
+                      onComplete={handleUploadComplete}
+                      buttonClassName="w-full"
                     >
                       <Camera className="h-4 w-4 mr-2" />
-                      {uploadedMediaPath ? "Ganti Foto" : "Upload Foto"}
+                      Ganti Foto
                     </ObjectUploader>
-                    
-                    {uploadedMediaPath && (
-                      <Badge variant="outline" className="text-green-600">
-                        <CheckCircle className="h-3 w-3 mr-1" />
-                        Foto Terupload
-                      </Badge>
-                    )}
-                  </div>
-                  <p className="text-xs text-gray-500">
-                    Format: JPG, PNG. Maksimal 5MB
-                  </p>
+                  )}
                 </div>
 
                 {isSending && (
@@ -506,7 +491,7 @@ export default function IncidentBlast() {
                   ) : (
                     <>
                       <Send className="h-4 w-4 mr-2" />
-                      Kirim via {selectedProvider === 'twilio' ? 'Twilio' : 'Notif.my.id'} ke {employees.length} Karyawan
+                      Kirim via Notif.my.id ke {employees.length} Karyawan
                     </>
                   )}
                 </Button>
@@ -523,7 +508,7 @@ export default function IncidentBlast() {
               Riwayat Blast
             </CardTitle>
             <CardDescription>
-              History pengiriman notifikasi insiden. Sistem terhubung dengan Twilio untuk WhatsApp blast.
+              History pengiriman notifikasi insiden. Sistem terhubung dengan Notif.my.id untuk WhatsApp blast.
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -581,13 +566,13 @@ export default function IncidentBlast() {
                       </div>
                     </div>
                     
-                    {/* Pesan khusus untuk batas harian Twilio */}
+                    {/* Pesan khusus untuk gagal kirim */}
                     {blast.failedCount > 0 && blast.successCount === 0 && blast.failedCount >= 200 && (
                       <Alert className="mb-2 border-orange-200 bg-orange-50 dark:border-orange-800 dark:bg-orange-900/20">
                         <AlertTriangle className="h-4 w-4 text-orange-600" />
                         <AlertDescription className="text-xs text-orange-700 dark:text-orange-300">
-                          <strong>Batas harian Twilio tercapai.</strong> Sistem berfungsi normal, namun akun Twilio trial memiliki batas 9 pesan per hari. 
-                          Upgrade ke akun Twilio berbayar untuk mengirim pesan tanpa batas.
+                          <strong>Semua pesan gagal terkirim.</strong> Pastikan API key notif.my.id valid dan nomor WhatsApp karyawan sudah terdaftar.
+                          Periksa juga saldo atau quota API di dashboard notif.my.id.
                         </AlertDescription>
                       </Alert>
                     )}

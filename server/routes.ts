@@ -13,7 +13,7 @@ import {
   insertQrTokenSchema,
   insertIncidentBlastSchema
 } from "@shared/schema";
-import { incidentWhatsAppService } from "./incidentWhatsAppService";
+
 
 // Utility function to determine shift based on time
 function determineShiftByTime(time: string): string {
@@ -1034,7 +1034,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Incident Blast WhatsApp routes
-  app.post("/api/incident-blast/test-notif", async (req, res) => {
+  app.post("/api/incident-blast/test-connection", async (req, res) => {
     try {
       const { notifMyIdService } = await import("./notifMyIdService");
       const testResult = await notifMyIdService.testConnection();
@@ -1060,7 +1060,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/incident-blast/send", async (req, res) => {
     try {
-      const { provider = 'twilio', ...otherData } = req.body;
+      const { provider = 'notif', ...otherData } = req.body;
       const validatedData = insertIncidentBlastSchema.parse(otherData);
       
       // Get all active employees
@@ -1073,22 +1073,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: "No active employees with phone numbers found" });
       }
       
-      let blastResults;
-      
-      // Pilih provider WhatsApp
-      if (provider === 'notif') {
-        const { notifMyIdService } = await import("./notifMyIdService");
-        blastResults = await notifMyIdService.sendIncidentBlast(
-          activeEmployees,
-          validatedData
-        );
-      } else {
-        // Default menggunakan Twilio
-        blastResults = await incidentWhatsAppService.sendIncidentBlast(
-          activeEmployees,
-          validatedData
-        );
-      }
+      // Gunakan notif.my.id sebagai satu-satunya provider
+      const { notifMyIdService } = await import("./notifMyIdService");
+      const blastResults = await notifMyIdService.sendIncidentBlast(
+        activeEmployees,
+        validatedData
+      );
       
       const successCount = blastResults.filter(r => r.status === 'terkirim').length;
       const failedCount = blastResults.filter(r => r.status === 'gagal').length;
