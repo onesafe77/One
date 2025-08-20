@@ -305,14 +305,14 @@ export default function WhatsAppBlast() {
                   <div>
                     <Label htmlFor="department">Pilih Departemen</Label>
                     <Select 
-                      value={formData.targetValue} 
+                      value={formData.targetValue || ""} 
                       onValueChange={(value) => setFormData(prev => ({ ...prev, targetValue: value }))}
                     >
                       <SelectTrigger>
                         <SelectValue placeholder="Pilih departemen" />
                       </SelectTrigger>
                       <SelectContent>
-                        {departments.map((dept) => (
+                        {departments.filter(dept => dept).map((dept) => (
                           <SelectItem key={dept} value={dept}>{dept}</SelectItem>
                         ))}
                       </SelectContent>
