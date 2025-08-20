@@ -1194,7 +1194,46 @@ export async function registerRoutes(app: Express): Promise<Server> {
         url
       });
 
-      // Buat payload sesuai format notif.my.id
+      // Handle blast ke semua karyawan
+      if (receiver === "ALL_EMPLOYEES_BLAST") {
+        const employees = await storage.getAllEmployees();
+        const activeEmployees = employees.filter(emp => 
+          emp.status === 'active' && emp.phone && emp.phone.trim() !== ''
+        );
+        
+        if (activeEmployees.length === 0) {
+          return res.status(400).json({
+            success: false,
+            message: "Tidak ada karyawan aktif dengan nomor WhatsApp"
+          });
+        }
+
+        // Gunakan notifMyIdService untuk blast ke semua karyawan
+        const { notifMyIdService } = await import("./notifMyIdService");
+        const incidentData = {
+          incidentType: "JSON Manual Blast",
+          location: "Sistem",
+          description: text,
+          currentStatus: "Terkirim",
+          instructions: "Pesan manual via JSON API",
+          mediaPath: url || undefined
+        };
+        
+        const blastResults = await notifMyIdService.sendIncidentBlast(activeEmployees, incidentData);
+        const successCount = blastResults.filter(r => r.status === 'terkirim').length;
+        const failedCount = blastResults.filter(r => r.status === 'gagal').length;
+
+        return res.json({
+          success: true,
+          message: `Blast JSON ke ${activeEmployees.length} karyawan selesai: ${successCount} berhasil, ${failedCount} gagal`,
+          results: blastResults,
+          totalEmployees: activeEmployees.length,
+          successCount,
+          failedCount
+        });
+      }
+
+      // Kirim ke receiver tunggal
       const payload: any = {
         apikey,
         receiver,

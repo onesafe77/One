@@ -132,7 +132,7 @@ export default function IncidentBlast() {
     resolver: zodResolver(jsonBlastSchema),
     defaultValues: {
       apikey: "U7tu87RGNgXcvdpgqNDXuGYEI6u9j8wh1719260547002", // Pre-fill dengan API key yang ada
-      receiver: "",
+      receiver: "6281234567890@c.us", // Format contoh Indonesia
       mtype: "text",
       text: "",
       url: "",
@@ -628,13 +628,35 @@ export default function IncidentBlast() {
                     <h4 className="font-medium text-sm mb-2">Format JSON API notif.my.id:</h4>
                     <pre className="text-xs text-gray-600 dark:text-gray-400 bg-gray-100 dark:bg-gray-700 p-2 rounded">
 {`{
-  "apikey": "your_api_key",
-  "receiver": "120363043283436111@g.us",
-  "mtype": "image",
-  "text": "Ini adalah image", 
-  "url": "https://example.com/image.jpg"
+  "apikey": "U7tu87RGNgXcvdpgqNDXuGYEI6u9j8wh1719260547002",
+  "receiver": "6281234567890@c.us",
+  "mtype": "text",
+  "text": "Pesan untuk satu karyawan",
+  "url": "https://example.com/image.jpg" (optional)
 }`}
                     </pre>
+                    <div className="text-xs text-blue-600 dark:text-blue-400 mt-2">
+                      💡 Gunakan dropdown "Pilih karyawan" untuk auto-fill nomor WhatsApp dari data karyawan
+                    </div>
+                    
+                    {/* Preview karyawan yang tersedia */}
+                    <details className="text-xs mt-2">
+                      <summary className="cursor-pointer text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200">
+                        📋 Lihat {employees.length} Karyawan Tersedia
+                      </summary>
+                      <div className="max-h-32 overflow-y-auto mt-2 p-2 bg-gray-50 dark:bg-gray-700 rounded text-xs">
+                        {employees.length === 0 ? (
+                          <p className="text-gray-500">Tidak ada data karyawan</p>
+                        ) : (
+                          employees.map((emp, index) => (
+                            <div key={emp.id} className="flex justify-between py-1 border-b border-gray-200 dark:border-gray-600 last:border-0">
+                              <span className="font-medium">{index + 1}. {emp.name}</span>
+                              <span className="text-gray-600 dark:text-gray-400">{emp.phone}</span>
+                            </div>
+                          ))
+                        )}
+                      </div>
+                    </details>
                   </div>
 
                   <FormField
@@ -657,9 +679,51 @@ export default function IncidentBlast() {
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>Receiver *</FormLabel>
-                        <FormControl>
-                          <Input {...field} placeholder="contoh: 120363043283436111@g.us atau 6281234567890@c.us" />
-                        </FormControl>
+                        <div className="space-y-2">
+                          {/* Auto-populate dari data karyawan */}
+                          <Select onValueChange={(value) => {
+                            if (value === "manual") {
+                              field.onChange("");
+                              return;
+                            }
+                            if (value === "all") {
+                              field.onChange("ALL_EMPLOYEES_BLAST");
+                              return;
+                            }
+                            const employee = employees.find(emp => emp.id === value);
+                            if (employee) {
+                              // Format nomor WhatsApp untuk receiver
+                              let phoneNumber = employee.phone.replace(/\D/g, '');
+                              if (phoneNumber.startsWith('0')) {
+                                phoneNumber = '62' + phoneNumber.substring(1);
+                              }
+                              if (!phoneNumber.startsWith('62')) {
+                                phoneNumber = '62' + phoneNumber;
+                              }
+                              field.onChange(phoneNumber + '@c.us');
+                            }
+                          }}>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Pilih karyawan atau input manual" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="manual">📝 Input Manual</SelectItem>
+                              <SelectItem value="all">🗂️ Semua Karyawan (Blast)</SelectItem>
+                              {employees.map((emp) => (
+                                <SelectItem key={emp.id} value={emp.id}>
+                                  👤 {emp.name} - {emp.phone}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                          
+                          <FormControl>
+                            <Input 
+                              {...field} 
+                              placeholder="contoh: 120363043283436111@g.us atau 6281234567890@c.us" 
+                            />
+                          </FormControl>
+                        </div>
                         <FormMessage />
                       </FormItem>
                     )}
