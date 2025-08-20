@@ -1,5 +1,3 @@
-import fetch from "node-fetch";
-
 // WhatsApp service for sending messages via notif.my.id API
 export class WhatsAppService {
   private apiKey: string;

@@ -39,9 +39,7 @@ export default function WhatsAppBlast() {
   // Test API connection
   const testConnectionMutation = useMutation({
     mutationFn: async () => {
-      return apiRequest("/api/whatsapp/test-connection", {
-        method: "POST",
-      });
+      return apiRequest("/api/whatsapp/test-connection", "POST");
     },
     onSuccess: (data: any) => {
       toast({
@@ -62,10 +60,7 @@ export default function WhatsAppBlast() {
   // Create blast mutation
   const createBlastMutation = useMutation({
     mutationFn: async (blastData: any) => {
-      return apiRequest("/api/whatsapp-blasts", {
-        method: "POST",
-        body: JSON.stringify(blastData),
-      });
+      return apiRequest("/api/whatsapp-blasts", "POST", blastData);
     },
     onSuccess: () => {
       toast({
@@ -87,9 +82,7 @@ export default function WhatsAppBlast() {
   // Send blast mutation
   const sendBlastMutation = useMutation({
     mutationFn: async (blastId: string) => {
-      return apiRequest(`/api/whatsapp-blasts/${blastId}/send`, {
-        method: "POST",
-      });
+      return apiRequest(`/api/whatsapp-blasts/${blastId}/send`, "POST");
     },
     onSuccess: () => {
       toast({
@@ -120,9 +113,7 @@ export default function WhatsAppBlast() {
 
   const handleImageUpload = async () => {
     try {
-      const response = await apiRequest("/api/objects/upload", {
-        method: "POST",
-      });
+      const response: any = await apiRequest("/api/objects/upload", "POST");
       return {
         method: "PUT" as const,
         url: response.uploadURL,
@@ -139,10 +130,7 @@ export default function WhatsAppBlast() {
       const imageUrl = uploadedFile.uploadURL;
       
       try {
-        const response = await apiRequest("/api/objects/normalize", {
-          method: "POST",
-          body: JSON.stringify({ uploadURL: imageUrl }),
-        });
+        const response: any = await apiRequest("/api/objects/normalize", "POST", { uploadURL: imageUrl });
         
         setFormData(prev => ({ ...prev, imageUrl: response.objectPath }));
         toast({
@@ -221,7 +209,7 @@ export default function WhatsAppBlast() {
     );
   };
 
-  const departments = [...new Set(employees.map(emp => emp.department).filter(Boolean))];
+  const departments = Array.from(new Set(employees.map(emp => emp.department).filter(Boolean)));
 
   return (
     <div className="space-y-6">
@@ -384,8 +372,8 @@ export default function WhatsAppBlast() {
             <CardContent>
               {blastsLoading ? (
                 <div>Loading...</div>
-              ) : blasts.length === 0 ? (
-                <p className="text-center text-gray-500 py-8">Belum ada riwayat blast</p>
+              ) : (blasts as any[]).length === 0 ? (
+                <div className="text-center text-gray-500 py-8">Belum ada riwayat blast</div>
               ) : (
                 <Table>
                   <TableHeader>
@@ -401,7 +389,7 @@ export default function WhatsAppBlast() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {blasts.map((blast: WhatsappBlast) => (
+                    {(blasts as WhatsappBlast[]).map((blast: WhatsappBlast) => (
                       <TableRow key={blast.id}>
                         <TableCell className="font-medium">{blast.title}</TableCell>
                         <TableCell>
@@ -414,7 +402,7 @@ export default function WhatsAppBlast() {
                         <TableCell className="text-red-600">{blast.failedCount}</TableCell>
                         <TableCell>{getStatusBadge(blast.status)}</TableCell>
                         <TableCell>
-                          {new Date(blast.createdAt).toLocaleDateString('id-ID')}
+                          {blast.createdAt ? new Date(blast.createdAt).toLocaleDateString('id-ID') : '-'}
                         </TableCell>
                         <TableCell>
                           {blast.status === "pending" && (

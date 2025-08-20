@@ -1082,7 +1082,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Get target employees
       const employees = await storage.getAllEmployees();
-      let targetEmployees = [];
+      let targetEmployees: any[] = [];
 
       if (blast.targetType === "all") {
         targetEmployees = employees;

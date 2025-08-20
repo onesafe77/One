@@ -356,6 +356,13 @@ export class MemStorage implements IStorage {
     const whatsappBlast: WhatsappBlast = {
       id: randomUUID(),
       ...blast,
+      status: blast.status ?? 'pending',
+      imageUrl: blast.imageUrl ?? null,
+      targetValue: blast.targetValue ?? null,
+      totalRecipients: blast.totalRecipients ?? null,
+      successCount: blast.successCount ?? null,
+      failedCount: blast.failedCount ?? null,
+      createdBy: blast.createdBy ?? null,
       createdAt: new Date(),
       completedAt: null
     };
@@ -382,6 +389,8 @@ export class MemStorage implements IStorage {
     const blastResult: WhatsappBlastResult = {
       id: randomUUID(),
       ...result,
+      status: result.status ?? 'pending',
+      errorMessage: result.errorMessage ?? null,
       createdAt: new Date(),
       sentAt: null
     };
@@ -426,6 +435,13 @@ export class MemStorage implements IStorage {
       id: randomUUID(),
       ...balance,
       status: balance.status ?? 'active',
+      totalDays: balance.totalDays ?? 0,
+      usedDays: balance.usedDays ?? 0,
+      remainingDays: balance.remainingDays ?? 0,
+      workingDaysCompleted: balance.workingDaysCompleted ?? 0,
+      lastWorkDate: balance.lastWorkDate ?? null,
+      lastLeaveDate: balance.lastLeaveDate ?? null,
+      nextLeaveEligible: balance.nextLeaveEligible ?? null,
       createdAt: new Date(),
       updatedAt: new Date()
     };
@@ -453,6 +469,7 @@ export class MemStorage implements IStorage {
       id: randomUUID(),
       ...history,
       leaveRequestId: history.leaveRequestId ?? null,
+      remarks: history.remarks ?? null,
       createdAt: new Date()
     };
     return leaveHistory;
