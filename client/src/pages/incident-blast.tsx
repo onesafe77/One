@@ -259,12 +259,10 @@ export default function IncidentBlast() {
       <Alert className="mb-4 border-green-200 bg-green-50 dark:border-green-800 dark:bg-green-900/20">
         <CheckCircle className="h-4 w-4 text-green-600" />
         <AlertDescription className="text-sm text-green-700 dark:text-green-300">
-          <strong>⚠️ Notif.my.id - Status: API Key Valid, Akses Terbatas</strong><br/>
-          API key sudah dikonfigurasi dengan benar tetapi mendapat response "Restricted Area".<br/>
-          <strong>Langkah selanjutnya:</strong> Login ke dashboard app7.notif.my.id untuk:
-          <br/>• Verifikasi koneksi WhatsApp device
-          <br/>• Cek quota dan status akun
-          <br/>• Aktifkan layanan jika diperlukan
+          <strong>⚠️ Status Notif.my.id: API Terbatas</strong><br/>
+          Device WhatsApp sudah terhubung tetapi API mengembalikan "Restricted Area".<br/>
+          <strong>Kemungkinan penyebab:</strong> Akun perlu upgrade ke premium atau verifikasi tambahan.<br/>
+          <strong>Solusi:</strong> Hubungi support notif.my.id atau coba provider alternatif.
         </AlertDescription>
       </Alert>
 
@@ -576,13 +574,13 @@ export default function IncidentBlast() {
                       <Alert className="mb-2 border-orange-200 bg-orange-50 dark:border-orange-800 dark:bg-orange-900/20">
                         <AlertTriangle className="h-4 w-4 text-orange-600" />
                         <AlertDescription className="text-xs text-orange-700 dark:text-orange-300">
-                          <strong>⚠️ Status API Notif.my.id: "Restricted Area"</strong><br/>
-                          API key valid tetapi akses terbatas. Kemungkinan penyebab:<br/>
-                          • Akun belum diverifikasi atau upgrade ke akun berbayar<br/>
-                          • Quota harian/bulanan telah habis<br/>
-                          • Device WhatsApp belum terhubung di dashboard<br/>
-                          • Perlu konfirmasi nomor WhatsApp sender<br/>
-                          <strong>Solusi:</strong> Login ke dashboard app7.notif.my.id untuk verifikasi status akun dan koneksi WhatsApp.
+                          <strong>⚠️ Status API: "Restricted Area"</strong><br/>
+                          API key valid dan device WhatsApp terhubung, tetapi layanan masih terbatas.<br/>
+                          <strong>Rekomendasi:</strong><br/>
+                          • Hubungi support app7.notif.my.id untuk aktivasi penuh<br/>
+                          • Periksa apakah akun perlu upgrade ke plan berbayar<br/>
+                          • Konfirmasi nomor WhatsApp sender sudah diverifikasi<br/>
+                          • Atau gunakan provider WhatsApp alternatif
                         </AlertDescription>
                       </Alert>
                     )}

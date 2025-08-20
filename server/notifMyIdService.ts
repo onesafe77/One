@@ -109,10 +109,11 @@ Terima kasih atas perhatian dan kerjasamanya.`;
     try {
       // Format payload untuk req.php endpoint (form-urlencoded)
       const formData = new URLSearchParams();
-      formData.append('api_key', NOTIF_API_KEY!);
-      formData.append('receiver', formattedPhone);
-      formData.append('message', message);
-      formData.append('f', 'send_message'); // fungsi untuk send message
+      // Format yang konsisten dengan test connection
+      formData.append('apikey', NOTIF_API_KEY!);
+      formData.append('number', formattedPhone);
+      formData.append('text', message);
+      formData.append('action', 'send');
 
       // Tambahkan URL media jika ada
       if (mediaUrl) {
@@ -214,10 +215,11 @@ Terima kasih atas perhatian dan kerjasamanya.`;
       // Test dengan nomor dummy (tidak akan terkirim tapi akan test API key)
       // Test dengan format req.php (form-urlencoded)
       const testForm = new URLSearchParams();
-      testForm.append('api_key', NOTIF_API_KEY);
-      testForm.append('receiver', '628123456789');
-      testForm.append('message', 'Test connection from incident blast system');
-      testForm.append('f', 'send_message');
+      // Format yang lebih umum untuk WhatsApp gateway Indonesia
+      testForm.append('apikey', NOTIF_API_KEY); // beberapa menggunakan 'apikey' bukan 'api_key'
+      testForm.append('number', '6281234567890'); // nomor Indonesia yang lebih valid
+      testForm.append('text', 'Test connection from incident blast system'); // beberapa menggunakan 'text' bukan 'message'
+      testForm.append('action', 'send'); // mungkin menggunakan 'action' bukan 'f'
 
       const response = await fetch("https://app7.notif.my.id/req.php", {
         method: "POST",
