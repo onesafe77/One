@@ -15,10 +15,6 @@ import {
   type InsertLeaveBalance,
   type LeaveHistory,
   type InsertLeaveHistory,
-  type IncidentBlast,
-  type InsertIncidentBlast,
-  type IncidentBlastResult,
-  type InsertIncidentBlastResult,
   employees,
   attendanceRecords,
   rosterSchedules,
@@ -26,9 +22,7 @@ import {
   qrTokens,
   leaveReminders,
   leaveBalances,
-  leaveHistory,
-  incidentBlasts,
-  incidentBlastResults
+  leaveHistory
 } from "@shared/schema";
 import { randomUUID } from "crypto";
 import { drizzle } from "drizzle-orm/neon-http";
@@ -95,11 +89,7 @@ export interface IStorage {
   // Bulk upload methods
   bulkUploadLeaveRoster(data: Array<{ nik: string; leaveType: string; startDate: string; endDate: string; totalDays: number }>): Promise<{ success: number; errors: string[] }>;
 
-  // Incident Blast methods
-  createIncidentBlast(blast: InsertIncidentBlast): Promise<IncidentBlast>;
-  createIncidentBlastResult(result: InsertIncidentBlastResult): Promise<IncidentBlastResult>;
-  getIncidentBlastHistory(): Promise<IncidentBlast[]>;
-  getIncidentBlastResults(blastId: string): Promise<IncidentBlastResult[]>;
+
 }
 
 export class MemStorage implements IStorage {
@@ -376,6 +366,7 @@ export class MemStorage implements IStorage {
     const leaveBalance: LeaveBalance = {
       id: randomUUID(),
       ...balance,
+      status: balance.status ?? 'active',
       createdAt: new Date(),
       updatedAt: new Date()
     };
@@ -402,6 +393,7 @@ export class MemStorage implements IStorage {
     const leaveHistory: LeaveHistory = {
       id: randomUUID(),
       ...history,
+      leaveRequestId: history.leaveRequestId ?? null,
       createdAt: new Date()
     };
     return leaveHistory;
@@ -411,31 +403,7 @@ export class MemStorage implements IStorage {
     return { success: 0, errors: ["MemStorage does not support bulk operations"] };
   }
 
-  async createIncidentBlast(blast: InsertIncidentBlast): Promise<IncidentBlast> {
-    const incidentBlast: IncidentBlast = {
-      id: randomUUID(),
-      ...blast,
-      createdAt: new Date()
-    };
-    return incidentBlast;
-  }
 
-  async createIncidentBlastResult(result: InsertIncidentBlastResult): Promise<IncidentBlastResult> {
-    const incidentBlastResult: IncidentBlastResult = {
-      id: randomUUID(),
-      ...result,
-      createdAt: new Date()
-    };
-    return incidentBlastResult;
-  }
-
-  async getIncidentBlastHistory(): Promise<IncidentBlast[]> {
-    return [];
-  }
-
-  async getIncidentBlastResults(blastId: string): Promise<IncidentBlastResult[]> {
-    return [];
-  }
 }
 
 // DrizzleStorage implementation using PostgreSQL
@@ -818,30 +786,7 @@ export class DrizzleStorage implements IStorage {
     return { success: successCount, errors };
   }
 
-  // Incident Blast methods
-  async createIncidentBlast(blast: InsertIncidentBlast): Promise<IncidentBlast> {
-    const [created] = await db.insert(incidentBlasts).values(blast).returning();
-    return created;
-  }
 
-  async createIncidentBlastResult(result: InsertIncidentBlastResult): Promise<IncidentBlastResult> {
-    const [created] = await db.insert(incidentBlastResults).values(result).returning();
-    return created;
-  }
-
-  async getIncidentBlastHistory(): Promise<IncidentBlast[]> {
-    return await db
-      .select()
-      .from(incidentBlasts)
-      .orderBy(drizzleSql`${incidentBlasts.createdAt} DESC`);
-  }
-
-  async getIncidentBlastResults(blastId: string): Promise<IncidentBlastResult[]> {
-    return await db
-      .select()
-      .from(incidentBlastResults)
-      .where(eq(incidentBlastResults.blastId, blastId));
-  }
 }
 
 // Use DrizzleStorage for PostgreSQL database

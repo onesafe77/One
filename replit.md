@@ -53,6 +53,14 @@ Preferred communication style: Simple, everyday language.
 - **Real-time Dashboard**: Live attendance statistics with visual charts for management overview
 
 ### Recent Changes
+- **August 20, 2025**: MAJOR FEATURE REMOVAL - Completely removed WhatsApp blast functionality per user request
+- **August 20, 2025**: Removed all incident blast features, notif.my.id API integration, and related WhatsApp communication tools
+- **August 20, 2025**: Cleaned up navigation by removing "Blast WhatsApp" menu item and related routes
+- **August 20, 2025**: Removed incident blast database schemas, API endpoints, and service files
+- **August 20, 2025**: Updated application to focus purely on core employee management without external messaging
+- **August 20, 2025**: Application now streamlined for attendance tracking, leave management, and reporting only
+
+### Previous Changes
 - **August 20, 2025**: CRITICAL BUG FIXES - Fixed photo upload auto-blast issue and optimized loading performance
 - **August 20, 2025**: Photo upload now only uploads without triggering automatic blast sending
 - **August 20, 2025**: Added clear UI indicators: "Hanya upload foto, tidak akan auto-blast" 

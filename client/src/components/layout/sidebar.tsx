@@ -9,8 +9,7 @@ import {
   BarChart3,
   ClipboardList,
   User,
-  Clock,
-  AlertTriangle
+  Clock
 } from "lucide-react";
 import companyLogo from "@assets/WhatsApp Image 2024-11-30 at 13.08.33_1755505069008.jpeg";
 
@@ -22,7 +21,6 @@ const navigation = [
   { name: "Karyawan", href: "/employees", icon: Users },
   { name: "Roster", href: "/roster", icon: Calendar },
   { name: "Cuti", href: "/leave", icon: ClipboardList },
-  { name: "Blast WhatsApp", href: "/incident-blast", icon: AlertTriangle },
   { name: "Laporan", href: "/reports", icon: FileText },
 ];
 

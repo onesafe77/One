@@ -106,32 +106,7 @@ export const leaveReminders = pgTable("leave_reminders", {
   createdAt: timestamp("created_at").default(sql`now()`),
 });
 
-// Incident Blast Tables
-export const incidentBlasts = pgTable("incident_blasts", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  incidentType: varchar("incident_type").notNull(),
-  location: varchar("location").notNull(),
-  description: text("description").notNull(),
-  currentStatus: text("current_status").notNull(),
-  instructions: text("instructions").notNull(),
-  mediaPath: varchar("media_path"),
-  totalEmployees: integer("total_employees").notNull(),
-  successCount: integer("success_count").notNull(),
-  failedCount: integer("failed_count").notNull(),
-  createdAt: timestamp("created_at").defaultNow(),
-});
 
-export const incidentBlastResults = pgTable("incident_blast_results", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  blastId: varchar("blast_id").notNull().references(() => incidentBlasts.id),
-  employeeId: varchar("employee_id").notNull(),
-  employeeName: varchar("employee_name").notNull(),
-  phoneNumber: varchar("phone_number").notNull(),
-  status: varchar("status").notNull(), // 'terkirim' | 'gagal'
-  errorMessage: text("error_message"),
-  sentAt: timestamp("sent_at"),
-  createdAt: timestamp("created_at").defaultNow(),
-});
 
 // Insert schemas
 export const insertEmployeeSchema = createInsertSchema(employees).omit({
@@ -172,18 +147,7 @@ export const insertLeaveHistorySchema = createInsertSchema(leaveHistory).omit({
   createdAt: true,
 });
 
-export const insertIncidentBlastSchema = createInsertSchema(incidentBlasts).omit({
-  id: true,
-  totalEmployees: true,
-  successCount: true,
-  failedCount: true,
-  createdAt: true,
-});
 
-export const insertIncidentBlastResultSchema = createInsertSchema(incidentBlastResults).omit({
-  id: true,
-  createdAt: true,
-});
 
 // Types
 export type Employee = typeof employees.$inferSelect;
@@ -202,19 +166,6 @@ export type LeaveBalance = typeof leaveBalances.$inferSelect;
 export type InsertLeaveBalance = z.infer<typeof insertLeaveBalanceSchema>;
 export type LeaveHistory = typeof leaveHistory.$inferSelect;
 export type InsertLeaveHistory = z.infer<typeof insertLeaveHistorySchema>;
-export type IncidentBlast = typeof incidentBlasts.$inferSelect;
-export type InsertIncidentBlast = z.infer<typeof insertIncidentBlastSchema>;
-export type IncidentBlastResult = typeof incidentBlastResults.$inferSelect;
-export type InsertIncidentBlastResult = z.infer<typeof insertIncidentBlastResultSchema>;
 
-// Relations for incident blasts
-export const incidentBlastsRelations = relations(incidentBlasts, ({ many }) => ({
-  results: many(incidentBlastResults),
-}));
 
-export const incidentBlastResultsRelations = relations(incidentBlastResults, ({ one }) => ({
-  blast: one(incidentBlasts, {
-    fields: [incidentBlastResults.blastId],
-    references: [incidentBlasts.id],
-  }),
-}));
+
