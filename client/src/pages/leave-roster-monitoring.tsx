@@ -291,9 +291,30 @@ export default function LeaveRosterMonitoringPage() {
     };
 
     if (editingItem) {
-      updateMutation.mutate({ id: editingItem.id, data: processedData });
+      updateMutation.mutate({ 
+        id: editingItem.id, 
+        data: {
+          nik: processedData.nik,
+          name: processedData.name,
+          investorGroup: processedData.investorGroup,
+          lastLeaveDate: processedData.lastLeaveDate || undefined,
+          leaveOption: processedData.leaveOption,
+          status: processedData.status,
+          monitoringDays: processedData.monitoringDays,
+          nextLeaveDate: processedData.nextLeaveDate || undefined
+        }
+      });
     } else {
-      createMutation.mutate(processedData as any);
+      createMutation.mutate({
+        nik: processedData.nik,
+        name: processedData.name,
+        investorGroup: processedData.investorGroup,
+        lastLeaveDate: processedData.lastLeaveDate || "",
+        leaveOption: processedData.leaveOption,
+        status: processedData.status,
+        monitoringDays: processedData.monitoringDays,
+        nextLeaveDate: processedData.nextLeaveDate || ""
+      });
     }
   };
 

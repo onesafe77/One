@@ -1366,10 +1366,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 nik: nik.toString(),
                 name: name.toString(),
                 investorGroup: investorGroup.toString(),
-                lastLeaveDate: lastLeaveDate ? new Date(lastLeaveDate).toISOString().split('T')[0] : null,
+                lastLeaveDate: lastLeaveDate ? lastLeaveDate.toString() : null,
                 leaveOption: leaveOption.toString(),
                 monitoringDays,
-                nextLeaveDate,
+                nextLeaveDate: nextLeaveDate || null,
                 status: status.toString(),
               });
 
