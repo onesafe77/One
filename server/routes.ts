@@ -284,17 +284,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       const roster = await storage.getRosterByDate(date);
       const attendance = await storage.getAllAttendance(date);
+      const leaveMonitoring = await storage.getAllLeaveRosterMonitoring();
       
-      // Enrich roster dengan data attendance
+      // Enrich roster dengan data attendance dan leave monitoring (hari kerja)
       const enrichedRoster = roster.map(schedule => {
         const attendanceRecord = attendance.find(att => att.employeeId === schedule.employeeId);
+        const leaveRecord = leaveMonitoring.find(leave => leave.nik === schedule.employeeId);
+        
         return {
           ...schedule,
           hasAttended: !!attendanceRecord,
           attendanceTime: attendanceRecord?.time || null,
           actualJamTidur: attendanceRecord?.jamTidur || schedule.jamTidur,
           actualFitToWork: attendanceRecord?.fitToWork || schedule.fitToWork,
-          attendanceStatus: attendanceRecord ? "present" : "absent"
+          attendanceStatus: attendanceRecord ? "present" : "absent",
+          workDays: leaveRecord?.leaveOption || null // "70" atau "35" hari kerja
         };
       });
       

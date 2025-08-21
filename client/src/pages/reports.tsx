@@ -100,10 +100,11 @@ export default function Reports() {
         await queryClient.refetchQueries({ queryKey: ["/api/roster"] });
         await queryClient.refetchQueries({ queryKey: ["/api/employees"] });
         
-        // Get fresh data directly from server
-        const [freshAttendance, freshRoster] = await Promise.all([
+        // Get fresh data directly from server including leave monitoring
+        const [freshAttendance, freshRoster, freshLeaveMonitoring] = await Promise.all([
           fetch(`/api/attendance?date=${startDate}`).then(res => res.json()),
-          fetch(`/api/roster?date=${startDate}`).then(res => res.json())
+          fetch(`/api/roster?date=${startDate}`).then(res => res.json()),
+          fetch(`/api/leave-roster-monitoring`).then(res => res.json())
         ]);
 
         console.log("Fresh attendance data:", freshAttendance);
@@ -135,6 +136,7 @@ export default function Reports() {
             employees,
             attendance: filteredAttendance,
             roster: freshRoster,
+            leaveMonitoring: freshLeaveMonitoring,
             startDate,
             endDate,
             reportType: "attendance",

@@ -244,8 +244,8 @@ function generateShiftSection(
   // Table headers with proportional widths
   doc.setFontSize(9); // Header font size
   doc.setFont('helvetica', 'bold');
-  const headers = ['Nama', 'NIK', 'Shift', 'Jam Masuk', 'Nomor Lambung', 'Jam Tidur', 'Fit To Work', 'Status'];
-  const columnWidths = [110, 65, 50, 80, 80, 60, 60, 60]; // Proportional widths
+  const headers = ['Nama', 'NIK', 'Shift', 'Hari Kerja', 'Jam Masuk', 'Nomor Lambung', 'Jam Tidur', 'Fit To Work', 'Status'];
+  const columnWidths = [100, 60, 45, 45, 70, 70, 50, 55, 55]; // Proportional widths
   
   // Calculate table dimensions and check if it fits
   const tableWidth = columnWidths.reduce((sum, width) => sum + width, 0);
@@ -319,6 +319,10 @@ function generateShiftSection(
     const employee = data.employees.find(emp => emp.id === attendanceRecord.employeeId);
     if (!employee) return;
     
+    // Get work days from monitoring data
+    const workDays = (data as any).leaveMonitoring?.find((leave: any) => leave.nik === employee.id)?.leaveOption || '-';
+    const workDaysText = workDays !== '-' ? `${workDays} Hari` : '-';
+    
     // Prepare row data - only show employees who scanned QR code
     const jamTidur = attendanceRecord.jamTidur || '-';
     const fitToWorkStatus = attendanceRecord.fitToWork || 'Not Fit To Work';
@@ -328,6 +332,7 @@ function generateShiftSection(
       employee.name || '-',
       employee.id || '-',
       shiftName || '-',
+      workDaysText, // Hari Kerja
       attendanceRecord.time || '-', // Jam Masuk
       employee.nomorLambung || '-',
       jamTidur,

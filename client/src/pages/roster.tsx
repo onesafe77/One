@@ -778,6 +778,7 @@ export default function Roster() {
                 <th className="text-left py-3 px-4 font-medium text-gray-900 dark:text-white">Position</th>
                 <th className="text-left py-3 px-4 font-medium text-gray-900 dark:text-white">Nomor Lambung</th>
                 <th className="text-left py-3 px-4 font-medium text-gray-900 dark:text-white">Shift</th>
+                <th className="text-left py-3 px-4 font-medium text-gray-900 dark:text-white">Hari Kerja</th>
                 <th className="text-left py-3 px-4 font-medium text-gray-900 dark:text-white">Jam Tidur</th>
                 <th className="text-left py-3 px-4 font-medium text-gray-900 dark:text-white">Fit To Work</th>
                 <th className="text-left py-3 px-4 font-medium text-gray-900 dark:text-white">Status</th>
@@ -788,13 +789,13 @@ export default function Roster() {
             <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
               {isLoadingRoster ? (
                 <tr>
-                  <td colSpan={9} className="py-8 text-center text-gray-500 dark:text-gray-400">
+                  <td colSpan={10} className="py-8 text-center text-gray-500 dark:text-gray-400">
                     Loading...
                   </td>
                 </tr>
               ) : rosterWithAttendance.length === 0 ? (
                 <tr>
-                  <td colSpan={9} className="py-8 text-center text-gray-500 dark:text-gray-400">
+                  <td colSpan={10} className="py-8 text-center text-gray-500 dark:text-gray-400">
                     Tidak ada roster untuk tanggal ini
                   </td>
                 </tr>
@@ -815,6 +816,11 @@ export default function Roster() {
                     </td>
                     <td className="py-3 px-4 text-sm text-gray-900 dark:text-white">
                       {roster.shift}
+                    </td>
+                    <td className="py-3 px-4">
+                      <Badge variant="outline" className="text-xs">
+                        {(roster as any).workDays ? `${(roster as any).workDays} Hari` : '-'}
+                      </Badge>
                     </td>
                     <td className="py-3 px-4 text-sm text-gray-900 dark:text-white">
                       {roster.actualJamTidur || roster.jamTidur || '-'}
