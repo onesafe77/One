@@ -1334,8 +1334,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
             }
 
             try {
-              // Format sederhana: NIK, Nama, Tanggal Terakhir Cuti
-              const [nik, name, lastLeaveDate] = row;
+              // Format sederhana: NIK, Nama, Tanggal Terakhir Cuti, Pilihan Cuti
+              const [nik, name, lastLeaveDate, leaveOption] = row;
               
               // Validate required fields
               if (!nik || !name) {
@@ -1361,12 +1361,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 }
               }
 
-              // Default leave option berdasarkan investor group
+              // Validate leave option atau default ke 70
               let finalLeaveOption = "70";
-              if (investorGroup === "Bu Resty") {
-                finalLeaveOption = "70";
-              } else if (investorGroup.includes("Group")) {
-                finalLeaveOption = "35";
+              if (leaveOption && (leaveOption.toString() === "70" || leaveOption.toString() === "35")) {
+                finalLeaveOption = leaveOption.toString();
+              } else if (leaveOption) {
+                errors.push(`Row ${i + 2}: Pilihan cuti harus 70 atau 35, got: ${leaveOption}`);
+                continue;
               }
 
               // Calculate monitoring days and next leave date
