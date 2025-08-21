@@ -71,6 +71,21 @@ export const leaveBalances = pgTable("leave_balances", {
   updatedAt: timestamp("updated_at").default(sql`now()`),
 });
 
+// Table untuk roster monitoring cuti karyawan
+export const leaveRosterMonitoring = pgTable("leave_roster_monitoring", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  nik: varchar("nik").notNull().unique(),
+  name: text("name").notNull(),
+  investorGroup: text("investor_group").notNull(),
+  lastLeaveDate: text("last_leave_date"), // Tanggal terakhir cuti
+  leaveOption: text("leave_option").notNull(), // "70" atau "35" hari kerja
+  monitoringDays: integer("monitoring_days").notNull().default(0), // Jumlah hari sejak terakhir cuti
+  nextLeaveDate: text("next_leave_date"), // Tanggal cuti berikutnya (otomatis hitung)
+  status: text("status").notNull().default("Aktif"), // Aktif, Menunggu Cuti, Sedang Cuti, Selesai Cuti
+  createdAt: timestamp("created_at").default(sql`now()`),
+  updatedAt: timestamp("updated_at").default(sql`now()`),
+});
+
 // Table untuk history cuti karyawan  
 export const leaveHistory = pgTable("leave_history", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
@@ -147,7 +162,11 @@ export const insertLeaveHistorySchema = createInsertSchema(leaveHistory).omit({
   createdAt: true,
 });
 
-
+export const insertLeaveRosterMonitoringSchema = createInsertSchema(leaveRosterMonitoring).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
 
 // Types
 export type Employee = typeof employees.$inferSelect;
@@ -166,6 +185,8 @@ export type LeaveBalance = typeof leaveBalances.$inferSelect;
 export type InsertLeaveBalance = z.infer<typeof insertLeaveBalanceSchema>;
 export type LeaveHistory = typeof leaveHistory.$inferSelect;
 export type InsertLeaveHistory = z.infer<typeof insertLeaveHistorySchema>;
+export type LeaveRosterMonitoring = typeof leaveRosterMonitoring.$inferSelect;
+export type InsertLeaveRosterMonitoring = z.infer<typeof insertLeaveRosterMonitoringSchema>;
 
 // WhatsApp Blast schemas
 export const whatsappBlasts = pgTable("whatsapp_blasts", {

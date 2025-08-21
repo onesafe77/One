@@ -1217,6 +1217,76 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Leave Roster Monitoring routes
+  app.get("/api/leave-roster-monitoring", async (req, res) => {
+    try {
+      const monitoring = await storage.getAllLeaveRosterMonitoring();
+      res.json(monitoring);
+    } catch (error) {
+      console.error("Error fetching leave roster monitoring:", error);
+      res.status(500).json({ message: "Failed to fetch leave roster monitoring" });
+    }
+  });
+
+  app.get("/api/leave-roster-monitoring/:id", async (req, res) => {
+    try {
+      const monitoring = await storage.getLeaveRosterMonitoring(req.params.id);
+      if (!monitoring) {
+        return res.status(404).json({ message: "Monitoring data not found" });
+      }
+      res.json(monitoring);
+    } catch (error) {
+      console.error("Error fetching leave roster monitoring:", error);
+      res.status(500).json({ message: "Failed to fetch leave roster monitoring" });
+    }
+  });
+
+  app.post("/api/leave-roster-monitoring", async (req, res) => {
+    try {
+      const monitoring = await storage.createLeaveRosterMonitoring(req.body);
+      res.status(201).json(monitoring);
+    } catch (error) {
+      console.error("Error creating leave roster monitoring:", error);
+      res.status(500).json({ message: "Failed to create leave roster monitoring" });
+    }
+  });
+
+  app.put("/api/leave-roster-monitoring/:id", async (req, res) => {
+    try {
+      const monitoring = await storage.updateLeaveRosterMonitoring(req.params.id, req.body);
+      if (!monitoring) {
+        return res.status(404).json({ message: "Monitoring data not found" });
+      }
+      res.json(monitoring);
+    } catch (error) {
+      console.error("Error updating leave roster monitoring:", error);
+      res.status(500).json({ message: "Failed to update leave roster monitoring" });
+    }
+  });
+
+  app.delete("/api/leave-roster-monitoring/:id", async (req, res) => {
+    try {
+      const success = await storage.deleteLeaveRosterMonitoring(req.params.id);
+      if (!success) {
+        return res.status(404).json({ message: "Monitoring data not found" });
+      }
+      res.json({ message: "Leave roster monitoring deleted successfully" });
+    } catch (error) {
+      console.error("Error deleting leave roster monitoring:", error);
+      res.status(500).json({ message: "Failed to delete leave roster monitoring" });
+    }
+  });
+
+  app.post("/api/leave-roster-monitoring/update-status", async (req, res) => {
+    try {
+      await storage.updateLeaveRosterStatus();
+      res.json({ message: "Status updated successfully" });
+    } catch (error) {
+      console.error("Error updating leave roster status:", error);
+      res.status(500).json({ message: "Failed to update leave roster status" });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }

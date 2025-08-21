@@ -15,6 +15,7 @@ import Scanner from "@/pages/scanner";
 import Employees from "@/pages/employees";
 import Roster from "@/pages/roster";
 import Leave from "@/pages/leave";
+import LeaveRosterMonitoring from "@/pages/leave-roster-monitoring";
 import Reports from "@/pages/reports";
 import AttendanceDetails from "@/pages/attendance-details";
 import WhatsAppBlast from "@/pages/whatsapp-blast";
@@ -28,6 +29,7 @@ const routes = [
   { path: "/employees", component: Employees, title: "Data Karyawan" },
   { path: "/roster", component: Roster, title: "Roster Kerja" },
   { path: "/leave", component: Leave, title: "Manajemen Cuti" },
+  { path: "/leave-roster-monitoring", component: LeaveRosterMonitoring, title: "Monitoring Roster Cuti" },
   { path: "/reports", component: Reports, title: "Laporan" },
   { path: "/attendance-details", component: AttendanceDetails, title: "Dashboard HR " },
   { path: "/whatsapp-blast", component: WhatsAppBlast, title: "Blast WhatsApp" },

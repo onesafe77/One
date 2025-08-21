@@ -15,6 +15,8 @@ import {
   type InsertLeaveBalance,
   type LeaveHistory,
   type InsertLeaveHistory,
+  type LeaveRosterMonitoring,
+  type InsertLeaveRosterMonitoring,
   type WhatsappBlast,
   type InsertWhatsappBlast,
   type WhatsappBlastResult,
@@ -27,6 +29,7 @@ import {
   leaveReminders,
   leaveBalances,
   leaveHistory,
+  leaveRosterMonitoring,
   whatsappBlasts,
   whatsappBlastResults
 } from "@shared/schema";
@@ -95,6 +98,15 @@ export interface IStorage {
   // Bulk upload methods
   bulkUploadLeaveRoster(data: Array<{ nik: string; leaveType: string; startDate: string; endDate: string; totalDays: number }>): Promise<{ success: number; errors: string[] }>;
 
+  // Leave Roster Monitoring methods
+  getLeaveRosterMonitoring(id: string): Promise<LeaveRosterMonitoring | undefined>;
+  getLeaveRosterMonitoringByNik(nik: string): Promise<LeaveRosterMonitoring | undefined>;
+  getAllLeaveRosterMonitoring(): Promise<LeaveRosterMonitoring[]>;
+  createLeaveRosterMonitoring(monitoring: InsertLeaveRosterMonitoring): Promise<LeaveRosterMonitoring>;
+  updateLeaveRosterMonitoring(id: string, monitoring: Partial<InsertLeaveRosterMonitoring>): Promise<LeaveRosterMonitoring | undefined>;
+  deleteLeaveRosterMonitoring(id: string): Promise<boolean>;
+  updateLeaveRosterStatus(): Promise<void>; // Update status berdasarkan tanggal
+  
   // WhatsApp Blast methods
   createWhatsappBlast(blast: InsertWhatsappBlast): Promise<WhatsappBlast>;
   getAllWhatsappBlasts(): Promise<WhatsappBlast[]>;
@@ -479,7 +491,42 @@ export class MemStorage implements IStorage {
     return { success: 0, errors: ["MemStorage does not support bulk operations"] };
   }
 
+  // Leave Roster Monitoring methods for MemStorage
+  async getLeaveRosterMonitoring(id: string): Promise<LeaveRosterMonitoring | undefined> {
+    return undefined;
+  }
 
+  async getLeaveRosterMonitoringByNik(nik: string): Promise<LeaveRosterMonitoring | undefined> {
+    return undefined;
+  }
+
+  async getAllLeaveRosterMonitoring(): Promise<LeaveRosterMonitoring[]> {
+    return [];
+  }
+
+  async createLeaveRosterMonitoring(monitoring: InsertLeaveRosterMonitoring): Promise<LeaveRosterMonitoring> {
+    const leaveRosterMonitoring: LeaveRosterMonitoring = {
+      id: randomUUID(),
+      ...monitoring,
+      status: monitoring.status || "Aktif",
+      monitoringDays: monitoring.monitoringDays || 0,
+      createdAt: new Date(),
+      updatedAt: new Date()
+    };
+    return leaveRosterMonitoring;
+  }
+
+  async updateLeaveRosterMonitoring(id: string, monitoring: Partial<InsertLeaveRosterMonitoring>): Promise<LeaveRosterMonitoring | undefined> {
+    return undefined;
+  }
+
+  async deleteLeaveRosterMonitoring(id: string): Promise<boolean> {
+    return false;
+  }
+
+  async updateLeaveRosterStatus(): Promise<void> {
+    // No-op in memory storage
+  }
 }
 
 // DrizzleStorage implementation using PostgreSQL
@@ -925,6 +972,94 @@ export class DrizzleStorage implements IStorage {
       .where(eq(whatsappBlastResults.id, id))
       .returning();
     return result;
+  }
+
+  // Leave Roster Monitoring methods implementation
+  async getLeaveRosterMonitoring(id: string): Promise<LeaveRosterMonitoring | undefined> {
+    const [result] = await this.db
+      .select()
+      .from(leaveRosterMonitoring)
+      .where(eq(leaveRosterMonitoring.id, id));
+    return result;
+  }
+
+  async getLeaveRosterMonitoringByNik(nik: string): Promise<LeaveRosterMonitoring | undefined> {
+    const [result] = await this.db
+      .select()
+      .from(leaveRosterMonitoring)
+      .where(eq(leaveRosterMonitoring.nik, nik));
+    return result;
+  }
+
+  async getAllLeaveRosterMonitoring(): Promise<LeaveRosterMonitoring[]> {
+    return await this.db
+      .select()
+      .from(leaveRosterMonitoring)
+      .orderBy(drizzleSql`created_at DESC`);
+  }
+
+  async createLeaveRosterMonitoring(monitoring: InsertLeaveRosterMonitoring): Promise<LeaveRosterMonitoring> {
+    const [result] = await this.db
+      .insert(leaveRosterMonitoring)
+      .values(monitoring)
+      .returning();
+    return result;
+  }
+
+  async updateLeaveRosterMonitoring(id: string, monitoring: Partial<InsertLeaveRosterMonitoring>): Promise<LeaveRosterMonitoring | undefined> {
+    const [result] = await this.db
+      .update(leaveRosterMonitoring)
+      .set({ ...monitoring, updatedAt: drizzleSql`now()` })
+      .where(eq(leaveRosterMonitoring.id, id))
+      .returning();
+    return result;
+  }
+
+  async deleteLeaveRosterMonitoring(id: string): Promise<boolean> {
+    const result = await this.db
+      .delete(leaveRosterMonitoring)
+      .where(eq(leaveRosterMonitoring.id, id));
+    return result.rowCount > 0;
+  }
+
+  async updateLeaveRosterStatus(): Promise<void> {
+    const today = new Date().toISOString().split('T')[0];
+    const allMonitoring = await this.getAllLeaveRosterMonitoring();
+
+    for (const monitoring of allMonitoring) {
+      let newStatus = "Aktif";
+      
+      if (monitoring.nextLeaveDate) {
+        const nextLeaveDate = new Date(monitoring.nextLeaveDate);
+        const todayDate = new Date(today);
+        const diffTime = nextLeaveDate.getTime() - todayDate.getTime();
+        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+        if (diffDays <= -1) {
+          newStatus = "Selesai Cuti";
+        } else if (diffDays <= 0) {
+          newStatus = "Sedang Cuti";
+        } else if (diffDays <= 5) {
+          newStatus = "Menunggu Cuti";
+        } else {
+          newStatus = "Aktif";
+        }
+      }
+
+      // Update monitoring days
+      let monitoringDays = monitoring.monitoringDays;
+      if (monitoring.lastLeaveDate) {
+        const lastLeaveDate = new Date(monitoring.lastLeaveDate);
+        const todayDate = new Date(today);
+        const diffTime = todayDate.getTime() - lastLeaveDate.getTime();
+        monitoringDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+      }
+
+      await this.updateLeaveRosterMonitoring(monitoring.id, {
+        status: newStatus,
+        monitoringDays
+      });
+    }
   }
 }
 

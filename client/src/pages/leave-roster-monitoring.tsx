@@ -1,0 +1,742 @@
+import React, { useState, useEffect } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { format, addDays, differenceInDays, parseISO } from "date-fns";
+import { id } from "date-fns/locale";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Badge } from "@/components/ui/badge";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { useToast } from "@/hooks/use-toast";
+import { apiRequest } from "@/lib/queryClient";
+import { 
+  Calendar, 
+  Filter, 
+  Plus, 
+  Trash2, 
+  Edit, 
+  Download,
+  Users,
+  Clock,
+  TrendingUp,
+  AlertTriangle
+} from "lucide-react";
+import { Bar, Line } from "react-chartjs-2";
+import {
+  Chart as ChartJS,
+  CategoryScale,
+  LinearScale,
+  BarElement,
+  LineElement,
+  PointElement,
+  Title,
+  Tooltip,
+  Legend,
+} from "chart.js";
+
+ChartJS.register(
+  CategoryScale,
+  LinearScale,
+  BarElement,
+  LineElement,
+  PointElement,
+  Title,
+  Tooltip,
+  Legend
+);
+
+interface LeaveRosterMonitoring {
+  id: string;
+  nik: string;
+  name: string;
+  investorGroup: string;
+  lastLeaveDate: string | null;
+  leaveOption: string; // "70" atau "35"
+  monitoringDays: number;
+  nextLeaveDate: string | null;
+  status: string; // Aktif, Menunggu Cuti, Sedang Cuti, Selesai Cuti
+  createdAt: string;
+  updatedAt: string;
+}
+
+interface Employee {
+  id: string;
+  name: string;
+  investorGroup: string | null;
+}
+
+const statusColors = {
+  "Aktif": "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200",
+  "Menunggu Cuti": "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200",
+  "Sedang Cuti": "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200",
+  "Selesai Cuti": "bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200"
+};
+
+export default function LeaveRosterMonitoringPage() {
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+  
+  // States for filters
+  const [searchTerm, setSearchTerm] = useState("");
+  const [statusFilter, setStatusFilter] = useState("all");
+  const [investorGroupFilter, setInvestorGroupFilter] = useState("all");
+  const [leaveOptionFilter, setLeaveOptionFilter] = useState("all");
+  const [dateRangeFilter, setDateRangeFilter] = useState("all");
+  
+  // States for add/edit dialog
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [editingItem, setEditingItem] = useState<LeaveRosterMonitoring | null>(null);
+  const [formData, setFormData] = useState({
+    nik: "",
+    name: "",
+    investorGroup: "",
+    lastLeaveDate: "",
+    leaveOption: "70", // default 70 hari kerja
+    nextLeaveDate: "",
+    status: "Aktif"
+  });
+
+  // Fetch leave roster monitoring data
+  const { data: monitoringData = [], isLoading, refetch } = useQuery<LeaveRosterMonitoring[]>({
+    queryKey: ["/api/leave-roster-monitoring"],
+    staleTime: 30000, // 30 seconds
+  });
+
+  // Fetch employees for dropdown
+  const { data: employees = [] } = useQuery<Employee[]>({
+    queryKey: ["/api/employees"],
+    staleTime: 300000, // 5 minutes
+  });
+
+  // Create monitoring entry
+  const createMutation = useMutation({
+    mutationFn: (data: typeof formData) => 
+      apiRequest("/api/leave-roster-monitoring", "POST", data),
+    onSuccess: () => {
+      toast({
+        title: "Berhasil",
+        description: "Data monitoring roster cuti berhasil ditambahkan",
+      });
+      setIsDialogOpen(false);
+      resetForm();
+      queryClient.invalidateQueries({ queryKey: ["/api/leave-roster-monitoring"] });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Gagal",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Update monitoring entry
+  const updateMutation = useMutation({
+    mutationFn: ({ id, data }: { id: string; data: Partial<typeof formData> }) => 
+      apiRequest(`/api/leave-roster-monitoring/${id}`, "PUT", data),
+    onSuccess: () => {
+      toast({
+        title: "Berhasil",
+        description: "Data monitoring roster cuti berhasil diperbarui",
+      });
+      setIsDialogOpen(false);
+      resetForm();
+      queryClient.invalidateQueries({ queryKey: ["/api/leave-roster-monitoring"] });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Gagal", 
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Delete monitoring entry
+  const deleteMutation = useMutation({
+    mutationFn: (id: string) => 
+      apiRequest(`/api/leave-roster-monitoring/${id}`, "DELETE"),
+    onSuccess: () => {
+      toast({
+        title: "Berhasil",
+        description: "Data monitoring roster cuti berhasil dihapus",
+      });
+      queryClient.invalidateQueries({ queryKey: ["/api/leave-roster-monitoring"] });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Gagal",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Update status automatically
+  const updateStatusMutation = useMutation({
+    mutationFn: () => apiRequest("/api/leave-roster-monitoring/update-status", "POST"),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/leave-roster-monitoring"] });
+    },
+  });
+
+  // Auto-update status every minute
+  useEffect(() => {
+    const interval = setInterval(() => {
+      updateStatusMutation.mutate();
+    }, 60000); // 1 minute
+
+    return () => clearInterval(interval);
+  }, [updateStatusMutation]);
+
+  // Calculate next leave date based on leave option
+  const calculateNextLeaveDate = (lastLeaveDate: string, leaveOption: string) => {
+    if (!lastLeaveDate) return "";
+    
+    const workDays = leaveOption === "70" ? 70 : 35;
+    const lastDate = parseISO(lastLeaveDate);
+    const nextDate = addDays(lastDate, workDays);
+    return format(nextDate, "yyyy-MM-dd");
+  };
+
+  // Calculate monitoring days
+  const calculateMonitoringDays = (lastLeaveDate: string) => {
+    if (!lastLeaveDate) return 0;
+    
+    const lastDate = parseISO(lastLeaveDate);
+    const today = new Date();
+    return differenceInDays(today, lastDate);
+  };
+
+  // Reset form
+  const resetForm = () => {
+    setFormData({
+      nik: "",
+      name: "",
+      investorGroup: "",
+      lastLeaveDate: "",
+      leaveOption: "70",
+      nextLeaveDate: "",
+      status: "Aktif"
+    });
+    setEditingItem(null);
+  };
+
+  // Handle form submission
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!formData.nik || !formData.name || !formData.investorGroup) {
+      toast({
+        title: "Error",
+        description: "NIK, Nama, dan Investor Group harus diisi",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Calculate next leave date and monitoring days
+    const processedData = {
+      ...formData,
+      nextLeaveDate: formData.lastLeaveDate ? 
+        calculateNextLeaveDate(formData.lastLeaveDate, formData.leaveOption) : undefined,
+      monitoringDays: formData.lastLeaveDate ? 
+        calculateMonitoringDays(formData.lastLeaveDate) : 0
+    };
+
+    if (editingItem) {
+      updateMutation.mutate({ id: editingItem.id, data: processedData });
+    } else {
+      createMutation.mutate(processedData as any);
+    }
+  };
+
+  // Handle edit
+  const handleEdit = (item: LeaveRosterMonitoring) => {
+    setEditingItem(item);
+    setFormData({
+      nik: item.nik,
+      name: item.name,
+      investorGroup: item.investorGroup,
+      lastLeaveDate: item.lastLeaveDate || "",
+      leaveOption: item.leaveOption,
+      nextLeaveDate: item.nextLeaveDate || "",
+      status: item.status
+    });
+    setIsDialogOpen(true);
+  };
+
+  // Handle employee selection
+  const handleEmployeeSelect = (employeeId: string) => {
+    const employee = employees.find(emp => emp.id === employeeId);
+    if (employee) {
+      setFormData(prev => ({
+        ...prev,
+        nik: employee.id,
+        name: employee.name,
+        investorGroup: employee.investorGroup || ""
+      }));
+    }
+  };
+
+  // Filter data
+  const filteredData = monitoringData.filter((item) => {
+    const matchesSearch = 
+      item.nik.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      item.name.toLowerCase().includes(searchTerm.toLowerCase());
+    
+    const matchesStatus = statusFilter === "all" || item.status === statusFilter;
+    const matchesInvestorGroup = investorGroupFilter === "all" || item.investorGroup === investorGroupFilter;
+    const matchesLeaveOption = leaveOptionFilter === "all" || item.leaveOption === leaveOptionFilter;
+    
+    return matchesSearch && matchesStatus && matchesInvestorGroup && matchesLeaveOption;
+  });
+
+  // Get unique investor groups for filter
+  const investorGroups = Array.from(new Set(monitoringData.map((item) => item.investorGroup)));
+
+  // Dashboard stats
+  const stats = {
+    total: monitoringData.length,
+    aktif: monitoringData.filter((item) => item.status === "Aktif").length,
+    menungguCuti: monitoringData.filter((item) => item.status === "Menunggu Cuti").length,
+    sedangCuti: monitoringData.filter((item) => item.status === "Sedang Cuti").length,
+    selesaiCuti: monitoringData.filter((item) => item.status === "Selesai Cuti").length,
+  };
+
+  // Chart data for status distribution
+  const statusChartData = {
+    labels: ["Aktif", "Menunggu Cuti", "Sedang Cuti", "Selesai Cuti"],
+    datasets: [
+      {
+        label: "Jumlah Karyawan",
+        data: [stats.aktif, stats.menungguCuti, stats.sedangCuti, stats.selesaiCuti],
+        backgroundColor: ["#10b981", "#f59e0b", "#3b82f6", "#6b7280"],
+        borderColor: ["#059669", "#d97706", "#2563eb", "#4b5563"],
+        borderWidth: 1,
+      },
+    ],
+  };
+
+  // Chart options
+  const chartOptions = {
+    responsive: true,
+    plugins: {
+      legend: {
+        position: "top" as const,
+      },
+      title: {
+        display: true,
+        text: "Distribusi Status Monitoring Cuti",
+      },
+    },
+  };
+
+  return (
+    <div className="container mx-auto p-4 space-y-6" data-testid="leave-roster-monitoring-page">
+      {/* Header */}
+      <div className="flex justify-between items-center">
+        <div>
+          <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">
+            Monitoring Roster Cuti
+          </h1>
+          <p className="text-gray-600 dark:text-gray-400">
+            Sistem monitoring otomatis roster cuti karyawan berdasarkan siklus 70/35 hari kerja
+          </p>
+        </div>
+        <Button 
+          onClick={() => setIsDialogOpen(true)}
+          className="bg-red-600 hover:bg-red-700"
+          data-testid="button-add-monitoring"
+        >
+          <Plus className="h-4 w-4 mr-2" />
+          Tambah Monitoring
+        </Button>
+      </div>
+
+      {/* Dashboard Stats */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Total Karyawan</CardTitle>
+            <Users className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{stats.total}</div>
+          </CardContent>
+        </Card>
+        
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Aktif</CardTitle>
+            <Clock className="h-4 w-4 text-green-600" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-green-600">{stats.aktif}</div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Menunggu Cuti</CardTitle>
+            <AlertTriangle className="h-4 w-4 text-yellow-600" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-yellow-600">{stats.menungguCuti}</div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Sedang Cuti</CardTitle>
+            <Calendar className="h-4 w-4 text-blue-600" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-blue-600">{stats.sedangCuti}</div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Selesai Cuti</CardTitle>
+            <TrendingUp className="h-4 w-4 text-gray-600" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-gray-600">{stats.selesaiCuti}</div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Chart */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Dashboard Analitik</CardTitle>
+          <CardDescription>
+            Visualisasi distribusi status monitoring cuti karyawan
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="h-64">
+            <Bar data={statusChartData} options={chartOptions} />
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Filters */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Filter className="h-5 w-5" />
+            Filter & Pencarian
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+            <div>
+              <Label>Cari NIK/Nama</Label>
+              <Input
+                placeholder="Cari NIK atau nama..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                data-testid="input-search"
+              />
+            </div>
+            
+            <div>
+              <Label>Status</Label>
+              <Select value={statusFilter} onValueChange={setStatusFilter}>
+                <SelectTrigger data-testid="select-status-filter">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Semua Status</SelectItem>
+                  <SelectItem value="Aktif">Aktif</SelectItem>
+                  <SelectItem value="Menunggu Cuti">Menunggu Cuti</SelectItem>
+                  <SelectItem value="Sedang Cuti">Sedang Cuti</SelectItem>
+                  <SelectItem value="Selesai Cuti">Selesai Cuti</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div>
+              <Label>Investor Group</Label>
+              <Select value={investorGroupFilter} onValueChange={setInvestorGroupFilter}>
+                <SelectTrigger data-testid="select-investor-group-filter">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Semua Investor Group</SelectItem>
+                  {investorGroups.map((group) => (
+                    <SelectItem key={group} value={group}>
+                      {group}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div>
+              <Label>Pilihan Cuti</Label>
+              <Select value={leaveOptionFilter} onValueChange={setLeaveOptionFilter}>
+                <SelectTrigger data-testid="select-leave-option-filter">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Semua Pilihan</SelectItem>
+                  <SelectItem value="70">70 Hari Kerja</SelectItem>
+                  <SelectItem value="35">35 Hari Kerja</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="flex items-end">
+              <Button 
+                variant="outline" 
+                onClick={() => {
+                  setSearchTerm("");
+                  setStatusFilter("all");
+                  setInvestorGroupFilter("all");
+                  setLeaveOptionFilter("all");
+                }}
+                data-testid="button-clear-filters"
+              >
+                Clear Filters
+              </Button>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Data Table */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Data Monitoring Roster Cuti</CardTitle>
+          <CardDescription>
+            Total: {filteredData.length} dari {monitoringData.length} karyawan
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          {isLoading ? (
+            <div className="text-center py-8">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-red-600 mx-auto"></div>
+              <p className="mt-2 text-gray-600">Memuat data...</p>
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>NIK</TableHead>
+                    <TableHead>Nama</TableHead>
+                    <TableHead>Investor Group</TableHead>
+                    <TableHead>Terakhir Cuti</TableHead>
+                    <TableHead>Pilihan Cuti</TableHead>
+                    <TableHead>Monitoring (Hari)</TableHead>
+                    <TableHead>Tanggal Cuti Berikutnya</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead>Aksi</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {filteredData.length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={9} className="text-center py-8 text-gray-500">
+                        Tidak ada data monitoring roster cuti
+                      </TableCell>
+                    </TableRow>
+                  ) : (
+                    filteredData.map((item) => (
+                      <TableRow key={item.id} data-testid={`row-monitoring-${item.nik}`}>
+                        <TableCell className="font-medium">{item.nik}</TableCell>
+                        <TableCell>{item.name}</TableCell>
+                        <TableCell>{item.investorGroup}</TableCell>
+                        <TableCell>
+                          {item.lastLeaveDate ? 
+                            format(parseISO(item.lastLeaveDate), "dd/MM/yyyy") : 
+                            "-"
+                          }
+                        </TableCell>
+                        <TableCell>
+                          <Badge variant="outline">
+                            {item.leaveOption === "70" ? "70 Hari Kerja" : "35 Hari Kerja"}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>
+                          <span className="font-semibold">{item.monitoringDays}</span> hari
+                        </TableCell>
+                        <TableCell>
+                          {item.nextLeaveDate ? 
+                            format(parseISO(item.nextLeaveDate), "dd/MM/yyyy") : 
+                            "-"
+                          }
+                        </TableCell>
+                        <TableCell>
+                          <Badge className={statusColors[item.status as keyof typeof statusColors]}>
+                            {item.status}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex gap-2">
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => handleEdit(item)}
+                              data-testid={`button-edit-${item.nik}`}
+                            >
+                              <Edit className="h-3 w-3" />
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => deleteMutation.mutate(item.id)}
+                              className="text-red-600 hover:bg-red-50"
+                              data-testid={`button-delete-${item.nik}`}
+                            >
+                              <Trash2 className="h-3 w-3" />
+                            </Button>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  )}
+                </TableBody>
+              </Table>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Add/Edit Dialog */}
+      <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>
+              {editingItem ? "Edit Monitoring Roster Cuti" : "Tambah Monitoring Roster Cuti"}
+            </DialogTitle>
+          </DialogHeader>
+          
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div>
+              <Label>Pilih Karyawan</Label>
+              <Select value={formData.nik} onValueChange={handleEmployeeSelect}>
+                <SelectTrigger data-testid="select-employee">
+                  <SelectValue placeholder="Pilih karyawan..." />
+                </SelectTrigger>
+                <SelectContent>
+                  {employees.map((employee) => (
+                    <SelectItem key={employee.id} value={employee.id}>
+                      {employee.id} - {employee.name} ({employee.investorGroup})
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div>
+              <Label>NIK</Label>
+              <Input
+                value={formData.nik}
+                onChange={(e) => setFormData(prev => ({ ...prev, nik: e.target.value }))}
+                placeholder="NIK karyawan"
+                required
+                data-testid="input-nik"
+              />
+            </div>
+
+            <div>
+              <Label>Nama</Label>
+              <Input
+                value={formData.name}
+                onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
+                placeholder="Nama karyawan"
+                required
+                data-testid="input-name"
+              />
+            </div>
+
+            <div>
+              <Label>Investor Group</Label>
+              <Input
+                value={formData.investorGroup}
+                onChange={(e) => setFormData(prev => ({ ...prev, investorGroup: e.target.value }))}
+                placeholder="Investor Group"
+                required
+                data-testid="input-investor-group"
+              />
+            </div>
+
+            <div>
+              <Label>Tanggal Terakhir Cuti</Label>
+              <Input
+                type="date"
+                value={formData.lastLeaveDate}
+                onChange={(e) => setFormData(prev => ({ ...prev, lastLeaveDate: e.target.value }))}
+                data-testid="input-last-leave-date"
+              />
+            </div>
+
+            <div>
+              <Label>Pilihan Cuti</Label>
+              <Select 
+                value={formData.leaveOption} 
+                onValueChange={(value) => setFormData(prev => ({ ...prev, leaveOption: value }))}
+              >
+                <SelectTrigger data-testid="select-leave-option">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="70">70 Hari Kerja (14 hari cuti)</SelectItem>
+                  <SelectItem value="35">35 Hari Kerja (7 hari cuti)</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div>
+              <Label>Status</Label>
+              <Select 
+                value={formData.status} 
+                onValueChange={(value) => setFormData(prev => ({ ...prev, status: value }))}
+              >
+                <SelectTrigger data-testid="select-status">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Aktif">Aktif</SelectItem>
+                  <SelectItem value="Menunggu Cuti">Menunggu Cuti</SelectItem>
+                  <SelectItem value="Sedang Cuti">Sedang Cuti</SelectItem>
+                  <SelectItem value="Selesai Cuti">Selesai Cuti</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="flex justify-end space-x-2">
+              <Button 
+                type="button" 
+                variant="outline" 
+                onClick={() => {
+                  setIsDialogOpen(false);
+                  resetForm();
+                }}
+                data-testid="button-cancel"
+              >
+                Batal
+              </Button>
+              <Button 
+                type="submit" 
+                className="bg-red-600 hover:bg-red-700"
+                disabled={createMutation.isPending || updateMutation.isPending}
+                data-testid="button-save"
+              >
+                {createMutation.isPending || updateMutation.isPending ? "Menyimpan..." : 
+                 editingItem ? "Update" : "Simpan"}
+              </Button>
+            </div>
+          </form>
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
+}
