@@ -19,6 +19,7 @@ import {
   Trash2, 
   Edit, 
   Download,
+  Upload,
   Users,
   Clock,
   TrendingUp,
@@ -89,6 +90,11 @@ export default function LeaveRosterMonitoringPage() {
   // States for add/edit dialog
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<LeaveRosterMonitoring | null>(null);
+  
+  // States for Excel upload
+  const [isUploadDialogOpen, setIsUploadDialogOpen] = useState(false);
+  const [uploadFile, setUploadFile] = useState<File | null>(null);
+  const [uploadProgress, setUploadProgress] = useState(0);
   const [formData, setFormData] = useState({
     nik: "",
     name: "",
@@ -180,6 +186,43 @@ export default function LeaveRosterMonitoringPage() {
     mutationFn: () => apiRequest("/api/leave-roster-monitoring/update-status", "POST"),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/leave-roster-monitoring"] });
+    },
+  });
+
+  // Excel upload mutation
+  const uploadExcelMutation = useMutation({
+    mutationFn: async (file: File) => {
+      const formData = new FormData();
+      formData.append("file", file);
+      
+      const response = await fetch("/api/leave-roster-monitoring/upload-excel", {
+        method: "POST",
+        body: formData,
+      });
+      
+      if (!response.ok) {
+        throw new Error("Upload failed");
+      }
+      
+      return response.json();
+    },
+    onSuccess: (result) => {
+      toast({
+        title: "Upload Berhasil",
+        description: `${result.success} data berhasil diupload, ${result.errors?.length || 0} error`,
+      });
+      setIsUploadDialogOpen(false);
+      setUploadFile(null);
+      setUploadProgress(0);
+      queryClient.invalidateQueries({ queryKey: ["/api/leave-roster-monitoring"] });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Upload Gagal",
+        description: error.message,
+        variant: "destructive",
+      });
+      setUploadProgress(0);
     },
   });
 
@@ -282,6 +325,39 @@ export default function LeaveRosterMonitoringPage() {
     }
   };
 
+  // Handle Excel file upload
+  const handleExcelUpload = () => {
+    if (!uploadFile) {
+      toast({
+        title: "Error",
+        description: "Pilih file Excel terlebih dahulu",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setUploadProgress(25);
+    uploadExcelMutation.mutate(uploadFile);
+  };
+
+  // Download Excel template
+  const downloadTemplate = () => {
+    const templateData = [
+      ["NIK", "Nama", "Investor Group", "Tanggal Terakhir Cuti", "Pilihan Cuti", "Status"],
+      ["C-030001", "CONTOH NAMA", "Group A", "2024-01-15", "70", "Aktif"],
+      ["C-030002", "CONTOH NAMA 2", "Group B", "2024-02-20", "35", "Menunggu Cuti"],
+    ];
+
+    const csvContent = templateData.map(row => row.join(",")).join("\n");
+    const blob = new Blob([csvContent], { type: "text/csv" });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "template_monitoring_roster_cuti.csv";
+    a.click();
+    window.URL.revokeObjectURL(url);
+  };
+
   // Filter data
   const filteredData = monitoringData.filter((item) => {
     const matchesSearch = 
@@ -347,14 +423,33 @@ export default function LeaveRosterMonitoringPage() {
             Sistem monitoring otomatis roster cuti karyawan berdasarkan siklus 70/35 hari kerja
           </p>
         </div>
-        <Button 
-          onClick={() => setIsDialogOpen(true)}
-          className="bg-red-600 hover:bg-red-700"
-          data-testid="button-add-monitoring"
-        >
-          <Plus className="h-4 w-4 mr-2" />
-          Tambah Monitoring
-        </Button>
+        <div className="flex gap-2">
+          <Button 
+            onClick={() => setIsDialogOpen(true)}
+            className="bg-red-600 hover:bg-red-700"
+            data-testid="button-add-monitoring"
+          >
+            <Plus className="h-4 w-4 mr-2" />
+            Tambah Monitoring
+          </Button>
+          <Button 
+            onClick={() => setIsUploadDialogOpen(true)}
+            variant="outline"
+            className="border-red-600 text-red-600 hover:bg-red-50"
+            data-testid="button-upload-excel"
+          >
+            <Upload className="h-4 w-4 mr-2" />
+            Upload Excel
+          </Button>
+          <Button 
+            onClick={downloadTemplate}
+            variant="outline"
+            data-testid="button-download-template"
+          >
+            <Download className="h-4 w-4 mr-2" />
+            Template Excel
+          </Button>
+        </div>
       </div>
 
       {/* Dashboard Stats */}
@@ -735,6 +830,86 @@ export default function LeaveRosterMonitoringPage() {
               </Button>
             </div>
           </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Excel Upload Dialog */}
+      <Dialog open={isUploadDialogOpen} onOpenChange={setIsUploadDialogOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Upload Excel Monitoring Roster Cuti</DialogTitle>
+          </DialogHeader>
+          
+          <div className="space-y-4">
+            <div>
+              <Label>File Excel (.xlsx, .csv)</Label>
+              <Input
+                type="file"
+                accept=".xlsx,.xls,.csv"
+                onChange={(e) => {
+                  const file = e.target.files?.[0];
+                  if (file) {
+                    setUploadFile(file);
+                    setUploadProgress(0);
+                  }
+                }}
+                data-testid="input-excel-file"
+              />
+              {uploadFile && (
+                <p className="text-sm text-gray-600 mt-1">
+                  File dipilih: {uploadFile.name}
+                </p>
+              )}
+            </div>
+
+            {uploadProgress > 0 && (
+              <div>
+                <Label>Progress Upload</Label>
+                <div className="w-full bg-gray-200 rounded-full h-2">
+                  <div 
+                    className="bg-red-600 h-2 rounded-full transition-all duration-300"
+                    style={{ width: `${uploadProgress}%` }}
+                  />
+                </div>
+                <p className="text-sm text-gray-600 mt-1">{uploadProgress}%</p>
+              </div>
+            )}
+
+            <div className="bg-blue-50 p-3 rounded-md">
+              <p className="text-sm text-blue-800">
+                <strong>Format Excel:</strong><br/>
+                • Kolom 1: NIK<br/>
+                • Kolom 2: Nama<br/>
+                • Kolom 3: Investor Group<br/>
+                • Kolom 4: Tanggal Terakhir Cuti (YYYY-MM-DD)<br/>
+                • Kolom 5: Pilihan Cuti (70 atau 35)<br/>
+                • Kolom 6: Status (Aktif/Menunggu Cuti/Sedang Cuti/Selesai Cuti)
+              </p>
+            </div>
+
+            <div className="flex justify-end space-x-2">
+              <Button 
+                type="button" 
+                variant="outline" 
+                onClick={() => {
+                  setIsUploadDialogOpen(false);
+                  setUploadFile(null);
+                  setUploadProgress(0);
+                }}
+                data-testid="button-cancel-upload"
+              >
+                Batal
+              </Button>
+              <Button 
+                onClick={handleExcelUpload}
+                className="bg-red-600 hover:bg-red-700"
+                disabled={!uploadFile || uploadExcelMutation.isPending}
+                data-testid="button-start-upload"
+              >
+                {uploadExcelMutation.isPending ? "Mengupload..." : "Upload"}
+              </Button>
+            </div>
+          </div>
         </DialogContent>
       </Dialog>
     </div>

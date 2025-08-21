@@ -1287,6 +1287,116 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Excel upload endpoint for leave roster monitoring
+  app.post("/api/leave-roster-monitoring/upload-excel", async (req, res) => {
+    try {
+      const multer = (await import('multer')).default;
+      const XLSX = (await import('xlsx'));
+      
+      // Setup multer for memory storage
+      const upload = multer({ storage: multer.memoryStorage() });
+      
+      // Handle file upload
+      upload.single('file')(req as any, res, async (err: any) => {
+        if (err) {
+          return res.status(400).json({ error: "File upload error" });
+        }
+
+        const file = (req as any).file;
+        if (!file) {
+          return res.status(400).json({ error: "No file uploaded" });
+        }
+
+        try {
+          const workbook = XLSX.read(file.buffer, { type: 'buffer' });
+          const worksheet = workbook.Sheets[workbook.SheetNames[0]];
+          const data = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
+
+          // Skip header row
+          const rows = data.slice(1) as any[][];
+          
+          let successCount = 0;
+          const errors: string[] = [];
+
+          for (let i = 0; i < rows.length; i++) {
+            const row = rows[i];
+            if (!row || row.length < 6) continue;
+
+            try {
+              const [nik, name, investorGroup, lastLeaveDate, leaveOption, status] = row;
+              
+              // Validate required fields
+              if (!nik || !name || !investorGroup) {
+                errors.push(`Row ${i + 2}: NIK, Nama, dan Investor Group harus diisi`);
+                continue;
+              }
+
+              // Validate leave option
+              if (leaveOption !== "70" && leaveOption !== "35") {
+                errors.push(`Row ${i + 2}: Pilihan cuti harus 70 atau 35`);
+                continue;
+              }
+
+              // Validate status
+              const validStatuses = ["Aktif", "Menunggu Cuti", "Sedang Cuti", "Selesai Cuti"];
+              if (!validStatuses.includes(status)) {
+                errors.push(`Row ${i + 2}: Status tidak valid`);
+                continue;
+              }
+
+              // Calculate monitoring days and next leave date
+              let monitoringDays = 0;
+              let nextLeaveDate = null;
+
+              if (lastLeaveDate) {
+                const lastDate = new Date(lastLeaveDate);
+                if (!isNaN(lastDate.getTime())) {
+                  const today = new Date();
+                  monitoringDays = Math.floor((today.getTime() - lastDate.getTime()) / (1000 * 60 * 60 * 24));
+                  
+                  const workDays = leaveOption === "70" ? 70 : 35;
+                  const nextDate = new Date(lastDate);
+                  nextDate.setDate(lastDate.getDate() + workDays);
+                  nextLeaveDate = nextDate.toISOString().split('T')[0];
+                }
+              }
+
+              // Create leave roster monitoring entry
+              await storage.createLeaveRosterMonitoring({
+                nik: nik.toString(),
+                name: name.toString(),
+                investorGroup: investorGroup.toString(),
+                lastLeaveDate: lastLeaveDate ? new Date(lastLeaveDate).toISOString().split('T')[0] : null,
+                leaveOption: leaveOption.toString(),
+                monitoringDays,
+                nextLeaveDate,
+                status: status.toString(),
+              });
+
+              successCount++;
+            } catch (error) {
+              errors.push(`Row ${i + 2}: ${error instanceof Error ? error.message : 'Unknown error'}`);
+            }
+          }
+
+          res.json({
+            success: successCount,
+            errors,
+            message: `${successCount} data berhasil diupload${errors.length > 0 ? `, ${errors.length} error` : ''}`
+          });
+
+        } catch (error) {
+          console.error("Error processing Excel file:", error);
+          res.status(500).json({ error: "Failed to process Excel file" });
+        }
+      });
+
+    } catch (error) {
+      console.error("Error in Excel upload:", error);
+      res.status(500).json({ error: "Failed to upload Excel file" });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }
