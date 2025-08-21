@@ -98,6 +98,7 @@ export default function LeaveRosterMonitoringPage() {
   const [formData, setFormData] = useState({
     nik: "",
     name: "",
+    month: new Date().toISOString().slice(0, 7), // Default: current month
     investorGroup: "",
     lastLeaveDate: "",
     leaveOption: "70", // default 70 hari kerja
@@ -259,6 +260,7 @@ export default function LeaveRosterMonitoringPage() {
     setFormData({
       nik: "",
       name: "",
+      month: new Date().toISOString().slice(0, 7), // Default: current month
       investorGroup: "",
       lastLeaveDate: "",
       leaveOption: "70",
@@ -338,6 +340,7 @@ export default function LeaveRosterMonitoringPage() {
     setFormData({
       nik: item.nik,
       name: item.name,
+      month: (item as any).month || new Date().toISOString().slice(0, 7),
       investorGroup: item.investorGroup,
       lastLeaveDate: item.lastLeaveDate || "",
       leaveOption: item.leaveOption,
