@@ -298,7 +298,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           actualJamTidur: attendanceRecord?.jamTidur || schedule.jamTidur,
           actualFitToWork: attendanceRecord?.fitToWork || schedule.fitToWork,
           attendanceStatus: attendanceRecord ? "present" : "absent",
-          workDays: leaveRecord?.leaveOption || null // "70" atau "35" hari kerja
+          workDays: leaveRecord?.monitoringDays || null // Monitoring hari dari leave roster
         };
       });
       

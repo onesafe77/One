@@ -319,9 +319,9 @@ function generateShiftSection(
     const employee = data.employees.find(emp => emp.id === attendanceRecord.employeeId);
     if (!employee) return;
     
-    // Get work days from monitoring data
-    const workDays = (data as any).leaveMonitoring?.find((leave: any) => leave.nik === employee.id)?.leaveOption || '-';
-    const workDaysText = workDays !== '-' ? `${workDays} Hari` : '-';
+    // Get monitoring days from leave monitoring data
+    const monitoringDays = (data as any).leaveMonitoring?.find((leave: any) => leave.nik === employee.id)?.monitoringDays;
+    const workDaysText = (monitoringDays !== null && monitoringDays !== undefined) ? `${monitoringDays} Hari` : '-';
     
     // Prepare row data - only show employees who scanned QR code
     const jamTidur = attendanceRecord.jamTidur || '-';

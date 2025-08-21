@@ -819,7 +819,7 @@ export default function Roster() {
                     </td>
                     <td className="py-3 px-4">
                       <Badge variant="outline" className="text-xs">
-                        {(roster as any).workDays ? `${(roster as any).workDays} Hari` : '-'}
+                        {(roster as any).workDays !== null && (roster as any).workDays !== undefined ? `${(roster as any).workDays} Hari` : '-'}
                       </Badge>
                     </td>
                     <td className="py-3 px-4 text-sm text-gray-900 dark:text-white">
