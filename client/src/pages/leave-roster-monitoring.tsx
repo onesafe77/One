@@ -377,12 +377,13 @@ export default function LeaveRosterMonitoringPage() {
 
   // Download Excel template
   const downloadTemplate = () => {
+    const currentMonth = new Date().toISOString().slice(0, 7); // "YYYY-MM"
     const templateData = [
-      ["NIK", "Nama", "Tanggal Terakhir Cuti", "Pilihan Cuti"],
-      ["C-015001", "CONTOH NAMA 1", "2024-01-15", "70"],
-      ["C-025002", "CONTOH NAMA 2", "2024-02-20", "35"],
-      ["C-035003", "CONTOH NAMA 3", "", "70"],
-      ["C-045004", "CONTOH NAMA 4", "2024-03-10", "35"],
+      ["NIK", "Nama", "Tanggal Terakhir Cuti", "Pilihan Cuti", "Bulan"],
+      ["C-015001", "CONTOH NAMA 1", "2024-01-15", "70", currentMonth],
+      ["C-025002", "CONTOH NAMA 2", "2024-02-20", "35", currentMonth],
+      ["C-035003", "CONTOH NAMA 3", "", "70", currentMonth],
+      ["C-045004", "CONTOH NAMA 4", "2024-03-10", "35", currentMonth],
     ];
 
     const csvContent = templateData.map(row => row.join(",")).join("\n");
@@ -390,7 +391,7 @@ export default function LeaveRosterMonitoringPage() {
     const url = window.URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = "template_monitoring_roster_cuti_sederhana.csv";
+    a.download = "template_monitoring_roster_cuti_dengan_bulan.csv";
     a.click();
     window.URL.revokeObjectURL(url);
   };
@@ -663,6 +664,7 @@ export default function LeaveRosterMonitoringPage() {
                   <TableRow>
                     <TableHead>NIK</TableHead>
                     <TableHead>Nama</TableHead>
+                    <TableHead>Bulan</TableHead>
                     <TableHead>Investor Group</TableHead>
                     <TableHead>Terakhir Cuti</TableHead>
                     <TableHead>Pilihan Cuti</TableHead>
@@ -675,7 +677,7 @@ export default function LeaveRosterMonitoringPage() {
                 <TableBody>
                   {filteredData.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={9} className="text-center py-8 text-gray-500">
+                      <TableCell colSpan={10} className="text-center py-8 text-gray-500">
                         Tidak ada data monitoring roster cuti
                       </TableCell>
                     </TableRow>
@@ -684,6 +686,11 @@ export default function LeaveRosterMonitoringPage() {
                       <TableRow key={item.id} data-testid={`row-monitoring-${item.nik}`}>
                         <TableCell className="font-medium">{item.nik}</TableCell>
                         <TableCell>{item.name}</TableCell>
+                        <TableCell>
+                          <Badge variant="secondary">
+                            {(item as any).month || "2024-08"}
+                          </Badge>
+                        </TableCell>
                         <TableCell>{item.investorGroup}</TableCell>
                         <TableCell>
                           {item.lastLeaveDate ? 
@@ -786,6 +793,16 @@ export default function LeaveRosterMonitoringPage() {
                 placeholder="Nama karyawan"
                 required
                 data-testid="input-name"
+              />
+            </div>
+
+            <div>
+              <Label>Bulan Monitoring</Label>
+              <Input
+                type="month"
+                value={formData.month}
+                onChange={(e) => setFormData(prev => ({ ...prev, month: e.target.value }))}
+                data-testid="input-month"
               />
             </div>
 
@@ -926,11 +943,17 @@ export default function LeaveRosterMonitoringPage() {
 
             <div className="bg-green-50 p-4 rounded-md">
               <p className="text-sm text-green-800">
-                <strong>Format Excel Sederhana:</strong><br/>
+                <strong>Format Excel dengan Bulan:</strong><br/>
                 • Kolom 1: <strong>NIK</strong> (wajib)<br/>
                 • Kolom 2: <strong>Nama</strong> (wajib)<br/>
                 • Kolom 3: <strong>Tanggal Terakhir Cuti</strong> (opsional, format: YYYY-MM-DD)<br/>
-                • Kolom 4: <strong>Pilihan Cuti</strong> (opsional, 70 atau 35, default: 70)<br/><br/>
+                • Kolom 4: <strong>Pilihan Cuti</strong> (opsional, 70 atau 35, default: 70)<br/>
+                • Kolom 5: <strong>Bulan</strong> (opsional, format: YYYY-MM, default: bulan ini)<br/><br/>
+                
+                📅 <strong>Fitur Baru - Per Bulan:</strong><br/>
+                ✓ Setiap NIK bisa ada di berbagai bulan<br/>
+                ✓ Upload roster per bulan untuk tracking berkala<br/>
+                ✓ Monitoring hari dan status per periode bulanan<br/><br/>
                 
                 <strong>OTOMATIS DIHITUNG:</strong><br/>
                 ✓ Investor Group: Berdasarkan range NIK<br/>

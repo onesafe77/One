@@ -1,5 +1,5 @@
 import { sql } from "drizzle-orm";
-import { pgTable, text, varchar, timestamp, boolean, integer } from "drizzle-orm/pg-core";
+import { pgTable, text, varchar, timestamp, boolean, integer, unique } from "drizzle-orm/pg-core";
 import { relations } from "drizzle-orm";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
@@ -74,8 +74,9 @@ export const leaveBalances = pgTable("leave_balances", {
 // Table untuk roster monitoring cuti karyawan
 export const leaveRosterMonitoring = pgTable("leave_roster_monitoring", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  nik: varchar("nik").notNull().unique(),
+  nik: varchar("nik").notNull(),
   name: text("name").notNull(),
+  month: varchar("month").notNull(), // Format: "YYYY-MM" e.g. "2024-08"
   investorGroup: text("investor_group").notNull(),
   lastLeaveDate: text("last_leave_date"), // Tanggal terakhir cuti
   leaveOption: text("leave_option").notNull(), // "70" atau "35" hari kerja
@@ -84,7 +85,10 @@ export const leaveRosterMonitoring = pgTable("leave_roster_monitoring", {
   status: text("status").notNull().default("Aktif"), // Aktif, Menunggu Cuti, Sedang Cuti, Selesai Cuti
   createdAt: timestamp("created_at").default(sql`now()`),
   updatedAt: timestamp("updated_at").default(sql`now()`),
-});
+}, (table) => ({
+  // Unique constraint untuk NIK + Month (bisa ada duplikat NIK untuk bulan berbeda)
+  nikMonthUnique: unique().on(table.nik, table.month),
+}));
 
 // Table untuk history cuti karyawan  
 export const leaveHistory = pgTable("leave_history", {

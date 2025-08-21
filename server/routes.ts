@@ -1334,14 +1334,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
             }
 
             try {
-              // Format sederhana: NIK, Nama, Tanggal Terakhir Cuti, Pilihan Cuti
-              const [nik, name, lastLeaveDate, leaveOption] = row;
+              // Format sederhana: NIK, Nama, Tanggal Terakhir Cuti, Pilihan Cuti, Bulan
+              const [nik, name, lastLeaveDate, leaveOption, monthInput] = row;
               
               // Validate required fields
               if (!nik || !name) {
                 errors.push(`Row ${i + 2}: NIK dan Nama harus diisi`);
                 continue;
               }
+
+              // Generate current month if not provided
+              const currentMonth = new Date().toISOString().slice(0, 7); // "YYYY-MM"
+              const finalMonth = monthInput || currentMonth;
 
               // Auto-generate investor group dari NIK pattern
               let investorGroup = "Default Group";
@@ -1417,6 +1421,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
               await storage.createLeaveRosterMonitoring({
                 nik: nik.toString(),
                 name: name.toString(),
+                month: finalMonth,
                 investorGroup: investorGroup,
                 lastLeaveDate: finalLastLeaveDate,
                 leaveOption: finalLeaveOption,
