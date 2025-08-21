@@ -119,7 +119,7 @@ export default function LeaveRosterMonitoringPage() {
 
   // Create monitoring entry
   const createMutation = useMutation({
-    mutationFn: (data: typeof formData) => 
+    mutationFn: (data: any) => 
       apiRequest("/api/leave-roster-monitoring", "POST", data),
     onSuccess: () => {
       toast({
@@ -141,7 +141,7 @@ export default function LeaveRosterMonitoringPage() {
 
   // Update monitoring entry
   const updateMutation = useMutation({
-    mutationFn: ({ id, data }: { id: string; data: Partial<typeof formData> }) => 
+    mutationFn: ({ id, data }: { id: string; data: any }) => 
       apiRequest(`/api/leave-roster-monitoring/${id}`, "PUT", data),
     onSuccess: () => {
       toast({
@@ -281,13 +281,27 @@ export default function LeaveRosterMonitoringPage() {
       return;
     }
 
+    // Calculate monitoring days and auto-determine status
+    const monitoringDays = formData.lastLeaveDate ? 
+      calculateMonitoringDays(formData.lastLeaveDate) : 0;
+    
+    const workDaysThreshold = formData.leaveOption === "70" ? 70 : 35;
+    let autoStatus = "Aktif";
+    
+    // Auto determine status based on monitoring days
+    if (monitoringDays >= workDaysThreshold - 5 && monitoringDays < workDaysThreshold) {
+      autoStatus = "Menunggu Cuti";
+    } else if (monitoringDays >= workDaysThreshold) {
+      autoStatus = "Menunggu Cuti"; // Ready for leave
+    }
+
     // Calculate next leave date and monitoring days
     const processedData = {
       ...formData,
+      status: autoStatus, // Use auto-calculated status
       nextLeaveDate: formData.lastLeaveDate ? 
         calculateNextLeaveDate(formData.lastLeaveDate, formData.leaveOption) : undefined,
-      monitoringDays: formData.lastLeaveDate ? 
-        calculateMonitoringDays(formData.lastLeaveDate) : 0
+      monitoringDays
     };
 
     if (editingItem) {
@@ -811,21 +825,33 @@ export default function LeaveRosterMonitoringPage() {
             </div>
 
             <div>
-              <Label>Status</Label>
-              <Select 
-                value={formData.status} 
-                onValueChange={(value) => setFormData(prev => ({ ...prev, status: value }))}
-              >
-                <SelectTrigger data-testid="select-status">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="Aktif">Aktif</SelectItem>
-                  <SelectItem value="Menunggu Cuti">Menunggu Cuti</SelectItem>
-                  <SelectItem value="Sedang Cuti">Sedang Cuti</SelectItem>
-                  <SelectItem value="Selesai Cuti">Selesai Cuti</SelectItem>
-                </SelectContent>
-              </Select>
+              <Label>Status (Otomatis berdasarkan monitoring hari)</Label>
+              <div className="p-2 bg-gray-50 dark:bg-gray-800 rounded border">
+                {formData.lastLeaveDate ? (() => {
+                  const monitoringDays = calculateMonitoringDays(formData.lastLeaveDate);
+                  const workDaysThreshold = formData.leaveOption === "70" ? 70 : 35;
+                  let status = "Aktif";
+                  
+                  if (monitoringDays >= workDaysThreshold - 5 && monitoringDays < workDaysThreshold) {
+                    status = "Menunggu Cuti";
+                  } else if (monitoringDays >= workDaysThreshold) {
+                    status = "Menunggu Cuti";
+                  }
+                  
+                  return (
+                    <div className="text-sm">
+                      <span className={`px-2 py-1 rounded ${statusColors[status as keyof typeof statusColors]}`}>
+                        {status}
+                      </span>
+                      <span className="ml-2 text-gray-600">
+                        ({monitoringDays} hari dari {workDaysThreshold} hari kerja)
+                      </span>
+                    </div>
+                  );
+                })() : (
+                  <span className="text-gray-500 text-sm">Pilih tanggal terakhir cuti untuk auto status</span>
+                )}
+              </div>
             </div>
 
             <div className="flex justify-end space-x-2">

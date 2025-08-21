@@ -1027,8 +1027,31 @@ export class DrizzleStorage implements IStorage {
     const allMonitoring = await this.getAllLeaveRosterMonitoring();
 
     for (const monitoring of allMonitoring) {
-      let newStatus = "Aktif";
+      let newStatus = monitoring.status;
       
+      // Update monitoring days berdasarkan lastLeaveDate
+      let monitoringDays = monitoring.monitoringDays;
+      if (monitoring.lastLeaveDate) {
+        const lastLeaveDate = new Date(monitoring.lastLeaveDate);
+        const todayDate = new Date(today);
+        const diffTime = todayDate.getTime() - lastLeaveDate.getTime();
+        monitoringDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+      }
+
+      // Auto status berdasarkan monitoring days dan leave option
+      const workDaysThreshold = monitoring.leaveOption === "70" ? 70 : 35;
+      
+      if (monitoringDays >= workDaysThreshold - 5 && monitoringDays < workDaysThreshold && monitoring.status === "Aktif") {
+        // H-5 sebelum eligible untuk cuti
+        newStatus = "Menunggu Cuti";
+      } else if (monitoringDays >= workDaysThreshold && monitoring.status !== "Sedang Cuti" && monitoring.status !== "Selesai Cuti") {
+        // Sudah eligible untuk cuti
+        if (monitoring.status === "Aktif") {
+          newStatus = "Menunggu Cuti";
+        }
+      }
+      
+      // Jika ada next leave date, cek juga berdasarkan tanggal
       if (monitoring.nextLeaveDate) {
         const nextLeaveDate = new Date(monitoring.nextLeaveDate);
         const todayDate = new Date(today);
@@ -1039,20 +1062,9 @@ export class DrizzleStorage implements IStorage {
           newStatus = "Selesai Cuti";
         } else if (diffDays <= 0) {
           newStatus = "Sedang Cuti";
-        } else if (diffDays <= 5) {
+        } else if (diffDays <= 5 && monitoring.status === "Aktif") {
           newStatus = "Menunggu Cuti";
-        } else {
-          newStatus = "Aktif";
         }
-      }
-
-      // Update monitoring days
-      let monitoringDays = monitoring.monitoringDays;
-      if (monitoring.lastLeaveDate) {
-        const lastLeaveDate = new Date(monitoring.lastLeaveDate);
-        const todayDate = new Date(today);
-        const diffTime = todayDate.getTime() - lastLeaveDate.getTime();
-        monitoringDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
       }
 
       await this.updateLeaveRosterMonitoring(monitoring.id, {
