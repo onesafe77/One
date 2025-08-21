@@ -297,11 +297,11 @@ export default function LeaveRosterMonitoringPage() {
           nik: processedData.nik,
           name: processedData.name,
           investorGroup: processedData.investorGroup,
-          lastLeaveDate: processedData.lastLeaveDate || undefined,
+          lastLeaveDate: processedData.lastLeaveDate,
           leaveOption: processedData.leaveOption,
           status: processedData.status,
           monitoringDays: processedData.monitoringDays,
-          nextLeaveDate: processedData.nextLeaveDate || undefined
+          nextLeaveDate: processedData.nextLeaveDate
         }
       });
     } else {
