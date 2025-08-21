@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -10,7 +10,7 @@ import { generateAttendancePDF } from "@/lib/pdf-utils";
 import { exportAttendanceToCSV, exportLeaveToCSV, exportEmployeesToCSV } from "@/lib/csv-utils";
 import { useToast } from "@/hooks/use-toast";
 import type { Employee, AttendanceRecord, LeaveRequest, RosterSchedule } from "@shared/schema";
-import { Download, FileText, Calendar, Users, TrendingUp } from "lucide-react";
+import { Download, FileText, Calendar, Users, TrendingUp, RefreshCw, CheckCircle } from "lucide-react";
 
 export default function Reports() {
   const [startDate, setStartDate] = useState(new Date().toISOString().split('T')[0]);
@@ -35,13 +35,50 @@ export default function Reports() {
   });
   const { toast } = useToast();
 
+  // Real-time data refresh listener
+  useEffect(() => {
+    let intervalId: NodeJS.Timeout;
+    
+    // Enhanced auto-refresh for reports when roster data changes
+    const startAutoRefresh = () => {
+      intervalId = setInterval(async () => {
+        console.log("🔄 Auto-refreshing report data...");
+        const { queryClient } = await import("@/lib/queryClient");
+        
+        // Force refresh all report-related data
+        queryClient.invalidateQueries({ queryKey: ["/api/employees"] });
+        queryClient.invalidateQueries({ queryKey: ["/api/attendance"] });
+        queryClient.invalidateQueries({ queryKey: ["/api/roster"] });
+        queryClient.invalidateQueries({ queryKey: ["/api/leave"] });
+        queryClient.invalidateQueries({ queryKey: ["/api/leave-roster-monitoring"] });
+      }, 30000); // Every 30 seconds
+    };
+
+    startAutoRefresh();
+
+    return () => {
+      if (intervalId) {
+        clearInterval(intervalId);
+      }
+    };
+  }, []);
+
+  // Check for roster updates
+  const { data: updateStatus } = useQuery({
+    queryKey: ["/api/report-update-status"],
+    refetchInterval: 30000,
+  });
+
   const handleExport = () => {
     setIsExporting(true);
     exportReport().finally(() => setIsExporting(false));
   };
 
+  // Auto-refresh queries every 30 seconds for real-time report updates
   const { data: employees = [] } = useQuery<Employee[]>({
     queryKey: ["/api/employees"],
+    refetchInterval: 30000, // 30 seconds
+    refetchIntervalInBackground: true,
   });
 
   const { data: attendance = [] } = useQuery<AttendanceRecord[]>({
@@ -52,11 +89,14 @@ export default function Reports() {
       return response.json();
     },
     enabled: reportType === "attendance",
+    refetchInterval: 30000, // 30 seconds
+    refetchIntervalInBackground: true,
   });
 
   const { data: leaveRequests = [] } = useQuery<LeaveRequest[]>({
     queryKey: ["/api/leave"],
     enabled: reportType === "leave",
+    refetchInterval: 30000, // 30 seconds
   });
 
   const { data: roster = [] } = useQuery<RosterSchedule[]>({
@@ -67,6 +107,8 @@ export default function Reports() {
       return response.json();
     },
     enabled: reportType === "attendance",
+    refetchInterval: 30000, // 30 seconds
+    refetchIntervalInBackground: true,
   });
 
   const exportReport = async () => {

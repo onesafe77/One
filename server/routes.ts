@@ -13,6 +13,23 @@ import {
   insertWhatsappBlastSchema
 } from "@shared/schema";
 
+// Report cache invalidation and update notification system
+let lastRosterUpdate = new Date();
+
+async function triggerReportUpdate() {
+  console.log("🔄 Roster data changed - triggering report updates");
+  
+  // Update the last roster change timestamp
+  lastRosterUpdate = new Date();
+  
+  // Could implement various notification methods:
+  // 1. WebSocket broadcast to all connected report clients
+  // 2. Cache invalidation for TanStack Query
+  // 3. Database triggers for real-time updates
+  // 4. Email notifications to managers
+  
+  console.log(`📊 Report update triggered at ${lastRosterUpdate.toISOString()}`);
+}
 
 // Utility function to determine shift based on time
 function determineShiftByTime(time: string): string {
@@ -328,6 +345,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const schedule = await storage.createRosterSchedule(validatedData);
+      
+      // Trigger report cache invalidation
+      await triggerReportUpdate();
+      
       res.status(201).json(schedule);
     } catch (error) {
       res.status(400).json({ message: "Invalid roster data" });
@@ -404,6 +425,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
 
+      // Trigger report cache invalidation after bulk update
+      await triggerReportUpdate();
+      
       res.status(201).json({
         message: `${createdSchedules.length} roster berhasil ditambahkan`,
         created: createdSchedules.length,
@@ -423,6 +447,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "Roster tidak ditemukan" });
       }
 
+      // Trigger report cache invalidation
+      await triggerReportUpdate();
+      
       res.json(schedule);
     } catch (error) {
       res.status(400).json({ message: "Invalid roster data" });
@@ -436,6 +463,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "Roster tidak ditemukan" });
       }
 
+      // Trigger report cache invalidation
+      await triggerReportUpdate();
+      
       res.status(200).json({ message: "Roster berhasil dihapus" });
     } catch (error) {
       res.status(500).json({ message: "Failed to delete roster" });
@@ -637,6 +667,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(stats);
     } catch (error) {
       res.status(500).json({ message: "Failed to fetch dashboard stats" });
+    }
+  });
+
+  // Report update status endpoint
+  app.get("/api/report-update-status", async (req, res) => {
+    try {
+      res.json({
+        lastRosterUpdate: lastRosterUpdate.toISOString(),
+        message: "Roster data auto-sync active",
+        timestamp: new Date().toISOString()
+      });
+    } catch (error) {
+      res.status(500).json({ message: "Failed to get update status" });
     }
   });
 

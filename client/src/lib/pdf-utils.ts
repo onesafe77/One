@@ -19,6 +19,7 @@ export interface ReportData {
   employees: Employee[];
   attendance: AttendanceRecord[];
   roster?: RosterSchedule[];
+  leaveMonitoring?: any[]; // Leave monitoring data for work days
   startDate: string;
   endDate: string;
   reportType: 'attendance' | 'summary' | 'leave';
