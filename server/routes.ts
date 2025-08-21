@@ -1299,18 +1299,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Handle file upload
       upload.single('file')(req as any, res, async (err: any) => {
         if (err) {
-          return res.status(400).json({ error: "File upload error" });
+          console.error("Multer error:", err);
+          return res.status(400).json({ error: "File upload error", details: err.message });
         }
 
         const file = (req as any).file;
         if (!file) {
+          console.error("No file received in request");
           return res.status(400).json({ error: "No file uploaded" });
         }
+
+        console.log("File received:", file.originalname, "Size:", file.size);
 
         try {
           const workbook = XLSX.read(file.buffer, { type: 'buffer' });
           const worksheet = workbook.Sheets[workbook.SheetNames[0]];
           const data = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
+
+          console.log("Excel data parsed:", data.length, "rows");
 
           // Skip header row
           const rows = data.slice(1) as any[][];
@@ -1320,7 +1326,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
           for (let i = 0; i < rows.length; i++) {
             const row = rows[i];
-            if (!row || row.length < 6) continue;
+            console.log(`Processing row ${i + 2}:`, row);
+            
+            if (!row || row.length < 3) {
+              errors.push(`Row ${i + 2}: Data tidak lengkap (minimal NIK, Nama, Investor Group)`);
+              continue;
+            }
 
             try {
               const [nik, name, investorGroup, lastLeaveDate, leaveOption, status] = row;
@@ -1331,53 +1342,70 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 continue;
               }
 
+              // Default values if not provided
+              const finalLeaveOption = leaveOption || "70";
+              const finalStatus = status || "Aktif";
+
               // Validate leave option
-              if (leaveOption !== "70" && leaveOption !== "35") {
-                errors.push(`Row ${i + 2}: Pilihan cuti harus 70 atau 35`);
+              if (finalLeaveOption !== "70" && finalLeaveOption !== "35") {
+                errors.push(`Row ${i + 2}: Pilihan cuti harus 70 atau 35, got: ${finalLeaveOption}`);
                 continue;
               }
 
               // Validate status
               const validStatuses = ["Aktif", "Menunggu Cuti", "Sedang Cuti", "Selesai Cuti"];
-              if (!validStatuses.includes(status)) {
-                errors.push(`Row ${i + 2}: Status tidak valid`);
+              if (!validStatuses.includes(finalStatus)) {
+                errors.push(`Row ${i + 2}: Status tidak valid: ${finalStatus}`);
                 continue;
               }
 
               // Calculate monitoring days and next leave date
               let monitoringDays = 0;
-              let nextLeaveDate = null;
+              let nextLeaveDate = "";
+              let finalLastLeaveDate = "";
 
               if (lastLeaveDate) {
-                const lastDate = new Date(lastLeaveDate);
-                if (!isNaN(lastDate.getTime())) {
-                  const today = new Date();
-                  monitoringDays = Math.floor((today.getTime() - lastDate.getTime()) / (1000 * 60 * 60 * 24));
-                  
-                  const workDays = leaveOption === "70" ? 70 : 35;
-                  const nextDate = new Date(lastDate);
-                  nextDate.setDate(lastDate.getDate() + workDays);
-                  nextLeaveDate = nextDate.toISOString().split('T')[0];
+                try {
+                  const lastDate = new Date(lastLeaveDate);
+                  if (!isNaN(lastDate.getTime())) {
+                    finalLastLeaveDate = lastDate.toISOString().split('T')[0];
+                    const today = new Date();
+                    monitoringDays = Math.floor((today.getTime() - lastDate.getTime()) / (1000 * 60 * 60 * 24));
+                    
+                    const workDays = finalLeaveOption === "70" ? 70 : 35;
+                    const nextDate = new Date(lastDate);
+                    nextDate.setDate(lastDate.getDate() + workDays);
+                    nextLeaveDate = nextDate.toISOString().split('T')[0];
+                  }
+                } catch (dateError) {
+                  console.error("Date parsing error:", dateError);
                 }
               }
 
+              console.log("Creating monitoring entry for:", nik, name);
+              
               // Create leave roster monitoring entry
               await storage.createLeaveRosterMonitoring({
                 nik: nik.toString(),
                 name: name.toString(),
                 investorGroup: investorGroup.toString(),
-                lastLeaveDate: lastLeaveDate ? lastLeaveDate.toString() : "",
-                leaveOption: leaveOption.toString(),
+                lastLeaveDate: finalLastLeaveDate,
+                leaveOption: finalLeaveOption.toString(),
                 monitoringDays,
-                nextLeaveDate: nextLeaveDate || "",
-                status: status.toString(),
+                nextLeaveDate,
+                status: finalStatus.toString(),
               });
 
               successCount++;
+              console.log(`Successfully created entry for ${nik} - ${name}`);
+              
             } catch (error) {
+              console.error(`Error processing row ${i + 2}:`, error);
               errors.push(`Row ${i + 2}: ${error instanceof Error ? error.message : 'Unknown error'}`);
             }
           }
+
+          console.log(`Upload completed: ${successCount} success, ${errors.length} errors`);
 
           res.json({
             success: successCount,
@@ -1387,13 +1415,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
         } catch (error) {
           console.error("Error processing Excel file:", error);
-          res.status(500).json({ error: "Failed to process Excel file" });
+          res.status(500).json({ error: "Failed to process Excel file", details: error instanceof Error ? error.message : 'Unknown error' });
         }
       });
 
     } catch (error) {
       console.error("Error in Excel upload:", error);
-      res.status(500).json({ error: "Failed to upload Excel file" });
+      res.status(500).json({ error: "Failed to upload Excel file", details: error instanceof Error ? error.message : 'Unknown error' });
     }
   });
 
