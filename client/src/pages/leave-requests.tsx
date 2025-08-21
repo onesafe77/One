@@ -64,7 +64,7 @@ export default function LeaveRequests() {
   });
 
   const createMutation = useMutation({
-    mutationFn: (data: InsertLeaveRequest) => apiRequest("POST", "/api/leave-requests", data),
+    mutationFn: (data: InsertLeaveRequest) => apiRequest("/api/leave-requests", "POST", data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/leave-requests"] });
       setIsDialogOpen(false);

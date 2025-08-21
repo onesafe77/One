@@ -60,7 +60,7 @@ export default function Leave() {
   }, [selectedEmployeeId, employees, form]);
 
   const createMutation = useMutation({
-    mutationFn: (data: InsertLeaveRequest) => apiRequest("POST", "/api/leave", data),
+    mutationFn: (data: InsertLeaveRequest) => apiRequest("/api/leave", "POST", data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/leave"] });
       form.reset();
@@ -123,14 +123,9 @@ export default function Leave() {
   const handleGetUploadParameters = async () => {
     try {
       setIsUploading(true);
-      const response = await apiRequest("POST", "/api/objects/upload");
+      const response = await apiRequest("/api/objects/upload", "POST");
       
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || 'Upload service unavailable');
-      }
-      
-      const data = await response.json();
+      const data = response;
       console.log('Upload parameters response:', data);
       return {
         method: 'PUT' as const,
@@ -155,10 +150,10 @@ export default function Leave() {
       if (uploadURL) {
         // Send the upload URL to server to normalize and set ACL
         try {
-          const normalizeResponse = await apiRequest("POST", "/api/objects/normalize", {
+          const normalizeResponse = await apiRequest("/api/objects/normalize", "POST", {
             uploadURL: uploadURL
           });
-          const normalizeData = await normalizeResponse.json();
+          const normalizeData = normalizeResponse;
           const normalizedPath = normalizeData.objectPath;
           setUploadedAttachmentPath(normalizedPath);
           toast({
@@ -399,7 +394,7 @@ export default function Leave() {
                 <ObjectUploader
                   maxNumberOfFiles={1}
                   maxFileSize={10485760}
-                  allowedFileTypes={['.pdf']}
+
                   onGetUploadParameters={handleGetUploadParameters}
                   onComplete={handleUploadComplete}
                   buttonClassName="w-full h-8 text-xs"

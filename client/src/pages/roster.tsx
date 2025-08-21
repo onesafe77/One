@@ -91,7 +91,7 @@ export default function Roster() {
   });
 
   const createMutation = useMutation({
-    mutationFn: (data: InsertRosterSchedule) => apiRequest("POST", "/api/roster", data),
+    mutationFn: (data: InsertRosterSchedule) => apiRequest("/api/roster", "POST", data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/roster"] });
       setIsDialogOpen(false);
@@ -151,7 +151,7 @@ export default function Roster() {
   });
 
   const uploadMutation = useMutation({
-    mutationFn: (data: InsertRosterSchedule[]) => apiRequest("POST", "/api/roster/bulk", { rosters: data }),
+    mutationFn: (data: InsertRosterSchedule[]) => apiRequest("/api/roster/bulk", "POST", { rosters: data }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/roster"] });
       setIsUploadDialogOpen(false);

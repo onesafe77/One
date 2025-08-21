@@ -218,7 +218,7 @@ export default function Leave() {
   }, [selectedEmployeeId, employees, form]);
 
   const createMutation = useMutation({
-    mutationFn: (data: InsertLeaveRequest) => apiRequest("POST", "/api/leave", data),
+    mutationFn: (data: InsertLeaveRequest) => apiRequest("/api/leave", "POST", data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/leave"] });
       form.reset();
@@ -260,8 +260,8 @@ export default function Leave() {
   // Upload Roster mutation
   const uploadMutation = useMutation({
     mutationFn: async (data: LeaveRosterData[]): Promise<{ success: number; errors: string[] }> => {
-      const response = await apiRequest("POST", "/api/leave-roster/bulk-upload", { leaveData: data });
-      return await response.json();
+      const response = await apiRequest("/api/leave-roster/bulk-upload", "POST", { leaveData: data });
+      return response;
     },
     onSuccess: (result: { success: number; errors: string[] }) => {
       setUploadResults(result);
@@ -331,14 +331,9 @@ export default function Leave() {
   const handleGetUploadParameters = async () => {
     try {
       setIsUploading(true);
-      const response = await apiRequest("POST", "/api/objects/upload");
+      const response = await apiRequest("/api/objects/upload", "POST");
       
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || 'Upload service unavailable');
-      }
-      
-      const data = await response.json();
+      const data = response;
       return {
         method: 'PUT' as const,
         url: data.uploadURL,
@@ -360,10 +355,10 @@ export default function Leave() {
       const uploadURL = result.successful[0].uploadURL;
       if (uploadURL) {
         try {
-          const normalizeResponse = await apiRequest("POST", "/api/objects/normalize", {
+          const normalizeResponse = await apiRequest("/api/objects/normalize", "POST", {
             uploadURL: uploadURL
           });
-          const normalizeData = await normalizeResponse.json();
+          const normalizeData = normalizeResponse;
           const normalizedPath = normalizeData.objectPath;
           setUploadedAttachmentPath(normalizedPath);
           toast({
@@ -851,7 +846,7 @@ export default function Leave() {
                   <ObjectUploader
                     maxNumberOfFiles={1}
                     maxFileSize={10485760}
-                    allowedFileTypes={['.pdf']}
+  
                     onGetUploadParameters={handleGetUploadParameters}
                     onComplete={handleUploadComplete}
                     buttonClassName="w-full h-8 text-xs"

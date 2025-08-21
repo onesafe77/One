@@ -118,12 +118,10 @@ export function QRScanner() {
 
   const validateAndProcess = async (employeeId: string, token: string) => {
     try {
-      const response = await apiRequest("POST", "/api/qr/validate", {
+      const result = await apiRequest("/api/qr/validate", "POST", {
         employeeId,
         token
       });
-      
-      const result = await response.json();
       
       if (result.valid) {
         const currentTime = new Date().toLocaleTimeString('id-ID', {

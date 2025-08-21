@@ -153,7 +153,7 @@ export default function Employees() {
   });
 
   const createMutation = useMutation<Employee, Error, InsertEmployee>({
-    mutationFn: (data: InsertEmployee) => apiRequest("POST", "/api/employees", data).then(res => res.json()),
+    mutationFn: (data: InsertEmployee) => apiRequest("/api/employees", "POST", data),
     onSuccess: (result) => {
       queryClient.invalidateQueries({ queryKey: ["/api/employees"] });
       setIsDialogOpen(false);
@@ -274,7 +274,7 @@ export default function Employees() {
 
   const uploadExcelMutation = useMutation<void, Error, InsertEmployee[]>({
     mutationFn: (employeeData: InsertEmployee[]) => 
-      apiRequest("POST", "/api/employees/bulk", { employees: employeeData }).then(() => {}),
+      apiRequest("/api/employees/bulk", "POST", { employees: employeeData }).then(() => {}),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/employees"] });
       setIsUploadDialogOpen(false);
