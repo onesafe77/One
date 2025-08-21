@@ -1328,54 +1328,82 @@ export async function registerRoutes(app: Express): Promise<Server> {
             const row = rows[i];
             console.log(`Processing row ${i + 2}:`, row);
             
-            if (!row || row.length < 3) {
-              errors.push(`Row ${i + 2}: Data tidak lengkap (minimal NIK, Nama, Investor Group)`);
+            if (!row || row.length < 2) {
+              errors.push(`Row ${i + 2}: Data tidak lengkap (minimal NIK dan Nama)`);
               continue;
             }
 
             try {
-              const [nik, name, investorGroup, lastLeaveDate, leaveOption, status] = row;
+              // Format sederhana: NIK, Nama, Tanggal Terakhir Cuti
+              const [nik, name, lastLeaveDate] = row;
               
               // Validate required fields
-              if (!nik || !name || !investorGroup) {
-                errors.push(`Row ${i + 2}: NIK, Nama, dan Investor Group harus diisi`);
+              if (!nik || !name) {
+                errors.push(`Row ${i + 2}: NIK dan Nama harus diisi`);
                 continue;
               }
 
-              // Default values if not provided
-              const finalLeaveOption = leaveOption || "70";
-              const finalStatus = status || "Aktif";
-
-              // Validate leave option
-              if (finalLeaveOption !== "70" && finalLeaveOption !== "35") {
-                errors.push(`Row ${i + 2}: Pilihan cuti harus 70 atau 35, got: ${finalLeaveOption}`);
-                continue;
+              // Auto-generate investor group dari NIK pattern
+              let investorGroup = "Default Group";
+              const nikStr = nik.toString();
+              if (nikStr.startsWith('C-0')) {
+                const nikNum = parseInt(nikStr.split('-')[1]);
+                if (nikNum >= 1 && nikNum <= 20000) {
+                  investorGroup = "Bu Resty";
+                } else if (nikNum >= 20001 && nikNum <= 40000) {
+                  investorGroup = "Group A";
+                } else if (nikNum >= 40001 && nikNum <= 60000) {
+                  investorGroup = "Group B";
+                } else if (nikNum >= 60001 && nikNum <= 80000) {
+                  investorGroup = "Group C";
+                } else {
+                  investorGroup = "Group D";
+                }
               }
 
-              // Validate status
-              const validStatuses = ["Aktif", "Menunggu Cuti", "Sedang Cuti", "Selesai Cuti"];
-              if (!validStatuses.includes(finalStatus)) {
-                errors.push(`Row ${i + 2}: Status tidak valid: ${finalStatus}`);
-                continue;
+              // Default leave option berdasarkan investor group
+              let finalLeaveOption = "70";
+              if (investorGroup === "Bu Resty") {
+                finalLeaveOption = "70";
+              } else if (investorGroup.includes("Group")) {
+                finalLeaveOption = "35";
               }
 
               // Calculate monitoring days and next leave date
               let monitoringDays = 0;
               let nextLeaveDate = "";
               let finalLastLeaveDate = "";
+              let finalStatus = "Aktif";
 
               if (lastLeaveDate) {
                 try {
-                  const lastDate = new Date(lastLeaveDate);
+                  // Handle Excel date format (number of days since 1900)
+                  let lastDate;
+                  if (typeof lastLeaveDate === 'number') {
+                    // Excel date serial number to JavaScript Date
+                    lastDate = new Date((lastLeaveDate - 25569) * 86400 * 1000);
+                  } else {
+                    lastDate = new Date(lastLeaveDate);
+                  }
+                  
                   if (!isNaN(lastDate.getTime())) {
                     finalLastLeaveDate = lastDate.toISOString().split('T')[0];
                     const today = new Date();
                     monitoringDays = Math.floor((today.getTime() - lastDate.getTime()) / (1000 * 60 * 60 * 24));
                     
-                    const workDays = finalLeaveOption === "70" ? 70 : 35;
+                    const workDaysThreshold = finalLeaveOption === "70" ? 70 : 35;
                     const nextDate = new Date(lastDate);
-                    nextDate.setDate(lastDate.getDate() + workDays);
+                    nextDate.setDate(lastDate.getDate() + workDaysThreshold);
                     nextLeaveDate = nextDate.toISOString().split('T')[0];
+
+                    // Auto-calculate status berdasarkan monitoring days
+                    if (monitoringDays >= workDaysThreshold - 5 && monitoringDays < workDaysThreshold) {
+                      finalStatus = "Menunggu Cuti";
+                    } else if (monitoringDays >= workDaysThreshold) {
+                      finalStatus = "Menunggu Cuti"; // Ready for leave
+                    } else {
+                      finalStatus = "Aktif";
+                    }
                   }
                 } catch (dateError) {
                   console.error("Date parsing error:", dateError);
@@ -1388,12 +1416,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
               await storage.createLeaveRosterMonitoring({
                 nik: nik.toString(),
                 name: name.toString(),
-                investorGroup: investorGroup.toString(),
+                investorGroup: investorGroup,
                 lastLeaveDate: finalLastLeaveDate,
-                leaveOption: finalLeaveOption.toString(),
+                leaveOption: finalLeaveOption,
                 monitoringDays,
                 nextLeaveDate,
-                status: finalStatus.toString(),
+                status: finalStatus,
               });
 
               successCount++;
