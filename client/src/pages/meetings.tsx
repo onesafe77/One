@@ -305,36 +305,57 @@ export default function Meetings() {
   };
 
   const downloadAttendanceReport = () => {
-    if (!selectedMeeting || !attendanceData) {
+    console.log('Download PDF requested', { selectedMeeting, attendanceData });
+    
+    if (!selectedMeeting) {
       toast({
         title: "Error",
-        description: "Data meeting atau attendance tidak tersedia",
+        description: "Meeting tidak dipilih",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    if (!attendanceData) {
+      toast({
+        title: "Error", 
+        description: "Data attendance tidak tersedia",
         variant: "destructive",
       });
       return;
     }
     
     try {
-      // Ensure data is properly formatted for PDF generation
+      // Prepare and validate data for PDF generation
       const pdfData = {
         meeting: {
-          ...selectedMeeting,
-          description: selectedMeeting.description || undefined
+          id: selectedMeeting.id,
+          title: selectedMeeting.title,
+          description: selectedMeeting.description || undefined,
+          date: selectedMeeting.date,
+          startTime: selectedMeeting.startTime,
+          endTime: selectedMeeting.endTime,
+          location: selectedMeeting.location,
+          organizer: selectedMeeting.organizer,
+          status: selectedMeeting.status
         },
         attendance: attendanceData.attendance || [],
         totalAttendees: attendanceData.totalAttendees || 0
       };
       
+      console.log('Calling PDF generator with:', pdfData);
       generateMeetingAttendancePDF(pdfData);
+      
       toast({
-        title: "PDF Downloaded",
-        description: `Laporan kehadiran meeting "${selectedMeeting.title}" berhasil didownload`,
+        title: "PDF Berhasil Didownload",
+        description: `Laporan meeting "${selectedMeeting.title}" telah didownload`,
       });
     } catch (error) {
       console.error("Error generating PDF:", error);
+      const errorMessage = error instanceof Error ? error.message : 'Error tidak dikenal';
       toast({
-        title: "Error",
-        description: "Gagal mendownload laporan. Silakan coba lagi.",
+        title: "Gagal Download PDF",
+        description: errorMessage,
         variant: "destructive",
       });
     }
