@@ -74,6 +74,13 @@ export default function MeetingScanner() {
                   if (qrData.type === "meeting" && qrData.token && employeeId) {
                     // Stop scanning when QR code is detected
                     stopCamera();
+                    
+                    // Show loading state
+                    toast({
+                      title: "QR Code Detected",
+                      description: "Memproses absensi meeting...",
+                    });
+                    
                     attendanceMutation.mutate({
                       qrToken: qrData.token,
                       employeeId: employeeId
@@ -137,6 +144,11 @@ export default function MeetingScanner() {
           <p className="text-gray-600 dark:text-gray-400 mt-2">
             Scan QR code meeting untuk melakukan absensi
           </p>
+          <div className="bg-blue-50 dark:bg-blue-900/20 p-3 rounded-lg mt-4">
+            <p className="text-sm text-blue-800 dark:text-blue-200">
+              📱 Pastikan Anda menggunakan smartphone/mobile untuk hasil terbaik
+            </p>
+          </div>
         </div>
 
         {/* Employee ID Input */}

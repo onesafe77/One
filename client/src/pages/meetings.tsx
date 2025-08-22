@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -28,6 +28,142 @@ import { apiRequest } from "@/lib/queryClient";
 import type { Meeting, InsertMeeting, MeetingAttendance } from "@shared/schema";
 import QRCode from "qrcode";
 import { generateMeetingAttendancePDF } from "@/lib/meeting-pdf-utils";
+
+// QR Code Display Component
+function QRCodeDisplay({ meeting }: { meeting: Meeting }) {
+  const [qrDataURL, setQrDataURL] = useState<string>("");
+  const { toast } = useToast();
+
+  useEffect(() => {
+    const generateQR = async () => {
+      if (meeting.qrToken) {
+        try {
+          const qrData = JSON.stringify({ 
+            type: "meeting",
+            token: meeting.qrToken 
+          });
+          const dataURL = await QRCode.toDataURL(qrData, {
+            width: 300,
+            margin: 2,
+            color: {
+              dark: '#000000',
+              light: '#FFFFFF'
+            }
+          });
+          setQrDataURL(dataURL);
+        } catch (error) {
+          console.error('Error generating QR code:', error);
+        }
+      }
+    };
+    generateQR();
+  }, [meeting.qrToken]);
+
+  const downloadQR = async () => {
+    if (!qrDataURL) return;
+    
+    try {
+      const link = document.createElement('a');
+      link.href = qrDataURL;
+      link.download = `meeting-qr-${meeting.title.replace(/[^a-zA-Z0-9]/g, '-')}-${meeting.date}.png`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      
+      toast({
+        title: "QR Code Downloaded",
+        description: `QR code untuk meeting "${meeting.title}" berhasil didownload`,
+      });
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Gagal mendownload QR code",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const copyMeetingScanURL = () => {
+    const scanURL = `${window.location.origin}/meeting-scanner`;
+    navigator.clipboard.writeText(scanURL).then(() => {
+      toast({
+        title: "Link Copied",
+        description: "Link scan QR meeting berhasil dicopy ke clipboard",
+      });
+    }).catch(() => {
+      toast({
+        title: "Error",
+        description: "Gagal copy link",
+        variant: "destructive",
+      });
+    });
+  };
+
+  return (
+    <div className="text-center py-6">
+      {qrDataURL && (
+        <div className="mx-auto mb-4 inline-block p-4 bg-white rounded-lg shadow-sm">
+          <img 
+            src={qrDataURL} 
+            alt={`QR Code for ${meeting.title}`}
+            className="mx-auto"
+            style={{ width: 300, height: 300 }}
+          />
+        </div>
+      )}
+      
+      <div className="space-y-4">
+        <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg">
+          <h4 className="font-semibold text-blue-900 dark:text-blue-100 mb-2">
+            Informasi Meeting
+          </h4>
+          <div className="text-sm text-blue-800 dark:text-blue-200 space-y-1">
+            <div><strong>Judul:</strong> {meeting.title}</div>
+            <div><strong>Tanggal:</strong> {new Date(meeting.date).toLocaleDateString('id-ID')}</div>
+            <div><strong>Waktu:</strong> {meeting.startTime} - {meeting.endTime}</div>
+            <div><strong>Lokasi:</strong> {meeting.location}</div>
+            <div><strong>Penyelenggara:</strong> {meeting.organizer}</div>
+          </div>
+        </div>
+
+        <div className="bg-green-50 dark:bg-green-900/20 p-4 rounded-lg">
+          <h4 className="font-semibold text-green-900 dark:text-green-100 mb-2">
+            Cara Absensi via Mobile
+          </h4>
+          <div className="text-sm text-green-800 dark:text-green-200 space-y-2">
+            <div>1. Buka link berikut di mobile/smartphone:</div>
+            <div className="bg-white dark:bg-gray-800 p-2 rounded border text-xs font-mono break-all">
+              {window.location.origin}/meeting-scanner
+            </div>
+            <div>2. Masukkan NIK karyawan</div>
+            <div>3. Scan QR code di atas menggunakan kamera</div>
+            <div>4. Sistem otomatis mencatat kehadiran</div>
+          </div>
+        </div>
+
+        <div className="flex gap-2 justify-center">
+          <Button 
+            onClick={downloadQR}
+            className="bg-red-600 hover:bg-red-700"
+            data-testid="button-download-qr-dialog"
+          >
+            <Download className="w-4 h-4 mr-2" />
+            Download QR Code
+          </Button>
+          
+          <Button 
+            onClick={copyMeetingScanURL}
+            variant="outline"
+            data-testid="button-copy-scan-url"
+          >
+            <QrCode className="w-4 h-4 mr-2" />
+            Copy Link Scan
+          </Button>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 export default function Meetings() {
   const [isCreateOpen, setIsCreateOpen] = useState(false);
@@ -440,6 +576,7 @@ export default function Meetings() {
                             setIsQrOpen(true);
                           }}
                           data-testid={`button-view-qr-${meeting.id}`}
+                          title="Lihat QR Code"
                         >
                           <QrCode className="w-4 h-4" />
                         </Button>
@@ -449,6 +586,7 @@ export default function Meetings() {
                           variant="outline"
                           onClick={() => downloadQRCode(meeting)}
                           data-testid={`button-download-qr-${meeting.id}`}
+                          title="Download QR Code"
                         >
                           <Download className="w-4 h-4" />
                         </Button>
@@ -461,6 +599,7 @@ export default function Meetings() {
                             setIsAttendanceOpen(true);
                           }}
                           data-testid={`button-view-attendance-${meeting.id}`}
+                          title="Lihat Kehadiran"
                         >
                           <Users className="w-4 h-4" />
                         </Button>
@@ -470,6 +609,7 @@ export default function Meetings() {
                           variant="outline"
                           onClick={() => handleDelete(meeting)}
                           data-testid={`button-delete-meeting-${meeting.id}`}
+                          title="Hapus Meeting"
                         >
                           <Trash2 className="w-4 h-4 text-red-600" />
                         </Button>
@@ -494,25 +634,7 @@ export default function Meetings() {
           </DialogHeader>
           
           {selectedMeeting?.qrToken && (
-            <div className="text-center py-6">
-              <div 
-                className="mx-auto mb-4 inline-block p-4 bg-white rounded-lg shadow-sm"
-                dangerouslySetInnerHTML={{
-                  __html: `<div id="qr-${selectedMeeting.id}"></div>`
-                }}
-              />
-              <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
-                Scan QR code ini dengan aplikasi mobile untuk absensi meeting
-              </p>
-              <Button 
-                onClick={() => downloadQRCode(selectedMeeting)}
-                className="bg-red-600 hover:bg-red-700"
-                data-testid="button-download-qr-dialog"
-              >
-                <Download className="w-4 h-4 mr-2" />
-                Download QR Code
-              </Button>
-            </div>
+            <QRCodeDisplay meeting={selectedMeeting} />
           )}
         </DialogContent>
       </Dialog>
