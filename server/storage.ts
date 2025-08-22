@@ -21,6 +21,10 @@ import {
   type InsertWhatsappBlast,
   type WhatsappBlastResult,
   type InsertWhatsappBlastResult,
+  type Meeting,
+  type InsertMeeting,
+  type MeetingAttendance,
+  type InsertMeetingAttendance,
   employees,
   attendanceRecords,
   rosterSchedules,
@@ -31,7 +35,9 @@ import {
   leaveHistory,
   leaveRosterMonitoring,
   whatsappBlasts,
-  whatsappBlastResults
+  whatsappBlastResults,
+  meetings,
+  meetingAttendance
 } from "@shared/schema";
 import { randomUUID } from "crypto";
 import { drizzle } from "drizzle-orm/neon-http";
@@ -116,6 +122,20 @@ export interface IStorage {
   createWhatsappBlastResult(result: InsertWhatsappBlastResult): Promise<WhatsappBlastResult>;
   getWhatsappBlastResults(blastId: string): Promise<WhatsappBlastResult[]>;
   updateWhatsappBlastResult(id: string, updates: Partial<WhatsappBlastResult>): Promise<WhatsappBlastResult | undefined>;
+
+  // Meeting methods
+  getMeeting(id: string): Promise<Meeting | undefined>;
+  getAllMeetings(): Promise<Meeting[]>;
+  getMeetingsByDate(date: string): Promise<Meeting[]>;
+  createMeeting(meeting: InsertMeeting): Promise<Meeting>;
+  updateMeeting(id: string, meeting: Partial<InsertMeeting>): Promise<Meeting | undefined>;
+  deleteMeeting(id: string): Promise<boolean>;
+  getMeetingByQrToken(qrToken: string): Promise<Meeting | undefined>;
+
+  // Meeting attendance methods
+  getMeetingAttendance(meetingId: string): Promise<MeetingAttendance[]>;
+  createMeetingAttendance(attendance: InsertMeetingAttendance): Promise<MeetingAttendance>;
+  checkMeetingAttendance(meetingId: string, employeeId: string): Promise<MeetingAttendance | undefined>;
 }
 
 export class MemStorage implements IStorage {
@@ -1072,6 +1092,94 @@ export class DrizzleStorage implements IStorage {
         monitoringDays
       });
     }
+  }
+
+  // Meeting methods implementation
+  async getMeeting(id: string): Promise<Meeting | undefined> {
+    const [result] = await this.db
+      .select()
+      .from(meetings)
+      .where(eq(meetings.id, id));
+    return result;
+  }
+
+  async getAllMeetings(): Promise<Meeting[]> {
+    return await this.db
+      .select()
+      .from(meetings)
+      .orderBy(drizzleSql`created_at DESC`);
+  }
+
+  async getMeetingsByDate(date: string): Promise<Meeting[]> {
+    return await this.db
+      .select()
+      .from(meetings)
+      .where(eq(meetings.date, date))
+      .orderBy(drizzleSql`start_time ASC`);
+  }
+
+  async createMeeting(meeting: InsertMeeting): Promise<Meeting> {
+    // Generate unique QR token for the meeting
+    const qrToken = randomUUID().replace(/-/g, '').substring(0, 12);
+    const meetingWithToken = { ...meeting, qrToken };
+    
+    const [result] = await this.db
+      .insert(meetings)
+      .values(meetingWithToken)
+      .returning();
+    return result;
+  }
+
+  async updateMeeting(id: string, meeting: Partial<InsertMeeting>): Promise<Meeting | undefined> {
+    const [result] = await this.db
+      .update(meetings)
+      .set({ ...meeting, updatedAt: drizzleSql`now()` })
+      .where(eq(meetings.id, id))
+      .returning();
+    return result;
+  }
+
+  async deleteMeeting(id: string): Promise<boolean> {
+    const result = await this.db
+      .delete(meetings)
+      .where(eq(meetings.id, id));
+    return result.rowCount > 0;
+  }
+
+  async getMeetingByQrToken(qrToken: string): Promise<Meeting | undefined> {
+    const [result] = await this.db
+      .select()
+      .from(meetings)
+      .where(eq(meetings.qrToken, qrToken));
+    return result;
+  }
+
+  // Meeting attendance methods implementation
+  async getMeetingAttendance(meetingId: string): Promise<MeetingAttendance[]> {
+    return await this.db
+      .select()
+      .from(meetingAttendance)
+      .where(eq(meetingAttendance.meetingId, meetingId))
+      .orderBy(drizzleSql`created_at ASC`);
+  }
+
+  async createMeetingAttendance(attendance: InsertMeetingAttendance): Promise<MeetingAttendance> {
+    const [result] = await this.db
+      .insert(meetingAttendance)
+      .values(attendance)
+      .returning();
+    return result;
+  }
+
+  async checkMeetingAttendance(meetingId: string, employeeId: string): Promise<MeetingAttendance | undefined> {
+    const [result] = await this.db
+      .select()
+      .from(meetingAttendance)
+      .where(and(
+        eq(meetingAttendance.meetingId, meetingId),
+        eq(meetingAttendance.employeeId, employeeId)
+      ));
+    return result;
   }
 }
 

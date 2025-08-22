@@ -11,7 +11,9 @@ import {
   User,
   Clock,
   MessageSquare,
-  Monitor
+  Monitor,
+  Video,
+  Smartphone
 } from "lucide-react";
 import companyLogo from "@assets/WhatsApp Image 2024-11-30 at 13.08.33_1755505069008.jpeg";
 
@@ -24,6 +26,8 @@ const navigation = [
   { name: "Roster", href: "/roster", icon: Calendar },
   { name: "Cuti", href: "/leave", icon: ClipboardList },
   { name: "Monitoring Roster Cuti", href: "/leave-roster-monitoring", icon: Monitor },
+  { name: "Meeting Management", href: "/meetings", icon: Video },
+  { name: "Scan QR Meeting", href: "/meeting-scanner", icon: Smartphone },
   { name: "Laporan", href: "/reports", icon: FileText },
   { name: "Blast WhatsApp", href: "/whatsapp-blast", icon: MessageSquare },
 ];

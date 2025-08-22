@@ -237,5 +237,47 @@ export type InsertWhatsappBlast = z.infer<typeof insertWhatsappBlastSchema>;
 export type WhatsappBlastResult = typeof whatsappBlastResults.$inferSelect;
 export type InsertWhatsappBlastResult = z.infer<typeof insertWhatsappBlastResultSchema>;
 
+// Meeting attendance system
+export const meetings = pgTable("meetings", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  title: varchar("title").notNull(),
+  description: text("description"),
+  date: varchar("date").notNull(), // YYYY-MM-DD format
+  startTime: varchar("start_time").notNull(), // HH:MM format
+  endTime: varchar("end_time").notNull(), // HH:MM format
+  location: varchar("location").notNull(),
+  organizer: varchar("organizer").notNull(),
+  status: varchar("status").notNull().default("scheduled"), // scheduled, ongoing, completed, cancelled
+  qrToken: varchar("qr_token").unique(), // Unique token for QR code
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const meetingAttendance = pgTable("meeting_attendance", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  meetingId: varchar("meeting_id").notNull().references(() => meetings.id, { onDelete: "cascade" }),
+  employeeId: varchar("employee_id").notNull().references(() => employees.id, { onDelete: "cascade" }),
+  scanTime: varchar("scan_time").notNull(), // HH:MM:SS format
+  scanDate: varchar("scan_date").notNull(), // YYYY-MM-DD format
+  deviceInfo: varchar("device_info"), // Browser/device information
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const insertMeetingSchema = createInsertSchema(meetings).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const insertMeetingAttendanceSchema = createInsertSchema(meetingAttendance).omit({
+  id: true,
+  createdAt: true,
+});
+
+export type Meeting = typeof meetings.$inferSelect;
+export type InsertMeeting = z.infer<typeof insertMeetingSchema>;
+export type MeetingAttendance = typeof meetingAttendance.$inferSelect;
+export type InsertMeetingAttendance = z.infer<typeof insertMeetingAttendanceSchema>;
+
 
 

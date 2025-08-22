@@ -19,6 +19,8 @@ import LeaveRosterMonitoring from "@/pages/leave-roster-monitoring";
 import Reports from "@/pages/reports";
 import AttendanceDetails from "@/pages/attendance-details";
 import WhatsAppBlast from "@/pages/whatsapp-blast";
+import Meetings from "@/pages/meetings";
+import MeetingScanner from "@/pages/meeting-scanner";
 
 import NotFound from "@/pages/not-found";
 
@@ -33,6 +35,8 @@ const routes = [
   { path: "/reports", component: Reports, title: "Laporan" },
   { path: "/attendance-details", component: AttendanceDetails, title: "Dashboard HR " },
   { path: "/whatsapp-blast", component: WhatsAppBlast, title: "Blast WhatsApp" },
+  { path: "/meetings", component: Meetings, title: "Meeting Management" },
+  { path: "/meeting-scanner", component: MeetingScanner, title: "Scan QR Meeting" },
 ];
 
 function Router() {

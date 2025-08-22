@@ -10,7 +10,9 @@ import {
   insertRosterSchema, 
   insertLeaveRequestSchema,
   insertQrTokenSchema,
-  insertWhatsappBlastSchema
+  insertWhatsappBlastSchema,
+  insertMeetingSchema,
+  insertMeetingAttendanceSchema
 } from "@shared/schema";
 
 // Report cache invalidation and update notification system
@@ -1503,6 +1505,169 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error in Excel upload:", error);
       res.status(500).json({ error: "Failed to upload Excel file", details: error instanceof Error ? error.message : 'Unknown error' });
+    }
+  });
+
+  // Meeting API routes
+  app.get("/api/meetings", async (req, res) => {
+    try {
+      const meetings = await storage.getAllMeetings();
+      res.json(meetings);
+    } catch (error) {
+      console.error("Error fetching meetings:", error);
+      res.status(500).json({ error: "Failed to fetch meetings" });
+    }
+  });
+
+  app.get("/api/meetings/date/:date", async (req, res) => {
+    try {
+      const { date } = req.params;
+      const meetings = await storage.getMeetingsByDate(date);
+      res.json(meetings);
+    } catch (error) {
+      console.error("Error fetching meetings by date:", error);
+      res.status(500).json({ error: "Failed to fetch meetings by date" });
+    }
+  });
+
+  app.post("/api/meetings", async (req, res) => {
+    try {
+      const validatedData = insertMeetingSchema.parse(req.body);
+      const meeting = await storage.createMeeting(validatedData);
+      res.json(meeting);
+    } catch (error) {
+      console.error("Error creating meeting:", error);
+      res.status(500).json({ error: "Failed to create meeting" });
+    }
+  });
+
+  app.get("/api/meetings/:id", async (req, res) => {
+    try {
+      const { id } = req.params;
+      const meeting = await storage.getMeeting(id);
+      if (!meeting) {
+        return res.status(404).json({ error: "Meeting not found" });
+      }
+      res.json(meeting);
+    } catch (error) {
+      console.error("Error fetching meeting:", error);
+      res.status(500).json({ error: "Failed to fetch meeting" });
+    }
+  });
+
+  app.put("/api/meetings/:id", async (req, res) => {
+    try {
+      const { id } = req.params;
+      const validatedData = insertMeetingSchema.parse(req.body);
+      const meeting = await storage.updateMeeting(id, validatedData);
+      if (!meeting) {
+        return res.status(404).json({ error: "Meeting not found" });
+      }
+      res.json(meeting);
+    } catch (error) {
+      console.error("Error updating meeting:", error);
+      res.status(500).json({ error: "Failed to update meeting" });
+    }
+  });
+
+  app.delete("/api/meetings/:id", async (req, res) => {
+    try {
+      const { id } = req.params;
+      const deleted = await storage.deleteMeeting(id);
+      if (!deleted) {
+        return res.status(404).json({ error: "Meeting not found" });
+      }
+      res.json({ message: "Meeting deleted successfully" });
+    } catch (error) {
+      console.error("Error deleting meeting:", error);
+      res.status(500).json({ error: "Failed to delete meeting" });
+    }
+  });
+
+  // Meeting QR code validation and attendance recording
+  app.post("/api/meetings/qr-scan", async (req, res) => {
+    try {
+      const { qrToken, employeeId } = req.body;
+      
+      if (!qrToken || !employeeId) {
+        return res.status(400).json({ error: "QR token and employee ID are required" });
+      }
+
+      // Find meeting by QR token
+      const meeting = await storage.getMeetingByQrToken(qrToken);
+      if (!meeting) {
+        return res.status(404).json({ error: "Meeting not found or invalid QR code" });
+      }
+
+      // Check if employee exists
+      const employee = await storage.getEmployee(employeeId);
+      if (!employee) {
+        return res.status(404).json({ error: "Employee not found" });
+      }
+
+      // Check if employee already attended this meeting
+      const existingAttendance = await storage.checkMeetingAttendance(meeting.id, employeeId);
+      if (existingAttendance) {
+        return res.status(400).json({ 
+          error: "Already attended", 
+          message: `${employee.name} sudah melakukan scan QR untuk meeting ini pada ${existingAttendance.scanTime}` 
+        });
+      }
+
+      // Record attendance
+      const now = new Date();
+      const scanTime = now.toTimeString().split(' ')[0]; // HH:MM:SS
+      const scanDate = now.toISOString().split('T')[0]; // YYYY-MM-DD
+
+      const attendance = await storage.createMeetingAttendance({
+        meetingId: meeting.id,
+        employeeId,
+        scanTime,
+        scanDate,
+        deviceInfo: req.headers['user-agent'] || 'Unknown device'
+      });
+
+      res.json({
+        success: true,
+        message: `${employee.name} berhasil absen untuk meeting: ${meeting.title}`,
+        attendance,
+        meeting,
+        employee
+      });
+    } catch (error) {
+      console.error("Error recording meeting attendance:", error);
+      res.status(500).json({ error: "Failed to record meeting attendance" });
+    }
+  });
+
+  // Get meeting attendance
+  app.get("/api/meetings/:id/attendance", async (req, res) => {
+    try {
+      const { id } = req.params;
+      const meeting = await storage.getMeeting(id);
+      if (!meeting) {
+        return res.status(404).json({ error: "Meeting not found" });
+      }
+
+      const attendance = await storage.getMeetingAttendance(id);
+      const attendanceWithEmployees = await Promise.all(
+        attendance.map(async (att) => {
+          const employee = await storage.getEmployee(att.employeeId);
+          return {
+            ...att,
+            employee
+          };
+        })
+      );
+
+      res.json({
+        meeting,
+        attendance: attendanceWithEmployees,
+        totalAttendees: attendance.length
+      });
+    } catch (error) {
+      console.error("Error fetching meeting attendance:", error);
+      res.status(500).json({ error: "Failed to fetch meeting attendance" });
     }
   });
 
