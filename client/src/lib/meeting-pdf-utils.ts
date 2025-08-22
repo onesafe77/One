@@ -53,119 +53,155 @@ export function generateMeetingAttendancePDF(data: MeetingAttendanceData): void 
 
     const pdf = new jsPDF();
     const pageWidth = pdf.internal.pageSize.width;
+    const pageHeight = pdf.internal.pageSize.height;
     const margin = 20;
-
-    // Header
-    pdf.setFontSize(18);
-    pdf.setFont('helvetica', 'bold');
-    pdf.text('LAPORAN KEHADIRAN MEETING', pageWidth / 2, 25, { align: 'center' });
-
-    // Date and time generated
-    pdf.setFontSize(10);
-    pdf.setFont('helvetica', 'normal');
     const currentDateTime = new Date();
+
+    // ==================== HEADER SECTION ====================
+    // Tanggal dicetak (top right)
+    pdf.setFontSize(9);
+    pdf.setFont('helvetica', 'normal');
     pdf.text(`Dicetak pada: ${currentDateTime.toLocaleDateString('id-ID')} ${currentDateTime.toLocaleTimeString('id-ID')}`, pageWidth - margin, 15, { align: 'right' });
 
-    // Meeting Information
-    pdf.setFontSize(12);
+    // Main title - professional and bold
+    pdf.setFontSize(20);
     pdf.setFont('helvetica', 'bold');
-    let yPosition = 45;
-    const lineHeight = 6;
+    pdf.text('LAPORAN KEHADIRAN MEETING', pageWidth / 2, 30, { align: 'center' });
 
-    // Meeting info box
-    pdf.rect(margin, yPosition - 5, pageWidth - 2 * margin, 45);
-    pdf.text('INFORMASI MEETING', margin + 5, yPosition + 3);
-    yPosition += lineHeight + 2;
+    // Thin line under title
+    pdf.setLineWidth(0.5);
+    pdf.line(margin, 35, pageWidth - margin, 35);
 
-    pdf.setFont('helvetica', 'normal');
-    pdf.setFontSize(10);
+    // ==================== MEETING INFORMATION BOX ====================
+    let yPosition = 50;
+    const boxHeight = 55;
     
-    pdf.text(`Judul Meeting: ${data.meeting.title || 'N/A'}`, margin + 5, yPosition);
-    yPosition += lineHeight;
-
+    // Draw border box for meeting info
+    pdf.setLineWidth(0.8);
+    pdf.rect(margin, yPosition - 5, pageWidth - 2 * margin, boxHeight);
+    
+    // Box header
+    pdf.setFontSize(14);
+    pdf.setFont('helvetica', 'bold');
+    pdf.text('INFORMASI MEETING', margin + 8, yPosition + 5);
+    
+    // Meeting details with consistent formatting
+    pdf.setFont('helvetica', 'normal');
+    pdf.setFontSize(11);
+    yPosition += 15;
+    const lineHeight = 7;
+    
     const meetingDate = new Date(data.meeting.date);
-    pdf.text(`Tanggal: ${meetingDate.toLocaleDateString('id-ID')}`, margin + 5, yPosition);
-    yPosition += lineHeight;
+    const meetingInfo = [
+      `Judul Meeting: ${data.meeting.title}`,
+      `Tanggal: ${meetingDate.toLocaleDateString('id-ID')}`,
+      `Waktu: ${data.meeting.startTime} - ${data.meeting.endTime}`,
+      `Lokasi: ${data.meeting.location}`,
+      `Penyelenggara: ${data.meeting.organizer}`,
+      `Total Peserta Hadir: ${data.totalAttendees} orang`
+    ];
 
-    pdf.text(`Waktu: ${data.meeting.startTime} - ${data.meeting.endTime}`, margin + 5, yPosition);
-    yPosition += lineHeight;
+    meetingInfo.forEach((info, index) => {
+      pdf.text(info, margin + 8, yPosition + (index * lineHeight));
+    });
 
-    pdf.text(`Lokasi: ${data.meeting.location || 'N/A'}`, margin + 5, yPosition);
-    yPosition += lineHeight;
+    yPosition += boxHeight + 15;
 
-    pdf.text(`Penyelenggara: ${data.meeting.organizer || 'N/A'}`, margin + 5, yPosition);
-    yPosition += lineHeight;
-
-    pdf.text(`Total Peserta Hadir: ${data.totalAttendees || 0} orang`, margin + 5, yPosition);
-    yPosition += lineHeight + 15;
-
+    // ==================== ATTENDANCE TABLE ====================
     // Table header
     pdf.setFont('helvetica', 'bold');
-    pdf.setFontSize(12);
+    pdf.setFontSize(14);
     pdf.text('DAFTAR KEHADIRAN', margin, yPosition);
     yPosition += 10;
 
-    // Attendance table
     if (data.attendance && data.attendance.length > 0) {
       const tableData = data.attendance.map((attendance, index) => [
         (index + 1).toString(),
         attendance.employee?.id || '-',
         attendance.employee?.name || 'Unknown',
         attendance.employee?.department || '-',
-        data.meeting.title,
+        data.meeting.title.length > 20 ? data.meeting.title.substring(0, 17) + '...' : data.meeting.title,
         new Date(attendance.scanDate).toLocaleDateString('id-ID'),
         attendance.scanTime || '-',
         getShortDeviceInfo(attendance.deviceInfo || 'Unknown')
       ]);
 
       autoTable(pdf, {
-        head: [['No', 'NIK', 'Nama', 'Department', 'Meeting', 'Tanggal', 'Waktu', 'Device']],
+        head: [['No', 'NIK', 'Nama Karyawan', 'Department', 'Meeting', 'Tanggal', 'Waktu', 'Device']],
         body: tableData,
         startY: yPosition,
+        theme: 'grid',
         styles: {
-          fontSize: 8,
-          cellPadding: 2,
+          fontSize: 9,
+          cellPadding: 4,
+          lineColor: [200, 200, 200],
+          lineWidth: 0.3,
+          font: 'helvetica',
+          textColor: [40, 40, 40]
         },
         headStyles: {
-          fillColor: [220, 38, 38],
+          fillColor: [180, 30, 30], // Dark red professional
           textColor: [255, 255, 255],
           fontStyle: 'bold',
+          fontSize: 10,
+          halign: 'center',
+          valign: 'middle'
+        },
+        alternateRowStyles: {
+          fillColor: [248, 248, 248] // Light gray for alternate rows
         },
         columnStyles: {
-          0: { cellWidth: 10 },
-          1: { cellWidth: 20 },
-          2: { cellWidth: 30 },
-          3: { cellWidth: 20 },
-          4: { cellWidth: 25 },
-          5: { cellWidth: 18 },
-          6: { cellWidth: 15 },
-          7: { cellWidth: 20 },
+          0: { cellWidth: 12, halign: 'center' }, // No
+          1: { cellWidth: 22, halign: 'center' }, // NIK
+          2: { cellWidth: 40, halign: 'left' },   // Nama
+          3: { cellWidth: 30, halign: 'left' },   // Department
+          4: { cellWidth: 25, halign: 'left' },   // Meeting
+          5: { cellWidth: 18, halign: 'center' }, // Tanggal
+          6: { cellWidth: 16, halign: 'center' }, // Waktu
+          7: { cellWidth: 25, halign: 'center' }  // Device
         },
+        margin: { left: margin, right: margin },
+        tableWidth: 'auto'
       });
     } else {
+      // No attendance message
       pdf.setFont('helvetica', 'italic');
-      pdf.setFontSize(10);
-      pdf.text('Belum ada peserta yang hadir pada meeting ini.', margin, yPosition);
+      pdf.setFontSize(11);
+      pdf.setTextColor(120, 120, 120);
+      pdf.text('Belum ada peserta yang hadir pada meeting ini.', margin, yPosition + 10);
     }
 
-    // Footer
-    const footerY = pdf.internal.pageSize.height - 40;
+    // ==================== FOOTER SECTION ====================
+    const footerY = pageHeight - 50;
+    
+    // Footer separator line
+    pdf.setLineWidth(0.3);
+    pdf.setDrawColor(200, 200, 200);
+    pdf.line(margin, footerY - 10, pageWidth - margin, footerY - 10);
+    
+    // Left side - generation info
     pdf.setFont('helvetica', 'normal');
-    pdf.setFontSize(9);
+    pdf.setFontSize(8);
+    pdf.setTextColor(100, 100, 100);
+    pdf.text(`Laporan dibuat oleh Sistem Manajemen Meeting - ${currentDateTime.toLocaleDateString('id-ID')} ${currentDateTime.toLocaleTimeString('id-ID')}`, margin, footerY);
     
-    pdf.text(`Laporan dicetak pada: ${currentDateTime.toLocaleDateString('id-ID')} ${currentDateTime.toLocaleTimeString('id-ID')}`, margin, footerY);
-    
-    // Signature area
+    // Right side - signature area
     const signatureX = pageWidth - 100;
-    pdf.text('Mengetahui,', signatureX, footerY);
-    pdf.text('Penyelenggara Meeting', signatureX, footerY + 8);
-    pdf.line(signatureX, footerY + 25, signatureX + 70, footerY + 25);
-    pdf.text(`(${data.meeting.organizer || 'N/A'})`, signatureX, footerY + 30);
+    pdf.setTextColor(40, 40, 40);
+    pdf.setFontSize(10);
+    pdf.text('Mengetahui,', signatureX, footerY - 5);
+    pdf.text('Penyelenggara Meeting', signatureX, footerY + 5);
+    
+    // Signature line
+    pdf.setLineWidth(0.5);
+    pdf.setDrawColor(40, 40, 40);
+    pdf.line(signatureX, footerY + 20, signatureX + 70, footerY + 20);
+    pdf.text(`(${data.meeting.organizer})`, signatureX, footerY + 28);
 
-    // Generate filename
+    // Generate professional filename
     const dateStr = meetingDate.toISOString().split('T')[0];
     const titleStr = (data.meeting.title || 'meeting').replace(/[^a-zA-Z0-9]/g, '-').toLowerCase();
-    const filename = `laporan-meeting-${titleStr}-${dateStr}.pdf`;
+    const filename = `Laporan-Kehadiran-Meeting-${titleStr}-${dateStr}.pdf`;
 
     console.log('PDF generation completed, saving as:', filename);
     pdf.save(filename);
