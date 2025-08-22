@@ -1,5 +1,5 @@
 import jsPDF from 'jspdf';
-import 'jspdf-autotable';
+import autoTable from 'jspdf-autotable';
 
 interface Employee {
   id: string;
@@ -36,11 +36,7 @@ interface MeetingAttendanceData {
   totalAttendees: number;
 }
 
-declare module 'jspdf' {
-  interface jsPDF {
-    autoTable: (options: any) => jsPDF;
-  }
-}
+// Remove module declaration as we're importing autoTable directly
 
 export function generateMeetingAttendancePDF(data: MeetingAttendanceData): void {
   console.log('Starting PDF generation with data:', {
@@ -122,7 +118,7 @@ export function generateMeetingAttendancePDF(data: MeetingAttendanceData): void 
         getShortDeviceInfo(attendance.deviceInfo || 'Unknown')
       ]);
 
-      (pdf as any).autoTable({
+      autoTable(pdf, {
         head: [['No', 'NIK', 'Nama', 'Department', 'Meeting', 'Tanggal', 'Waktu', 'Device']],
         body: tableData,
         startY: yPosition,
