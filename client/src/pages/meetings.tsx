@@ -305,18 +305,36 @@ export default function Meetings() {
   };
 
   const downloadAttendanceReport = () => {
-    if (!attendanceData) return;
-    
-    try {
-      generateMeetingAttendancePDF(attendanceData);
-      toast({
-        title: "Laporan Downloaded",
-        description: "Laporan kehadiran meeting berhasil didownload",
-      });
-    } catch (error) {
+    if (!selectedMeeting || !attendanceData) {
       toast({
         title: "Error",
-        description: "Gagal mendownload laporan",
+        description: "Data meeting atau attendance tidak tersedia",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    try {
+      // Ensure data is properly formatted for PDF generation
+      const pdfData = {
+        meeting: {
+          ...selectedMeeting,
+          description: selectedMeeting.description || undefined
+        },
+        attendance: attendanceData.attendance || [],
+        totalAttendees: attendanceData.totalAttendees || 0
+      };
+      
+      generateMeetingAttendancePDF(pdfData);
+      toast({
+        title: "PDF Downloaded",
+        description: `Laporan kehadiran meeting "${selectedMeeting.title}" berhasil didownload`,
+      });
+    } catch (error) {
+      console.error("Error generating PDF:", error);
+      toast({
+        title: "Error",
+        description: "Gagal mendownload laporan. Silakan coba lagi.",
         variant: "destructive",
       });
     }
