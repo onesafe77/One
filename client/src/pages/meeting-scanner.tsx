@@ -1,22 +1,40 @@
-import { useState, useRef, useCallback } from "react";
-import { useMutation } from "@tanstack/react-query";
+import { useState, useRef, useCallback, useEffect } from "react";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
-import { QrCode, Camera, CameraOff, UserCheck, AlertCircle, CheckCircle } from "lucide-react";
+import { QrCode, Camera, CameraOff, UserCheck, AlertCircle, CheckCircle, User, Calendar, Clock, MapPin } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
 import jsQR from "jsqr";
+import type { Meeting } from "@shared/schema";
 
 export default function MeetingScanner() {
   const [isScanning, setIsScanning] = useState(false);
   const [employeeId, setEmployeeId] = useState("");
   const [lastScanResult, setLastScanResult] = useState<any>(null);
+  const [meetingToken, setMeetingToken] = useState<string>("");
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const { toast } = useToast();
+
+  // Get token from URL parameters
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const token = urlParams.get('token');
+    if (token) {
+      setMeetingToken(token);
+    }
+  }, []);
+
+  // Fetch meeting details if token is available
+  const { data: meeting, isLoading: isLoadingMeeting } = useQuery({
+    queryKey: ['/api/meetings/by-token', meetingToken],
+    queryFn: () => apiRequest(`/api/meetings/by-token/${meetingToken}`, "GET"),
+    enabled: !!meetingToken,
+  });
 
   const attendanceMutation = useMutation({
     mutationFn: async (data: { qrToken: string; employeeId: string }) => {
@@ -41,6 +59,32 @@ export default function MeetingScanner() {
       });
     },
   });
+
+  // Handle form submission for direct attendance
+  const handleFormSubmit = () => {
+    if (!employeeId.trim()) {
+      toast({
+        title: "NIK Diperlukan",
+        description: "Silakan masukkan NIK karyawan",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (!meetingToken) {
+      toast({
+        title: "Token Meeting Tidak Ditemukan",
+        description: "Silakan scan QR code meeting yang valid",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    attendanceMutation.mutate({
+      qrToken: meetingToken,
+      employeeId: employeeId.trim()
+    });
+  };
 
   const startCamera = useCallback(async () => {
     try {
@@ -142,59 +186,123 @@ export default function MeetingScanner() {
             Absensi Meeting
           </h1>
           <p className="text-gray-600 dark:text-gray-400 mt-2">
-            Scan QR code meeting untuk melakukan absensi
+            {meetingToken ? "Form absensi meeting" : "Scan QR code meeting untuk melakukan absensi"}
           </p>
-          <div className="bg-blue-50 dark:bg-blue-900/20 p-3 rounded-lg mt-4">
-            <p className="text-sm text-blue-800 dark:text-blue-200">
-              📱 Pastikan Anda menggunakan smartphone/mobile untuk hasil terbaik
-            </p>
-          </div>
+          
+          {meetingToken && (
+            <div className="bg-blue-50 dark:bg-blue-900/20 p-3 rounded-lg mt-4">
+              <p className="text-sm text-blue-800 dark:text-blue-200">
+                ✅ QR Code Meeting terdeteksi - Silakan isi form absensi di bawah
+              </p>
+            </div>
+          )}
         </div>
 
-        {/* Employee ID Input */}
+        {/* Meeting Information Card */}
+        {meetingToken && meeting && !isLoadingMeeting && (
+          <Card className="mb-6">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Calendar className="w-5 h-5 text-blue-600" />
+                Informasi Meeting
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-3">
+                <div className="flex items-center gap-2">
+                  <User className="w-4 h-4 text-gray-500" />
+                  <span className="font-medium">{meeting.title}</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Calendar className="w-4 h-4 text-gray-500" />
+                  <span>{new Date(meeting.date).toLocaleDateString('id-ID')}</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Clock className="w-4 h-4 text-gray-500" />
+                  <span>{meeting.startTime} - {meeting.endTime}</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <MapPin className="w-4 h-4 text-gray-500" />
+                  <span>{meeting.location}</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <User className="w-4 h-4 text-gray-500" />
+                  <span>Penyelenggara: {meeting.organizer}</span>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Form Absensi */}
         <Card className="mb-6">
           <CardHeader>
-            <CardTitle className="text-lg">Identitas Karyawan</CardTitle>
+            <CardTitle className="flex items-center gap-2">
+              <UserCheck className="w-5 h-5" />
+              Form Absensi
+            </CardTitle>
             <CardDescription>
-              Masukkan NIK untuk melakukan absensi meeting
+              {meetingToken ? "Isi NIK Anda untuk mencatat kehadiran" : "Masukkan NIK karyawan untuk melakukan absensi meeting"}
             </CardDescription>
           </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="employeeId">NIK Karyawan *</Label>
-                <Input
-                  id="employeeId"
-                  data-testid="input-employee-id"
-                  value={employeeId}
-                  onChange={(e) => setEmployeeId(e.target.value)}
-                  placeholder="Contoh: C-030015"
-                  disabled={isScanning}
-                />
-              </div>
-              
-              {!isScanning ? (
-                <Button
-                  onClick={handleStartScan}
-                  disabled={!employeeId.trim() || attendanceMutation.isPending}
-                  className="w-full bg-red-600 hover:bg-red-700"
-                  data-testid="button-start-scan"
-                >
-                  <Camera className="w-4 h-4 mr-2" />
-                  Mulai Scan QR Code
-                </Button>
-              ) : (
-                <Button
-                  onClick={stopCamera}
-                  variant="outline"
-                  className="w-full"
-                  data-testid="button-stop-scan"
-                >
-                  <CameraOff className="w-4 h-4 mr-2" />
-                  Berhenti Scan
-                </Button>
-              )}
+          <CardContent className="space-y-4">
+            <div>
+              <Label htmlFor="employeeId">NIK Karyawan</Label>
+              <Input
+                id="employeeId"
+                type="text"
+                placeholder="Masukkan NIK karyawan"
+                value={employeeId}
+                onChange={(e) => setEmployeeId(e.target.value)}
+                disabled={attendanceMutation.isPending}
+                data-testid="input-employee-id"
+                onKeyPress={(e) => {
+                  if (e.key === 'Enter' && meetingToken) {
+                    handleFormSubmit();
+                  }
+                }}
+              />
             </div>
+
+            {meetingToken ? (
+              <Button
+                onClick={handleFormSubmit}
+                disabled={attendanceMutation.isPending || !employeeId.trim()}
+                className="w-full bg-green-600 hover:bg-green-700"
+                data-testid="button-submit-attendance"
+              >
+                {attendanceMutation.isPending ? (
+                  <>
+                    <AlertCircle className="w-4 h-4 mr-2 animate-spin" />
+                    Memproses Absensi...
+                  </>
+                ) : (
+                  <>
+                    <CheckCircle className="w-4 h-4 mr-2" />
+                    Absen Sekarang
+                  </>
+                )}
+              </Button>
+            ) : (
+              <Button
+                onClick={handleStartScan}
+                disabled={!employeeId.trim() || isScanning || attendanceMutation.isPending}
+                className="w-full bg-red-600 hover:bg-red-700"
+                data-testid="button-start-scan"
+              >
+                {isScanning ? (
+                  <>
+                    <CameraOff className="w-4 h-4 mr-2" />
+                    Sedang Scanning...
+                  </>
+                ) : (
+                  <>
+                    <Camera className="w-4 h-4 mr-2" />
+                    Mulai Scan QR Code
+                  </>
+                )}
+              </Button>
+            )}
           </CardContent>
         </Card>
 

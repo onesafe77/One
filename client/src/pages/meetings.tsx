@@ -38,11 +38,9 @@ function QRCodeDisplay({ meeting }: { meeting: Meeting }) {
     const generateQR = async () => {
       if (meeting.qrToken) {
         try {
-          const qrData = JSON.stringify({ 
-            type: "meeting",
-            token: meeting.qrToken 
-          });
-          const dataURL = await QRCode.toDataURL(qrData, {
+          // Generate URL that points directly to scanner with meeting token
+          const scanURL = `${window.location.origin}/meeting-scanner?token=${meeting.qrToken}`;
+          const dataURL = await QRCode.toDataURL(scanURL, {
             width: 300,
             margin: 2,
             color: {
