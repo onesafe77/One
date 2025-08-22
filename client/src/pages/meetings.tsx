@@ -676,7 +676,9 @@ export default function Meetings() {
                 <TableRow>
                   <TableHead>Nama Karyawan</TableHead>
                   <TableHead>NIK</TableHead>
-                  <TableHead>Posisi</TableHead>
+                  <TableHead>Department</TableHead>
+                  <TableHead>Meeting</TableHead>
+                  <TableHead>Tanggal Scan</TableHead>
                   <TableHead>Waktu Scan</TableHead>
                   <TableHead>Device</TableHead>
                 </TableRow>
@@ -688,18 +690,30 @@ export default function Meetings() {
                       {att.employee?.name || 'Unknown'}
                     </TableCell>
                     <TableCell>{att.employee?.id || '-'}</TableCell>
-                    <TableCell>{att.employee?.position || '-'}</TableCell>
+                    <TableCell>{att.employee?.department || '-'}</TableCell>
+                    <TableCell className="max-w-[200px]">
+                      <div className="text-sm font-medium truncate">
+                        {selectedMeeting?.title || '-'}
+                      </div>
+                      <div className="text-xs text-gray-600 dark:text-gray-400">
+                        {selectedMeeting?.location || '-'}
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <div className="text-sm">
+                        {new Date(att.scanDate).toLocaleDateString('id-ID')}
+                      </div>
+                    </TableCell>
                     <TableCell>
                       <div className="flex items-center gap-2 text-sm">
                         <Clock className="w-4 h-4 text-gray-400" />
                         {att.scanTime}
                       </div>
-                      <div className="text-xs text-gray-600 dark:text-gray-400">
-                        {new Date(att.scanDate).toLocaleDateString('id-ID')}
-                      </div>
                     </TableCell>
-                    <TableCell className="text-sm text-gray-600 dark:text-gray-400">
-                      {att.deviceInfo}
+                    <TableCell className="text-sm text-gray-600 dark:text-gray-400 max-w-[150px]">
+                      <div className="truncate" title={att.deviceInfo}>
+                        {att.deviceInfo}
+                      </div>
                     </TableCell>
                   </TableRow>
                 ))}
