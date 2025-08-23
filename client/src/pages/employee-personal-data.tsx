@@ -4,9 +4,10 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Calendar, User, Clock, Heart, ArrowLeft } from "lucide-react";
-import { format } from "date-fns";
-import type { Employee, RosterSchedule, LeaveRequest } from "@shared/schema";
+import { Calendar, User, Clock, Heart, ArrowLeft, TrendingUp, AlertCircle } from "lucide-react";
+import { format, addDays } from "date-fns";
+import { id as localeId } from "date-fns/locale";
+import type { Employee, RosterSchedule, LeaveRequest, LeaveRosterMonitoring } from "@shared/schema";
 
 interface EmployeePersonalDataProps {
   employeeId: string;
@@ -36,6 +37,11 @@ export default function EmployeePersonalData() {
 
   const { data: leaveData, isLoading: leaveLoading } = useQuery({
     queryKey: ["/api/leave"],
+    enabled: !!employeeId,
+  });
+
+  const { data: leaveMonitoringData, isLoading: monitoringLoading } = useQuery({
+    queryKey: ["/api/leave-roster-monitoring"],
     enabled: !!employeeId,
   });
 
@@ -102,6 +108,11 @@ export default function EmployeePersonalData() {
     leave.employeeId === employeeId
   ) : [];
 
+  // Filter monitoring data for this employee
+  const employeeMonitoring = Array.isArray(leaveMonitoringData) ? leaveMonitoringData.find((monitoring: LeaveRosterMonitoring) => 
+    monitoring.nik === employeeId
+  ) : undefined;
+
   // Calculate working days from roster - count the number of roster entries
   const calculateWorkingDays = () => {
     return employeeRoster.length;
@@ -109,25 +120,36 @@ export default function EmployeePersonalData() {
 
   const totalWorkingDays = calculateWorkingDays();
 
+  // Get status color for monitoring status
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case "Aktif": return "bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400";
+      case "Menunggu Cuti": return "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/20 dark:text-yellow-400";
+      case "Sedang Cuti": return "bg-blue-100 text-blue-800 dark:bg-blue-900/20 dark:text-blue-400";
+      case "Selesai Cuti": return "bg-gray-100 text-gray-800 dark:bg-gray-900/20 dark:text-gray-400";
+      default: return "bg-gray-100 text-gray-800 dark:bg-gray-900/20 dark:text-gray-400";
+    }
+  };
+
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 p-4">
-      <div className="max-w-4xl mx-auto space-y-6">
-        {/* Header with Employee Info */}
-        <Card>
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800 p-3 md:p-6">
+      <div className="max-w-md mx-auto md:max-w-4xl space-y-4 md:space-y-6">
+        {/* Mobile Header with Employee Info */}
+        <Card className="border-0 shadow-lg bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm">
           <CardHeader className="pb-4">
             <div className="flex items-start justify-between">
-              <div className="flex items-center space-x-4">
-                <div className="bg-red-100 dark:bg-red-900/20 p-3 rounded-full">
-                  <User className="w-8 h-8 text-red-600" />
+              <div className="flex items-center space-x-3 md:space-x-4">
+                <div className="bg-gradient-to-r from-red-500 to-pink-500 p-3 rounded-full shadow-lg">
+                  <User className="w-6 h-6 md:w-8 md:h-8 text-white" />
                 </div>
                 <div>
-                  <CardTitle className="text-xl">{employee.name}</CardTitle>
-                  <p className="text-gray-600 dark:text-gray-400">NIK: {employee.id}</p>
-                  <div className="flex flex-wrap gap-2 mt-2">
-                    <Badge variant="outline">{employee.position}</Badge>
-                    <Badge variant="outline">{employee.department}</Badge>
+                  <CardTitle className="text-lg md:text-xl font-bold text-gray-900 dark:text-white">{employee.name}</CardTitle>
+                  <p className="text-sm text-gray-600 dark:text-gray-400">NIK: {employee.id}</p>
+                  <div className="flex flex-wrap gap-1 md:gap-2 mt-2">
+                    <Badge variant="outline" className="text-xs">{employee.position}</Badge>
+                    <Badge variant="outline" className="text-xs">{employee.department}</Badge>
                     {employee.nomorLambung && (
-                      <Badge variant="outline">{employee.nomorLambung}</Badge>
+                      <Badge variant="outline" className="text-xs">{employee.nomorLambung}</Badge>
                     )}
                   </div>
                 </div>
@@ -136,63 +158,140 @@ export default function EmployeePersonalData() {
                 onClick={() => window.location.href = '/'}
                 variant="outline"
                 size="sm"
+                className="shrink-0"
               >
-                <ArrowLeft className="w-4 h-4 mr-2" />
-                Kembali
+                <ArrowLeft className="w-4 h-4" />
+                <span className="hidden md:inline ml-2">Kembali</span>
               </Button>
             </div>
           </CardHeader>
         </Card>
 
         {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <Card>
-            <CardContent className="pt-6">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
+          <Card className="border-0 shadow-md bg-gradient-to-r from-blue-500 to-blue-600 text-white">
+            <CardContent className="p-4 md:pt-6">
               <div className="flex items-center space-x-2">
-                <Calendar className="w-5 h-5 text-blue-600" />
+                <Calendar className="w-4 h-4 md:w-5 md:h-5" />
                 <div>
-                  <p className="text-sm text-gray-600 dark:text-gray-400">Total Hari Kerja</p>
-                  <p className="text-2xl font-bold">{totalWorkingDays}</p>
+                  <p className="text-xs md:text-sm opacity-90">Total Hari Kerja</p>
+                  <p className="text-lg md:text-2xl font-bold">{totalWorkingDays}</p>
                 </div>
               </div>
             </CardContent>
           </Card>
           
-          <Card>
-            <CardContent className="pt-6">
+          <Card className="border-0 shadow-md bg-gradient-to-r from-green-500 to-green-600 text-white">
+            <CardContent className="p-4 md:pt-6">
               <div className="flex items-center space-x-2">
-                <Clock className="w-5 h-5 text-green-600" />
+                <Clock className="w-4 h-4 md:w-5 md:h-5" />
                 <div>
-                  <p className="text-sm text-gray-600 dark:text-gray-400">Jadwal Roster</p>
-                  <p className="text-2xl font-bold">{employeeRoster.length}</p>
+                  <p className="text-xs md:text-sm opacity-90">Jadwal Roster</p>
+                  <p className="text-lg md:text-2xl font-bold">{employeeRoster.length}</p>
                 </div>
               </div>
             </CardContent>
           </Card>
           
-          <Card>
-            <CardContent className="pt-6">
+          <Card className="border-0 shadow-md bg-gradient-to-r from-red-500 to-red-600 text-white">
+            <CardContent className="p-4 md:pt-6">
               <div className="flex items-center space-x-2">
-                <Heart className="w-5 h-5 text-red-600" />
+                <Heart className="w-4 h-4 md:w-5 md:h-5" />
                 <div>
-                  <p className="text-sm text-gray-600 dark:text-gray-400">Pengajuan Cuti</p>
-                  <p className="text-2xl font-bold">{employeeLeave.length}</p>
+                  <p className="text-xs md:text-sm opacity-90">Pengajuan Cuti</p>
+                  <p className="text-lg md:text-2xl font-bold">{employeeLeave.length}</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Monitoring Cuti Card */}
+          <Card className="border-0 shadow-md bg-gradient-to-r from-purple-500 to-purple-600 text-white">
+            <CardContent className="p-4 md:pt-6">
+              <div className="flex items-center space-x-2">
+                <TrendingUp className="w-4 h-4 md:w-5 md:h-5" />
+                <div>
+                  <p className="text-xs md:text-sm opacity-90">Monitoring Hari</p>
+                  <p className="text-lg md:text-2xl font-bold">
+                    {employeeMonitoring?.monitoringDays || 0}
+                  </p>
                 </div>
               </div>
             </CardContent>
           </Card>
         </div>
 
+        {/* Monitoring Cuti Detail Card */}
+        {employeeMonitoring && (
+          <Card className="border-0 shadow-lg bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-lg flex items-center space-x-2">
+                <AlertCircle className="w-5 h-5 text-purple-600" />
+                <span>Monitoring Cuti</span>
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="bg-gray-50 dark:bg-gray-700/50 p-3 rounded-lg">
+                  <p className="text-xs text-gray-600 dark:text-gray-400 mb-1">Cuti Terakhir</p>
+                  <p className="font-semibold text-sm">
+                    {employeeMonitoring.lastLeaveDate 
+                      ? format(new Date(employeeMonitoring.lastLeaveDate), "dd MMM yyyy", { locale: localeId })
+                      : "Belum Ada"}
+                  </p>
+                </div>
+                
+                <div className="bg-gray-50 dark:bg-gray-700/50 p-3 rounded-lg">
+                  <p className="text-xs text-gray-600 dark:text-gray-400 mb-1">Cuti Berikutnya</p>
+                  <p className="font-semibold text-sm">
+                    {employeeMonitoring.nextLeaveDate 
+                      ? format(new Date(employeeMonitoring.nextLeaveDate), "dd MMM yyyy", { locale: localeId })
+                      : "Belum Terjadwal"}
+                  </p>
+                </div>
+                
+                <div className="bg-gray-50 dark:bg-gray-700/50 p-3 rounded-lg">
+                  <p className="text-xs text-gray-600 dark:text-gray-400 mb-1">Status</p>
+                  <Badge className={`text-xs ${getStatusColor(employeeMonitoring.status)}`}>
+                    {employeeMonitoring.status}
+                  </Badge>
+                </div>
+              </div>
+              
+              <div className="bg-blue-50 dark:bg-blue-900/20 p-3 rounded-lg">
+                <p className="text-xs text-blue-800 dark:text-blue-300 mb-1">
+                  Opsi Cuti: {employeeMonitoring.leaveOption} hari kerja
+                </p>
+                <div className="w-full bg-blue-200 dark:bg-blue-800 rounded-full h-2">
+                  <div 
+                    className="bg-blue-600 h-2 rounded-full transition-all duration-300"
+                    style={{ 
+                      width: `${Math.min((employeeMonitoring.monitoringDays / parseInt(employeeMonitoring.leaveOption)) * 100, 100)}%` 
+                    }}
+                  />
+                </div>
+                <p className="text-xs text-blue-700 dark:text-blue-300 mt-1">
+                  {employeeMonitoring.monitoringDays} / {employeeMonitoring.leaveOption} hari
+                </p>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
         {/* Detailed Data Tabs */}
-        <Card>
+        <Card className="border-0 shadow-lg bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm">
           <CardHeader>
-            <CardTitle>Detail Data Pribadi</CardTitle>
+            <CardTitle className="text-lg font-bold">Detail Data Pribadi</CardTitle>
           </CardHeader>
           <CardContent>
             <Tabs defaultValue="roster" className="w-full">
-              <TabsList className="grid w-full grid-cols-2">
-                <TabsTrigger value="roster">Data Roster</TabsTrigger>
-                <TabsTrigger value="leave">Data Cuti</TabsTrigger>
+              <TabsList className="grid w-full grid-cols-2 h-12 bg-gray-100 dark:bg-gray-700">
+                <TabsTrigger value="roster" className="data-[state=active]:bg-red-500 data-[state=active]:text-white">
+                  Data Roster
+                </TabsTrigger>
+                <TabsTrigger value="leave" className="data-[state=active]:bg-red-500 data-[state=active]:text-white">
+                  Data Cuti
+                </TabsTrigger>
               </TabsList>
               
               <TabsContent value="roster" className="mt-6">
@@ -202,24 +301,33 @@ export default function EmployeePersonalData() {
                     <p className="text-gray-500">Memuat data roster...</p>
                   </div>
                 ) : employeeRoster.length === 0 ? (
-                  <div className="text-center py-8">
-                    <p className="text-gray-500">Belum ada jadwal roster</p>
+                  <div className="text-center py-12">
+                    <Calendar className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+                    <p className="text-gray-500 text-lg">Belum ada jadwal roster</p>
+                    <p className="text-gray-400 text-sm">Data roster akan muncul setelah dijadwalkan</p>
                   </div>
                 ) : (
-                  <div className="space-y-4">
+                  <div className="space-y-3">
                     {employeeRoster.map((roster: RosterSchedule) => (
-                      <Card key={roster.id} className="border-l-4 border-l-blue-500">
-                        <CardContent className="pt-4">
+                      <Card key={roster.id} className="border-0 shadow-md hover:shadow-lg transition-shadow duration-200 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20">
+                        <CardContent className="p-4">
                           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-2 sm:space-y-0">
                             <div>
-                              <p className="font-medium">{format(new Date(roster.date), "dd MMMM yyyy")}</p>
-                              <div className="flex items-center space-x-4 text-sm text-gray-600 dark:text-gray-400">
-                                <span>Shift: {roster.shift}</span>
-                                <span>Status: {roster.status}</span>
+                              <p className="font-semibold text-gray-900 dark:text-white">
+                                {format(new Date(roster.date), "dd MMMM yyyy", { locale: localeId })}
+                              </p>
+                              <div className="flex items-center space-x-3 text-sm text-gray-600 dark:text-gray-400 mt-1">
+                                <span className="bg-white dark:bg-gray-700 px-2 py-1 rounded-full text-xs">
+                                  {roster.shift}
+                                </span>
+                                <span className="bg-white dark:bg-gray-700 px-2 py-1 rounded-full text-xs">
+                                  {roster.status}
+                                </span>
                               </div>
                             </div>
                             <Badge 
                               variant={roster.shift === 'Shift 1' ? 'default' : 'secondary'}
+                              className="shrink-0"
                             >
                               {roster.shift}
                             </Badge>
@@ -238,30 +346,39 @@ export default function EmployeePersonalData() {
                     <p className="text-gray-500">Memuat data cuti...</p>
                   </div>
                 ) : employeeLeave.length === 0 ? (
-                  <div className="text-center py-8">
-                    <p className="text-gray-500">Belum ada pengajuan cuti</p>
+                  <div className="text-center py-12">
+                    <Heart className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+                    <p className="text-gray-500 text-lg">Belum ada pengajuan cuti</p>
+                    <p className="text-gray-400 text-sm">Riwayat cuti akan muncul setelah mengajukan</p>
                   </div>
                 ) : (
-                  <div className="space-y-4">
+                  <div className="space-y-3">
                     {employeeLeave.map((leave: LeaveRequest) => (
-                      <Card key={leave.id} className="border-l-4 border-l-green-500">
-                        <CardContent className="pt-4">
-                          <div className="space-y-2">
+                      <Card key={leave.id} className="border-0 shadow-md hover:shadow-lg transition-shadow duration-200 bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20">
+                        <CardContent className="p-4">
+                          <div className="space-y-3">
                             <div className="flex items-center justify-between">
-                              <p className="font-medium">{leave.leaveType}</p>
+                              <p className="font-semibold text-gray-900 dark:text-white">{leave.leaveType}</p>
                               <Badge 
                                 variant={
                                   leave.status === 'approved' ? 'default' :
                                   leave.status === 'rejected' ? 'destructive' : 'secondary'
                                 }
+                                className="shrink-0"
                               >
                                 {leave.status === 'approved' ? 'Disetujui' :
                                  leave.status === 'rejected' ? 'Ditolak' : 'Pending'}
                               </Badge>
                             </div>
-                            <div className="text-sm text-gray-600 dark:text-gray-400">
-                              <p>Tanggal: {format(new Date(leave.startDate), "dd MMM yyyy")} - {format(new Date(leave.endDate), "dd MMM yyyy")}</p>
-                              {leave.reason && <p>Alasan: {leave.reason}</p>}
+                            <div className="bg-white dark:bg-gray-700 p-3 rounded-lg">
+                              <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">
+                                📅 {format(new Date(leave.startDate), "dd MMM yyyy", { locale: localeId })} - {format(new Date(leave.endDate), "dd MMM yyyy", { locale: localeId })}
+                              </p>
+                              {leave.reason && (
+                                <p className="text-sm text-gray-700 dark:text-gray-300">
+                                  💭 {leave.reason}
+                                </p>
+                              )}
                             </div>
                           </div>
                         </CardContent>
