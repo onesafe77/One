@@ -158,6 +158,10 @@ export default function Leave() {
   const [openCombobox, setOpenCombobox] = useState(false);
   const [employeeSearchValue, setEmployeeSearchValue] = useState("");
   
+  // HR PDF Upload states
+  const [hrUploadingFiles, setHrUploadingFiles] = useState<{[key: string]: boolean}>({});
+  const [hrUploadedFiles, setHrUploadedFiles] = useState<{[key: string]: string}>({});
+  
   // Upload Roster States
   const [file, setFile] = useState<File | null>(null);
   const [isUploadingRoster, setIsUploadingRoster] = useState(false);
@@ -1242,6 +1246,77 @@ export default function Leave() {
                           <div className="space-y-2">
                             <p className="text-sm text-gray-600 dark:text-gray-400">{request.reason}</p>
                             
+                            {/* PDF Upload Section */}
+                            <div className="border-t pt-3 mt-3">
+                              <Label className="text-xs font-medium">Upload Form Cuti (PDF)</Label>
+                              {!hrUploadedFiles[request.id] ? (
+                                <ObjectUploader
+                                  maxNumberOfFiles={1}
+                                  maxFileSize={10485760} // 10MB
+                                  onGetUploadParameters={async () => {
+                                    const response = await apiRequest("/api/objects/upload", {
+                                      method: "POST"
+                                    });
+                                    return {
+                                      method: "PUT" as const,
+                                      url: response.uploadURL
+                                    };
+                                  }}
+                                  onComplete={(result) => {
+                                    if (result.successful && result.successful.length > 0) {
+                                      const uploadUrl = result.successful[0].uploadURL;
+                                      setHrUploadedFiles(prev => ({
+                                        ...prev,
+                                        [request.id]: uploadUrl
+                                      }));
+                                      setHrUploadingFiles(prev => ({
+                                        ...prev,
+                                        [request.id]: false
+                                      }));
+                                      toast({
+                                        title: "Upload berhasil",
+                                        description: "Form PDF telah berhasil diupload"
+                                      });
+                                    }
+                                  }}
+                                  buttonClassName="w-full h-8 text-xs"
+                                >
+                                  {hrUploadingFiles[request.id] ? (
+                                    <>
+                                      <Upload className="w-3 h-3 mr-1 animate-spin" />
+                                      Uploading...
+                                    </>
+                                  ) : (
+                                    <>
+                                      <Upload className="w-3 h-3 mr-1" />
+                                      Upload PDF
+                                    </>
+                                  )}
+                                </ObjectUploader>
+                              ) : (
+                                <div className="flex items-center gap-2">
+                                  <Badge variant="outline" className="text-green-600 border-green-300">
+                                    <FileText className="w-3 h-3 mr-1" />
+                                    PDF Terupload
+                                  </Badge>
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => {
+                                      setHrUploadedFiles(prev => {
+                                        const newFiles = { ...prev };
+                                        delete newFiles[request.id];
+                                        return newFiles;
+                                      });
+                                    }}
+                                    className="h-6 text-xs text-red-600 hover:text-red-700"
+                                  >
+                                    Hapus
+                                  </Button>
+                                </div>
+                              )}
+                            </div>
+                            
                             <div className="flex flex-col space-y-2 mt-4">
                               <Button
                                 onClick={() => {
@@ -1258,7 +1333,7 @@ export default function Leave() {
                                     endDate,
                                     leaveType: request.leaveType,
                                     reason: request.reason,
-                                    attachmentPath: null,
+                                    attachmentPath: hrUploadedFiles[request.id] || null,
                                     action: "approve"
                                   });
                                 }}
