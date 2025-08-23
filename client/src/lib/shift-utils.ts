@@ -1,15 +1,14 @@
 // Utility functions for shift determination and display
 
-// Function to get current WITA time (UTC+8)
-export function getWITATime(): Date {
-  const now = new Date();
-  return new Date(now.getTime() + (8 * 60 * 60 * 1000));
+// Function to get current local time
+export function getCurrentTime(): Date {
+  return new Date();
 }
 
-// Function to get current WITA time string in HH:MM format
-export function getCurrentWITATimeString(): string {
-  const witaTime = getWITATime();
-  return `${witaTime.getHours().toString().padStart(2, '0')}:${witaTime.getMinutes().toString().padStart(2, '0')}`;
+// Function to get current local time string in HH:MM format
+export function getCurrentTimeString(): string {
+  const now = new Date();
+  return `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
 }
 
 export function determineShiftByTime(time: string): string {
@@ -54,7 +53,7 @@ export function getShiftDescription(shift: string): string {
 }
 
 export function getCurrentShift(): string {
-  const currentTime = getCurrentWITATimeString();
+  const currentTime = getCurrentTimeString();
   return determineShiftByTime(currentTime);
 }
 

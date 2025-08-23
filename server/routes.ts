@@ -265,14 +265,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Karyawan tidak dijadwalkan untuk hari ini" });
       }
 
-      // Get current time for precise shift validation (WITA = UTC+8)
-      function getWITATime() {
-        const now = new Date();
-        return new Date(now.getTime() + (8 * 60 * 60 * 1000));
-      }
-      
-      const witaTime = getWITATime();
-      const currentTime = `${witaTime.getHours().toString().padStart(2, '0')}:${witaTime.getMinutes().toString().padStart(2, '0')}`;
+      // Get current time for precise shift validation (menggunakan waktu lokal sistem)
+      const now = new Date();
+      const currentTime = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
       
       console.log(`Validating shift for ${validatedData.employeeId}: Current time ${currentTime}, Scheduled ${scheduledEmployee.shift}`);
       
