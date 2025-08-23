@@ -800,7 +800,6 @@ export default function Leave() {
                                       const selectedEmp = employees.find(emp => emp.id === currentValue);
                                       if (selectedEmp) {
                                         form.setValue("phoneNumber", selectedEmp.phone);
-                                        form.setValue("employeeName", selectedEmp.name);
                                       }
                                     }}
                                   >
@@ -1219,13 +1218,13 @@ export default function Leave() {
                 <div className="text-center py-8">
                   <div className="text-gray-500 dark:text-gray-400">Loading data monitoring...</div>
                 </div>
-              ) : pendingFromMonitoring.length === 0 ? (
+              ) : (!Array.isArray(pendingFromMonitoring) || pendingFromMonitoring.length === 0) ? (
                 <div className="text-center py-8">
                   <div className="text-gray-500 dark:text-gray-400">Tidak ada karyawan yang perlu diproses HR saat ini</div>
                 </div>
               ) : (
                 <div className="space-y-3">
-                  {pendingFromMonitoring.map((request: any) => (
+                  {Array.isArray(pendingFromMonitoring) && pendingFromMonitoring.map((request: any) => (
                     <Card key={request.id} className="border border-orange-200 dark:border-orange-800">
                       <CardContent className="p-4">
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -1254,13 +1253,21 @@ export default function Leave() {
                                   maxNumberOfFiles={1}
                                   maxFileSize={10485760} // 10MB
                                   onGetUploadParameters={async () => {
-                                    const response = await apiRequest("/api/objects/upload", {
-                                      method: "POST"
-                                    });
-                                    return {
-                                      method: "PUT" as const,
-                                      url: response.uploadURL
-                                    };
+                                    try {
+                                      const response = await apiRequest("/api/objects/upload", "POST");
+                                      return {
+                                        method: "PUT" as const,
+                                        url: response.uploadURL
+                                      };
+                                    } catch (error) {
+                                      console.error("Error getting upload parameters:", error);
+                                      toast({
+                                        title: "Error",
+                                        description: "Gagal mendapatkan URL upload. Silakan coba lagi.",
+                                        variant: "destructive"
+                                      });
+                                      throw error;
+                                    }
                                   }}
                                   onComplete={(result) => {
                                     if (result.successful && result.successful.length > 0) {
