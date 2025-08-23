@@ -31,7 +31,8 @@ export default function EmployeePersonalData() {
   });
 
   const { data: rosterData, isLoading: rosterLoading } = useQuery({
-    queryKey: ["/api/roster"],
+    queryKey: ["/api/roster", employeeId],
+    queryFn: () => fetch(`/api/roster?employeeId=${employeeId}`).then(res => res.json()),
     enabled: !!employeeId,
   });
 
