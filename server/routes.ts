@@ -57,19 +57,19 @@ function isValidRosterTime(currentTime: string, startTime: string, endTime: stri
   return true; // Temporary - akan menggunakan shift-based validation
 }
 
-// Fungsi validasi waktu berdasarkan nama shift (lebih reliable)
+// Fungsi validasi waktu berdasarkan nama shift (sesuai logika validasi yang sudah ada)
 function isValidShiftTimeByName(currentTime: string, shiftName: string): boolean {
   const [hours, minutes] = currentTime.split(':').map(Number);
   const totalMinutes = hours * 60 + minutes;
   
   if (shiftName === "Shift 1") {
-    // Shift 1 (Shift Pagi): boleh scan dari 04:00 sampai 14:00
-    // Window: 04:00-14:00 (240-840 menit)
-    return totalMinutes >= 240 && totalMinutes < 840;
+    // Shift 1: boleh scan dari 06:00 sampai 18:00 (360-1080 menit)
+    // Sesuai dengan logika validasi yang sudah ada
+    return totalMinutes >= 360 && totalMinutes < 1080;
   } else if (shiftName === "Shift 2") {
-    // Shift 2 (Shift Sore/Malam): boleh scan dari 14:00 sampai 04:00 hari berikutnya 
-    // Window: 14:00-23:59 atau 00:00-04:00 (840+ menit atau <240 menit)
-    return totalMinutes >= 840 || totalMinutes < 240;
+    // Shift 2: boleh scan dari 18:00 sampai 06:00 hari berikutnya
+    // Window: 18:00-23:59 atau 00:00-06:00 (1080+ menit atau <360 menit)
+    return totalMinutes >= 1080 || totalMinutes < 360;
   }
   
   return false;
