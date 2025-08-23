@@ -1053,13 +1053,32 @@ export class DrizzleStorage implements IStorage {
   async updateLeaveRosterStatus(): Promise<void> {
     const today = new Date().toISOString().split('T')[0];
     const allMonitoring = await this.getAllLeaveRosterMonitoring();
+    const allRoster = await this.getAllRoster();
+    const allEmployees = await this.getAllEmployees();
 
     for (const monitoring of allMonitoring) {
       let newStatus = monitoring.status;
       
-      // Update monitoring days berdasarkan lastLeaveDate
+      // Calculate actual working days from roster data
       let monitoringDays = monitoring.monitoringDays;
-      if (monitoring.lastLeaveDate) {
+      const employee = allEmployees.find(emp => emp.nik === monitoring.nik);
+      
+      if (employee) {
+        const todayDate = new Date(today);
+        const currentYear = todayDate.getFullYear();
+        const startOfYear = new Date(currentYear, 0, 1);
+        
+        // Count actual working days from roster
+        const actualWorkingDays = allRoster.filter(rosterEntry => {
+          const rosterDate = new Date(rosterEntry.date);
+          return rosterEntry.employeeId === employee.id && 
+                 rosterDate >= startOfYear && 
+                 rosterDate <= todayDate;
+        }).length;
+        
+        monitoringDays = actualWorkingDays;
+      } else if (monitoring.lastLeaveDate) {
+        // Fallback to date-based calculation if employee not found
         const lastLeaveDate = new Date(monitoring.lastLeaveDate);
         const todayDate = new Date(today);
         const diffTime = todayDate.getTime() - lastLeaveDate.getTime();
