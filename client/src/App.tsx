@@ -22,6 +22,7 @@ import WhatsAppBlast from "@/pages/whatsapp-blast";
 import Meetings from "@/pages/meetings";
 import MeetingScanner from "@/pages/meeting-scanner";
 import DriverView from "@/pages/driver-view";
+import MobileDriverView from "@/pages/mobile-driver-view";
 
 import NotFound from "@/pages/not-found";
 
@@ -39,6 +40,7 @@ const routes = [
   { path: "/meetings", component: Meetings, title: "Meeting Management" },
   { path: "/meeting-scanner", component: MeetingScanner, title: "Scan QR Meeting" },
   { path: "/driver-view", component: DriverView, title: "Driver View - Data Karyawan" },
+  { path: "/mobile-driver", component: MobileDriverView, title: "Driver Mobile View" },
 ];
 
 function Router() {

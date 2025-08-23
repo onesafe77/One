@@ -149,8 +149,19 @@ export function QRScanner() {
     if (code) {
       const qrData = validateQRData(code.data);
       if (qrData) {
-        validateAndProcess(qrData.id, qrData.token);
-        return;
+        // Deteksi apakah diakses dari mobile
+        const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || window.innerWidth <= 768;
+        
+        if (isMobile) {
+          // Jika mobile, redirect ke mobile driver view
+          stopScanning();
+          window.location.href = `/mobile-driver?nik=${qrData.id}`;
+          return;
+        } else {
+          // Jika desktop, lanjutkan proses normal
+          validateAndProcess(qrData.id, qrData.token);
+          return;
+        }
       } else {
         toast({
           title: "QR Code Tidak Valid",
