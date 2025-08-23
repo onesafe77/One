@@ -88,16 +88,31 @@ export function QRScanner() {
     const context = canvas.getContext('2d');
     
     if (!context || video.readyState !== video.HAVE_ENOUGH_DATA) {
-      requestAnimationFrame(scanQRCode);
+      setTimeout(scanQRCode, 100); // Reduced frequency for better performance
       return;
     }
 
-    canvas.width = video.videoWidth;
-    canvas.height = video.videoHeight;
-    context.drawImage(video, 0, 0, canvas.width, canvas.height);
+    // Optimize canvas size for faster processing
+    const maxWidth = 640;
+    const maxHeight = 480;
+    const videoAspectRatio = video.videoWidth / video.videoHeight;
     
-    const imageData = context.getImageData(0, 0, canvas.width, canvas.height);
-    const code = jsQR(imageData.data, imageData.width, imageData.height);
+    let canvasWidth = Math.min(video.videoWidth, maxWidth);
+    let canvasHeight = canvasWidth / videoAspectRatio;
+    
+    if (canvasHeight > maxHeight) {
+      canvasHeight = maxHeight;
+      canvasWidth = canvasHeight * videoAspectRatio;
+    }
+    
+    canvas.width = canvasWidth;
+    canvas.height = canvasHeight;
+    context.drawImage(video, 0, 0, canvasWidth, canvasHeight);
+    
+    const imageData = context.getImageData(0, 0, canvasWidth, canvasHeight);
+    const code = jsQR(imageData.data, imageData.width, imageData.height, {
+      inversionAttempts: "dontInvert", // Skip inversion for faster processing
+    });
     
     if (code) {
       const qrData = validateQRData(code.data);
@@ -113,11 +128,15 @@ export function QRScanner() {
       }
     }
     
-    requestAnimationFrame(scanQRCode);
+    setTimeout(scanQRCode, 100); // Reduced frequency for better performance
   }, [toast]);
 
   const validateAndProcess = async (employeeId: string, token: string) => {
+    // Prevent multiple simultaneous validations
+    if (isProcessing) return;
+    
     try {
+      setIsProcessing(true);
       const result = await apiRequest("/api/qr/validate", "POST", {
         employeeId,
         token
@@ -169,6 +188,8 @@ export function QRScanner() {
         description: "❌ QR Code tidak valid atau karyawan tidak terdaftar",
         variant: "destructive",
       });
+    } finally {
+      setIsProcessing(false);
     }
   };
 

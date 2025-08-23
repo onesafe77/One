@@ -291,26 +291,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Karyawan tidak dijadwalkan untuk hari ini" });
       }
 
-      // Check if employee is currently on leave
-      const leaveRequests = await storage.getAllLeaveRequests();
-      console.log(`Checking leave for employee ${validatedData.employeeId} on date ${validatedData.date}`);
-      console.log(`Found ${leaveRequests.length} total leave requests`);
-      
-      const employeeLeaves = leaveRequests.filter(leave => leave.employeeId === validatedData.employeeId);
-      console.log(`Found ${employeeLeaves.length} leave requests for this employee:`, employeeLeaves);
-      
-      const approvedLeave = leaveRequests.find(leave => {
-        const isCorrectEmployee = leave.employeeId === validatedData.employeeId;
-        const isApproved = leave.status === 'approved';
-        const isInDateRange = validatedData.date >= leave.startDate && validatedData.date <= leave.endDate;
-        
-        console.log(`Leave check for ${leave.id}: employee=${isCorrectEmployee}, approved=${isApproved}, dateRange=${isInDateRange} (${leave.startDate} <= ${validatedData.date} <= ${leave.endDate})`);
-        
-        return isCorrectEmployee && isApproved && isInDateRange;
-      });
+      // Check if employee is currently on leave (optimized query)
+      const leaveRequests = await storage.getLeaveByEmployee(validatedData.employeeId);
+      const approvedLeave = leaveRequests.find(leave => 
+        leave.status === 'approved' &&
+        validatedData.date >= leave.startDate &&
+        validatedData.date <= leave.endDate
+      );
 
       if (approvedLeave) {
-        console.log(`Employee ${validatedData.employeeId} is on approved leave:`, approvedLeave);
         return res.status(400).json({ 
           message: "Scan ditolak: karyawan sedang cuti",
           leaveDetails: {
@@ -731,8 +720,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Employee ID and token are required" });
       }
 
-      // Check if employee exists and get QR data directly (faster than separate queries)
-      const employee = await storage.getEmployee(employeeId);
+      // Parallel execution for faster response
+      const today = new Date().toISOString().split('T')[0];
+      const [employee, todayRoster] = await Promise.all([
+        storage.getEmployee(employeeId),
+        storage.getRosterByDate(today)
+      ]);
+
       if (!employee) {
         return res.status(404).json({ message: "Karyawan tidak ditemukan" });
       }
@@ -752,9 +746,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Token QR tidak valid" });
       }
 
-      // Get today's roster for this employee (optimized query)
-      const today = new Date().toISOString().split('T')[0];
-      const todayRoster = await storage.getRosterByDate(today);
       const employeeRoster = todayRoster.find(r => r.employeeId === employeeId);
 
       res.json({ 
