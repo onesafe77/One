@@ -1057,8 +1057,14 @@ export class DrizzleStorage implements IStorage {
     for (const monitoring of allMonitoring) {
       let newStatus = monitoring.status;
       
-      // Gunakan data hari kerja yang sudah ada di kolom monitoringDays
+      // Update monitoring days berdasarkan lastLeaveDate
       let monitoringDays = monitoring.monitoringDays;
+      if (monitoring.lastLeaveDate) {
+        const lastLeaveDate = new Date(monitoring.lastLeaveDate);
+        const todayDate = new Date(today);
+        const diffTime = todayDate.getTime() - lastLeaveDate.getTime();
+        monitoringDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+      }
 
       // Auto status berdasarkan monitoring days dan leave option
       const workDaysThreshold = monitoring.leaveOption === "70" ? 70 : 35;
