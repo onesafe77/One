@@ -827,24 +827,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
             // Calculate working days based on actual roster data
             let workingDays = 0;
             try {
-              if (employee?.nik) {
-                // Get all roster data for this employee
-                const allRoster = await storage.getAllRoster();
+              if (employee?.id) {
+                // Get roster data for this employee from start of year to today
                 const today = new Date();
                 const currentYear = today.getFullYear();
                 const startOfYear = new Date(currentYear, 0, 1);
                 
+                const employeeRoster = await storage.getRosterByEmployee(employee.id);
+                
                 // Count working days from start of year to today
-                workingDays = allRoster.filter(rosterEntry => {
+                workingDays = employeeRoster.filter(rosterEntry => {
                   const rosterDate = new Date(rosterEntry.date);
-                  return rosterEntry.employeeId === employee.id && 
-                         rosterDate >= startOfYear && 
-                         rosterDate <= today;
+                  return rosterDate >= startOfYear && rosterDate <= today;
                 }).length;
                 
-                // Alternatively, get from monitoring table if exists and update it
+                // Update monitoring table if exists and different from calculated value
                 const allMonitoring = await storage.getAllLeaveRosterMonitoring();
-                const monitoring = allMonitoring.find(m => m.nik === employee.nik);
+                const monitoring = allMonitoring.find(m => m.nik === employee.id); // NIK sama dengan employee ID
                 
                 if (monitoring && workingDays !== monitoring.monitoringDays) {
                   // Update monitoring table with calculated working days
