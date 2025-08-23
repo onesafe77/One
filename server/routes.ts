@@ -570,6 +570,84 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Get pending leave requests from monitoring (status "Menunggu Cuti")
+  app.get("/api/leave/pending-from-monitoring", async (req, res) => {
+    try {
+      const pendingFromMonitoring = await storage.getLeaveRosterMonitoringByStatus("Menunggu Cuti");
+      
+      // Get employee data to fill missing information
+      const employees = await storage.getEmployees();
+      
+      // Transform monitoring data to leave request format
+      const pendingRequests = pendingFromMonitoring.map(monitoring => {
+        const employee = employees.find(emp => emp.id === monitoring.nik);
+        return {
+          id: `monitoring-${monitoring.id}`,
+          employeeId: monitoring.nik,
+          employeeName: monitoring.name,
+          phoneNumber: employee?.phone || "",
+          startDate: monitoring.nextLeaveDate || "",
+          endDate: "", // To be calculated
+          leaveType: monitoring.leaveOption === "70" ? "Cuti Tahunan" : "Cuti Khusus",
+          reason: `Cuti otomatis berdasarkan monitoring ${monitoring.leaveOption} hari kerja`,
+          attachmentPath: null,
+          status: "monitoring-pending",
+          monitoringId: monitoring.id,
+          investorGroup: monitoring.investorGroup,
+          lastLeaveDate: monitoring.lastLeaveDate,
+          monitoringDays: monitoring.monitoringDays,
+          month: monitoring.month
+        };
+      });
+      
+      res.json(pendingRequests);
+    } catch (error) {
+      console.error('Error fetching pending from monitoring:', error);
+      res.status(500).json({ message: "Failed to fetch pending leave requests from monitoring" });
+    }
+  });
+
+  // Process leave request from monitoring
+  app.post("/api/leave/process-from-monitoring", async (req, res) => {
+    try {
+      const { monitoringId, employeeId, employeeName, phoneNumber, startDate, endDate, leaveType, reason, attachmentPath, action } = req.body;
+      
+      if (action === "approve") {
+        // Create actual leave request
+        const leaveRequest = await storage.createLeaveRequest({
+          employeeId,
+          employeeName,
+          phoneNumber,
+          startDate,
+          endDate,
+          leaveType,
+          reason,
+          attachmentPath,
+          status: "approved"
+        });
+        
+        // Update monitoring status to "Sedang Cuti"
+        await storage.updateLeaveRosterMonitoring(monitoringId, {
+          status: "Sedang Cuti"
+        });
+        
+        res.json({ message: "Leave request approved and processed", leaveRequest });
+      } else if (action === "reject") {
+        // Update monitoring status back to "Aktif"
+        await storage.updateLeaveRosterMonitoring(monitoringId, {
+          status: "Aktif"
+        });
+        
+        res.json({ message: "Leave request rejected" });
+      } else {
+        res.status(400).json({ message: "Invalid action" });
+      }
+    } catch (error) {
+      console.error('Error processing leave from monitoring:', error);
+      res.status(500).json({ message: "Failed to process leave request" });
+    }
+  });
+
   // QR Token routes
   app.post("/api/qr/generate", async (req, res) => {
     try {

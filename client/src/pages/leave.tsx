@@ -200,6 +200,12 @@ export default function Leave() {
     refetchInterval: 60000,
   });
 
+  // Query for pending leave requests from monitoring
+  const { data: pendingFromMonitoring = [], isLoading: loadingPendingMonitoring } = useQuery({
+    queryKey: ["/api/leave/pending-from-monitoring"],
+    refetchInterval: 30000,
+  });
+
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -259,6 +265,26 @@ export default function Leave() {
       toast({
         title: "Error",
         description: "Gagal memperbarui status cuti",
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Mutation for processing leave from monitoring
+  const processMonitoringMutation = useMutation({
+    mutationFn: (data: any) => apiRequest("/api/leave/process-from-monitoring", "POST", data),
+    onSuccess: (data, variables) => {
+      toast({
+        title: "Berhasil",
+        description: variables.action === "approve" ? "Cuti berhasil disetujui" : "Cuti berhasil ditolak",
+      });
+      queryClient.invalidateQueries({ queryKey: ["/api/leave/pending-from-monitoring"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/leave"] });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Gagal",
+        description: error.message || "Gagal memproses cuti",
         variant: "destructive",
       });
     },
@@ -701,11 +727,12 @@ export default function Leave() {
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
-        <TabsList className="grid w-full grid-cols-5">
+        <TabsList className="grid w-full grid-cols-6">
           <TabsTrigger value="pengajuan" className="text-xs">📝 Pengajuan</TabsTrigger>
           <TabsTrigger value="upload-roster" className="text-xs">📤 Upload Roster</TabsTrigger>
           <TabsTrigger value="evaluasi" className="text-xs">📊 Evaluasi</TabsTrigger>
           <TabsTrigger value="monitoring" className="text-xs">🔔 Monitoring</TabsTrigger>
+          <TabsTrigger value="hr-process" className="text-xs">✅ Proses HR</TabsTrigger>
           <TabsTrigger value="daftar" className="text-xs">📋 Daftar Cuti</TabsTrigger>
         </TabsList>
 
@@ -1601,6 +1628,98 @@ export default function Leave() {
               </CardContent>
             </Card>
           </div>
+        </TabsContent>
+
+        <TabsContent value="hr-process" className="space-y-4">
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-lg">Proses HR - Persetujuan Cuti dari Monitoring</CardTitle>
+              <p className="text-sm text-gray-600 dark:text-gray-400">
+                Karyawan dengan status "Menunggu Cuti" dari monitoring roster otomatis muncul di sini untuk diproses HR
+              </p>
+            </CardHeader>
+            
+            <CardContent className="p-3">
+              {loadingPendingMonitoring ? (
+                <div className="text-center py-8">
+                  <div className="text-gray-500 dark:text-gray-400">Loading data monitoring...</div>
+                </div>
+              ) : pendingFromMonitoring.length === 0 ? (
+                <div className="text-center py-8">
+                  <div className="text-gray-500 dark:text-gray-400">Tidak ada karyawan yang perlu diproses HR saat ini</div>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {pendingFromMonitoring.map((request: any) => (
+                    <Card key={request.id} className="border border-orange-200 dark:border-orange-800">
+                      <CardContent className="p-4">
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                          <div className="space-y-2">
+                            <h3 className="font-semibold text-gray-900 dark:text-white">{request.employeeName}</h3>
+                            <p className="text-sm text-gray-600 dark:text-gray-400">NIK: {request.employeeId}</p>
+                            <p className="text-sm text-gray-600 dark:text-gray-400">Investor Group: {request.investorGroup}</p>
+                            <p className="text-sm text-gray-600 dark:text-gray-400">Monitoring: {request.monitoringDays} hari</p>
+                          </div>
+                          
+                          <div className="space-y-2">
+                            <p className="text-sm"><span className="font-medium">Jenis Cuti:</span> {request.leaveType}</p>
+                            <p className="text-sm"><span className="font-medium">Tanggal Mulai:</span> {request.startDate || 'Belum ditentukan'}</p>
+                            <p className="text-sm"><span className="font-medium">Terakhir Cuti:</span> {request.lastLeaveDate || 'Belum pernah'}</p>
+                            <p className="text-sm"><span className="font-medium">WhatsApp:</span> {request.phoneNumber || 'Tidak ada'}</p>
+                          </div>
+                          
+                          <div className="space-y-2">
+                            <p className="text-sm text-gray-600 dark:text-gray-400">{request.reason}</p>
+                            
+                            <div className="flex flex-col space-y-2 mt-4">
+                              <Button
+                                onClick={() => {
+                                  // Calculate end date (assuming 7 days for now)
+                                  const startDate = request.startDate || new Date().toISOString().split('T')[0];
+                                  const endDate = new Date(new Date(startDate).getTime() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+                                  
+                                  processMonitoringMutation.mutate({
+                                    monitoringId: request.monitoringId,
+                                    employeeId: request.employeeId,
+                                    employeeName: request.employeeName,
+                                    phoneNumber: request.phoneNumber,
+                                    startDate,
+                                    endDate,
+                                    leaveType: request.leaveType,
+                                    reason: request.reason,
+                                    attachmentPath: null,
+                                    action: "approve"
+                                  });
+                                }}
+                                disabled={processMonitoringMutation.isPending}
+                                className="bg-green-600 hover:bg-green-700 text-white h-8 text-xs"
+                              >
+                                ✅ Setujui Cuti
+                              </Button>
+                              
+                              <Button
+                                variant="outline"
+                                onClick={() => {
+                                  processMonitoringMutation.mutate({
+                                    monitoringId: request.monitoringId,
+                                    action: "reject"
+                                  });
+                                }}
+                                disabled={processMonitoringMutation.isPending}
+                                className="border-red-300 text-red-700 hover:bg-red-50 dark:border-red-700 dark:text-red-400 dark:hover:bg-red-950 h-8 text-xs"
+                              >
+                                ❌ Tolak Cuti
+                              </Button>
+                            </div>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
         </TabsContent>
 
         <TabsContent value="daftar" className="space-y-4">

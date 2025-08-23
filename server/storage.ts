@@ -1018,6 +1018,14 @@ export class DrizzleStorage implements IStorage {
       .orderBy(drizzleSql`created_at DESC`);
   }
 
+  async getLeaveRosterMonitoringByStatus(status: string): Promise<LeaveRosterMonitoring[]> {
+    return await this.db
+      .select()
+      .from(leaveRosterMonitoring)
+      .where(eq(leaveRosterMonitoring.status, status))
+      .orderBy(drizzleSql`created_at DESC`);
+  }
+
   async createLeaveRosterMonitoring(monitoring: InsertLeaveRosterMonitoring): Promise<LeaveRosterMonitoring> {
     const [result] = await this.db
       .insert(leaveRosterMonitoring)
