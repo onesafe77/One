@@ -824,36 +824,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
           .map(async (record) => {
             const employee = employees.find(emp => emp.id === record.employeeId);
             
-            // Calculate working days based on actual roster data
+            // Ambil data hari kerja langsung dari kolom monitoring yang sudah ada
             let workingDays = 0;
             try {
               if (employee?.id) {
-                // Get roster data for this employee from start of year to today
-                const today = new Date();
-                const currentYear = today.getFullYear();
-                const startOfYear = new Date(currentYear, 0, 1);
-                
-                const employeeRoster = await storage.getRosterByEmployee(employee.id);
-                
-                // Count working days from start of year to today
-                workingDays = employeeRoster.filter(rosterEntry => {
-                  const rosterDate = new Date(rosterEntry.date);
-                  return rosterDate >= startOfYear && rosterDate <= today;
-                }).length;
-                
-                // Update monitoring table if exists and different from calculated value
                 const allMonitoring = await storage.getAllLeaveRosterMonitoring();
                 const monitoring = allMonitoring.find(m => m.nik === employee.id); // NIK sama dengan employee ID
                 
-                if (monitoring && workingDays !== monitoring.monitoringDays) {
-                  // Update monitoring table with calculated working days
-                  await storage.updateLeaveRosterMonitoring(monitoring.id, {
-                    monitoringDays: workingDays
-                  });
+                if (monitoring) {
+                  // Langsung ambil dari kolom monitoringDays yang sudah ada
+                  workingDays = monitoring.monitoringDays || 0;
                 }
               }
             } catch (error) {
-              console.error("Error calculating working days from roster data:", error);
+              console.error("Error getting working days from monitoring data:", error);
               workingDays = 0;
             }
             
