@@ -240,7 +240,7 @@ export default function Leave() {
 
   const updateStatusMutation = useMutation({
     mutationFn: ({ id, status }: { id: string; status: string }) =>
-      apiRequest("PUT", `/api/leave/${id}`, { status }),
+      apiRequest(`/api/leave/${id}`, "PUT", { status }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/leave"] });
       toast({

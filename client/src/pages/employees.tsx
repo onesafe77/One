@@ -176,7 +176,7 @@ export default function Employees() {
 
   const updateMutation = useMutation<Employee, Error, { id: string; data: Partial<InsertEmployee> }>({
     mutationFn: ({ id, data }: { id: string; data: Partial<InsertEmployee> }) =>
-      apiRequest("PUT", `/api/employees/${id}`, data).then(res => res.json()),
+      apiRequest(`/api/employees/${id}`, "PUT", data).then(res => res.json()),
     onSuccess: (result) => {
       queryClient.invalidateQueries({ queryKey: ["/api/employees"] });
       setIsDialogOpen(false);
@@ -198,7 +198,7 @@ export default function Employees() {
   });
 
   const deleteMutation = useMutation<void, Error, string>({
-    mutationFn: (id: string) => apiRequest("DELETE", `/api/employees/${id}`).then(() => {}),
+    mutationFn: (id: string) => apiRequest(`/api/employees/${id}`, "DELETE").then(() => {}),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/employees"] });
       toast({

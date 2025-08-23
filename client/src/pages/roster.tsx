@@ -113,7 +113,7 @@ export default function Roster() {
 
   const updateMutation = useMutation({
     mutationFn: ({ id, data }: { id: string; data: Partial<InsertRosterSchedule> }) => 
-      apiRequest("PUT", `/api/roster/${id}`, data),
+      apiRequest(`/api/roster/${id}`, "PUT", data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/roster"] });
       setIsEditDialogOpen(false);
@@ -133,7 +133,7 @@ export default function Roster() {
   });
 
   const deleteMutation = useMutation({
-    mutationFn: (id: string) => apiRequest("DELETE", `/api/roster/${id}`, {}),
+    mutationFn: (id: string) => apiRequest(`/api/roster/${id}`, "DELETE", {}),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/roster"] });
       toast({
