@@ -122,12 +122,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const secretKey = process.env.QR_SECRET_KEY || 'AttendanceQR2024';
       const tokenData = `${validatedData.id || ''}${secretKey}Attend`;
       const qrToken = Buffer.from(tokenData).toString('base64').slice(0, 16);
-      const qrData = JSON.stringify({ id: validatedData.id, token: qrToken });
+      // Create URL yang mengarah ke aplikasi untuk QR Code
+      const baseUrl = process.env.REPLIT_DOMAINS 
+        ? `https://${process.env.REPLIT_DOMAINS.split(',')[0]}`
+        : 'http://localhost:5000';
+      
+      const qrUrl = `${baseUrl}/qr-redirect?data=${encodeURIComponent(JSON.stringify({ id: validatedData.id, token: qrToken }))}`;
       
       // Add QR Code to employee data
       const employeeWithQR = {
         ...validatedData,
-        qrCode: qrData
+        qrCode: qrUrl // Sekarang berisi URL langsung
       };
       
       const employee = await storage.createEmployee(employeeWithQR);
@@ -724,10 +729,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
+      // Create URL yang mengarah ke aplikasi untuk QR Code
+      const baseUrl = process.env.REPLIT_DOMAINS 
+        ? `https://${process.env.REPLIT_DOMAINS.split(',')[0]}`
+        : 'http://localhost:5000';
+      
+      const qrUrl = `${baseUrl}/qr-redirect?data=${encodeURIComponent(JSON.stringify({ id: employeeId, token }))}`;
+
       res.json({
         employeeId,
         token,
-        qrData: JSON.stringify({ id: employeeId, token })
+        qrData: qrUrl // Sekarang berisi URL langsung
       });
     } catch (error) {
       res.status(500).json({ message: "Failed to generate QR token" });
@@ -1845,6 +1857,113 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error fetching meeting attendance:", error);
       res.status(500).json({ error: "Failed to fetch meeting attendance" });
+    }
+  });
+
+  // Update semua QR Code ke format URL
+  app.post("/api/qr/update-all", async (req, res) => {
+    try {
+      const employees = await storage.getAllEmployees();
+      const baseUrl = process.env.REPLIT_DOMAINS 
+        ? `https://${process.env.REPLIT_DOMAINS.split(',')[0]}`
+        : 'http://localhost:5000';
+      
+      let updatedCount = 0;
+      
+      for (const employee of employees) {
+        // Generate new QR URL format
+        const secretKey = process.env.QR_SECRET_KEY || 'AttendanceQR2024';
+        const tokenData = `${employee.id}${secretKey}Attend`;
+        const qrToken = Buffer.from(tokenData).toString('base64').slice(0, 16);
+        const qrUrl = `${baseUrl}/qr-redirect?data=${encodeURIComponent(JSON.stringify({ id: employee.id, token: qrToken }))}`;
+        
+        // Update employee with new QR URL
+        await storage.updateEmployee(employee.id, { qrCode: qrUrl });
+        updatedCount++;
+      }
+      
+      res.json({ 
+        message: `Berhasil update ${updatedCount} QR Code ke format URL`,
+        updatedCount 
+      });
+    } catch (error) {
+      console.error('Update QR codes error:', error);
+      res.status(500).json({ message: "Failed to update QR codes" });
+    }
+  });
+
+  // QR Redirect endpoint untuk handle scan dari luar aplikasi
+  app.get("/qr-redirect", async (req, res) => {
+    try {
+      const data = req.query.data as string;
+      if (!data) {
+        return res.status(400).send(`
+          <html>
+            <head>
+              <title>QR Code Invalid</title>
+              <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            </head>
+            <body>
+              <div style="text-align:center; padding:20px; font-family:Arial;">
+                <h2>QR Code Invalid</h2>
+                <p>Data QR code tidak valid</p>
+              </div>
+            </body>
+          </html>
+        `);
+      }
+
+      // Parse QR data
+      const qrData = JSON.parse(decodeURIComponent(data));
+      const { id: employeeId, token } = qrData;
+
+      // Validate employee exists
+      const employee = await storage.getEmployee(employeeId);
+      if (!employee) {
+        return res.status(404).send(`
+          <html>
+            <head>
+              <title>Karyawan Tidak Ditemukan</title>
+              <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            </head>
+            <body>
+              <div style="text-align:center; padding:20px; font-family:Arial;">
+                <h2>Karyawan Tidak Ditemukan</h2>
+                <p>Data karyawan dengan ID ${employeeId} tidak ditemukan</p>
+              </div>
+            </body>
+          </html>
+        `);
+      }
+
+      // Deteksi device
+      const userAgent = req.headers['user-agent'] || '';
+      const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(userAgent);
+
+      if (isMobile) {
+        // Redirect ke mobile driver view
+        return res.redirect(`/mobile-driver?nik=${employeeId}`);
+      } else {
+        // Redirect ke attendance scan untuk desktop
+        return res.redirect(`/attendance-scan?employeeId=${employeeId}`);
+      }
+
+    } catch (error) {
+      console.error('QR Redirect error:', error);
+      return res.status(500).send(`
+        <html>
+          <head>
+            <title>Error</title>
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+          </head>
+          <body>
+            <div style="text-align:center; padding:20px; font-family:Arial;">
+              <h2>Terjadi Kesalahan</h2>
+              <p>Gagal memproses QR code. Silakan coba lagi.</p>
+            </div>
+          </body>
+        </html>
+      `);
     }
   });
 

@@ -41,6 +41,7 @@ const routes = [
   { path: "/meeting-scanner", component: MeetingScanner, title: "Scan QR Meeting" },
   { path: "/driver-view", component: DriverView, title: "Driver View - Data Karyawan" },
   { path: "/mobile-driver", component: MobileDriverView, title: "Driver Mobile View" },
+  { path: "/qr-redirect", component: () => <div>Loading...</div>, title: "QR Redirect" },
 ];
 
 function Router() {
