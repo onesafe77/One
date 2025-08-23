@@ -44,6 +44,7 @@ interface LeaveRequest {
 export default function DriverView() {
   const [nik, setNik] = useState("");
   const [searchEmployee, setSearchEmployee] = useState<Employee | null>(null);
+  const [suggestions, setSuggestions] = useState<Employee[]>([]);
 
   // Query untuk mencari employee berdasarkan NIK
   const { data: employees } = useQuery({
@@ -73,10 +74,23 @@ export default function DriverView() {
     if (!nik.trim()) return;
     
     const employeeList = employees as Employee[] || [];
-    const employee = employeeList.find((emp: Employee) => 
-      emp.id === nik.trim() || 
-      emp.name.toLowerCase().includes(nik.trim().toLowerCase())
-    );
+    const searchTerm = nik.trim().toLowerCase();
+    
+    const employee = employeeList.find((emp: Employee) => {
+      // Cari berdasarkan NIK (exact match)
+      if (emp.id.toLowerCase() === searchTerm) return true;
+      
+      // Cari berdasarkan nama (partial match)
+      if (emp.name.toLowerCase().includes(searchTerm)) return true;
+      
+      // Cari berdasarkan nomor lambung jika ada
+      if (emp.nomorLambung && emp.nomorLambung.toLowerCase().includes(searchTerm)) return true;
+      
+      // Cari berdasarkan posisi jika ada
+      if (emp.position && emp.position.toLowerCase().includes(searchTerm)) return true;
+      
+      return false;
+    });
     
     setSearchEmployee(employee || null);
   };
@@ -127,13 +141,57 @@ export default function DriverView() {
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="flex gap-2">
-            <Input
-              placeholder="Masukkan NIK atau nama karyawan..."
-              value={nik}
-              onChange={(e) => setNik(e.target.value)}
-              onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
-              data-testid="input-nik-search"
-            />
+            <div className="relative">
+              <Input
+                placeholder="Masukkan NIK, nama, nomor lambung, atau posisi karyawan..."
+                value={nik}
+                onChange={(e) => {
+                  const value = e.target.value;
+                  setNik(value);
+                  
+                  // Show suggestions saat user mengetik
+                  if (value.trim().length > 2) {
+                    const employeeList = employees as Employee[] || [];
+                    const searchTerm = value.trim().toLowerCase();
+                    
+                    const matchedEmployees = employeeList.filter((emp: Employee) => {
+                      return emp.name.toLowerCase().includes(searchTerm) ||
+                             emp.id.toLowerCase().includes(searchTerm) ||
+                             (emp.nomorLambung && emp.nomorLambung.toLowerCase().includes(searchTerm)) ||
+                             (emp.position && emp.position.toLowerCase().includes(searchTerm));
+                    }).slice(0, 5);
+                    
+                    setSuggestions(matchedEmployees);
+                  } else {
+                    setSuggestions([]);
+                  }
+                }}
+                onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
+                data-testid="input-nik-search"
+              />
+              
+              {/* Suggestions dropdown */}
+              {suggestions.length > 0 && (
+                <div className="absolute top-full left-0 right-0 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-md shadow-lg z-10 mt-1">
+                  {suggestions.map((emp) => (
+                    <div
+                      key={emp.id}
+                      className="px-3 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer border-b border-gray-100 dark:border-gray-700 last:border-b-0"
+                      onClick={() => {
+                        setNik(emp.name);
+                        setSearchEmployee(emp);
+                        setSuggestions([]);
+                      }}
+                    >
+                      <div className="font-medium">{emp.name}</div>
+                      <div className="text-sm text-gray-600 dark:text-gray-400">
+                        NIK: {emp.id} | {emp.position} | {emp.nomorLambung}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
             <Button onClick={handleSearch} data-testid="button-search-employee">
               <Search className="h-4 w-4 mr-2" />
               Cari
@@ -141,7 +199,10 @@ export default function DriverView() {
           </div>
           
           {nik && !searchEmployee && (
-            <p className="text-red-500 text-sm">Karyawan dengan NIK "{nik}" tidak ditemukan</p>
+            <div className="text-red-500 text-sm space-y-1">
+              <p>Karyawan dengan kata kunci "{nik}" tidak ditemukan</p>
+              <p className="text-xs text-gray-500">Coba cari dengan NIK, nama, nomor lambung, atau posisi karyawan</p>
+            </div>
           )}
         </CardContent>
       </Card>
