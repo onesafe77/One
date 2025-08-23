@@ -338,6 +338,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/roster", async (req, res) => {
     try {
       const date = req.query.date as string;
+      const employeeId = req.query.employeeId as string;
+      
+      // Jika ada employeeId, ambil semua roster untuk employee tersebut
+      if (employeeId) {
+        const employeeRoster = await storage.getRosterByEmployee(employeeId);
+        const leaveMonitoring = await storage.getAllLeaveRosterMonitoring();
+        
+        // Enrich roster dengan data leave monitoring (hari kerja)
+        const enrichedRoster = employeeRoster.map(schedule => {
+          const leaveRecord = leaveMonitoring.find(leave => leave.nik === schedule.employeeId);
+          
+          return {
+            ...schedule,
+            workDays: leaveRecord?.monitoringDays || null // Monitoring hari dari leave roster
+          };
+        });
+        
+        return res.json(enrichedRoster);
+      }
+      
+      // Jika tidak ada employeeId, maka wajib ada date parameter
       if (!date) {
         return res.status(400).json({ message: "Date parameter is required" });
       }

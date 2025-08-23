@@ -53,7 +53,13 @@ export default function DriverView() {
 
   // Query untuk roster berdasarkan employee yang dipilih
   const { data: rosterData, isLoading: rosterLoading } = useQuery({
-    queryKey: ["/api/roster"],
+    queryKey: ["/api/roster", { employeeId: searchEmployee?.id }],
+    queryFn: async () => {
+      if (!searchEmployee?.id) return [];
+      const response = await fetch(`/api/roster?employeeId=${searchEmployee.id}`);
+      if (!response.ok) throw new Error('Failed to fetch roster');
+      return response.json();
+    },
     enabled: !!searchEmployee,
   });
 
@@ -75,10 +81,7 @@ export default function DriverView() {
     setSearchEmployee(employee || null);
   };
 
-  const rosterList = rosterData as RosterSchedule[] || [];
-  const employeeRoster = rosterList.filter((roster: RosterSchedule) => 
-    roster.employeeId === searchEmployee?.id
-  );
+  const employeeRoster = (rosterData as RosterSchedule[]) || [];
 
   const leaveList = leaveData as LeaveRequest[] || [];
   const employeeLeaves = leaveList.filter((leave: LeaveRequest) => 
