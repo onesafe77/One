@@ -44,9 +44,9 @@ export function isValidShiftTime(currentTime: string, scheduledShift: string): b
 export function getShiftDescription(shift: string): string {
   switch (shift) {
     case "Shift 1":
-      return "Shift 1 (08:00 - 16:00)";
+      return "Shift 1 (06:00 - 18:00)"; // Waktu window check-in sesuai validasi
     case "Shift 2":
-      return "Shift 2 (18:00 - 06:00)";
+      return "Shift 2 (18:00 - 06:00)"; // Waktu window check-in sesuai validasi
     default:
       return shift;
   }
