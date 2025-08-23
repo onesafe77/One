@@ -185,10 +185,11 @@ export function QRScanner() {
     setIsProcessing(true);
     setScanResult(prev => prev ? { ...prev, status: 'processing' } : null);
     try {
-      const now = new Date();
-      const today = now.toISOString().split('T')[0];
-      // Format waktu konsisten HH:MM:SS untuk database
-      const currentTime = now.toTimeString().split(' ')[0]; // Menggunakan format HH:MM:SS yang konsisten
+      const { getWITATime } = await import("@/lib/shift-utils");
+      const witaTime = getWITATime();
+      const today = witaTime.toISOString().split('T')[0];
+      // Format waktu konsisten HH:MM:SS untuk database (menggunakan waktu WITA)
+      const currentTime = witaTime.toTimeString().split(' ')[0]; // Menggunakan format HH:MM:SS yang konsisten dengan WITA
 
       console.log("Processing attendance for:", scanResult.name);
 
