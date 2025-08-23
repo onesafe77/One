@@ -293,14 +293,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Check if employee is currently on leave
       const leaveRequests = await storage.getAllLeaveRequests();
-      const approvedLeave = leaveRequests.find(leave => 
-        leave.employeeId === validatedData.employeeId &&
-        leave.status === 'approved' &&
-        validatedData.date >= leave.startDate &&
-        validatedData.date <= leave.endDate
-      );
+      console.log(`Checking leave for employee ${validatedData.employeeId} on date ${validatedData.date}`);
+      console.log(`Found ${leaveRequests.length} total leave requests`);
+      
+      const employeeLeaves = leaveRequests.filter(leave => leave.employeeId === validatedData.employeeId);
+      console.log(`Found ${employeeLeaves.length} leave requests for this employee:`, employeeLeaves);
+      
+      const approvedLeave = leaveRequests.find(leave => {
+        const isCorrectEmployee = leave.employeeId === validatedData.employeeId;
+        const isApproved = leave.status === 'approved';
+        const isInDateRange = validatedData.date >= leave.startDate && validatedData.date <= leave.endDate;
+        
+        console.log(`Leave check for ${leave.id}: employee=${isCorrectEmployee}, approved=${isApproved}, dateRange=${isInDateRange} (${leave.startDate} <= ${validatedData.date} <= ${leave.endDate})`);
+        
+        return isCorrectEmployee && isApproved && isInDateRange;
+      });
 
       if (approvedLeave) {
+        console.log(`Employee ${validatedData.employeeId} is on approved leave:`, approvedLeave);
         return res.status(400).json({ 
           message: "Scan ditolak: karyawan sedang cuti",
           leaveDetails: {
