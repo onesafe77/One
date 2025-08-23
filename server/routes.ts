@@ -811,10 +811,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const date = (req.query.date as string) || new Date().toISOString().split('T')[0];
       
-      const [attendance, employees, leaveRosterMonitoring] = await Promise.all([
+      const [attendance, employees] = await Promise.all([
         storage.getAllAttendance(date),
-        storage.getAllEmployees(),
-        storage.getAllLeaveRosterMonitoring()
+        storage.getAllEmployees()
       ]);
 
       // Get recent activities (latest 10 attendance records)
@@ -825,21 +824,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
           .map(async (record) => {
             const employee = employees.find(emp => emp.id === record.employeeId);
             
-            // Find monitoring record for working days calculation
-            const monitoring = leaveRosterMonitoring.find(m => m.employeeId === record.employeeId);
+            // Calculate working days based on roster data
             let workingDays = 0;
-            
-            if (monitoring) {
-              // Calculate working days berdasarkan monitoring days
-              workingDays = monitoring.monitoringDays || 0;
-            } else {
-              // Fallback: get from leave balance if monitoring not found
-              try {
-                const leaveBalance = await storage.getLeaveBalanceByEmployee(record.employeeId);
-                workingDays = leaveBalance?.workingDaysCompleted || 0;
-              } catch (error) {
-                workingDays = 0;
-              }
+            try {
+              // Get all roster data for this employee up to today
+              const allRoster = await storage.getAllRoster();
+              const today = new Date();
+              
+              // Count how many days this employee has been scheduled to work
+              const employeeRosterDays = allRoster.filter(roster => {
+                const rosterDate = new Date(roster.date);
+                return roster.employeeId === record.employeeId && rosterDate <= today;
+              });
+              
+              workingDays = employeeRosterDays.length;
+            } catch (error) {
+              console.error("Error calculating working days from roster:", error);
+              workingDays = 0;
             }
             
             return {
