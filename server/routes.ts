@@ -824,22 +824,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
           .map(async (record) => {
             const employee = employees.find(emp => emp.id === record.employeeId);
             
-            // Calculate working days based on roster data
+            // Get working days from leave roster monitoring data
             let workingDays = 0;
             try {
-              // Get all roster data for this employee up to today
-              const allRoster = await storage.getAllRoster();
-              const today = new Date();
+              // Get monitoring data for this employee
+              const allMonitoring = await storage.getAllLeaveRosterMonitoring();
+              const monitoring = allMonitoring.find(m => m.nik === employee?.nik);
               
-              // Count how many days this employee has been scheduled to work
-              const employeeRosterDays = allRoster.filter(roster => {
-                const rosterDate = new Date(roster.date);
-                return roster.employeeId === record.employeeId && rosterDate <= today;
-              });
-              
-              workingDays = employeeRosterDays.length;
+              if (monitoring) {
+                // Use monitoringDays as working days count
+                workingDays = monitoring.monitoringDays || 0;
+              }
             } catch (error) {
-              console.error("Error calculating working days from roster:", error);
+              console.error("Error getting working days from monitoring data:", error);
               workingDays = 0;
             }
             
