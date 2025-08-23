@@ -50,6 +50,31 @@ function determineShiftByTime(time: string): string {
 }
 
 // Strict shift time validation based on actual roster schedule
+// Fungsi validasi waktu berdasarkan startTime dan endTime roster yang sebenarnya
+function isValidRosterTime(currentTime: string, startTime: string, endTime: string): boolean {
+  const [currentHours, currentMinutes] = currentTime.split(':').map(Number);
+  const currentTotalMinutes = currentHours * 60 + currentMinutes;
+  
+  const [startHours, startMinutes] = startTime.split(':').map(Number);
+  const startTotalMinutes = startHours * 60 + startMinutes;
+  
+  const [endHours, endMinutes] = endTime.split(':').map(Number);
+  const endTotalMinutes = endHours * 60 + endMinutes;
+  
+  // Beri toleransi 30 menit sebelum mulai shift untuk check-in
+  const allowedStartMinutes = Math.max(0, startTotalMinutes - 30);
+  
+  // Jika shift melewati tengah malam (misalnya 18:00 - 06:00)
+  if (endTotalMinutes < startTotalMinutes) {
+    // Shift malam: boleh scan dari (start-30menit) sampai 23:59, atau dari 00:00 sampai end
+    return (currentTotalMinutes >= allowedStartMinutes) || (currentTotalMinutes <= endTotalMinutes);
+  } else {
+    // Shift normal: boleh scan dari (start-30menit) sampai end
+    return currentTotalMinutes >= allowedStartMinutes && currentTotalMinutes <= endTotalMinutes;
+  }
+}
+
+// Fungsi lama untuk backward compatibility (tidak digunakan lagi)
 function isValidShiftTime(currentTime: string, scheduledShift: string): boolean {
   const [hours, minutes] = currentTime.split(':').map(Number);
   const totalMinutes = hours * 60 + minutes;
@@ -269,10 +294,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const now = new Date();
       const currentTime = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
       
-      console.log(`Validating shift for ${validatedData.employeeId}: Current time ${currentTime}, Scheduled ${scheduledEmployee.shift}`);
+      console.log(`Validating shift for ${validatedData.employeeId}: Current time ${currentTime}, Scheduled ${scheduledEmployee.shift} (${scheduledEmployee.startTime} - ${scheduledEmployee.endTime})`);
       
-      // Strict shift validation based on roster schedule
-      const isValidTiming = isValidShiftTime(currentTime, scheduledEmployee.shift);
+      // Strict shift validation based on actual roster schedule startTime and endTime
+      const isValidTiming = isValidRosterTime(currentTime, scheduledEmployee.startTime, scheduledEmployee.endTime);
       
       console.log(`Shift validation result: ${isValidTiming}`);
       
