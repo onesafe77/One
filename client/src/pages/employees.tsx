@@ -13,7 +13,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { insertEmployeeSchema } from "@shared/schema";
 import type { Employee, InsertEmployee } from "@shared/schema";
-import { Plus, Search, Edit, Trash2, Upload, AlertCircle, Download, Eye } from "lucide-react";
+import { Plus, Search, Edit, Trash2, Upload, AlertCircle, Download, Eye, QrCode } from "lucide-react";
 import { z } from "zod";
 import * as XLSX from "xlsx";
 import { useAutoSave } from "@/hooks/useAutoSave";
@@ -359,14 +359,39 @@ export default function Employees() {
       <CardHeader>
         <div className="flex items-center justify-between">
           <CardTitle>Data Karyawan</CardTitle>
-          <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-            <DialogTrigger asChild>
-              <Button onClick={handleNewEmployee} data-testid="add-employee-button">
-                <Plus className="w-4 h-4 mr-2" />
-                Tambah Karyawan
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="sm:max-w-[425px]">
+          <div className="flex gap-2">
+            <Button 
+              onClick={async () => {
+                try {
+                  const response = await apiRequest("/api/qr/update-all", "POST", {});
+                  toast({
+                    title: "QR Code Update",
+                    description: response.message || "Semua QR Code berhasil diupdate ke format URL",
+                  });
+                  queryClient.invalidateQueries({ queryKey: ["/api/employees"] });
+                } catch (error) {
+                  toast({
+                    title: "Error",
+                    description: "Gagal mengupdate QR Code",
+                    variant: "destructive",
+                  });
+                }
+              }}
+              variant="outline"
+              size="sm"
+              data-testid="update-qr-button"
+            >
+              <QrCode className="w-4 h-4 mr-2" />
+              Update QR URL
+            </Button>
+            <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+              <DialogTrigger asChild>
+                <Button onClick={handleNewEmployee} data-testid="add-employee-button">
+                  <Plus className="w-4 h-4 mr-2" />
+                  Tambah Karyawan
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="sm:max-w-[425px]">
               <DialogHeader>
                 <DialogTitle className="flex items-center justify-between">
                   <span>{editingEmployee ? "Edit Karyawan" : "Tambah Karyawan"}</span>
@@ -555,6 +580,7 @@ export default function Employees() {
               </Form>
             </DialogContent>
           </Dialog>
+          </div>
         </div>
       </CardHeader>
       

@@ -1863,32 +1863,57 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Update semua QR Code ke format URL
   app.post("/api/qr/update-all", async (req, res) => {
     try {
+      console.log('Starting QR code update process...');
       const employees = await storage.getAllEmployees();
+      console.log(`Found ${employees.length} employees to update`);
+      
       const baseUrl = process.env.REPLIT_DOMAINS 
         ? `https://${process.env.REPLIT_DOMAINS.split(',')[0]}`
         : 'http://localhost:5000';
       
-      let updatedCount = 0;
+      console.log(`Using base URL: ${baseUrl}`);
       
-      for (const employee of employees) {
-        // Generate new QR URL format
-        const secretKey = process.env.QR_SECRET_KEY || 'AttendanceQR2024';
-        const tokenData = `${employee.id}${secretKey}Attend`;
-        const qrToken = Buffer.from(tokenData).toString('base64').slice(0, 16);
-        const qrUrl = `${baseUrl}/qr-redirect?data=${encodeURIComponent(JSON.stringify({ id: employee.id, token: qrToken }))}`;
+      let updatedCount = 0;
+      const errors: string[] = [];
+      
+      // Process employees in batches to avoid memory issues
+      const BATCH_SIZE = 10;
+      for (let i = 0; i < employees.length; i += BATCH_SIZE) {
+        const batch = employees.slice(i, i + BATCH_SIZE);
+        console.log(`Processing batch ${Math.floor(i/BATCH_SIZE) + 1}/${Math.ceil(employees.length/BATCH_SIZE)}`);
         
-        // Update employee with new QR URL
-        await storage.updateEmployee(employee.id, { qrCode: qrUrl });
-        updatedCount++;
+        for (const employee of batch) {
+          try {
+            // Generate new QR URL format
+            const secretKey = process.env.QR_SECRET_KEY || 'AttendanceQR2024';
+            const tokenData = `${employee.id}${secretKey}Attend`;
+            const qrToken = Buffer.from(tokenData).toString('base64').slice(0, 16);
+            const qrUrl = `${baseUrl}/qr-redirect?data=${encodeURIComponent(JSON.stringify({ id: employee.id, token: qrToken }))}`;
+            
+            // Update employee with new QR URL
+            await storage.updateEmployee(employee.id, { qrCode: qrUrl });
+            updatedCount++;
+            console.log(`Updated QR for employee ${employee.id} - ${employee.name}`);
+          } catch (error) {
+            console.error(`Failed to update employee ${employee.id}:`, error);
+            errors.push(`${employee.id}: ${error}`);
+          }
+        }
       }
+      
+      console.log(`Update complete. Updated: ${updatedCount}, Errors: ${errors.length}`);
       
       res.json({ 
         message: `Berhasil update ${updatedCount} QR Code ke format URL`,
-        updatedCount 
+        updatedCount,
+        errors: errors.length > 0 ? errors : undefined
       });
     } catch (error) {
       console.error('Update QR codes error:', error);
-      res.status(500).json({ message: "Failed to update QR codes" });
+      res.status(500).json({ 
+        message: "Failed to update QR codes", 
+        error: error instanceof Error ? error.message : String(error)
+      });
     }
   });
 
