@@ -23,6 +23,7 @@ import Meetings from "@/pages/meetings";
 import MeetingScanner from "@/pages/meeting-scanner";
 import DriverView from "@/pages/driver-view";
 import MobileDriverView from "@/pages/mobile-driver-view";
+import EmployeePersonalData from "@/pages/employee-personal-data";
 
 import NotFound from "@/pages/not-found";
 
@@ -41,6 +42,7 @@ const routes = [
   { path: "/meeting-scanner", component: MeetingScanner, title: "Scan QR Meeting" },
   { path: "/driver-view", component: DriverView, title: "Driver View - Data Karyawan" },
   { path: "/mobile-driver", component: MobileDriverView, title: "Driver Mobile View" },
+  { path: "/employee-personal", component: EmployeePersonalData, title: "Data Pribadi Karyawan" },
   { path: "/qr-redirect", component: () => <div>Loading...</div>, title: "QR Redirect" },
 ];
 

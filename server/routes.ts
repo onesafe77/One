@@ -1966,11 +1966,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(userAgent);
 
       if (isMobile) {
-        // Redirect ke mobile driver view
-        return res.redirect(`/mobile-driver?nik=${employeeId}`);
+        // Redirect ke halaman data pribadi untuk mobile
+        return res.redirect(`/employee-personal?employeeId=${employeeId}`);
       } else {
-        // Redirect ke attendance scan untuk desktop
-        return res.redirect(`/attendance-scan?employeeId=${employeeId}`);
+        // Redirect ke halaman data pribadi untuk desktop juga
+        return res.redirect(`/employee-personal?employeeId=${employeeId}`);
       }
 
     } catch (error) {
