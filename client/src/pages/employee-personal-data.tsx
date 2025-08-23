@@ -391,6 +391,24 @@ export default function EmployeePersonalData() {
             </Tabs>
           </CardContent>
         </Card>
+
+        {/* Developer Info Footer */}
+        <Card className="border-0 shadow-lg bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20">
+          <CardContent className="p-4 text-center">
+            <div className="space-y-2">
+              <p className="text-xs font-medium text-gray-700 dark:text-gray-300">
+                💻 Sistem Dibuat Oleh
+              </p>
+              <p className="text-sm font-bold text-blue-700 dark:text-blue-400">
+                Bagus Andyka Firmansyah
+              </p>
+              <p className="text-xs text-gray-600 dark:text-gray-400">
+                HSE Data Evaluator GECL
+              </p>
+              <div className="w-16 h-0.5 bg-blue-500 mx-auto rounded-full"></div>
+            </div>
+          </CardContent>
+        </Card>
       </div>
     </div>
   );

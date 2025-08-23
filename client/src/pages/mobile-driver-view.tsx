@@ -405,9 +405,24 @@ export default function MobileDriverView() {
         )}
 
         {/* Footer info untuk mobile */}
-        <div className="text-center text-xs text-gray-500 py-4">
+        <div className="text-center text-xs text-gray-500 py-4 space-y-2">
           <p>Driver View - Read Only</p>
           <p>Data diperbarui secara real-time</p>
+          
+          {/* Developer Info */}
+          <div className="mt-4 pt-3 border-t border-gray-200 dark:border-gray-700">
+            <div className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 rounded-lg p-3 mx-2">
+              <p className="text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
+                💻 Pembuat Sistem
+              </p>
+              <p className="text-xs font-semibold text-blue-700 dark:text-blue-400">
+                Bagus Andyka Firmansyah
+              </p>
+              <p className="text-xs text-gray-600 dark:text-gray-400">
+                HSE Data Evaluator GECL
+              </p>
+            </div>
+          </div>
         </div>
       </div>
     </div>
