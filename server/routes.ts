@@ -265,11 +265,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Karyawan tidak dijadwalkan untuk hari ini" });
       }
 
-      // Get current time from the request data (client sends local time)
-      // Use the time from the attendance data sent by client
-      const requestTime = validatedData.time;
-      const [hours, minutes] = requestTime.split(':').map(Number);
-      const currentTime = `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
+      // Get current time for precise shift validation (menggunakan waktu lokal sistem)
+      const now = new Date();
+      const currentTime = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
       
       console.log(`Validating shift for ${validatedData.employeeId}: Current time ${currentTime}, Scheduled ${scheduledEmployee.shift}`);
       
