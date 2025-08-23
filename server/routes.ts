@@ -811,28 +811,50 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const date = (req.query.date as string) || new Date().toISOString().split('T')[0];
       
-      const [attendance, employees] = await Promise.all([
+      const [attendance, employees, leaveRosterMonitoring] = await Promise.all([
         storage.getAllAttendance(date),
-        storage.getAllEmployees()
+        storage.getAllEmployees(),
+        storage.getAllLeaveRosterMonitoring()
       ]);
 
       // Get recent activities (latest 10 attendance records)
-      const recentActivities = attendance
-        .sort((a, b) => new Date(b.createdAt || b.date).getTime() - new Date(a.createdAt || a.date).getTime())
-        .slice(0, 10)
-        .map(record => {
-          const employee = employees.find(emp => emp.id === record.employeeId);
-          return {
-            id: record.id,
-            employeeId: record.employeeId,
-            employeeName: employee?.name || 'Unknown',
-            time: record.time,
-            jamTidur: record.jamTidur,
-            fitToWork: record.fitToWork,
-            status: record.status,
-            createdAt: record.createdAt
-          };
-        });
+      const recentActivities = await Promise.all(
+        attendance
+          .sort((a, b) => new Date(b.createdAt || b.date).getTime() - new Date(a.createdAt || a.date).getTime())
+          .slice(0, 10)
+          .map(async (record) => {
+            const employee = employees.find(emp => emp.id === record.employeeId);
+            
+            // Find monitoring record for working days calculation
+            const monitoring = leaveRosterMonitoring.find(m => m.employeeId === record.employeeId);
+            let workingDays = 0;
+            
+            if (monitoring) {
+              // Calculate working days berdasarkan monitoring days
+              workingDays = monitoring.monitoringDays || 0;
+            } else {
+              // Fallback: get from leave balance if monitoring not found
+              try {
+                const leaveBalance = await storage.getLeaveBalanceByEmployee(record.employeeId);
+                workingDays = leaveBalance?.workingDaysCompleted || 0;
+              } catch (error) {
+                workingDays = 0;
+              }
+            }
+            
+            return {
+              id: record.id,
+              employeeId: record.employeeId,
+              employeeName: employee?.name || 'Unknown',
+              time: record.time,
+              jamTidur: record.jamTidur,
+              fitToWork: record.fitToWork,
+              status: record.status,
+              createdAt: record.createdAt,
+              workingDays: workingDays
+            };
+          })
+      );
 
       res.json(recentActivities);
     } catch (error) {

@@ -8,7 +8,7 @@ import { validateQRData } from "@/lib/crypto-utils";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { determineShiftByTime, getCurrentShift } from "@/lib/shift-utils";
-import { Camera, CameraOff, CheckCircle, User, Clock, XCircle, Moon, Heart, Activity } from "lucide-react";
+import { Camera, CameraOff, CheckCircle, User, Clock, XCircle, Moon, Heart, Activity, Calendar } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import jsQR from "jsqr";
 
@@ -34,6 +34,7 @@ interface RecentActivity {
   fitToWork: string;
   status: string;
   createdAt: string;
+  workingDays: number;
 }
 
 export function QRScanner() {
@@ -612,7 +613,7 @@ export function QRScanner() {
                         ({activity.employeeId})
                       </span>
                     </div>
-                    <div className="flex items-center space-x-4 mt-1 text-xs text-gray-600 dark:text-gray-300">
+                    <div className="flex items-center space-x-3 mt-1 text-xs text-gray-600 dark:text-gray-300">
                       <span className="flex items-center">
                         <Clock className="w-3 h-3 mr-1" />
                         {activity.time}
@@ -624,6 +625,10 @@ export function QRScanner() {
                       <span className="flex items-center">
                         <Heart className="w-3 h-3 mr-1" />
                         {activity.fitToWork}
+                      </span>
+                      <span className="flex items-center">
+                        <Calendar className="w-3 h-3 mr-1" />
+                        Hari ke-{activity.workingDays}
                       </span>
                     </div>
                   </div>
