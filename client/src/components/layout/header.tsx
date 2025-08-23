@@ -21,21 +21,21 @@ export function Header({ title, onMenuClick }: HeaderProps) {
   }, []);
 
   const formatDate = (date: Date) => {
+    // Gunakan tanggal lokal browser tanpa konversi timezone
     return date.toLocaleDateString('id-ID', {
       weekday: 'long',
       year: 'numeric',
       month: 'long',
-      day: 'numeric',
-      timeZone: 'Asia/Jakarta'
+      day: 'numeric'
     });
   };
 
   const formatTime = (date: Date) => {
+    // Gunakan waktu lokal browser tanpa konversi timezone
     return date.toLocaleTimeString('id-ID', {
       hour: '2-digit',
       minute: '2-digit',
-      second: '2-digit',
-      timeZone: 'Asia/Jakarta'
+      second: '2-digit'
     });
   };
 
