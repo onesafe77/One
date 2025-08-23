@@ -28,6 +28,7 @@ const navigation = [
   { name: "Monitoring Roster Cuti", href: "/leave-roster-monitoring", icon: Monitor },
   { name: "Meeting Management", href: "/meetings", icon: Video },
   { name: "Scan QR Meeting", href: "/meeting-scanner", icon: Smartphone },
+  { name: "Driver View", href: "/driver-view", icon: User },
   { name: "Laporan", href: "/reports", icon: FileText },
   { name: "Blast WhatsApp", href: "/whatsapp-blast", icon: MessageSquare },
 ];
