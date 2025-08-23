@@ -8,7 +8,8 @@ import { validateQRData } from "@/lib/crypto-utils";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { determineShiftByTime, getCurrentShift } from "@/lib/shift-utils";
-import { Camera, CameraOff, CheckCircle, User, Clock, XCircle, Moon, Heart } from "lucide-react";
+import { Camera, CameraOff, CheckCircle, User, Clock, XCircle, Moon, Heart, Activity } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
 import jsQR from "jsqr";
 
 interface ScanResult {
@@ -24,6 +25,17 @@ interface AttendanceFormData {
   fitToWork: string;
 }
 
+interface RecentActivity {
+  id: string;
+  employeeId: string;
+  employeeName: string;
+  time: string;
+  jamTidur: string;
+  fitToWork: string;
+  status: string;
+  createdAt: string;
+}
+
 export function QRScanner() {
   const [isScanning, setIsScanning] = useState(false);
   const [scanResult, setScanResult] = useState<ScanResult | null>(null);
@@ -37,6 +49,23 @@ export function QRScanner() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const scanningRef = useRef(false);
   const { toast } = useToast();
+
+  // Query untuk mengambil aktivitas terbaru
+  const today = new Date().toISOString().split('T')[0];
+  const { data: recentActivities, refetch: refetchActivities } = useQuery<RecentActivity[]>({
+    queryKey: ["/api/dashboard/recent-activities", today],
+    queryFn: async () => {
+      const response = await fetch(`/api/dashboard/recent-activities?date=${today}`, {
+        cache: 'no-cache',
+        headers: { 'Cache-Control': 'no-cache' }
+      });
+      if (!response.ok) throw new Error('Failed to fetch activities');
+      return response.json();
+    },
+    staleTime: 0,
+    refetchOnWindowFocus: true,
+    refetchInterval: 30000, // Auto-refresh setiap 30 detik
+  });
 
   const startScanning = async () => {
     try {
@@ -252,6 +281,9 @@ export function QRScanner() {
         queryClient.refetchQueries({ queryKey: ["/api/dashboard/stats"] }),
         queryClient.refetchQueries({ queryKey: ["/api/dashboard/attendance-details"] })
       ]);
+      
+      // Refresh recent activities
+      refetchActivities();
       
       // Reset form and clear scan result after 3 seconds
       setTimeout(() => {
@@ -538,6 +570,85 @@ export function QRScanner() {
                 <div className="text-center py-2">
                   <p className="text-sm text-gray-600 dark:text-gray-400">
                     Sedang memproses absensi, harap tunggu...
+                  </p>
+                </div>
+              )}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Recent Activities Card */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center">
+            <Activity className="w-5 h-5 mr-2" />
+            Aktivitas Absensi Terbaru
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          {recentActivities?.length === 0 ? (
+            <div className="text-center py-8" data-testid="no-activities">
+              <div className="w-16 h-16 bg-gray-100 dark:bg-gray-700 rounded-full flex items-center justify-center mx-auto mb-4">
+                <Activity className="w-8 h-8 text-gray-400" />
+              </div>
+              <p className="text-gray-500 dark:text-gray-400">Belum ada aktivitas absensi hari ini</p>
+            </div>
+          ) : (
+            <div className="space-y-3" data-testid="recent-activities-list">
+              {recentActivities?.slice(0, 5).map((activity) => (
+                <div 
+                  key={activity.id} 
+                  className="flex justify-between items-center p-3 bg-gray-50 dark:bg-gray-800 rounded-lg border"
+                  data-testid={`activity-${activity.employeeId}`}
+                >
+                  <div className="flex-1">
+                    <div className="flex items-center space-x-2">
+                      <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                      <span className="font-medium text-sm text-gray-900 dark:text-white">
+                        {activity.employeeName}
+                      </span>
+                      <span className="text-xs text-gray-500 dark:text-gray-400">
+                        ({activity.employeeId})
+                      </span>
+                    </div>
+                    <div className="flex items-center space-x-4 mt-1 text-xs text-gray-600 dark:text-gray-300">
+                      <span className="flex items-center">
+                        <Clock className="w-3 h-3 mr-1" />
+                        {activity.time}
+                      </span>
+                      <span className="flex items-center">
+                        <Moon className="w-3 h-3 mr-1" />
+                        {activity.jamTidur} jam
+                      </span>
+                      <span className="flex items-center">
+                        <Heart className="w-3 h-3 mr-1" />
+                        {activity.fitToWork}
+                      </span>
+                    </div>
+                  </div>
+                  <div className="flex flex-col items-end">
+                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                      activity.status === 'present' 
+                        ? 'bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200'
+                        : 'bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200'
+                    }`}>
+                      {activity.status === 'present' ? 'Hadir' : activity.status}
+                    </span>
+                    <span className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                      {new Date(activity.createdAt).toLocaleTimeString('id-ID', {
+                        hour: '2-digit',
+                        minute: '2-digit'
+                      })}
+                    </span>
+                  </div>
+                </div>
+              ))}
+              
+              {recentActivities && recentActivities.length > 5 && (
+                <div className="text-center pt-2">
+                  <p className="text-sm text-gray-500 dark:text-gray-400">
+                    Menampilkan 5 dari {recentActivities.length} aktivitas hari ini
                   </p>
                 </div>
               )}
