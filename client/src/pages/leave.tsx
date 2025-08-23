@@ -11,6 +11,8 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem } from "@/components/ui/command";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
@@ -32,6 +34,8 @@ import {
   Download,
   FileSpreadsheet,
   AlertCircle,
+  Check,
+  ChevronsUpDown,
   TrendingUp,
   Users,
   Calendar,
@@ -48,6 +52,7 @@ import { z } from "zod";
 import * as XLSX from "xlsx";
 import { format, parseISO } from "date-fns";
 import { id as localeId } from "date-fns/locale";
+import { cn } from "@/lib/utils";
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -150,6 +155,8 @@ export default function Leave() {
   const [uploadedAttachmentPath, setUploadedAttachmentPath] = useState<string>("");
   const [isUploading, setIsUploading] = useState(false);
   const [activeTab, setActiveTab] = useState("pengajuan");
+  const [openCombobox, setOpenCombobox] = useState(false);
+  const [employeeSearchValue, setEmployeeSearchValue] = useState("");
   
   // Upload Roster States
   const [file, setFile] = useState<File | null>(null);
@@ -715,26 +722,80 @@ export default function Leave() {
                 <FormField
                   control={form.control}
                   name="employeeId"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel className="text-sm">Karyawan</FormLabel>
-                      <Select onValueChange={field.onChange} defaultValue={field.value}>
-                        <FormControl>
-                          <SelectTrigger className="h-9" data-testid="leave-employee-select">
-                            <SelectValue placeholder="-- Pilih Karyawan --" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          {employees.map((employee) => (
-                            <SelectItem key={employee.id} value={employee.id}>
-                              {employee.id} - {employee.name}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
+                  render={({ field }) => {
+                    const selectedEmployee = employees.find(emp => emp.id === field.value);
+                    const filteredEmployees = employees.filter((employee) =>
+                      employee.name.toLowerCase().includes(employeeSearchValue.toLowerCase()) ||
+                      employee.id.toLowerCase().includes(employeeSearchValue.toLowerCase())
+                    );
+                    
+                    return (
+                      <FormItem>
+                        <FormLabel className="text-sm">Karyawan</FormLabel>
+                        <Popover open={openCombobox} onOpenChange={setOpenCombobox}>
+                          <PopoverTrigger asChild>
+                            <FormControl>
+                              <Button
+                                variant="outline"
+                                role="combobox"
+                                aria-expanded={openCombobox}
+                                className={cn(
+                                  "h-9 w-full justify-between",
+                                  !field.value && "text-muted-foreground"
+                                )}
+                                data-testid="leave-employee-select"
+                              >
+                                {selectedEmployee ? `${selectedEmployee.id} - ${selectedEmployee.name}` : "-- Pilih Karyawan --"}
+                                <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                              </Button>
+                            </FormControl>
+                          </PopoverTrigger>
+                          <PopoverContent className="w-[400px] p-0">
+                            <Command>
+                              <CommandInput 
+                                placeholder="Cari nama atau NIK karyawan..." 
+                                value={employeeSearchValue}
+                                onValueChange={setEmployeeSearchValue}
+                              />
+                              <CommandEmpty>Tidak ada karyawan yang ditemukan.</CommandEmpty>
+                              <CommandGroup className="max-h-60 overflow-auto">
+                                {filteredEmployees.map((employee) => (
+                                  <CommandItem
+                                    key={employee.id}
+                                    value={employee.id}
+                                    onSelect={(currentValue) => {
+                                      field.onChange(currentValue === field.value ? "" : currentValue);
+                                      setOpenCombobox(false);
+                                      setEmployeeSearchValue("");
+                                      
+                                      // Auto-fill phone number
+                                      const selectedEmp = employees.find(emp => emp.id === currentValue);
+                                      if (selectedEmp) {
+                                        form.setValue("phoneNumber", selectedEmp.phone);
+                                        form.setValue("employeeName", selectedEmp.name);
+                                      }
+                                    }}
+                                  >
+                                    <Check
+                                      className={cn(
+                                        "mr-2 h-4 w-4",
+                                        field.value === employee.id ? "opacity-100" : "opacity-0"
+                                      )}
+                                    />
+                                    <div className="flex flex-col">
+                                      <span className="font-medium">{employee.name}</span>
+                                      <span className="text-sm text-muted-foreground">{employee.id}</span>
+                                    </div>
+                                  </CommandItem>
+                                ))}
+                              </CommandGroup>
+                            </Command>
+                          </PopoverContent>
+                        </Popover>
+                        <FormMessage />
+                      </FormItem>
+                    );
+                  }}
                 />
 
                 <FormField
