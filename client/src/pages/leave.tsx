@@ -731,10 +731,9 @@ export default function Leave() {
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
-        <TabsList className="grid w-full grid-cols-3">
+        <TabsList className="grid w-full grid-cols-2">
           <TabsTrigger value="pengajuan" className="text-xs">📝 Pengajuan</TabsTrigger>
-          <TabsTrigger value="hr-process" className="text-xs">✅ Proses HR</TabsTrigger>
-          <TabsTrigger value="daftar" className="text-xs">📋 Daftar Cuti</TabsTrigger>
+          <TabsTrigger value="manajemen-hr" className="text-xs">🏢 Manajemen HR</TabsTrigger>
         </TabsList>
 
         <TabsContent value="pengajuan" className="space-y-4">
@@ -1200,54 +1199,80 @@ export default function Leave() {
             </div>
           </CardContent>
         </Card>
-      </div>
+          </div>
         </TabsContent>
 
-
-        <TabsContent value="hr-process" className="space-y-4">
-          <Card>
-            <CardHeader className="pb-3">
-              <CardTitle className="text-lg">Proses HR - Persetujuan Cuti dari Monitoring</CardTitle>
-              <p className="text-sm text-gray-600 dark:text-gray-400">
-                Karyawan dengan status "Menunggu Cuti" dari monitoring roster otomatis muncul di sini untuk diproses HR
-              </p>
+        <TabsContent value="manajemen-hr" className="space-y-6">
+          {/* Section Proses HR - Persetujuan Cuti dari Monitoring */}
+          <Card className="bg-gradient-to-r from-orange-50 to-amber-50 dark:from-orange-900/20 dark:to-amber-900/20 border-orange-200 dark:border-orange-800">
+            <CardHeader className="pb-4">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 bg-orange-100 dark:bg-orange-900/30 rounded-full flex items-center justify-center">
+                  <CheckCircle className="w-5 h-5 text-orange-600 dark:text-orange-400" />
+                </div>
+                <div>
+                  <CardTitle className="text-xl text-orange-800 dark:text-orange-200">Proses HR - Persetujuan Cuti dari Monitoring</CardTitle>
+                  <p className="text-sm text-orange-700 dark:text-orange-300 mt-1">
+                    Karyawan dengan status "Menunggu Cuti" dari monitoring roster otomatis muncul di sini untuk diproses HR
+                  </p>
+                </div>
+              </div>
             </CardHeader>
             
-            <CardContent className="p-3">
+            <CardContent className="p-4">
               {loadingPendingMonitoring ? (
                 <div className="text-center py-8">
-                  <div className="text-gray-500 dark:text-gray-400">Loading data monitoring...</div>
+                  <div className="animate-pulse flex flex-col items-center">
+                    <div className="w-8 h-8 bg-orange-200 dark:bg-orange-800 rounded-full mb-2"></div>
+                    <div className="text-orange-600 dark:text-orange-400">Loading data monitoring...</div>
+                  </div>
                 </div>
               ) : (!Array.isArray(pendingFromMonitoring) || pendingFromMonitoring.length === 0) ? (
                 <div className="text-center py-8">
-                  <div className="text-gray-500 dark:text-gray-400">Tidak ada karyawan yang perlu diproses HR saat ini</div>
+                  <div className="w-16 h-16 bg-orange-100 dark:bg-orange-900/30 rounded-full flex items-center justify-center mx-auto mb-3">
+                    <CheckCircle className="w-8 h-8 text-orange-400" />
+                  </div>
+                  <p className="text-orange-600 dark:text-orange-400 font-medium">Tidak ada karyawan yang perlu diproses HR saat ini</p>
+                  <p className="text-orange-500 dark:text-orange-500 text-sm mt-1">Semua pengajuan cuti sudah ditangani</p>
                 </div>
               ) : (
-                <div className="space-y-3">
+                <div className="space-y-4">
                   {Array.isArray(pendingFromMonitoring) && pendingFromMonitoring.map((request: any) => (
-                    <Card key={request.id} className="border border-orange-200 dark:border-orange-800">
-                      <CardContent className="p-4">
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                          <div className="space-y-2">
-                            <h3 className="font-semibold text-gray-900 dark:text-white">{request.employeeName}</h3>
-                            <p className="text-sm text-gray-600 dark:text-gray-400">NIK: {request.employeeId}</p>
-                            <p className="text-sm text-gray-600 dark:text-gray-400">Investor Group: {request.investorGroup}</p>
-                            <p className="text-sm text-gray-600 dark:text-gray-400">Monitoring: {request.monitoringDays} hari</p>
+                    <Card key={request.id} className="border-2 border-orange-200 dark:border-orange-700 shadow-lg hover:shadow-xl transition-shadow duration-200">
+                      <CardContent className="p-5">
+                        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                          <div className="space-y-3">
+                            <div className="flex items-center gap-3">
+                              <div className="w-8 h-8 bg-blue-100 dark:bg-blue-900/30 rounded-full flex items-center justify-center">
+                                <User className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+                              </div>
+                              <div>
+                                <h3 className="font-bold text-gray-900 dark:text-white text-lg">{request.employeeName}</h3>
+                                <p className="text-sm text-gray-600 dark:text-gray-400">NIK: {request.employeeId}</p>
+                              </div>
+                            </div>
+                            <div className="bg-white dark:bg-gray-800 p-3 rounded-lg space-y-2">
+                              <p className="text-sm"><span className="font-medium text-gray-700 dark:text-gray-300">Investor Group:</span> <span className="text-blue-600 dark:text-blue-400">{request.investorGroup}</span></p>
+                              <p className="text-sm"><span className="font-medium text-gray-700 dark:text-gray-300">Monitoring:</span> <span className="font-bold text-orange-600 dark:text-orange-400">{request.monitoringDays} hari</span></p>
+                            </div>
                           </div>
                           
-                          <div className="space-y-2">
-                            <p className="text-sm"><span className="font-medium">Jenis Cuti:</span> {request.leaveType}</p>
-                            <p className="text-sm"><span className="font-medium">Tanggal Mulai:</span> {request.startDate || 'Belum ditentukan'}</p>
-                            <p className="text-sm"><span className="font-medium">Terakhir Cuti:</span> {request.lastLeaveDate || 'Belum pernah'}</p>
-                            <p className="text-sm"><span className="font-medium">WhatsApp:</span> {request.phoneNumber || 'Tidak ada'}</p>
+                          <div className="space-y-3">
+                            <div className="bg-white dark:bg-gray-800 p-3 rounded-lg space-y-2">
+                              <p className="text-sm"><span className="font-medium text-gray-700 dark:text-gray-300">Jenis Cuti:</span> <span className="text-green-600 dark:text-green-400 font-medium">{request.leaveType}</span></p>
+                              <p className="text-sm"><span className="font-medium text-gray-700 dark:text-gray-300">Tanggal Mulai:</span> {request.startDate || 'Belum ditentukan'}</p>
+                              <p className="text-sm"><span className="font-medium text-gray-700 dark:text-gray-300">Terakhir Cuti:</span> {request.lastLeaveDate || 'Belum pernah'}</p>
+                              <p className="text-sm"><span className="font-medium text-gray-700 dark:text-gray-300">WhatsApp:</span> {request.phoneNumber || 'Tidak ada'}</p>
+                            </div>
+                            <div className="bg-gray-50 dark:bg-gray-800 p-3 rounded-lg">
+                              <p className="text-sm text-gray-700 dark:text-gray-300">{request.reason}</p>
+                            </div>
                           </div>
                           
-                          <div className="space-y-2">
-                            <p className="text-sm text-gray-600 dark:text-gray-400">{request.reason}</p>
-                            
+                          <div className="space-y-4">
                             {/* PDF Upload Section */}
-                            <div className="border-t pt-3 mt-3">
-                              <Label className="text-xs font-medium">Upload Form Cuti (PDF)</Label>
+                            <div className="bg-white dark:bg-gray-800 p-4 rounded-lg border-2 border-dashed border-gray-200 dark:border-gray-700">
+                              <Label className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2 block">📄 Upload Form Cuti (PDF)</Label>
                               {!hrUploadedFiles[request.id] ? (
                                 <ObjectUploader
                                   maxNumberOfFiles={1}
@@ -1286,24 +1311,24 @@ export default function Leave() {
                                       });
                                     }
                                   }}
-                                  buttonClassName="w-full h-8 text-xs"
+                                  buttonClassName="w-full h-10 bg-blue-600 hover:bg-blue-700"
                                 >
                                   {hrUploadingFiles[request.id] ? (
                                     <>
-                                      <Upload className="w-3 h-3 mr-1 animate-spin" />
+                                      <Upload className="w-4 h-4 mr-2 animate-spin" />
                                       Uploading...
                                     </>
                                   ) : (
                                     <>
-                                      <Upload className="w-3 h-3 mr-1" />
-                                      Upload PDF
+                                      <Upload className="w-4 h-4 mr-2" />
+                                      Upload PDF Form
                                     </>
                                   )}
                                 </ObjectUploader>
                               ) : (
                                 <div className="flex items-center gap-2">
-                                  <Badge variant="outline" className="text-green-600 border-green-300">
-                                    <FileText className="w-3 h-3 mr-1" />
+                                  <Badge variant="outline" className="text-green-600 border-green-300 bg-green-50 dark:bg-green-900/20">
+                                    <FileText className="w-4 h-4 mr-1" />
                                     PDF Terupload
                                   </Badge>
                                   <Button
@@ -1316,15 +1341,15 @@ export default function Leave() {
                                         return newFiles;
                                       });
                                     }}
-                                    className="h-6 text-xs text-red-600 hover:text-red-700"
+                                    className="h-8 text-xs text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/20"
                                   >
-                                    Hapus
+                                    ❌ Hapus
                                   </Button>
                                 </div>
                               )}
                             </div>
                             
-                            <div className="flex flex-col space-y-2 mt-4">
+                            <div className="grid grid-cols-1 gap-2">
                               <Button
                                 onClick={() => {
                                   // Calculate end date (assuming 7 days for now)
@@ -1345,7 +1370,7 @@ export default function Leave() {
                                   });
                                 }}
                                 disabled={processMonitoringMutation.isPending}
-                                className="bg-green-600 hover:bg-green-700 text-white h-8 text-xs"
+                                className="bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white h-10 font-medium shadow-lg hover:shadow-xl transition-all duration-200"
                               >
                                 ✅ Setujui Cuti
                               </Button>
@@ -1359,7 +1384,7 @@ export default function Leave() {
                                   });
                                 }}
                                 disabled={processMonitoringMutation.isPending}
-                                className="border-red-300 text-red-700 hover:bg-red-50 dark:border-red-700 dark:text-red-400 dark:hover:bg-red-950 h-8 text-xs"
+                                className="border-2 border-red-300 text-red-700 hover:bg-red-50 dark:border-red-700 dark:text-red-400 dark:hover:bg-red-950 h-10 font-medium shadow-md hover:shadow-lg transition-all duration-200"
                               >
                                 ❌ Tolak Cuti
                               </Button>
@@ -1373,9 +1398,285 @@ export default function Leave() {
               )}
             </CardContent>
           </Card>
-        </TabsContent>
 
-        <TabsContent value="daftar" className="space-y-4">
+          {/* Section Daftar Permohonan Cuti */}
+          <Card className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 border-blue-200 dark:border-blue-800">
+            <CardHeader className="pb-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 bg-blue-100 dark:bg-blue-900/30 rounded-full flex items-center justify-center">
+                    <FileText className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+                  </div>
+                  <div>
+                    <CardTitle className="text-xl text-blue-800 dark:text-blue-200">Daftar Permohonan Cuti</CardTitle>
+                    <p className="text-sm text-blue-700 dark:text-blue-300 mt-1">
+                      Kelola semua pengajuan cuti karyawan dengan mudah
+                    </p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-3">
+                  <Select value={statusFilter} onValueChange={setStatusFilter}>
+                    <SelectTrigger className="w-40 h-10 border-2 border-blue-200 dark:border-blue-700" data-testid="leave-status-filter">
+                      <SelectValue placeholder="Semua Status" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">🌐 Semua Status</SelectItem>
+                      <SelectItem value="pending">⏳ Menunggu</SelectItem>
+                      <SelectItem value="approved">✅ Disetujui</SelectItem>
+                      <SelectItem value="rejected">❌ Ditolak</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+            </CardHeader>
+            
+            <CardContent className="p-4">
+              <div className="bg-white dark:bg-gray-800 rounded-lg border border-blue-200 dark:border-blue-700 overflow-hidden">
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm">
+                    <thead className="bg-blue-100 dark:bg-blue-900/30">
+                      <tr>
+                        <th className="text-left py-4 px-4 font-semibold text-blue-800 dark:text-blue-200 text-sm">👤 Karyawan</th>
+                        <th className="text-left py-4 px-4 font-semibold text-blue-800 dark:text-blue-200 text-sm">📅 Tanggal</th>
+                        <th className="text-left py-4 px-4 font-semibold text-blue-800 dark:text-blue-200 text-sm">📋 Jenis</th>
+                        <th className="text-left py-4 px-4 font-semibold text-blue-800 dark:text-blue-200 text-sm">⏱️ Durasi</th>
+                        <th className="text-left py-4 px-4 font-semibold text-blue-800 dark:text-blue-200 text-sm">📎 Lampiran</th>
+                        <th className="text-left py-4 px-4 font-semibold text-blue-800 dark:text-blue-200 text-sm">🏷️ Status</th>
+                        <th className="text-left py-4 px-4 font-semibold text-blue-800 dark:text-blue-200 text-sm">⚙️ Aksi</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-blue-100 dark:divide-blue-800">
+                      {isLoading ? (
+                        <tr>
+                          <td colSpan={7} className="py-8 text-center">
+                            <div className="flex flex-col items-center">
+                              <div className="animate-spin w-8 h-8 border-4 border-blue-200 border-t-blue-600 rounded-full mb-2"></div>
+                              <div className="text-blue-600 dark:text-blue-400 font-medium">Loading data cuti...</div>
+                            </div>
+                          </td>
+                        </tr>
+                      ) : filteredLeaveRequests.length === 0 ? (
+                        <tr>
+                          <td colSpan={7} className="py-8 text-center">
+                            <div className="flex flex-col items-center">
+                              <div className="w-16 h-16 bg-blue-100 dark:bg-blue-900/30 rounded-full flex items-center justify-center mb-3">
+                                <FileText className="w-8 h-8 text-blue-400" />
+                              </div>
+                              <p className="text-blue-600 dark:text-blue-400 font-medium">Tidak ada data cuti</p>
+                              <p className="text-blue-500 dark:text-blue-500 text-sm mt-1">Belum ada pengajuan cuti yang masuk</p>
+                            </div>
+                          </td>
+                        </tr>
+                      ) : (
+                        filteredLeaveRequests.map((request) => (
+                          <tr key={request.id} data-testid={`leave-row-${request.id}`} className="hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors duration-150">
+                            <td className="py-4 px-4">
+                              <div className="flex items-center gap-3">
+                                <div className="w-8 h-8 bg-gray-200 dark:bg-gray-700 rounded-full flex items-center justify-center">
+                                  <User className="w-4 h-4 text-gray-600 dark:text-gray-400" />
+                                </div>
+                                <div>
+                                  <div className="font-semibold text-gray-900 dark:text-white">{getEmployeeName(request.employeeId)}</div>
+                                  <div className="text-xs text-gray-500 dark:text-gray-400">{request.employeeId}</div>
+                                </div>
+                              </div>
+                            </td>
+                            <td className="py-4 px-4">
+                              <div className="space-y-1">
+                                <div className="text-sm font-medium text-gray-900 dark:text-white">{new Date(request.startDate).toLocaleDateString('id-ID')}</div>
+                                <div className="text-xs text-gray-500 dark:text-gray-400">s/d</div>
+                                <div className="text-sm font-medium text-gray-900 dark:text-white">{new Date(request.endDate).toLocaleDateString('id-ID')}</div>
+                              </div>
+                            </td>
+                            <td className="py-4 px-4">
+                              <Badge variant="outline" className="bg-gray-50 dark:bg-gray-800">
+                                {getLeaveTypeLabel(request.leaveType)}
+                              </Badge>
+                            </td>
+                            <td className="py-4 px-4 text-center">
+                              <div className="bg-orange-100 dark:bg-orange-900/30 px-3 py-1 rounded-full">
+                                <span className="font-bold text-orange-700 dark:text-orange-300">{calculateDays(request.startDate, request.endDate)}</span>
+                                <span className="text-xs text-orange-600 dark:text-orange-400 ml-1">hari</span>
+                              </div>
+                            </td>
+                            <td className="py-4 px-4 text-center">
+                              {request.attachmentPath ? (
+                                <a 
+                                  href={convertToProxyPath(request.attachmentPath)} 
+                                  target="_blank" 
+                                  rel="noopener noreferrer"
+                                  className="inline-flex items-center justify-center w-8 h-8 bg-red-100 dark:bg-red-900/30 rounded-full text-red-600 hover:text-red-700 dark:text-red-400 transition-colors"
+                                  title="Lihat lampiran PDF"
+                                >
+                                  📎
+                                </a>
+                              ) : (
+                                <span className="text-gray-400 dark:text-gray-500">—</span>
+                              )}
+                            </td>
+                            <td className="py-4 px-4">
+                              {getStatusBadge(request.status)}
+                            </td>
+                            <td className="py-4 px-4">
+                              {request.status === 'pending' ? (
+                                <div className="flex flex-col space-y-2">
+                                  <Button
+                                    size="sm"
+                                    onClick={() => handleApprove(request.id)}
+                                    disabled={updateStatusMutation.isPending}
+                                    className="bg-green-600 hover:bg-green-700 text-white h-8 text-xs font-medium"
+                                    data-testid={`approve-leave-${request.id}`}
+                                  >
+                                    <CheckCircle className="w-3 h-3 mr-1" />
+                                    Setujui
+                                  </Button>
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    onClick={() => handleReject(request.id)}
+                                    disabled={updateStatusMutation.isPending}
+                                    className="border-red-300 text-red-600 hover:bg-red-50 dark:border-red-700 dark:text-red-400 dark:hover:bg-red-950 h-8 text-xs font-medium"
+                                    data-testid={`reject-leave-${request.id}`}
+                                  >
+                                    <XCircle className="w-3 h-3 mr-1" />
+                                    Tolak
+                                  </Button>
+                                </div>
+                              ) : (
+                                <Dialog>
+                                  <DialogTrigger asChild>
+                                    <Button
+                                      size="sm"
+                                      variant="outline"
+                                      className="text-blue-600 hover:text-blue-700 hover:bg-blue-50 dark:hover:bg-blue-900/20 h-8 text-xs font-medium border-blue-300 dark:border-blue-700"
+                                      data-testid={`detail-leave-${request.id}`}
+                                    >
+                                      <Eye className="w-3 h-3 mr-1" />
+                                      Detail
+                                    </Button>
+                                  </DialogTrigger>
+                                  <DialogContent className="max-w-md">
+                                    <DialogHeader>
+                                      <DialogTitle className="flex items-center gap-2">
+                                        <FileText className="w-5 h-5 text-blue-600" />
+                                        Detail Pengajuan Cuti
+                                      </DialogTitle>
+                                    </DialogHeader>
+                                    <div className="space-y-4">
+                                      <div className="flex items-center space-x-2">
+                                        <User className="w-4 h-4 text-gray-500" />
+                                        <div>
+                                          <p className="font-medium">{request.employeeName || getEmployeeName(request.employeeId)}</p>
+                                          <p className="text-sm text-gray-500">{request.employeeId}</p>
+                                        </div>
+                                      </div>
+                                      
+                                      {request.phoneNumber && (
+                                        <div className="flex items-center space-x-2">
+                                          <Phone className="w-4 h-4 text-gray-500" />
+                                          <p className="text-sm">{request.phoneNumber}</p>
+                                        </div>
+                                      )}
+                                      
+                                      <div className="flex items-center space-x-2">
+                                        <CalendarDays className="w-4 h-4 text-gray-500" />
+                                        <div>
+                                          <p className="text-sm">
+                                            {new Date(request.startDate).toLocaleDateString('id-ID', {
+                                              weekday: 'long',
+                                              year: 'numeric',
+                                              month: 'long',
+                                              day: 'numeric'
+                                            })}
+                                          </p>
+                                          <p className="text-sm">s/d</p>
+                                          <p className="text-sm">
+                                            {new Date(request.endDate).toLocaleDateString('id-ID', {
+                                              weekday: 'long',
+                                              year: 'numeric',
+                                              month: 'long',
+                                              day: 'numeric'
+                                            })}
+                                          </p>
+                                        </div>
+                                      </div>
+                                      
+                                      <div className="flex items-center space-x-2">
+                                        <Clock className="w-4 h-4 text-gray-500" />
+                                        <div>
+                                          <p className="text-sm font-medium">{getLeaveTypeLabel(request.leaveType)}</p>
+                                          <p className="text-sm text-gray-500">
+                                            Durasi: {calculateDays(request.startDate, request.endDate)} hari
+                                          </p>
+                                        </div>
+                                      </div>
+                                      
+                                      {request.reason && (
+                                        <div>
+                                          <p className="font-medium text-sm mb-1">Keterangan:</p>
+                                          <p className="text-sm text-gray-600 dark:text-gray-400 bg-gray-50 dark:bg-gray-800 p-3 rounded-lg">
+                                            {request.reason}
+                                          </p>
+                                        </div>
+                                      )}
+
+                                      {request.attachmentPath && (
+                                        <div>
+                                          <p className="font-medium text-sm mb-2">Lampiran Dokumen:</p>
+                                          <a 
+                                            href={convertToProxyPath(request.attachmentPath)} 
+                                            target="_blank" 
+                                            rel="noopener noreferrer"
+                                            className="flex items-center space-x-2 text-red-600 hover:text-red-700 dark:text-red-400 bg-gray-50 dark:bg-gray-800 p-3 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                                          >
+                                            <span>📎</span>
+                                            <span className="text-sm">Lihat File PDF</span>
+                                          </a>
+                                        </div>
+                                      )}
+                                      
+                                      <div className="flex items-center justify-between pt-4 border-t">
+                                        <span className="text-sm text-gray-500">Status:</span>
+                                        {getStatusBadge(request.status)}
+                                      </div>
+                                      
+                                      {request.status === 'pending' && (
+                                        <div className="flex space-x-2 pt-2">
+                                          <Button
+                                            size="sm"
+                                            onClick={() => handleApprove(request.id)}
+                                            disabled={updateStatusMutation.isPending}
+                                            className="flex-1 bg-green-600 hover:bg-green-700"
+                                          >
+                                            <CheckCircle className="w-4 h-4 mr-1" />
+                                            Setujui
+                                          </Button>
+                                          <Button
+                                            size="sm"
+                                            variant="destructive"
+                                            onClick={() => handleReject(request.id)}
+                                            disabled={updateStatusMutation.isPending}
+                                            className="flex-1"
+                                          >
+                                            <XCircle className="w-4 h-4 mr-1" />
+                                            Tolak
+                                          </Button>
+                                        </div>
+                                      )}
+                                    </div>
+                                  </DialogContent>
+                                </Dialog>
+                              )}
+                            </td>
+                          </tr>
+                        ))
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
           <Card>
             <CardHeader className="pb-3">
               <div className="flex items-center justify-between">
