@@ -8,7 +8,7 @@ import { validateQRData } from "@/lib/crypto-utils";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { determineShiftByTime, getCurrentShift } from "@/lib/shift-utils";
-import { Camera, CameraOff, CheckCircle, User, Clock, XCircle, Moon, Heart, Activity, Calendar, Users } from "lucide-react";
+import { Camera, CameraOff, CheckCircle, User, Clock, XCircle, Moon, Heart, Activity, Calendar } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import jsQR from "jsqr";
 
@@ -37,14 +37,6 @@ interface RecentActivity {
   workingDays: number;
 }
 
-interface RosterInfo {
-  employeeId: string;
-  employeeName: string;
-  shift: string;
-  startTime: string;
-  endTime: string;
-  status: string;
-}
 
 export function QRScanner() {
   const [isScanning, setIsScanning] = useState(false);
@@ -77,35 +69,6 @@ export function QRScanner() {
     refetchInterval: 30000, // Auto-refresh setiap 30 detik
   });
 
-  // Query untuk mengambil data roster hari ini
-  const { data: todayRoster, refetch: refetchRoster } = useQuery<RosterInfo[]>({
-    queryKey: ["/api/roster", today],
-    queryFn: async () => {
-      const response = await fetch(`/api/roster?date=${today}`, {
-        cache: 'no-cache',
-        headers: { 'Cache-Control': 'no-cache' }
-      });
-      if (!response.ok) throw new Error('Failed to fetch roster');
-      const roster = await response.json();
-      
-      // Transform roster data untuk dashboard
-      const employees = await fetch('/api/employees').then(r => r.json());
-      return roster.map((r: any) => {
-        const employee = employees.find((e: any) => e.id === r.employeeId);
-        return {
-          employeeId: r.employeeId,
-          employeeName: employee?.name || 'Unknown',
-          shift: r.shift,
-          startTime: r.startTime,
-          endTime: r.endTime,
-          status: r.status
-        };
-      });
-    },
-    staleTime: 0,
-    refetchOnWindowFocus: true,
-    refetchInterval: 30000, // Auto-refresh setiap 30 detik
-  });
 
   const startScanning = async () => {
     try {
@@ -322,11 +285,8 @@ export function QRScanner() {
         queryClient.refetchQueries({ queryKey: ["/api/dashboard/attendance-details"] })
       ]);
       
-      // Refresh recent activities and roster immediately for real-time update
-      await Promise.all([
-        refetchActivities(),
-        refetchRoster()
-      ]);
+      // Refresh recent activities immediately for real-time update
+      await refetchActivities();
       
       // Reset form and clear scan result after 3 seconds
       setTimeout(() => {
@@ -704,99 +664,6 @@ export function QRScanner() {
         </CardContent>
       </Card>
 
-      {/* Roster Dashboard Card */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center">
-            <Users className="w-5 h-5 mr-2" />
-            Roster Hari Ini
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          {!todayRoster || todayRoster.length === 0 ? (
-            <div className="text-center py-8" data-testid="no-roster">
-              <div className="w-16 h-16 bg-gray-100 dark:bg-gray-700 rounded-full flex items-center justify-center mx-auto mb-4">
-                <Users className="w-8 h-8 text-gray-400" />
-              </div>
-              <p className="text-gray-500 dark:text-gray-400">Belum ada roster untuk hari ini</p>
-            </div>
-          ) : (
-            <div className="space-y-3" data-testid="roster-list">
-              <div className="grid grid-cols-2 gap-4 mb-4">
-                <div className="bg-blue-50 dark:bg-blue-900 p-3 rounded-lg">
-                  <div className="text-blue-600 dark:text-blue-300 text-sm font-medium">
-                    Total Terjadwal
-                  </div>
-                  <div className="text-2xl font-bold text-blue-700 dark:text-blue-200">
-                    {todayRoster.length}
-                  </div>
-                </div>
-                <div className="bg-green-50 dark:bg-green-900 p-3 rounded-lg">
-                  <div className="text-green-600 dark:text-green-300 text-sm font-medium">
-                    Per Shift
-                  </div>
-                  <div className="text-sm text-green-700 dark:text-green-200 mt-1">
-                    <div>Shift 1: {todayRoster.filter(r => r.shift === 'Shift 1').length}</div>
-                    <div>Shift 2: {todayRoster.filter(r => r.shift === 'Shift 2').length}</div>
-                  </div>
-                </div>
-              </div>
-              
-              {todayRoster.slice(0, 8).map((roster, index) => (
-                <div 
-                  key={`${roster.employeeId}-${index}`} 
-                  className="flex justify-between items-center p-3 bg-gray-50 dark:bg-gray-800 rounded-lg border"
-                  data-testid={`roster-${roster.employeeId}`}
-                >
-                  <div className="flex-1">
-                    <div className="flex items-center space-x-2">
-                      <div className={`w-2 h-2 rounded-full ${
-                        roster.shift === 'Shift 1' ? 'bg-blue-500' : 'bg-orange-500'
-                      }`}></div>
-                      <span className="font-medium text-sm text-gray-900 dark:text-white">
-                        {roster.employeeName}
-                      </span>
-                      <span className="text-xs text-gray-500 dark:text-gray-400">
-                        ({roster.employeeId})
-                      </span>
-                    </div>
-                    <div className="flex items-center space-x-3 mt-1 text-xs text-gray-600 dark:text-gray-300">
-                      <span className="flex items-center">
-                        <Clock className="w-3 h-3 mr-1" />
-                        {roster.startTime} - {roster.endTime}
-                      </span>
-                      <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                        roster.shift === 'Shift 1' 
-                          ? 'bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200'
-                          : 'bg-orange-100 dark:bg-orange-900 text-orange-800 dark:text-orange-200'
-                      }`}>
-                        {roster.shift}
-                      </span>
-                    </div>
-                  </div>
-                  <div className="flex flex-col items-end">
-                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                      roster.status === 'scheduled' 
-                        ? 'bg-yellow-100 dark:bg-yellow-900 text-yellow-800 dark:text-yellow-200'
-                        : 'bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200'
-                    }`}>
-                      {roster.status === 'scheduled' ? 'Terjadwal' : roster.status}
-                    </span>
-                  </div>
-                </div>
-              ))}
-              
-              {todayRoster.length > 8 && (
-                <div className="text-center pt-2">
-                  <p className="text-sm text-gray-500 dark:text-gray-400">
-                    Menampilkan 8 dari {todayRoster.length} jadwal hari ini
-                  </p>
-                </div>
-              )}
-            </div>
-          )}
-        </CardContent>
-      </Card>
     </div>
   );
 }
