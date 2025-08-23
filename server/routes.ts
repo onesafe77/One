@@ -291,6 +291,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Karyawan tidak dijadwalkan untuk hari ini" });
       }
 
+      // Check if employee is currently on leave
+      const leaveRequests = await storage.getAllLeaveRequests();
+      const approvedLeave = leaveRequests.find(leave => 
+        leave.employeeId === validatedData.employeeId &&
+        leave.status === 'approved' &&
+        validatedData.date >= leave.startDate &&
+        validatedData.date <= leave.endDate
+      );
+
+      if (approvedLeave) {
+        return res.status(400).json({ 
+          message: "Scan ditolak: karyawan sedang cuti",
+          leaveDetails: {
+            type: approvedLeave.leaveType,
+            startDate: approvedLeave.startDate,
+            endDate: approvedLeave.endDate
+          }
+        });
+      }
+
       // Get current time for precise shift validation (menggunakan waktu lokal sistem)
       const now = new Date();
       const currentTime = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
