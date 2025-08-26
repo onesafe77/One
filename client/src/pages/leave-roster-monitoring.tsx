@@ -406,11 +406,11 @@ export default function LeaveRosterMonitoringPage() {
   const downloadTemplate = () => {
     const currentMonth = new Date().toISOString().slice(0, 7); // "YYYY-MM"
     const templateData = [
-      ["NIK", "Nama", "Nomor Lambung", "Tanggal Terakhir Cuti", "Pilihan Cuti", "Bulan", "OnSite"],
-      ["C-015001", "CONTOH NAMA 1", "GECL 001", "2024-01-15", "70", currentMonth, "Ya"],
-      ["C-025002", "CONTOH NAMA 2", "GECL 002", "2024-02-20", "35", currentMonth, "Tidak"],
-      ["C-035003", "CONTOH NAMA 3", "SPARE", "", "70", currentMonth, ""],
-      ["C-045004", "CONTOH NAMA 4", "GECL 004", "2024-03-10", "35", currentMonth, "Ya"],
+      ["NIK", "Nama", "Nomor Lambung", "Bulan", "Tanggal Terakhir Cuti", "Pilihan Cuti", "OnSite"],
+      ["C-015001", "CONTOH NAMA 1", "GECL 001", currentMonth, "2024-01-15", "70", "Ya"],
+      ["C-025002", "CONTOH NAMA 2", "GECL 002", currentMonth, "2024-02-20", "35", "Tidak"],
+      ["C-035003", "CONTOH NAMA 3", "SPARE", currentMonth, "", "70", ""],
+      ["C-045004", "CONTOH NAMA 4", "GECL 004", currentMonth, "2024-03-10", "35", "Ya"],
     ];
 
     const csvContent = templateData.map(row => row.join(",")).join("\n");

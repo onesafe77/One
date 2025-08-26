@@ -1569,8 +1569,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
             }
 
             try {
-              // Format data aktual dari upload: NIK, Nama, Nomor Lambung, Bulan, Tanggal Serial, Pilihan Cuti, Tanggal Serial 2
-              const [nik, name, nomorLambung, monthOrOnSite, lastLeaveDateSerial, leaveOption, nextLeaveDateSerial] = row;
+              // Format data sesuai template: NIK, Nama, Nomor Lambung, Bulan, Tanggal Serial, Pilihan Cuti, OnSite
+              const [nik, name, nomorLambung, monthOrOnSite, lastLeaveDateSerial, leaveOption, onSiteData] = row;
               
               // Validate required fields
               if (!nik || !name) {
@@ -1667,7 +1667,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
               }
 
               // Create leave roster monitoring entry
-              const finalOnSite = ""; // OnSite akan diset manual atau dari upload terpisah
+              const finalOnSite = onSiteData ? onSiteData.toString().trim() : "";
               await storage.createLeaveRosterMonitoring({
                 nik: nik.toString(),
                 name: name.toString(),
