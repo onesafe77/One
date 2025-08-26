@@ -407,10 +407,10 @@ export default function LeaveRosterMonitoringPage() {
     const currentMonth = new Date().toISOString().slice(0, 7); // "YYYY-MM"
     const templateData = [
       ["NIK", "Nama", "Nomor Lambung", "Tanggal Terakhir Cuti", "Pilihan Cuti", "Bulan", "OnSite"],
-      ["C-015001", "CONTOH NAMA 1", "001", "2024-01-15", "70", currentMonth, "Ya"],
-      ["C-025002", "CONTOH NAMA 2", "002", "2024-02-20", "35", currentMonth, "Tidak"],
-      ["C-035003", "CONTOH NAMA 3", "003", "", "70", currentMonth, ""],
-      ["C-045004", "CONTOH NAMA 4", "004", "2024-03-10", "35", currentMonth, "Ya"],
+      ["C-015001", "CONTOH NAMA 1", "GECL 001", "2024-01-15", "70", currentMonth, "Ya"],
+      ["C-025002", "CONTOH NAMA 2", "GECL 002", "2024-02-20", "35", currentMonth, "Tidak"],
+      ["C-035003", "CONTOH NAMA 3", "SPARE", "", "70", currentMonth, ""],
+      ["C-045004", "CONTOH NAMA 4", "GECL 004", "2024-03-10", "35", currentMonth, "Ya"],
     ];
 
     const csvContent = templateData.map(row => row.join(",")).join("\n");
@@ -418,7 +418,7 @@ export default function LeaveRosterMonitoringPage() {
     const url = window.URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = "template_monitoring_roster_cuti_dengan_bulan.csv";
+    a.download = "template_monitoring_roster_cuti_dengan_nomor_lambung.csv";
     a.click();
     window.URL.revokeObjectURL(url);
   };
