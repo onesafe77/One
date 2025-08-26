@@ -750,6 +750,12 @@ export default function LeaveRosterMonitoringPage() {
                           </TableCell>
                           <TableCell>
                             <span className="font-semibold">{item.monitoringDays}</span> hari
+                            <div className="text-xs text-gray-500 mt-1">
+                              {item.monitoringDays < 0 ? 
+                                `${Math.abs(item.monitoringDays)} hari sejak cuti terakhir` : 
+                                `${item.monitoringDays} hari ke depan`
+                              }
+                            </div>
                           </TableCell>
                           <TableCell>
                             {item.onSite ? (

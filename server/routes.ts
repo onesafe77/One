@@ -1629,7 +1629,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
                   if (!isNaN(lastDate.getTime())) {
                     finalLastLeaveDate = lastDate.toISOString().split('T')[0];
                     const today = new Date();
-                    // Changed to: last leave date - today (as requested)
+                    // Rumus: (terakhir cuti - today()) - nilai negatif = hari sejak cuti terakhir
                     monitoringDays = Math.floor((lastDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
                     
                     const workDaysThreshold = finalLeaveOption === "70" ? 70 : 35;

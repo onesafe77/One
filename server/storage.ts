@@ -1066,8 +1066,7 @@ export class DrizzleStorage implements IStorage {
     for (const monitoring of allMonitoring) {
       let newStatus = monitoring.status;
       
-      // Update monitoring days berdasarkan lastLeaveDate  
-      // Changed to: last leave date - today (as requested)
+      // Rumus: (terakhir cuti - today()) - nilai negatif = hari sejak cuti terakhir
       let monitoringDays = monitoring.monitoringDays;
       if (monitoring.lastLeaveDate) {
         const lastLeaveDate = new Date(monitoring.lastLeaveDate);
