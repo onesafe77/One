@@ -1641,26 +1641,33 @@ export async function registerRoutes(app: Express): Promise<Server> {
                     // Nilai negatif = hari yang sudah lewat sejak cuti terakhir
                     // Nilai positif = hari ke depan (tanggal cuti di masa depan)
                     const daysSinceLastLeave = Math.abs(monitoringDays); // Convert to positive for comparison
+                    console.log(`[${nik}] monitoringDays: ${monitoringDays}, workDaysThreshold: ${workDaysThreshold}`);
+                    
                     if (monitoringDays <= 0) {
                       // Last leave date is in the past
                       
                       // KRITERIA BARU: Kurang dari 7 hari sejak cuti terakhir = status "Menunggu Cuti"
                       if (monitoringDays > -7) {
                         finalStatus = "Menunggu Cuti";
+                        console.log(`[${nik}] Set to Menunggu Cuti - kurang dari 7 hari (${monitoringDays})`);
                       }
                       // H-5 sebelum eligible untuk cuti (kriteria lama)
                       else if (daysSinceLastLeave >= workDaysThreshold - 5 && daysSinceLastLeave < workDaysThreshold) {
                         finalStatus = "Menunggu Cuti";
+                        console.log(`[${nik}] Set to Menunggu Cuti - H-5 rule (${daysSinceLastLeave} days)`);
                       } 
                       // Sudah eligible untuk cuti (kriteria lama)
                       else if (daysSinceLastLeave >= workDaysThreshold) {
                         finalStatus = "Menunggu Cuti"; // Ready for leave
+                        console.log(`[${nik}] Set to Menunggu Cuti - eligible (${daysSinceLastLeave} >= ${workDaysThreshold})`);
                       } else {
                         finalStatus = "Aktif";
+                        console.log(`[${nik}] Set to Aktif - default case (${daysSinceLastLeave} days)`);
                       }
                     } else {
                       // Last leave date is in the future (shouldn't happen normally)
                       finalStatus = "Aktif";
+                      console.log(`[${nik}] Set to Aktif - future date (${monitoringDays})`);
                     }
                   }
                 } catch (dateError) {

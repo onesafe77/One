@@ -1082,6 +1082,8 @@ export class DrizzleStorage implements IStorage {
       // Nilai positif = hari ke depan (tanggal cuti di masa depan)
       const daysSinceLastLeave = Math.abs(monitoringDays); // Convert to positive for comparison
       
+      console.log(`[${monitoring.nik}] Status check - monitoring days: ${monitoringDays}, current status: ${monitoring.status}`);
+      
       if (monitoringDays <= 0) {
         // Last leave date is in the past
         
@@ -1089,15 +1091,18 @@ export class DrizzleStorage implements IStorage {
         if (monitoringDays > -7 && monitoring.status === "Aktif") {
           // Kurang dari 7 hari sejak cuti terakhir
           newStatus = "Menunggu Cuti";
+          console.log(`[${monitoring.nik}] Changed to Menunggu Cuti - kurang dari 7 hari (${monitoringDays})`);
         } 
         // H-5 sebelum eligible untuk cuti (kriteria lama)
         else if (daysSinceLastLeave >= workDaysThreshold - 5 && daysSinceLastLeave < workDaysThreshold && monitoring.status === "Aktif") {
           newStatus = "Menunggu Cuti";
+          console.log(`[${monitoring.nik}] Changed to Menunggu Cuti - H-5 rule (${daysSinceLastLeave} days)`);
         } 
         // Sudah eligible untuk cuti (kriteria lama)
         else if (daysSinceLastLeave >= workDaysThreshold && monitoring.status !== "Sedang Cuti" && monitoring.status !== "Selesai Cuti") {
           if (monitoring.status === "Aktif") {
             newStatus = "Menunggu Cuti";
+            console.log(`[${monitoring.nik}] Changed to Menunggu Cuti - eligible (${daysSinceLastLeave} >= ${workDaysThreshold})`);
           }
         }
       }
