@@ -1674,19 +1674,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 nomorLambung: finalNomorLambung,
                 month: finalMonth,
                 investorGroup: investorGroup,
-                lastLeaveDate: finalLastLeaveDate,
+                lastLeaveDate: finalLastLeaveDate || null,
                 leaveOption: finalLeaveOption,
                 monitoringDays,
-                nextLeaveDate,
+                nextLeaveDate: nextLeaveDate || null,
                 status: finalStatus,
-                onSite: finalOnSite
-              } as any);
+                onSite: finalOnSite || null
+              });
 
               successCount++;
               console.log(`Successfully created entry for ${nik} - ${name}`);
               
             } catch (error) {
               console.error(`Error processing row ${i + 2}:`, error);
+              console.error("Error details:", error);
               errors.push(`Row ${i + 2}: ${error instanceof Error ? error.message : 'Unknown error'}`);
             }
           }
