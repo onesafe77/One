@@ -1501,6 +1501,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.delete("/api/leave-roster-monitoring/delete-all", async (req, res) => {
+    try {
+      await storage.deleteAllLeaveRosterMonitoring();
+      res.json({ message: "All leave roster monitoring data deleted successfully" });
+    } catch (error) {
+      console.error("Error deleting all leave roster monitoring data:", error);
+      res.status(500).json({ message: "Failed to delete all leave roster monitoring data" });
+    }
+  });
+
   app.post("/api/leave-roster-monitoring/update-status", async (req, res) => {
     try {
       await storage.updateLeaveRosterStatus();

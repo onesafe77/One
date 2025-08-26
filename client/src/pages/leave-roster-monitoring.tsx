@@ -227,6 +227,25 @@ export default function LeaveRosterMonitoringPage() {
     },
   });
 
+  // Delete all data mutation
+  const deleteAllMutation = useMutation({
+    mutationFn: () => apiRequest("/api/leave-roster-monitoring/delete-all", "DELETE"),
+    onSuccess: () => {
+      toast({
+        title: "Berhasil",
+        description: "Semua data monitoring roster cuti berhasil dihapus",
+      });
+      queryClient.invalidateQueries({ queryKey: ["/api/leave-roster-monitoring"] });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Gagal",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
   // Auto-update status every minute
   useEffect(() => {
     const interval = setInterval(() => {
@@ -490,6 +509,19 @@ export default function LeaveRosterMonitoringPage() {
             <Download className="h-4 w-4 mr-2" />
             Template Sederhana
           </Button>
+          <Button 
+            onClick={() => {
+              if (window.confirm("Apakah Anda yakin ingin menghapus SEMUA data monitoring roster cuti? Tindakan ini tidak dapat dibatalkan.")) {
+                deleteAllMutation.mutate();
+              }
+            }}
+            variant="destructive"
+            disabled={deleteAllMutation.isPending}
+            data-testid="button-delete-all"
+          >
+            <Trash2 className="h-4 w-4 mr-2" />
+            {deleteAllMutation.isPending ? "Menghapus..." : "Hapus Semua Data"}
+          </Button>
         </div>
       </div>
 
@@ -672,7 +704,7 @@ export default function LeaveRosterMonitoringPage() {
                     <TableHead>Terakhir Cuti</TableHead>
                     <TableHead>Pilihan Cuti</TableHead>
                     <TableHead>Monitoring (Hari)</TableHead>
-                    <TableHead>Tanggal Cuti Berikutnya</TableHead>
+                    <TableHead>OnSite</TableHead>
                     <TableHead>Status</TableHead>
                     <TableHead>Aksi</TableHead>
                   </TableRow>

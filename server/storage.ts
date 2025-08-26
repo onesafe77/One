@@ -111,6 +111,7 @@ export interface IStorage {
   createLeaveRosterMonitoring(monitoring: InsertLeaveRosterMonitoring): Promise<LeaveRosterMonitoring>;
   updateLeaveRosterMonitoring(id: string, monitoring: Partial<InsertLeaveRosterMonitoring>): Promise<LeaveRosterMonitoring | undefined>;
   deleteLeaveRosterMonitoring(id: string): Promise<boolean>;
+  deleteAllLeaveRosterMonitoring(): Promise<void>;
   updateLeaveRosterStatus(): Promise<void>; // Update status berdasarkan tanggal
   
   // WhatsApp Blast methods
@@ -542,6 +543,10 @@ export class MemStorage implements IStorage {
 
   async deleteLeaveRosterMonitoring(id: string): Promise<boolean> {
     return false;
+  }
+
+  async deleteAllLeaveRosterMonitoring(): Promise<void> {
+    // No-op in memory storage - would clear leave roster monitoring data if implemented
   }
 
   async updateLeaveRosterStatus(): Promise<void> {
@@ -1048,6 +1053,10 @@ export class DrizzleStorage implements IStorage {
       .delete(leaveRosterMonitoring)
       .where(eq(leaveRosterMonitoring.id, id));
     return result.rowCount > 0;
+  }
+
+  async deleteAllLeaveRosterMonitoring(): Promise<void> {
+    await this.db.delete(leaveRosterMonitoring);
   }
 
   async updateLeaveRosterStatus(): Promise<void> {
