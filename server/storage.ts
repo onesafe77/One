@@ -1066,19 +1066,14 @@ export class DrizzleStorage implements IStorage {
     for (const monitoring of allMonitoring) {
       let newStatus = monitoring.status;
       
-      // Rumus: (terakhir cuti - today()) - nilai negatif = hari sejak cuti terakhir
+      // Tetap pakai rumus original - tidak perlu diubah ke minus
       let monitoringDays = monitoring.monitoringDays;
       if (monitoring.lastLeaveDate) {
         const lastLeaveDate = new Date(monitoring.lastLeaveDate);
         const todayDate = new Date(today);
-        // FORCE RECALCULATION: Selalu hitung ulang dengan rumus baru
-        const diffTime = lastLeaveDate.getTime() - todayDate.getTime();
-        const newMonitoringDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
-        
-        console.log(`[${monitoring.nik}] OLD vs NEW: old=${monitoringDays}, recalc=${newMonitoringDays}, lastLeave=${monitoring.lastLeaveDate}`);
-        
-        // Gunakan hasil recalculation
-        monitoringDays = newMonitoringDays;
+        // Rumus original: today - last leave date (hari sejak cuti terakhir)
+        const diffTime = todayDate.getTime() - lastLeaveDate.getTime();
+        monitoringDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
       }
 
       // Auto status berdasarkan monitoring days dan leave option (dengan rumus baru: last leave date - today)
@@ -1090,34 +1085,21 @@ export class DrizzleStorage implements IStorage {
       
       console.log(`[${monitoring.nik}] Status check - monitoring days: ${monitoringDays}, current status: ${monitoring.status}`);
       
-      if (monitoringDays <= 0) {
-        // Last leave date is in the past (nilai negatif)
-        
-        // KRITERIA BARU: Kurang dari 7 hari sejak cuti terakhir = status "Menunggu Cuti"
-        // monitoringDays > -7 artinya antara -6 hingga -1 (kurang dari 7 hari sejak cuti)
-        if (monitoringDays > -7 && monitoring.status === "Aktif") {
-          // Kurang dari 7 hari sejak cuti terakhir
+      // KRITERIA BARU: Kurang dari 10 hari sejak cuti terakhir = status "Menunggu Cuti"
+      if (monitoringDays > 0 && monitoringDays < 10 && monitoring.status === "Aktif") {
+        newStatus = "Menunggu Cuti";
+        console.log(`[${monitoring.nik}] ✅ UPDATED: Changed to Menunggu Cuti - kurang dari 10 hari (${monitoringDays} hari)`);
+      } 
+      // H-5 sebelum eligible untuk cuti (kriteria lama)
+      else if (daysSinceLastLeave >= workDaysThreshold - 5 && daysSinceLastLeave < workDaysThreshold && monitoring.status === "Aktif") {
+        newStatus = "Menunggu Cuti";
+        console.log(`[${monitoring.nik}] Changed to Menunggu Cuti - H-5 rule (${daysSinceLastLeave} days)`);
+      } 
+      // Sudah eligible untuk cuti (kriteria lama)
+      else if (daysSinceLastLeave >= workDaysThreshold && monitoring.status !== "Sedang Cuti" && monitoring.status !== "Selesai Cuti") {
+        if (monitoring.status === "Aktif") {
           newStatus = "Menunggu Cuti";
-          console.log(`[${monitoring.nik}] ✅ RULE 1: Changed to Menunggu Cuti - kurang dari 7 hari (${monitoringDays})`);
-        }
-      } else {
-        // TEMPORARY: Handle data lama yang masih positif
-        // Jika monitoring days positif tapi kecil (1-6), anggap sebagai data lama
-        if (monitoringDays > 0 && monitoringDays <= 6 && monitoring.status === "Aktif") {
-          newStatus = "Menunggu Cuti";
-          console.log(`[${monitoring.nik}] ✅ LEGACY FIX: Changed to Menunggu Cuti - data lama dengan ${monitoringDays} hari`);
-        } 
-        // H-5 sebelum eligible untuk cuti (kriteria lama)
-        else if (daysSinceLastLeave >= workDaysThreshold - 5 && daysSinceLastLeave < workDaysThreshold && monitoring.status === "Aktif") {
-          newStatus = "Menunggu Cuti";
-          console.log(`[${monitoring.nik}] Changed to Menunggu Cuti - H-5 rule (${daysSinceLastLeave} days)`);
-        } 
-        // Sudah eligible untuk cuti (kriteria lama)
-        else if (daysSinceLastLeave >= workDaysThreshold && monitoring.status !== "Sedang Cuti" && monitoring.status !== "Selesai Cuti") {
-          if (monitoring.status === "Aktif") {
-            newStatus = "Menunggu Cuti";
-            console.log(`[${monitoring.nik}] Changed to Menunggu Cuti - eligible (${daysSinceLastLeave} >= ${workDaysThreshold})`);
-          }
+          console.log(`[${monitoring.nik}] Changed to Menunggu Cuti - eligible (${daysSinceLastLeave} >= ${workDaysThreshold})`);
         }
       }
       

@@ -1629,8 +1629,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
                   if (!isNaN(lastDate.getTime())) {
                     finalLastLeaveDate = lastDate.toISOString().split('T')[0];
                     const today = new Date();
-                    // Rumus: (terakhir cuti - today()) - nilai negatif = hari sejak cuti terakhir
-                    monitoringDays = Math.floor((lastDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+                    // Rumus original: today - last leave date (hari sejak cuti terakhir)
+                    monitoringDays = Math.floor((today.getTime() - lastDate.getTime()) / (1000 * 60 * 60 * 24));
                     
                     const workDaysThreshold = finalLeaveOption === "70" ? 70 : 35;
                     const nextDate = new Date(lastDate);
@@ -1643,31 +1643,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
                     const daysSinceLastLeave = Math.abs(monitoringDays); // Convert to positive for comparison
                     console.log(`[${nik}] monitoringDays: ${monitoringDays}, workDaysThreshold: ${workDaysThreshold}`);
                     
-                    if (monitoringDays <= 0) {
-                      // Last leave date is in the past
-                      
-                      // KRITERIA BARU: Kurang dari 7 hari sejak cuti terakhir = status "Menunggu Cuti"
-                      if (monitoringDays > -7) {
-                        finalStatus = "Menunggu Cuti";
-                        console.log(`[${nik}] Set to Menunggu Cuti - kurang dari 7 hari (${monitoringDays})`);
-                      }
-                      // H-5 sebelum eligible untuk cuti (kriteria lama)
-                      else if (daysSinceLastLeave >= workDaysThreshold - 5 && daysSinceLastLeave < workDaysThreshold) {
-                        finalStatus = "Menunggu Cuti";
-                        console.log(`[${nik}] Set to Menunggu Cuti - H-5 rule (${daysSinceLastLeave} days)`);
-                      } 
-                      // Sudah eligible untuk cuti (kriteria lama)
-                      else if (daysSinceLastLeave >= workDaysThreshold) {
-                        finalStatus = "Menunggu Cuti"; // Ready for leave
-                        console.log(`[${nik}] Set to Menunggu Cuti - eligible (${daysSinceLastLeave} >= ${workDaysThreshold})`);
-                      } else {
-                        finalStatus = "Aktif";
-                        console.log(`[${nik}] Set to Aktif - default case (${daysSinceLastLeave} days)`);
-                      }
+                    // KRITERIA BARU: Kurang dari 10 hari sejak cuti terakhir = status "Menunggu Cuti"
+                    if (monitoringDays > 0 && monitoringDays < 10) {
+                      finalStatus = "Menunggu Cuti";
+                      console.log(`[${nik}] Set to Menunggu Cuti - kurang dari 10 hari (${monitoringDays})`);
+                    }
+                    // H-5 sebelum eligible untuk cuti (kriteria lama)
+                    else if (monitoringDays >= workDaysThreshold - 5 && monitoringDays < workDaysThreshold) {
+                      finalStatus = "Menunggu Cuti";
+                      console.log(`[${nik}] Set to Menunggu Cuti - H-5 rule (${monitoringDays} days)`);
+                    } 
+                    // Sudah eligible untuk cuti (kriteria lama)
+                    else if (monitoringDays >= workDaysThreshold) {
+                      finalStatus = "Menunggu Cuti"; // Ready for leave
+                      console.log(`[${nik}] Set to Menunggu Cuti - eligible (${monitoringDays} >= ${workDaysThreshold})`);
                     } else {
-                      // Last leave date is in the future (shouldn't happen normally)
                       finalStatus = "Aktif";
-                      console.log(`[${nik}] Set to Aktif - future date (${monitoringDays})`);
+                      console.log(`[${nik}] Set to Aktif - default case (${monitoringDays} days)`);
                     }
                   }
                 } catch (dateError) {
