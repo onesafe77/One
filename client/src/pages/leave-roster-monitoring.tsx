@@ -103,6 +103,7 @@ export default function LeaveRosterMonitoringPage() {
     lastLeaveDate: "",
     leaveOption: "70", // default 70 hari kerja
     nextLeaveDate: "",
+    onSite: "",
     status: "Aktif"
   });
 
@@ -284,6 +285,7 @@ export default function LeaveRosterMonitoringPage() {
       lastLeaveDate: "",
       leaveOption: "70",
       nextLeaveDate: "",
+      onSite: "",
       status: "Aktif"
     });
     setEditingItem(null);
@@ -336,7 +338,8 @@ export default function LeaveRosterMonitoringPage() {
           leaveOption: processedData.leaveOption,
           status: processedData.status,
           monitoringDays: processedData.monitoringDays,
-          nextLeaveDate: processedData.nextLeaveDate
+          nextLeaveDate: processedData.nextLeaveDate,
+          onSite: processedData.onSite
         }
       });
     } else {
@@ -348,7 +351,8 @@ export default function LeaveRosterMonitoringPage() {
         leaveOption: processedData.leaveOption,
         status: processedData.status,
         monitoringDays: processedData.monitoringDays,
-        nextLeaveDate: processedData.nextLeaveDate || ""
+        nextLeaveDate: processedData.nextLeaveDate || "",
+        onSite: processedData.onSite || ""
       });
     }
   };
@@ -364,6 +368,7 @@ export default function LeaveRosterMonitoringPage() {
       lastLeaveDate: item.lastLeaveDate || "",
       leaveOption: item.leaveOption,
       nextLeaveDate: item.nextLeaveDate || "",
+      onSite: (item as any).onSite || "",
       status: item.status
     });
     setIsDialogOpen(true);
@@ -401,11 +406,11 @@ export default function LeaveRosterMonitoringPage() {
   const downloadTemplate = () => {
     const currentMonth = new Date().toISOString().slice(0, 7); // "YYYY-MM"
     const templateData = [
-      ["NIK", "Nama", "Tanggal Terakhir Cuti", "Pilihan Cuti", "Bulan"],
-      ["C-015001", "CONTOH NAMA 1", "2024-01-15", "70", currentMonth],
-      ["C-025002", "CONTOH NAMA 2", "2024-02-20", "35", currentMonth],
-      ["C-035003", "CONTOH NAMA 3", "", "70", currentMonth],
-      ["C-045004", "CONTOH NAMA 4", "2024-03-10", "35", currentMonth],
+      ["NIK", "Nama", "Tanggal Terakhir Cuti", "Pilihan Cuti", "Bulan", "OnSite"],
+      ["C-015001", "CONTOH NAMA 1", "2024-01-15", "70", currentMonth, "Ya"],
+      ["C-025002", "CONTOH NAMA 2", "2024-02-20", "35", currentMonth, "Tidak"],
+      ["C-035003", "CONTOH NAMA 3", "", "70", currentMonth, ""],
+      ["C-045004", "CONTOH NAMA 4", "2024-03-10", "35", currentMonth, "Ya"],
     ];
 
     const csvContent = templateData.map(row => row.join(",")).join("\n");
@@ -871,6 +876,23 @@ export default function LeaveRosterMonitoringPage() {
                 <SelectContent>
                   <SelectItem value="70">70 Hari Kerja (14 hari cuti)</SelectItem>
                   <SelectItem value="35">35 Hari Kerja (7 hari cuti)</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div>
+              <Label>OnSite</Label>
+              <Select 
+                value={formData.onSite} 
+                onValueChange={(value) => setFormData(prev => ({ ...prev, onSite: value }))}
+              >
+                <SelectTrigger data-testid="select-onsite">
+                  <SelectValue placeholder="Pilih status OnSite..." />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="">-- Tidak dipilih --</SelectItem>
+                  <SelectItem value="Ya">Ya</SelectItem>
+                  <SelectItem value="Tidak">Tidak</SelectItem>
                 </SelectContent>
               </Select>
             </div>

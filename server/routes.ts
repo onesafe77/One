@@ -1568,8 +1568,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
             }
 
             try {
-              // Format sederhana: NIK, Nama, Tanggal Terakhir Cuti, Pilihan Cuti, Bulan
-              const [nik, name, lastLeaveDate, leaveOption, monthInput] = row;
+              // Format sederhana: NIK, Nama, Tanggal Terakhir Cuti, Pilihan Cuti, Bulan, OnSite
+              const [nik, name, lastLeaveDate, leaveOption, monthInput, onSite] = row;
               
               // Validate required fields
               if (!nik || !name) {
@@ -1652,6 +1652,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
               console.log("Creating monitoring entry for:", nik, name);
               
               // Create leave roster monitoring entry
+              const finalOnSite = onSite ? onSite.toString().trim() : "";
               await storage.createLeaveRosterMonitoring({
                 nik: nik.toString(),
                 name: name.toString(),
@@ -1662,7 +1663,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 monitoringDays,
                 nextLeaveDate,
                 status: finalStatus,
-              });
+                onSite: finalOnSite
+              } as any);
 
               successCount++;
               console.log(`Successfully created entry for ${nik} - ${name}`);

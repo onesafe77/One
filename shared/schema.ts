@@ -82,6 +82,7 @@ export const leaveRosterMonitoring = pgTable("leave_roster_monitoring", {
   leaveOption: text("leave_option").notNull(), // "70" atau "35" hari kerja
   monitoringDays: integer("monitoring_days").notNull().default(0), // Jumlah hari sejak terakhir cuti
   nextLeaveDate: text("next_leave_date"), // Tanggal cuti berikutnya (otomatis hitung)
+  onSite: text("on_site"), // OnSite status: "Ya", "Tidak", atau kosong
   status: text("status").notNull().default("Aktif"), // Aktif, Menunggu Cuti, Sedang Cuti, Selesai Cuti
   createdAt: timestamp("created_at").default(sql`now()`),
   updatedAt: timestamp("updated_at").default(sql`now()`),
