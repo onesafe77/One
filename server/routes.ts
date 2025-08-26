@@ -1652,9 +1652,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
               console.log("Creating monitoring entry for:", nik, name);
               
+              // Validasi format Nomor Lambung
+              let finalNomorLambung = "SPARE"; // Default value
+              if (nomorLambung) {
+                const nomorLambungStr = nomorLambung.toString().trim();
+                // Format yang diizinkan: GECL + spasi + angka, atau SPARE, atau kosong
+                const validFormat = /^(GECL\s+\d+|SPARE)$/i;
+                if (validFormat.test(nomorLambungStr)) {
+                  finalNomorLambung = nomorLambungStr;
+                } else {
+                  console.log(`Row ${i + 2}: Nomor Lambung "${nomorLambungStr}" tidak sesuai format, menggunakan SPARE`);
+                  finalNomorLambung = "SPARE";
+                }
+              }
+
               // Create leave roster monitoring entry
               const finalOnSite = ""; // OnSite akan diset manual atau dari upload terpisah
-              const finalNomorLambung = nomorLambung ? nomorLambung.toString().trim() : "";
               await storage.createLeaveRosterMonitoring({
                 nik: nik.toString(),
                 name: name.toString(),
