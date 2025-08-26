@@ -742,10 +742,7 @@ export default function LeaveRosterMonitoringPage() {
                           <span className="font-semibold">{item.monitoringDays}</span> hari
                         </TableCell>
                         <TableCell>
-                          {item.nextLeaveDate ? 
-                            format(parseISO(item.nextLeaveDate), "dd/MM/yyyy") : 
-                            "-"
-                          }
+                          <span className="text-gray-400 italic">Manual</span>
                         </TableCell>
                         <TableCell>
                           <Badge className={statusColors[item.status as keyof typeof statusColors]}>
