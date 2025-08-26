@@ -883,14 +883,14 @@ export default function LeaveRosterMonitoringPage() {
             <div>
               <Label>OnSite</Label>
               <Select 
-                value={formData.onSite} 
-                onValueChange={(value) => setFormData(prev => ({ ...prev, onSite: value }))}
+                value={formData.onSite || "none"} 
+                onValueChange={(value) => setFormData(prev => ({ ...prev, onSite: value === "none" ? "" : value }))}
               >
                 <SelectTrigger data-testid="select-onsite">
                   <SelectValue placeholder="Pilih status OnSite..." />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">-- Tidak dipilih --</SelectItem>
+                  <SelectItem value="none">-- Tidak dipilih --</SelectItem>
                   <SelectItem value="Ya">Ya</SelectItem>
                   <SelectItem value="Tidak">Tidak</SelectItem>
                 </SelectContent>
