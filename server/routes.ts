@@ -1666,8 +1666,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 }
               }
 
-              // Create leave roster monitoring entry
-              const finalOnSite = onSiteData ? onSiteData.toString().trim() : "";
+              // Create leave roster monitoring entry - convert Excel serial to date format if needed
+              let finalOnSite = "";
+              if (onSiteData) {
+                const onSiteStr = onSiteData.toString().trim();
+                // Check if it's a number (Excel serial date)
+                if (!isNaN(Number(onSiteStr)) && Number(onSiteStr) > 40000) {
+                  // Convert Excel serial to date format
+                  const excelEpoch = new Date(1900, 0, 1);
+                  const daysSinceEpoch = Number(onSiteStr) - 2;
+                  const parsedDate = new Date(excelEpoch.getTime() + (daysSinceEpoch * 24 * 60 * 60 * 1000));
+                  finalOnSite = parsedDate.toLocaleDateString('id-ID', {
+                    day: '2-digit',
+                    month: '2-digit', 
+                    year: 'numeric'
+                  });
+                } else {
+                  // Use as text (Ya/Tidak/etc)
+                  finalOnSite = onSiteStr;
+                }
+              }
               await storage.createLeaveRosterMonitoring({
                 nik: nik.toString(),
                 name: name.toString(),
