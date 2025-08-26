@@ -1654,9 +1654,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
               
               // Create leave roster monitoring entry
               const finalOnSite = onSite ? onSite.toString().trim() : "";
+              const finalNomorLambung = nomorLambung ? nomorLambung.toString().trim() : "";
               await storage.createLeaveRosterMonitoring({
                 nik: nik.toString(),
                 name: name.toString(),
+                nomorLambung: finalNomorLambung,
                 month: finalMonth,
                 investorGroup: investorGroup,
                 lastLeaveDate: finalLastLeaveDate,

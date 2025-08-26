@@ -730,10 +730,10 @@ export default function LeaveRosterMonitoringPage() {
                         <TableRow key={item.id} data-testid={`row-monitoring-${item.nik}`}>
                           <TableCell className="font-medium">{item.nik}</TableCell>
                           <TableCell>{item.name}</TableCell>
-                          <TableCell>{employee?.nomorLambung || "-"}</TableCell>
+                          <TableCell>{item.nomorLambung || "-"}</TableCell>
                           <TableCell>
                             <Badge variant="secondary">
-                              {(item as any).month || "2024-08"}
+                              {item.month || "2024-08"}
                             </Badge>
                           </TableCell>
                           <TableCell>{item.investorGroup}</TableCell>
