@@ -1084,11 +1084,18 @@ export class DrizzleStorage implements IStorage {
       
       if (monitoringDays <= 0) {
         // Last leave date is in the past
-        if (daysSinceLastLeave >= workDaysThreshold - 5 && daysSinceLastLeave < workDaysThreshold && monitoring.status === "Aktif") {
-          // H-5 sebelum eligible untuk cuti
+        
+        // KRITERIA BARU: Kurang dari 7 hari sejak cuti terakhir = status "Menunggu Cuti"
+        if (monitoringDays > -7 && monitoring.status === "Aktif") {
+          // Kurang dari 7 hari sejak cuti terakhir
           newStatus = "Menunggu Cuti";
-        } else if (daysSinceLastLeave >= workDaysThreshold && monitoring.status !== "Sedang Cuti" && monitoring.status !== "Selesai Cuti") {
-          // Sudah eligible untuk cuti
+        } 
+        // H-5 sebelum eligible untuk cuti (kriteria lama)
+        else if (daysSinceLastLeave >= workDaysThreshold - 5 && daysSinceLastLeave < workDaysThreshold && monitoring.status === "Aktif") {
+          newStatus = "Menunggu Cuti";
+        } 
+        // Sudah eligible untuk cuti (kriteria lama)
+        else if (daysSinceLastLeave >= workDaysThreshold && monitoring.status !== "Sedang Cuti" && monitoring.status !== "Selesai Cuti") {
           if (monitoring.status === "Aktif") {
             newStatus = "Menunggu Cuti";
           }

@@ -1643,9 +1643,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
                     const daysSinceLastLeave = Math.abs(monitoringDays); // Convert to positive for comparison
                     if (monitoringDays <= 0) {
                       // Last leave date is in the past
-                      if (daysSinceLastLeave >= workDaysThreshold - 5 && daysSinceLastLeave < workDaysThreshold) {
+                      
+                      // KRITERIA BARU: Kurang dari 7 hari sejak cuti terakhir = status "Menunggu Cuti"
+                      if (monitoringDays > -7) {
                         finalStatus = "Menunggu Cuti";
-                      } else if (daysSinceLastLeave >= workDaysThreshold) {
+                      }
+                      // H-5 sebelum eligible untuk cuti (kriteria lama)
+                      else if (daysSinceLastLeave >= workDaysThreshold - 5 && daysSinceLastLeave < workDaysThreshold) {
+                        finalStatus = "Menunggu Cuti";
+                      } 
+                      // Sudah eligible untuk cuti (kriteria lama)
+                      else if (daysSinceLastLeave >= workDaysThreshold) {
                         finalStatus = "Menunggu Cuti"; // Ready for leave
                       } else {
                         finalStatus = "Aktif";
