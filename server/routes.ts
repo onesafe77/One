@@ -1488,6 +1488,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Delete all route must come BEFORE the :id route to avoid conflict
+  app.delete("/api/leave-roster-monitoring/delete-all", async (req, res) => {
+    try {
+      await storage.deleteAllLeaveRosterMonitoring();
+      res.json({ message: "All leave roster monitoring data deleted successfully" });
+    } catch (error) {
+      console.error("Error deleting all leave roster monitoring data:", error);
+      res.status(500).json({ message: "Failed to delete all leave roster monitoring data" });
+    }
+  });
+
   app.delete("/api/leave-roster-monitoring/:id", async (req, res) => {
     try {
       const success = await storage.deleteLeaveRosterMonitoring(req.params.id);
@@ -1498,16 +1509,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error deleting leave roster monitoring:", error);
       res.status(500).json({ message: "Failed to delete leave roster monitoring" });
-    }
-  });
-
-  app.delete("/api/leave-roster-monitoring/delete-all", async (req, res) => {
-    try {
-      await storage.deleteAllLeaveRosterMonitoring();
-      res.json({ message: "All leave roster monitoring data deleted successfully" });
-    } catch (error) {
-      console.error("Error deleting all leave roster monitoring data:", error);
-      res.status(500).json({ message: "Failed to delete all leave roster monitoring data" });
     }
   });
 
