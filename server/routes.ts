@@ -1569,8 +1569,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
             }
 
             try {
-              // Format sederhana: NIK, Nama, Nomor Lambung, Tanggal Terakhir Cuti, Pilihan Cuti, Bulan, OnSite
-              const [nik, name, nomorLambung, lastLeaveDate, leaveOption, monthInput, onSite] = row;
+              // Format data aktual dari upload: NIK, Nama, Nomor Lambung, Tanggal Serial, Pilihan Cuti, Tanggal Serial 2, Bulan/OnSite
+              const [nik, name, nomorLambung, lastLeaveDateSerial, leaveOption, nextLeaveDateSerial, monthOrOnSite] = row;
               
               // Validate required fields
               if (!nik || !name) {
@@ -1578,9 +1578,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 continue;
               }
 
-              // Generate current month if not provided
+              // Use monthOrOnSite as month, default to current month
               const currentMonth = new Date().toISOString().slice(0, 7); // "YYYY-MM"
-              const finalMonth = monthInput || currentMonth;
+              const finalMonth = monthOrOnSite || currentMonth;
 
               // Auto-generate investor group dari NIK pattern
               let investorGroup = "Default Group";
@@ -1615,15 +1615,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
               let finalLastLeaveDate = "";
               let finalStatus = "Aktif";
 
-              if (lastLeaveDate) {
+              if (lastLeaveDateSerial) {
                 try {
                   // Handle Excel date format (number of days since 1900)
                   let lastDate;
-                  if (typeof lastLeaveDate === 'number') {
+                  if (typeof lastLeaveDateSerial === 'number') {
                     // Excel date serial number to JavaScript Date
-                    lastDate = new Date((lastLeaveDate - 25569) * 86400 * 1000);
+                    lastDate = new Date((lastLeaveDateSerial - 25569) * 86400 * 1000);
                   } else {
-                    lastDate = new Date(lastLeaveDate);
+                    lastDate = new Date(lastLeaveDateSerial);
                   }
                   
                   if (!isNaN(lastDate.getTime())) {
@@ -1653,7 +1653,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
               console.log("Creating monitoring entry for:", nik, name);
               
               // Create leave roster monitoring entry
-              const finalOnSite = onSite ? onSite.toString().trim() : "";
+              const finalOnSite = ""; // OnSite akan diset manual atau dari upload terpisah
               const finalNomorLambung = nomorLambung ? nomorLambung.toString().trim() : "";
               await storage.createLeaveRosterMonitoring({
                 nik: nik.toString(),
