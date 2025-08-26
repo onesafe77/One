@@ -752,7 +752,13 @@ export default function LeaveRosterMonitoringPage() {
                             <span className="font-semibold">{item.monitoringDays}</span> hari
                           </TableCell>
                           <TableCell>
-                            <span className="text-gray-400 italic">Manual</span>
+                            {item.onSite ? (
+                              <Badge variant={item.onSite === "Ya" ? "default" : "secondary"}>
+                                {item.onSite}
+                              </Badge>
+                            ) : (
+                              <span className="text-gray-400">-</span>
+                            )}
                           </TableCell>
                           <TableCell>
                             <Badge className={statusColors[item.status as keyof typeof statusColors]}>
