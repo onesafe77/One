@@ -1629,19 +1629,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
                   if (!isNaN(lastDate.getTime())) {
                     finalLastLeaveDate = lastDate.toISOString().split('T')[0];
                     const today = new Date();
-                    monitoringDays = Math.floor((today.getTime() - lastDate.getTime()) / (1000 * 60 * 60 * 24));
+                    // Changed to: last leave date - today (as requested)
+                    monitoringDays = Math.floor((lastDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
                     
                     const workDaysThreshold = finalLeaveOption === "70" ? 70 : 35;
                     const nextDate = new Date(lastDate);
                     nextDate.setDate(lastDate.getDate() + workDaysThreshold);
                     nextLeaveDate = nextDate.toISOString().split('T')[0];
 
-                    // Auto-calculate status berdasarkan monitoring days
-                    if (monitoringDays >= workDaysThreshold - 5 && monitoringDays < workDaysThreshold) {
-                      finalStatus = "Menunggu Cuti";
-                    } else if (monitoringDays >= workDaysThreshold) {
-                      finalStatus = "Menunggu Cuti"; // Ready for leave
+                    // Auto-calculate status berdasarkan monitoring days (dengan rumus baru: last leave date - today)
+                    // Nilai negatif = hari yang sudah lewat sejak cuti terakhir
+                    // Nilai positif = hari ke depan (tanggal cuti di masa depan)
+                    const daysSinceLastLeave = Math.abs(monitoringDays); // Convert to positive for comparison
+                    if (monitoringDays <= 0) {
+                      // Last leave date is in the past
+                      if (daysSinceLastLeave >= workDaysThreshold - 5 && daysSinceLastLeave < workDaysThreshold) {
+                        finalStatus = "Menunggu Cuti";
+                      } else if (daysSinceLastLeave >= workDaysThreshold) {
+                        finalStatus = "Menunggu Cuti"; // Ready for leave
+                      } else {
+                        finalStatus = "Aktif";
+                      }
                     } else {
+                      // Last leave date is in the future (shouldn't happen normally)
                       finalStatus = "Aktif";
                     }
                   }

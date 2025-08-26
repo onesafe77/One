@@ -1066,25 +1066,33 @@ export class DrizzleStorage implements IStorage {
     for (const monitoring of allMonitoring) {
       let newStatus = monitoring.status;
       
-      // Update monitoring days berdasarkan lastLeaveDate
+      // Update monitoring days berdasarkan lastLeaveDate  
+      // Changed to: last leave date - today (as requested)
       let monitoringDays = monitoring.monitoringDays;
       if (monitoring.lastLeaveDate) {
         const lastLeaveDate = new Date(monitoring.lastLeaveDate);
         const todayDate = new Date(today);
-        const diffTime = todayDate.getTime() - lastLeaveDate.getTime();
+        const diffTime = lastLeaveDate.getTime() - todayDate.getTime();
         monitoringDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
       }
 
-      // Auto status berdasarkan monitoring days dan leave option
+      // Auto status berdasarkan monitoring days dan leave option (dengan rumus baru: last leave date - today)
       const workDaysThreshold = monitoring.leaveOption === "70" ? 70 : 35;
       
-      if (monitoringDays >= workDaysThreshold - 5 && monitoringDays < workDaysThreshold && monitoring.status === "Aktif") {
-        // H-5 sebelum eligible untuk cuti
-        newStatus = "Menunggu Cuti";
-      } else if (monitoringDays >= workDaysThreshold && monitoring.status !== "Sedang Cuti" && monitoring.status !== "Selesai Cuti") {
-        // Sudah eligible untuk cuti
-        if (monitoring.status === "Aktif") {
+      // Nilai negatif = hari yang sudah lewat sejak cuti terakhir  
+      // Nilai positif = hari ke depan (tanggal cuti di masa depan)
+      const daysSinceLastLeave = Math.abs(monitoringDays); // Convert to positive for comparison
+      
+      if (monitoringDays <= 0) {
+        // Last leave date is in the past
+        if (daysSinceLastLeave >= workDaysThreshold - 5 && daysSinceLastLeave < workDaysThreshold && monitoring.status === "Aktif") {
+          // H-5 sebelum eligible untuk cuti
           newStatus = "Menunggu Cuti";
+        } else if (daysSinceLastLeave >= workDaysThreshold && monitoring.status !== "Sedang Cuti" && monitoring.status !== "Selesai Cuti") {
+          // Sudah eligible untuk cuti
+          if (monitoring.status === "Aktif") {
+            newStatus = "Menunggu Cuti";
+          }
         }
       }
       
