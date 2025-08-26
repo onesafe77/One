@@ -1569,8 +1569,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
             }
 
             try {
-              // Format sederhana: NIK, Nama, Tanggal Terakhir Cuti, Pilihan Cuti, Bulan, OnSite
-              const [nik, name, lastLeaveDate, leaveOption, monthInput, onSite] = row;
+              // Format sederhana: NIK, Nama, Nomor Lambung, Tanggal Terakhir Cuti, Pilihan Cuti, Bulan, OnSite
+              const [nik, name, nomorLambung, lastLeaveDate, leaveOption, monthInput, onSite] = row;
               
               // Validate required fields
               if (!nik || !name) {

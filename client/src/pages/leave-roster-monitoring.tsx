@@ -406,11 +406,11 @@ export default function LeaveRosterMonitoringPage() {
   const downloadTemplate = () => {
     const currentMonth = new Date().toISOString().slice(0, 7); // "YYYY-MM"
     const templateData = [
-      ["NIK", "Nama", "Tanggal Terakhir Cuti", "Pilihan Cuti", "Bulan", "OnSite"],
-      ["C-015001", "CONTOH NAMA 1", "2024-01-15", "70", currentMonth, "Ya"],
-      ["C-025002", "CONTOH NAMA 2", "2024-02-20", "35", currentMonth, "Tidak"],
-      ["C-035003", "CONTOH NAMA 3", "", "70", currentMonth, ""],
-      ["C-045004", "CONTOH NAMA 4", "2024-03-10", "35", currentMonth, "Ya"],
+      ["NIK", "Nama", "Nomor Lambung", "Tanggal Terakhir Cuti", "Pilihan Cuti", "Bulan", "OnSite"],
+      ["C-015001", "CONTOH NAMA 1", "001", "2024-01-15", "70", currentMonth, "Ya"],
+      ["C-025002", "CONTOH NAMA 2", "002", "2024-02-20", "35", currentMonth, "Tidak"],
+      ["C-035003", "CONTOH NAMA 3", "003", "", "70", currentMonth, ""],
+      ["C-045004", "CONTOH NAMA 4", "004", "2024-03-10", "35", currentMonth, "Ya"],
     ];
 
     const csvContent = templateData.map(row => row.join(",")).join("\n");
@@ -704,6 +704,7 @@ export default function LeaveRosterMonitoringPage() {
                   <TableRow>
                     <TableHead>NIK</TableHead>
                     <TableHead>Nama</TableHead>
+                    <TableHead>Nomor Lambung</TableHead>
                     <TableHead>Bulan</TableHead>
                     <TableHead>Investor Group</TableHead>
                     <TableHead>Terakhir Cuti</TableHead>
@@ -717,66 +718,71 @@ export default function LeaveRosterMonitoringPage() {
                 <TableBody>
                   {filteredData.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={10} className="text-center py-8 text-gray-500">
+                      <TableCell colSpan={11} className="text-center py-8 text-gray-500">
                         Tidak ada data monitoring roster cuti
                       </TableCell>
                     </TableRow>
                   ) : (
-                    filteredData.map((item) => (
-                      <TableRow key={item.id} data-testid={`row-monitoring-${item.nik}`}>
-                        <TableCell className="font-medium">{item.nik}</TableCell>
-                        <TableCell>{item.name}</TableCell>
-                        <TableCell>
-                          <Badge variant="secondary">
-                            {(item as any).month || "2024-08"}
-                          </Badge>
-                        </TableCell>
-                        <TableCell>{item.investorGroup}</TableCell>
-                        <TableCell>
-                          {item.lastLeaveDate ? 
-                            format(parseISO(item.lastLeaveDate), "dd/MM/yyyy") : 
-                            "-"
-                          }
-                        </TableCell>
-                        <TableCell>
-                          <Badge variant="outline">
-                            {item.leaveOption === "70" ? "70 Hari Kerja" : "35 Hari Kerja"}
-                          </Badge>
-                        </TableCell>
-                        <TableCell>
-                          <span className="font-semibold">{item.monitoringDays}</span> hari
-                        </TableCell>
-                        <TableCell>
-                          <span className="text-gray-400 italic">Manual</span>
-                        </TableCell>
-                        <TableCell>
-                          <Badge className={statusColors[item.status as keyof typeof statusColors]}>
-                            {item.status}
-                          </Badge>
-                        </TableCell>
-                        <TableCell>
-                          <div className="flex gap-2">
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={() => handleEdit(item)}
-                              data-testid={`button-edit-${item.nik}`}
-                            >
-                              <Edit className="h-3 w-3" />
-                            </Button>
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={() => deleteMutation.mutate(item.id)}
-                              className="text-red-600 hover:bg-red-50"
-                              data-testid={`button-delete-${item.nik}`}
-                            >
-                              <Trash2 className="h-3 w-3" />
-                            </Button>
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                    ))
+                    filteredData.map((item) => {
+                      // Find employee data to get Nomor Lambung
+                      const employee = employees.find(emp => emp.id === item.nik);
+                      return (
+                        <TableRow key={item.id} data-testid={`row-monitoring-${item.nik}`}>
+                          <TableCell className="font-medium">{item.nik}</TableCell>
+                          <TableCell>{item.name}</TableCell>
+                          <TableCell>{employee?.nomorLambung || "-"}</TableCell>
+                          <TableCell>
+                            <Badge variant="secondary">
+                              {(item as any).month || "2024-08"}
+                            </Badge>
+                          </TableCell>
+                          <TableCell>{item.investorGroup}</TableCell>
+                          <TableCell>
+                            {item.lastLeaveDate ? 
+                              format(parseISO(item.lastLeaveDate), "dd/MM/yyyy") : 
+                              "-"
+                            }
+                          </TableCell>
+                          <TableCell>
+                            <Badge variant="outline">
+                              {item.leaveOption === "70" ? "70 Hari Kerja" : "35 Hari Kerja"}
+                            </Badge>
+                          </TableCell>
+                          <TableCell>
+                            <span className="font-semibold">{item.monitoringDays}</span> hari
+                          </TableCell>
+                          <TableCell>
+                            <span className="text-gray-400 italic">Manual</span>
+                          </TableCell>
+                          <TableCell>
+                            <Badge className={statusColors[item.status as keyof typeof statusColors]}>
+                              {item.status}
+                            </Badge>
+                          </TableCell>
+                          <TableCell>
+                            <div className="flex gap-2">
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => handleEdit(item)}
+                                data-testid={`button-edit-${item.nik}`}
+                              >
+                                <Edit className="h-3 w-3" />
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => deleteMutation.mutate(item.id)}
+                                className="text-red-600 hover:bg-red-50"
+                                data-testid={`button-delete-${item.nik}`}
+                              >
+                                <Trash2 className="h-3 w-3" />
+                              </Button>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })
                   )}
                 </TableBody>
               </Table>
