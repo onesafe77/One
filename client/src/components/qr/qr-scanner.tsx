@@ -147,7 +147,9 @@ export function QRScanner() {
     });
     
     if (code) {
+      console.log("Raw QR Code data detected:", code.data);
       const qrData = validateQRData(code.data);
+      console.log("Validated QR Data:", qrData);
       if (qrData) {
         // Deteksi apakah diakses dari mobile
         const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || window.innerWidth <= 768;
@@ -163,6 +165,7 @@ export function QRScanner() {
           return;
         }
       } else {
+        console.log("QR validation failed for data:", code.data);
         toast({
           title: "QR Code Tidak Valid",
           description: "❌ QR Code tidak valid atau bukan dari sistem resmi",

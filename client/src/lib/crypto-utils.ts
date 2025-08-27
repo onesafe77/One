@@ -8,13 +8,31 @@ export function generateToken(employeeId: string): string {
 
 export function validateQRData(qrDataString: string): { id: string; token: string } | null {
   try {
+    // First, try direct JSON parsing
     const qrData = JSON.parse(qrDataString);
     if (qrData.id && qrData.token) {
       return { id: qrData.id, token: qrData.token };
     }
     return null;
   } catch {
-    return null;
+    // If direct JSON parsing fails, try to extract from URL format
+    try {
+      // Check if it's a URL with data parameter
+      if (qrDataString.includes('qr-redirect?data=')) {
+        const url = new URL(qrDataString);
+        const dataParam = url.searchParams.get('data');
+        if (dataParam) {
+          const decodedData = decodeURIComponent(dataParam);
+          const qrData = JSON.parse(decodedData);
+          if (qrData.id && qrData.token) {
+            return { id: qrData.id, token: qrData.token };
+          }
+        }
+      }
+      return null;
+    } catch {
+      return null;
+    }
   }
 }
 
