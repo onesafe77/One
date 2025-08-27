@@ -94,12 +94,17 @@ export default function Roster() {
     mutationFn: (data: InsertRosterSchedule) => apiRequest("/api/roster", "POST", data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/roster"] });
+      // Invalidate QR validation cache untuk memastikan scan result menggunakan data roster terbaru
+      queryClient.invalidateQueries({ queryKey: ["/api/qr/validate"] });
+      // Invalidate attendance cache karena roster berubah bisa mempengaruhi validasi shift
+      queryClient.invalidateQueries({ queryKey: ["/api/attendance"] });
+      
       setIsDialogOpen(false);
       form.reset();
       clearDraft(); // Clear auto saved draft after successful save
       toast({
         title: "Berhasil",
-        description: "Roster berhasil ditambahkan",
+        description: "Roster berhasil ditambahkan - QR scan akan menggunakan data terbaru",
       });
     },
     onError: () => {
@@ -116,11 +121,16 @@ export default function Roster() {
       apiRequest(`/api/roster/${id}`, "PUT", data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/roster"] });
+      // Invalidate QR validation cache untuk memastikan scan result menggunakan data roster terbaru
+      queryClient.invalidateQueries({ queryKey: ["/api/qr/validate"] });
+      // Invalidate attendance cache karena roster berubah bisa mempengaruhi validasi shift
+      queryClient.invalidateQueries({ queryKey: ["/api/attendance"] });
+      
       setIsEditDialogOpen(false);
       setEditingRoster(null);
       toast({
         title: "Berhasil",
-        description: "Roster berhasil diupdate",
+        description: "Roster berhasil diupdate - QR scan akan menggunakan data terbaru",
       });
     },
     onError: () => {
@@ -136,9 +146,14 @@ export default function Roster() {
     mutationFn: (id: string) => apiRequest(`/api/roster/${id}`, "DELETE", {}),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/roster"] });
+      // Invalidate QR validation cache untuk memastikan scan result menggunakan data roster terbaru
+      queryClient.invalidateQueries({ queryKey: ["/api/qr/validate"] });
+      // Invalidate attendance cache karena roster berubah bisa mempengaruhi validasi shift
+      queryClient.invalidateQueries({ queryKey: ["/api/attendance"] });
+      
       toast({
         title: "Berhasil",
-        description: "Roster berhasil dihapus",
+        description: "Roster berhasil dihapus - QR scan akan menggunakan data terbaru",
       });
     },
     onError: () => {
@@ -154,11 +169,16 @@ export default function Roster() {
     mutationFn: (data: InsertRosterSchedule[]) => apiRequest("/api/roster/bulk", "POST", { rosters: data }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/roster"] });
+      // Invalidate QR validation cache untuk memastikan scan result menggunakan data roster terbaru
+      queryClient.invalidateQueries({ queryKey: ["/api/qr/validate"] });
+      // Invalidate attendance cache karena roster berubah bisa mempengaruhi validasi shift
+      queryClient.invalidateQueries({ queryKey: ["/api/attendance"] });
+      
       setIsUploadDialogOpen(false);
       setSelectedFile(null);
       toast({
         title: "Berhasil",
-        description: "Roster berhasil diupload dari Excel",
+        description: "Roster berhasil diupload dari Excel - QR scan akan menggunakan data terbaru",
       });
     },
     onError: (error: any) => {

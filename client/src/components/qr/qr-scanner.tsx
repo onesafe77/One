@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback } from "react";
+import { useState, useRef, useCallback, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -10,6 +10,7 @@ import { useToast } from "@/hooks/use-toast";
 import { determineShiftByTime, getCurrentShift } from "@/lib/shift-utils";
 import { Camera, CameraOff, CheckCircle, User, Clock, XCircle, Moon, Heart, Activity, Calendar } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
+import { queryClient } from "@/lib/queryClient";
 import jsQR from "jsqr";
 
 interface ScanResult {
@@ -68,6 +69,31 @@ export function QRScanner() {
     refetchOnWindowFocus: true,
     refetchInterval: 30000, // Auto-refresh setiap 30 detik
   });
+
+  // Listen untuk perubahan roster data dan clear scan result jika ada
+  useEffect(() => {
+    const handleRosterChange = () => {
+      if (scanResult) {
+        setScanResult(null);
+        toast({
+          title: "Data Roster Berubah",
+          description: "Silakan scan QR code lagi untuk mendapatkan data roster terbaru",
+          variant: "default",
+        });
+      }
+    };
+
+    // Subscribe to roster query changes
+    const unsubscribe = queryClient.getQueryCache().subscribe((event) => {
+      if (event.type === 'updated' && 
+          event.query.queryKey[0] === '/api/roster' &&
+          scanResult) {
+        handleRosterChange();
+      }
+    });
+
+    return () => unsubscribe();
+  }, [scanResult, toast]);
 
 
   const startScanning = async () => {
