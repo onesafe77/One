@@ -129,10 +129,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       const qrUrl = `${baseUrl}/qr-redirect?data=${encodeURIComponent(JSON.stringify({ id: validatedData.id, token: qrToken }))}`;
       
-      // Add QR Code to employee data
+      // Add QR Code to employee data as JSON (untuk compatibility)
+      const qrData = JSON.stringify({ id: validatedData.id, token: qrToken });
       const employeeWithQR = {
         ...validatedData,
-        qrCode: qrUrl // Sekarang berisi URL langsung
+        qrCode: qrData // Simpan sebagai JSON untuk validasi
       };
       
       const employee = await storage.createEmployee(employeeWithQR);
@@ -213,7 +214,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           const qrToken = Buffer.from(tokenData).toString('base64').slice(0, 16);
           const qrData = JSON.stringify({ id: validatedEmployee.id, token: qrToken });
           
-          // Add QR Code to employee data
+          // Add QR Code to employee data (as JSON for consistency)  
           const employeeWithQR = {
             ...validatedEmployee,
             qrCode: qrData
@@ -764,19 +765,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "Karyawan tidak ditemukan" });
       }
 
-      // Validate token directly from employee QR code (faster than database lookup)
-      let isValid = false;
-      if (employee.qrCode) {
-        try {
-          const qrData = JSON.parse(employee.qrCode);
-          isValid = qrData.token === token;
-        } catch (parseError) {
-          isValid = false;
-        }
-      }
+      // Validate token using QR tokens table (more reliable)
+      const qrTokens = await storage.getQrTokensByEmployee(employeeId);
+      const validToken = qrTokens.find(t => t.token === token && t.isActive);
 
-      if (!isValid) {
-        return res.status(400).json({ message: "Token QR tidak valid" });
+      if (!validToken) {
+        return res.status(400).json({ message: "Token QR tidak valid atau sudah tidak aktif" });
       }
 
       const employeeRoster = todayRoster.find(r => r.employeeId === employeeId);
