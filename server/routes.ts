@@ -38,11 +38,11 @@ function determineShiftByTime(time: string): string {
   const [hours, minutes] = time.split(':').map(Number);
   const totalMinutes = hours * 60 + minutes;
   
-  // Berdasarkan data roster sesungguhnya:
-  // Shift 1: 08:00-16:00 (480 - 960 minutes)
-  // Shift 2: 18:00-06:00 (1080 - 360 minutes next day)
+  // Berdasarkan window validasi yang baru:
+  // Shift 1: 04:00-18:00 (240 - 1080 minutes)
+  // Shift 2: 16:00-08:00 next day (960+ minutes atau <480 minutes)
   
-  if (totalMinutes >= 480 && totalMinutes < 1080) {
+  if (totalMinutes >= 240 && totalMinutes < 1080) {
     return "Shift 1";
   } else {
     return "Shift 2";

@@ -241,8 +241,19 @@ export default function Roster() {
         // Parse jam kerja format "08:00 - 16:00"
         const jamKerja = row['Jam Kerja'] || row.jamKerja || '';
         const jamKerjaParts = jamKerja.split(' - ');
-        const startTime = jamKerjaParts[0] ? jamKerjaParts[0].trim() : '08:00';
-        const endTime = jamKerjaParts[1] ? jamKerjaParts[1].trim() : '16:00';
+        const shift = row.Shift || row.shift || 'Shift 1';
+        
+        // Set default times based on shift if jam kerja is not provided
+        let defaultStartTime = '08:00';
+        let defaultEndTime = '16:00';
+        
+        if (shift === 'Shift 2') {
+          defaultStartTime = '18:00';
+          defaultEndTime = '06:00';
+        }
+        
+        const startTime = jamKerjaParts[0] ? jamKerjaParts[0].trim() : defaultStartTime;
+        const endTime = jamKerjaParts[1] ? jamKerjaParts[1].trim() : defaultEndTime;
 
         const rosterData = {
           employeeId: row.NIK || row.nik || row['Employee ID'] || row.employeeId || '',
@@ -288,7 +299,7 @@ export default function Roster() {
         Nama: 'SYAHRIAL H',
         'Nomor Lambung': 'GECL 9001',
         Shift: 'Shift 1',
-        'Jam Kerja': '06:00 - 07:30',
+        'Jam Kerja': '08:00 - 16:00',
         'Jam Tidur': '6',
         'Fit To Work': 'Fit To Work',
         Status: 'scheduled'
@@ -297,8 +308,8 @@ export default function Roster() {
         NIK: 'C-004764',
         Nama: 'SAHRUL HELMI',
         'Nomor Lambung': 'GECL 9002',
-        Shift: 'Shift 1',
-        'Jam Kerja': '06:00 - 07:30',
+        Shift: 'Shift 2',
+        'Jam Kerja': '18:00 - 06:00',
         'Jam Tidur': '6',
         'Fit To Work': 'Fit To Work',
         Status: 'scheduled'
