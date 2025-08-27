@@ -264,7 +264,7 @@ export default function Roster() {
         const shift = row.Shift || row.shift || 'Shift 1';
         
         // Set default times based on shift if jam kerja is not provided
-        let defaultStartTime = '08:00';
+        let defaultStartTime = '06:00';
         let defaultEndTime = '16:00';
         
         if (shift === 'Shift 2') {

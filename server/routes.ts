@@ -39,13 +39,15 @@ function determineShiftByTime(time: string): string {
   const totalMinutes = hours * 60 + minutes;
   
   // Berdasarkan window validasi yang baru:
-  // Shift 1: 06:00-18:00 (360-1080 menit)
-  // Shift 2: 18:00-06:00 next day (1080+ menit atau <360 menit)
+  // Shift 1: 06:00-16:00 (360-960 menit)
+  // Shift 2: 16:30-20:00 (990-1200 menit)
   
-  if (totalMinutes >= 360 && totalMinutes < 1080) {
+  if (totalMinutes >= 990 && totalMinutes < 1200) {
+    return "Shift 2";
+  } else if (totalMinutes >= 360 && totalMinutes < 960) {
     return "Shift 1";
   } else {
-    return "Shift 2";
+    return "Shift 1"; // Default to Shift 1 for other times
   }
 }
 
@@ -63,8 +65,8 @@ function isValidShiftTimeByName(currentTime: string, shiftName: string): boolean
   const totalMinutes = hours * 60 + minutes;
   
   if (shiftName === "Shift 1") {
-    // Shift 1: boleh scan dari 06:00 sampai 18:00 (360-1080 menit)
-    return totalMinutes >= 360 && totalMinutes < 1080;
+    // Shift 1: boleh scan dari 06:00 sampai 16:00 (360-960 menit)
+    return totalMinutes >= 360 && totalMinutes < 960;
   } else if (shiftName === "Shift 2") {
     // Shift 2: boleh scan dari 16:30 sampai 20:00 (990-1200 menit)
     return totalMinutes >= 990 && totalMinutes < 1200;
@@ -79,11 +81,11 @@ function isValidShiftTime(currentTime: string, scheduledShift: string): boolean 
   const totalMinutes = hours * 60 + minutes;
   
   if (scheduledShift === "Shift 1") {
-    // Shift 1: Hanya boleh scan antara jam 06:00:00 sampai 18:00:00 (360-1080 minutes)
-    return totalMinutes >= 360 && totalMinutes < 1080;
+    // Shift 1: Hanya boleh scan antara jam 06:00:00 sampai 16:00:00 (360-960 minutes)
+    return totalMinutes >= 360 && totalMinutes < 960;
   } else if (scheduledShift === "Shift 2") {
-    // Shift 2: Hanya boleh scan antara jam 18:00:00 sampai 06:00:00 hari berikutnya (1080 minutes to 360 minutes next day)
-    return totalMinutes >= 1080 || totalMinutes < 360;
+    // Shift 2: Hanya boleh scan antara jam 16:30:00 sampai 20:00:00 (990-1200 minutes)
+    return totalMinutes >= 990 && totalMinutes < 1200;
   }
   
   return false;
@@ -513,7 +515,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Auto-update startTime dan endTime jika shift berubah
       if (validatedData.shift) {
         if (validatedData.shift === "Shift 1") {
-          validatedData.startTime = "08:00";
+          validatedData.startTime = "06:00";
           validatedData.endTime = "16:00";
         } else if (validatedData.shift === "Shift 2") {
           validatedData.startTime = "16:30";
