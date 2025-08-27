@@ -268,8 +268,8 @@ export default function Roster() {
         let defaultEndTime = '16:00';
         
         if (shift === 'Shift 2') {
-          defaultStartTime = '18:00';
-          defaultEndTime = '06:00';
+          defaultStartTime = '16:30';
+          defaultEndTime = '20:00';
         }
         
         const startTime = jamKerjaParts[0] ? jamKerjaParts[0].trim() : defaultStartTime;

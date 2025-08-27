@@ -66,9 +66,8 @@ function isValidShiftTimeByName(currentTime: string, shiftName: string): boolean
     // Shift 1: boleh scan dari 06:00 sampai 18:00 (360-1080 menit)
     return totalMinutes >= 360 && totalMinutes < 1080;
   } else if (shiftName === "Shift 2") {
-    // Shift 2: boleh scan dari 18:00 sampai 06:00 hari berikutnya  
-    // Window: 18:00-23:59 atau 00:00-06:00 (1080+ menit atau <360 menit)
-    return totalMinutes >= 1080 || totalMinutes < 360;
+    // Shift 2: boleh scan dari 16:30 sampai 20:00 (990-1200 menit)
+    return totalMinutes >= 990 && totalMinutes < 1200;
   }
   
   return false;
@@ -517,8 +516,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           validatedData.startTime = "08:00";
           validatedData.endTime = "16:00";
         } else if (validatedData.shift === "Shift 2") {
-          validatedData.startTime = "18:00";
-          validatedData.endTime = "06:00";
+          validatedData.startTime = "16:30";
+          validatedData.endTime = "20:00";
         }
       }
       
