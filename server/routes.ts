@@ -511,6 +511,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const validatedData = insertRosterSchema.partial().parse(req.body);
       
+      // Auto-update startTime dan endTime jika shift berubah
+      if (validatedData.shift) {
+        if (validatedData.shift === "Shift 1") {
+          validatedData.startTime = "08:00";
+          validatedData.endTime = "16:00";
+        } else if (validatedData.shift === "Shift 2") {
+          validatedData.startTime = "18:00";
+          validatedData.endTime = "06:00";
+        }
+      }
+      
       const schedule = await storage.updateRosterSchedule(req.params.id, validatedData);
       if (!schedule) {
         return res.status(404).json({ message: "Roster tidak ditemukan" });
@@ -541,30 +552,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.put("/api/roster/:id", async (req, res) => {
-    try {
-      const validatedData = insertRosterSchema.partial().parse(req.body);
-      const schedule = await storage.updateRosterSchedule(req.params.id, validatedData);
-      if (!schedule) {
-        return res.status(404).json({ message: "Roster schedule not found" });
-      }
-      res.json(schedule);
-    } catch (error) {
-      res.status(400).json({ message: "Invalid roster data" });
-    }
-  });
-
-  app.delete("/api/roster/:id", async (req, res) => {
-    try {
-      const deleted = await storage.deleteRosterSchedule(req.params.id);
-      if (!deleted) {
-        return res.status(404).json({ message: "Roster schedule not found" });
-      }
-      res.status(204).send();
-    } catch (error) {
-      res.status(500).json({ message: "Failed to delete roster schedule" });
-    }
-  });
 
   // Leave routes
   app.get("/api/leave", async (req, res) => {
