@@ -91,6 +91,22 @@ function isValidShiftTime(currentTime: string, scheduledShift: string): boolean 
   return false;
 }
 
+// Simple cache for frequently accessed employee data (5 minute TTL)
+const employeeCache = new Map<string, { data: any; timestamp: number }>();
+const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
+
+function getCachedEmployee(employeeId: string) {
+  const cached = employeeCache.get(employeeId);
+  if (cached && Date.now() - cached.timestamp < CACHE_TTL) {
+    return cached.data;
+  }
+  return null;
+}
+
+function setCachedEmployee(employeeId: string, data: any) {
+  employeeCache.set(employeeId, { data, timestamp: Date.now() });
+}
+
 export async function registerRoutes(app: Express): Promise<Server> {
   // Employee routes
   app.get("/api/employees", async (req, res) => {
@@ -274,31 +290,48 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const validatedData = insertAttendanceSchema.parse(req.body);
       
-      // Check if employee exists
-      const employee = await storage.getEmployee(validatedData.employeeId);
+      // Use cache for employee data, parallel queries for the rest
+      let employee = getCachedEmployee(validatedData.employeeId);
+      
+      if (!employee) {
+        // Employee not cached, fetch with parallel queries
+        const [employeeData, existingAttendance, roster, leaveRequests] = await Promise.all([
+          storage.getEmployee(validatedData.employeeId),
+          storage.getAttendanceByEmployee(validatedData.employeeId, validatedData.date),
+          storage.getRosterByDate(validatedData.date),
+          storage.getLeaveByEmployee(validatedData.employeeId)
+        ]);
+        employee = employeeData;
+        if (employee) setCachedEmployee(validatedData.employeeId, employee);
+        var attendance = existingAttendance;
+        var rosterData = roster;
+        var leaves = leaveRequests;
+      } else {
+        // Employee cached, only fetch other data
+        const [existingAttendance, roster, leaveRequests] = await Promise.all([
+          storage.getAttendanceByEmployee(validatedData.employeeId, validatedData.date),
+          storage.getRosterByDate(validatedData.date),
+          storage.getLeaveByEmployee(validatedData.employeeId)
+        ]);
+        var attendance = existingAttendance;
+        var rosterData = roster;
+        var leaves = leaveRequests;
+      }
+      
       if (!employee) {
         return res.status(404).json({ message: "Karyawan tidak ditemukan" });
       }
 
-      // Check if already attended today
-      const existingAttendance = await storage.getAttendanceByEmployee(
-        validatedData.employeeId, 
-        validatedData.date
-      );
-      if (existingAttendance.length > 0) {
+      if (attendance.length > 0) {
         return res.status(400).json({ message: "Karyawan sudah melakukan absensi hari ini" });
       }
 
-      // Check if employee is scheduled for today
-      const roster = await storage.getRosterByDate(validatedData.date);
-      const scheduledEmployee = roster.find(r => r.employeeId === validatedData.employeeId);
-      
+      const scheduledEmployee = rosterData.find(r => r.employeeId === validatedData.employeeId);
       if (!scheduledEmployee) {
         return res.status(400).json({ message: "Karyawan tidak dijadwalkan untuk hari ini" });
       }
-
-      // Check if employee is currently on leave (optimized query)
-      const leaveRequests = await storage.getLeaveByEmployee(validatedData.employeeId);
+      
+      const leaveRequests = leaves;
       const approvedLeave = leaveRequests.find(leave => 
         leave.status === 'approved' &&
         validatedData.date >= leave.startDate &&
@@ -741,12 +774,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Employee ID and token are required" });
       }
 
-      // Parallel execution for faster response
+      // Check cache first for faster response
       const today = new Date().toISOString().split('T')[0];
-      const [employee, todayRoster] = await Promise.all([
-        storage.getEmployee(employeeId),
-        storage.getRosterByDate(today)
-      ]);
+      let employee = getCachedEmployee(employeeId);
+      
+      if (!employee) {
+        // Parallel execution for faster response
+        const [employeeData, todayRoster] = await Promise.all([
+          storage.getEmployee(employeeId),
+          storage.getRosterByDate(today)
+        ]);
+        employee = employeeData;
+        if (employee) setCachedEmployee(employeeId, employee);
+        var roster = todayRoster;
+      } else {
+        // Employee found in cache, only fetch roster
+        var roster = await storage.getRosterByDate(today);
+      }
+      
+      const todayRoster = roster;
 
       if (!employee) {
         return res.status(404).json({ message: "Karyawan tidak ditemukan" });

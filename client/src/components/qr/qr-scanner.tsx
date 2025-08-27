@@ -48,6 +48,7 @@ export function QRScanner() {
     fitToWork: ''
   });
   const [isProcessing, setIsProcessing] = useState(false);
+  const [lastScanTime, setLastScanTime] = useState<number>(0);
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const scanningRef = useRef(false);
@@ -146,13 +147,13 @@ export function QRScanner() {
     const context = canvas.getContext('2d');
     
     if (!context || video.readyState !== video.HAVE_ENOUGH_DATA) {
-      setTimeout(scanQRCode, 100); // Reduced frequency for better performance
+      requestAnimationFrame(scanQRCode); // Use RAF for better performance
       return;
     }
 
     // Optimize canvas size for faster processing
-    const maxWidth = 640;
-    const maxHeight = 480;
+    const maxWidth = 480; // Reduced for faster processing
+    const maxHeight = 360;
     const videoAspectRatio = video.videoWidth / video.videoHeight;
     
     let canvasWidth = Math.min(video.videoWidth, maxWidth);
@@ -173,6 +174,14 @@ export function QRScanner() {
     });
     
     if (code) {
+      // Debounce QR code detection to prevent multiple scans
+      const now = Date.now();
+      if (now - lastScanTime < 2000) { // 2 second cooldown
+        requestAnimationFrame(scanQRCode);
+        return;
+      }
+      setLastScanTime(now);
+      
       console.log("Raw QR Code data detected:", code.data);
       const qrData = validateQRData(code.data);
       console.log("Validated QR Data:", qrData);
@@ -200,12 +209,14 @@ export function QRScanner() {
       }
     }
     
-    setTimeout(scanQRCode, 100); // Reduced frequency for better performance
+    requestAnimationFrame(scanQRCode); // Use RAF for optimal performance
   }, [toast]);
 
   const validateAndProcess = async (employeeId: string, token: string) => {
     // Prevent multiple simultaneous validations
     if (isProcessing) return;
+    
+    stopScanning(); // Stop scanning immediately for faster response
     
     try {
       setIsProcessing(true);
@@ -239,7 +250,6 @@ export function QRScanner() {
         };
         
         setScanResult({ ...employeeData, status: 'validated' });
-        stopScanning();
         
         if (result.roster) {
           toast({
@@ -311,22 +321,15 @@ export function QRScanner() {
         description: `✅ Absensi berhasil dicatat untuk ${scanResult.name}`,
       });
 
-      // Comprehensive real-time data invalidation
-      const { queryClient } = await import("@/lib/queryClient");
-      
-      // Invalidate all attendance-related queries for real-time updates
-      await Promise.all([
+      // Faster cache invalidation - do it in background
+      Promise.all([
         queryClient.invalidateQueries({ queryKey: ["/api/attendance"] }),
         queryClient.invalidateQueries({ queryKey: ["/api/dashboard/stats"] }),
         queryClient.invalidateQueries({ queryKey: ["/api/dashboard/attendance-details"] }),
         queryClient.invalidateQueries({ queryKey: ["/api/dashboard/recent-activities"] }),
         queryClient.invalidateQueries({ queryKey: ["/api/roster"] }),
-        queryClient.refetchQueries({ queryKey: ["/api/dashboard/stats"] }),
-        queryClient.refetchQueries({ queryKey: ["/api/dashboard/attendance-details"] })
-      ]);
-      
-      // Refresh recent activities immediately for real-time update
-      await refetchActivities();
+        refetchActivities() // Refresh recent activities immediately
+      ]).catch(console.error); // Don't block UI for cache updates
       
       // Reset form and clear scan result after 3 seconds
       setTimeout(() => {
