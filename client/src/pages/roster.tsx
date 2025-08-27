@@ -497,7 +497,7 @@ export default function Roster() {
                             </FormControl>
                             <SelectContent>
                               <SelectItem value="Shift 1">Shift 1 (04:00 - 18:00)</SelectItem>
-                              <SelectItem value="Shift 2">Shift 2 (16:00 - 08:00)</SelectItem>
+                              <SelectItem value="Shift 2">Shift 2 (18:00 - 04:00)</SelectItem>
                             </SelectContent>
                           </Select>
                           <FormMessage />
@@ -641,7 +641,7 @@ export default function Roster() {
                             </FormControl>
                             <SelectContent>
                               <SelectItem value="Shift 1">Shift 1 (04:00 - 18:00)</SelectItem>
-                              <SelectItem value="Shift 2">Shift 2 (16:00 - 08:00)</SelectItem>
+                              <SelectItem value="Shift 2">Shift 2 (18:00 - 04:00)</SelectItem>
                             </SelectContent>
                           </Select>
                           <FormMessage />

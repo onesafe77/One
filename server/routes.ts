@@ -38,9 +38,9 @@ function determineShiftByTime(time: string): string {
   const [hours, minutes] = time.split(':').map(Number);
   const totalMinutes = hours * 60 + minutes;
   
-  // Berdasarkan window validasi yang baru:
-  // Shift 1: 04:00-18:00 (240 - 1080 minutes)
-  // Shift 2: 16:00-08:00 next day (960+ minutes atau <480 minutes)
+  // Berdasarkan window validasi yang baru (tanpa overlap):
+  // Shift 1: 04:00-18:00 (240-1080 menit)
+  // Shift 2: 18:00-04:00 next day (1080+ menit atau <240 menit)
   
   if (totalMinutes >= 240 && totalMinutes < 1080) {
     return "Shift 1";
@@ -57,20 +57,19 @@ function isValidRosterTime(currentTime: string, startTime: string, endTime: stri
   return true; // Temporary - akan menggunakan shift-based validation
 }
 
-// Fungsi validasi waktu berdasarkan nama shift (sesuai logika validasi yang sudah ada)
+// Fungsi validasi waktu berdasarkan nama shift (tanpa overlap window)
 function isValidShiftTimeByName(currentTime: string, shiftName: string): boolean {
   const [hours, minutes] = currentTime.split(':').map(Number);
   const totalMinutes = hours * 60 + minutes;
   
   if (shiftName === "Shift 1") {
     // Shift 1: boleh scan dari 04:00 sampai 18:00 (240-1080 menit)
-    // Memberi window 4 jam sebelum shift dimulai untuk persiapan
     return totalMinutes >= 240 && totalMinutes < 1080;
   } else if (shiftName === "Shift 2") {
-    // Shift 2: boleh scan dari 16:00 sampai 08:00 hari berikutnya  
-    // Window: 16:00-23:59 atau 00:00-08:00 (960+ menit atau <480 menit)
-    // Memberi window 2 jam sebelum shift dimulai
-    return totalMinutes >= 960 || totalMinutes < 480;
+    // Shift 2: boleh scan dari 18:00 sampai 04:00 hari berikutnya  
+    // Window: 18:00-23:59 atau 00:00-04:00 (1080+ menit atau <240 menit)
+    // TIDAK ADA OVERLAP dengan Shift 1
+    return totalMinutes >= 1080 || totalMinutes < 240;
   }
   
   return false;
