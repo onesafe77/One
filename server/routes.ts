@@ -63,13 +63,14 @@ function isValidShiftTimeByName(currentTime: string, shiftName: string): boolean
   const totalMinutes = hours * 60 + minutes;
   
   if (shiftName === "Shift 1") {
-    // Shift 1: boleh scan dari 06:00 sampai 18:00 (360-1080 menit)
-    // Sesuai dengan logika validasi yang sudah ada
-    return totalMinutes >= 360 && totalMinutes < 1080;
+    // Shift 1: boleh scan dari 04:00 sampai 18:00 (240-1080 menit)
+    // Memberi window 4 jam sebelum shift dimulai untuk persiapan
+    return totalMinutes >= 240 && totalMinutes < 1080;
   } else if (shiftName === "Shift 2") {
-    // Shift 2: boleh scan dari 18:00 sampai 06:00 hari berikutnya
-    // Window: 18:00-23:59 atau 00:00-06:00 (1080+ menit atau <360 menit)
-    return totalMinutes >= 1080 || totalMinutes < 360;
+    // Shift 2: boleh scan dari 16:00 sampai 08:00 hari berikutnya  
+    // Window: 16:00-23:59 atau 00:00-08:00 (960+ menit atau <480 menit)
+    // Memberi window 2 jam sebelum shift dimulai
+    return totalMinutes >= 960 || totalMinutes < 480;
   }
   
   return false;
