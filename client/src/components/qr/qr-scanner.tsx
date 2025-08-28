@@ -336,8 +336,9 @@ export function QRScanner() {
         throw new Error(errorData.message || `HTTP ${response.status}`);
       }
 
-      // Update status to success
+      // Update status to success and reset processing
       setScanResult(prev => prev ? { ...prev, status: 'success' } : null);
+      setIsProcessing(false); // Reset processing state immediately
       
       toast({
         title: "Absensi Berhasil",
@@ -358,10 +359,16 @@ export function QRScanner() {
       setTimeout(() => {
         setScanResult(null);
         setAttendanceForm({ jamTidur: '', fitToWork: '' });
+        // Restart scanning for next QR
+        if (videoRef.current && !scanningRef.current) {
+          startScanning();
+        }
       }, 3000);
       
     } catch (error: any) {
       console.error("Auto attendance error:", error);
+      // Immediately reset processing state on error
+      setIsProcessing(false);
       
       let errorMessage = "Gagal memproses absensi";
       let errorTitle = "Error";
@@ -401,10 +408,12 @@ export function QRScanner() {
         variant: "destructive",
       });
       
+      // Immediately reset processing state to unblock UI
+      setIsProcessing(false);
+      
       // Clear scan result after error to allow retry
       setTimeout(() => {
         setScanResult(null);
-        setIsProcessing(false);
         // Resume scanning after error
         if (videoRef.current && !scanningRef.current) {
           startScanning();
@@ -461,7 +470,7 @@ export function QRScanner() {
               data-testid="start-scanner-button"
             >
               <Camera className="w-4 h-4 mr-2" />
-              {isProcessing ? "Memproses..." : "Mulai Scan"}
+              {isScanning ? "Scanning..." : isProcessing ? "Memproses..." : "Mulai Scan"}
             </Button>
             <Button 
               onClick={stopScanning} 
