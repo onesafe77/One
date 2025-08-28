@@ -99,8 +99,16 @@ export function QRScanner() {
 
   const startScanning = async () => {
     try {
+      // Reset states for fresh start
+      setIsProcessing(false);
+      setLastScanTime(0);
+      
       const mediaStream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: 'environment' }
+        video: { 
+          facingMode: 'environment',
+          width: { ideal: 1280 },
+          height: { ideal: 720 }
+        }
       });
       
       setStream(mediaStream);
@@ -112,12 +120,17 @@ export function QRScanner() {
       if (videoRef.current) {
         videoRef.current.srcObject = mediaStream;
         videoRef.current.play();
-        requestAnimationFrame(scanQRCode);
+        // Start scanning after video is ready
+        videoRef.current.onloadedmetadata = () => {
+          console.log("Camera ready, starting QR detection...");
+          requestAnimationFrame(scanQRCode);
+        };
       }
     } catch (error) {
+      console.error("Camera error:", error);
       toast({
-        title: "Error",
-        description: "Gagal mengakses kamera. Pastikan browser memiliki izin kamera.",
+        title: "Error Kamera",
+        description: "Gagal mengakses kamera. Pastikan browser memiliki izin kamera dan reload halaman.",
         variant: "destructive",
       });
     }
@@ -147,7 +160,9 @@ export function QRScanner() {
     const context = canvas.getContext('2d');
     
     if (!context || video.readyState !== video.HAVE_ENOUGH_DATA) {
-      requestAnimationFrame(scanQRCode); // Use RAF for better performance
+      if (scanningRef.current) {
+        requestAnimationFrame(scanQRCode); // Only continue if still scanning
+      }
       return;
     }
 
@@ -174,9 +189,9 @@ export function QRScanner() {
     });
     
     if (code) {
-      // Debounce QR code detection to prevent multiple scans
+      // Debounce QR code detection to prevent multiple scans (reduced to 500ms)
       const now = Date.now();
-      if (now - lastScanTime < 2000) { // 2 second cooldown
+      if (now - lastScanTime < 500) { // 500ms cooldown for responsiveness
         requestAnimationFrame(scanQRCode);
         return;
       }
@@ -201,22 +216,29 @@ export function QRScanner() {
         }
       } else {
         console.log("QR validation failed for data:", code.data);
-        toast({
-          title: "QR Code Tidak Valid",
-          description: "❌ QR Code tidak valid atau bukan dari sistem resmi",
-          variant: "destructive",
-        });
+        // Don't show toast for every invalid scan, just continue scanning
+        // Only show once every 3 seconds to avoid spam
+        const lastToastTime = localStorage.getItem('lastInvalidQRToast');
+        if (!lastToastTime || now - parseInt(lastToastTime) > 3000) {
+          toast({
+            title: "QR Code Tidak Valid",
+            description: "❌ Pastikan QR Code dari sistem resmi",
+            variant: "destructive",
+          });
+          localStorage.setItem('lastInvalidQRToast', now.toString());
+        }
       }
     }
     
-    requestAnimationFrame(scanQRCode); // Use RAF for optimal performance
+    // Continue scanning if still active
+    if (scanningRef.current && !isProcessing) {
+      requestAnimationFrame(scanQRCode);
+    }
   }, [toast]);
 
   const validateAndProcess = async (employeeId: string, token: string) => {
     // Prevent multiple simultaneous validations
     if (isProcessing) return;
-    
-    stopScanning(); // Stop scanning immediately for faster response
     
     try {
       setIsProcessing(true);
@@ -250,6 +272,7 @@ export function QRScanner() {
         };
         
         setScanResult({ ...employeeData, status: 'validated' });
+        stopScanning(); // Stop scanning after successful validation
         
         if (result.roster) {
           toast({
@@ -381,7 +404,12 @@ export function QRScanner() {
       // Clear scan result after error to allow retry
       setTimeout(() => {
         setScanResult(null);
-      }, 3000);
+        setIsProcessing(false);
+        // Resume scanning after error
+        if (videoRef.current && !scanningRef.current) {
+          startScanning();
+        }
+      }, 2000);
     }
   };
 
@@ -428,12 +456,12 @@ export function QRScanner() {
           <div className="flex space-x-2">
             <Button 
               onClick={startScanning} 
-              disabled={isScanning}
+              disabled={isScanning || isProcessing}
               className="flex-1"
               data-testid="start-scanner-button"
             >
               <Camera className="w-4 h-4 mr-2" />
-              Mulai Scan
+              {isProcessing ? "Memproses..." : "Mulai Scan"}
             </Button>
             <Button 
               onClick={stopScanning} 
@@ -446,6 +474,18 @@ export function QRScanner() {
               Stop Scan
             </Button>
           </div>
+          
+          {isScanning && !isProcessing && (
+            <div className="text-sm text-center text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/30 p-2 rounded">
+              📱 Arahkan kamera ke QR Code untuk melakukan scan
+            </div>
+          )}
+          
+          {isProcessing && (
+            <div className="text-sm text-center text-orange-600 dark:text-orange-400 bg-orange-50 dark:bg-orange-900/30 p-2 rounded">
+              ⏳ Memvalidasi QR Code...
+            </div>
+          )}
         </CardContent>
       </Card>
       
