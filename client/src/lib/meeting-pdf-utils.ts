@@ -230,13 +230,13 @@ export function generateMeetingAttendancePDF(data: MeetingAttendanceData): void 
         startY: yPosition,
         theme: 'grid',
         styles: {
-          fontSize: 8,
-          cellPadding: 3,
+          fontSize: 7,
+          cellPadding: 2.5,
           lineColor: [229, 231, 235],
           lineWidth: 0.3,
           font: 'helvetica',
           textColor: [55, 65, 81],
-          minCellHeight: 10,
+          minCellHeight: 9,
           valign: 'middle',
           overflow: 'linebreak'
         },
@@ -244,11 +244,11 @@ export function generateMeetingAttendancePDF(data: MeetingAttendanceData): void 
           fillColor: [220, 38, 38],
           textColor: [255, 255, 255],
           fontStyle: 'bold',
-          fontSize: 8,
+          fontSize: 7,
           halign: 'center',
           valign: 'middle',
-          cellPadding: 4,
-          minCellHeight: 12,
+          cellPadding: 3,
+          minCellHeight: 10,
           lineWidth: 0.5,
           lineColor: [180, 30, 30]
         },
@@ -256,16 +256,16 @@ export function generateMeetingAttendancePDF(data: MeetingAttendanceData): void 
           fillColor: [249, 250, 251]
         },
         columnStyles: {
-          0: { cellWidth: 8, halign: 'center' },  // No - more compact
-          1: { cellWidth: 18, halign: 'center' }, // NIK - compact  
-          2: { cellWidth: 42, halign: 'left' },   // Nama - optimal
-          3: { cellWidth: 32, halign: 'left' },   // Department - compact
-          4: { cellWidth: 18, halign: 'center' }, // Tanggal - compact
-          5: { cellWidth: 24, halign: 'center' }, // Waktu - fits WITA text
-          6: { cellWidth: 16, halign: 'center' }  // Device - compact
+          0: { cellWidth: 7, halign: 'center' },  // No - very compact
+          1: { cellWidth: 16, halign: 'center' }, // NIK - compact  
+          2: { cellWidth: 38, halign: 'left' },   // Nama - reduced
+          3: { cellWidth: 28, halign: 'left' },   // Department - reduced
+          4: { cellWidth: 16, halign: 'center' }, // Tanggal - reduced
+          5: { cellWidth: 22, halign: 'center' }, // Waktu - compact
+          6: { cellWidth: 15, halign: 'center' }  // Device - very compact
         },
         margin: { left: margin, right: margin },
-        tableWidth: pageWidth - 2 * margin, // Fixed width to fit page exactly
+        tableWidth: 142, // Total column width: 7+16+38+28+16+22+15 = 142
         showHead: 'everyPage'
       });
     } else {
