@@ -54,10 +54,9 @@ export function QRGenerator() {
 
     setIsGenerating(true);
     try {
-      const response = await apiRequest("/api/qr/generate", "POST", {
+      const result = await apiRequest("/api/qr/generate", "POST", {
         employeeId: selectedEmployeeId
       });
-      const result = await response.json();
       
       console.log("QR Response:", result);
       setQrData(result.qrData);
