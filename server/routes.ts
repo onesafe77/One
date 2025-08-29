@@ -2020,19 +2020,39 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       console.log(`Meeting attendance - Found employee: ${employee.id} - ${employee.name}`);
 
-      // Check if employee already attended this meeting
+      // Check if employee already attended this meeting TODAY
+      const today = new Date().toISOString().split('T')[0];
       const existingAttendance = await storage.checkMeetingAttendance(meeting.id, employeeId);
-      if (existingAttendance) {
-        return res.status(400).json({ 
-          error: "Already attended", 
-          message: `${employee.name} sudah melakukan scan QR untuk meeting ini pada ${existingAttendance.scanTime}` 
-        });
+      
+      if (existingAttendance && existingAttendance.scanDate === today) {
+        // Allow re-attendance if more than 30 minutes has passed (meeting window)
+        const now = new Date();
+        const currentTime = now.getHours() * 60 + now.getMinutes(); // minutes since midnight
+        const [hours, minutes] = existingAttendance.scanTime.split(':').map(Number);
+        const lastScanTime = hours * 60 + minutes;
+        const timeDifference = currentTime - lastScanTime;
+        
+        if (timeDifference < 30) {
+          return res.status(400).json({ 
+            error: "Already attended", 
+            message: `${employee.name} sudah melakukan scan QR untuk meeting ini pada ${existingAttendance.scanTime}. Silakan tunggu minimal 30 menit untuk scan ulang.`,
+            lastScanTime: existingAttendance.scanTime,
+            waitTime: `${30 - timeDifference} menit lagi`
+          });
+        } else {
+          console.log(`Allowing re-attendance for ${employee.name} - more than 30 minutes has passed`);
+          // Delete previous attendance record to allow new one
+          await storage.deleteMeetingAttendance(existingAttendance.id);
+        }
       }
 
-      // Record attendance - no time restrictions for meetings
+      // Record attendance with meeting window flexibility
       const now = new Date();
       const scanTime = now.toTimeString().split(' ')[0]; // HH:MM:SS
       const scanDate = now.toISOString().split('T')[0]; // YYYY-MM-DD
+      const currentTime = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
+      
+      console.log(`Meeting attendance recorded at ${currentTime} for ${employee.name}`);
 
       const attendance = await storage.createMeetingAttendance({
         meetingId: meeting.id,
@@ -2044,10 +2064,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       res.json({
         success: true,
-        message: `✅ ${employee.name} berhasil absen untuk meeting: ${meeting.title}`,
+        message: `✅ ${employee.name} berhasil absen untuk meeting: ${meeting.title} pada ${currentTime}`,
         attendance,
         meeting,
-        employee
+        employee,
+        scanTime: currentTime,
+        isReAttendance: !!existingAttendance
       });
     } catch (error) {
       console.error("Error recording meeting attendance:", error);

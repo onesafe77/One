@@ -137,6 +137,7 @@ export interface IStorage {
   getMeetingAttendance(meetingId: string): Promise<MeetingAttendance[]>;
   createMeetingAttendance(attendance: InsertMeetingAttendance): Promise<MeetingAttendance>;
   checkMeetingAttendance(meetingId: string, employeeId: string): Promise<MeetingAttendance | undefined>;
+  deleteMeetingAttendance(attendanceId: string): Promise<boolean>;
 }
 
 export class MemStorage implements IStorage {
@@ -1215,6 +1216,13 @@ export class DrizzleStorage implements IStorage {
         eq(meetingAttendance.employeeId, employeeId)
       ));
     return result;
+  }
+
+  async deleteMeetingAttendance(attendanceId: string): Promise<boolean> {
+    const result = await this.db
+      .delete(meetingAttendance)
+      .where(eq(meetingAttendance.id, attendanceId));
+    return result.rowCount > 0;
   }
 }
 
