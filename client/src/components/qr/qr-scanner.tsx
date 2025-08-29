@@ -274,7 +274,14 @@ export function QRScanner() {
         setScanResult({ ...employeeData, status: 'validated' });
         stopScanning(); // Stop scanning after successful validation
         
-        if (result.roster) {
+        // Show time validation warning if any
+        if (result.timeValidation?.warning) {
+          toast({
+            title: "QR Code Valid - Peringatan Waktu",
+            description: result.timeValidation.warning,
+            variant: "destructive",
+          });
+        } else if (result.roster) {
           toast({
             title: "QR Code Valid",
             description: `✅ QR Code valid untuk ${result.employee.name}. Shift: ${result.roster.shift}. Silakan isi data absensi.`,
@@ -387,9 +394,9 @@ export function QRScanner() {
         } else if (message.includes("tidak ditemukan")) {
           errorTitle = "Karyawan Tidak Ditemukan";
           errorMessage = `Data karyawan ${scanResult.name} tidak ditemukan`;
-        } else if (message.includes("tidak sesuai dengan jadwal shift") || message.includes("absensi ditolak")) {
-          errorTitle = "Absensi Ditolak - Waktu Tidak Sesuai";
-          errorMessage = errorMsg; // Use the full message from server
+        } else if (message.includes("tidak sesuai dengan jadwal shift") || message.includes("absensi ditolak") || message.includes("diluar jam kerja") || message.includes("tidak sesuai shift")) {
+          errorTitle = "❌ ABSENSI DITOLAK";
+          errorMessage = errorMsg; // Use the full detailed message from server
         } else if (message.includes("shift yang berbeda")) {
           errorTitle = "Shift Tidak Sesuai";
           errorMessage = `Waktu check-in tidak sesuai dengan shift yang dijadwalkan untuk ${scanResult.name}`;
@@ -487,6 +494,9 @@ export function QRScanner() {
           {isScanning && !isProcessing && (
             <div className="text-sm text-center text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/30 p-2 rounded">
               📱 Arahkan kamera ke QR Code untuk melakukan scan
+              <div className="text-xs mt-1 text-blue-500">
+                ⚠️ Absensi hanya diizinkan pada jam kerja: Shift 1 (06:00-16:00) • Shift 2 (16:30-20:00)
+              </div>
             </div>
           )}
           
