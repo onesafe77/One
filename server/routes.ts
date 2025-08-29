@@ -2024,25 +2024,48 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const today = new Date().toISOString().split('T')[0];
       const existingAttendance = await storage.checkMeetingAttendance(meeting.id, employeeId);
       
+      console.log(`Checking existing attendance for ${employee.name}:`, {
+        exists: !!existingAttendance,
+        scanDate: existingAttendance?.scanDate,
+        scanTime: existingAttendance?.scanTime,
+        today: today
+      });
+      
       if (existingAttendance && existingAttendance.scanDate === today) {
-        // Allow re-attendance if more than 30 minutes has passed (meeting window)
+        // Allow re-attendance if more than 5 minutes has passed (meeting window)
         const now = new Date();
         const currentTime = now.getHours() * 60 + now.getMinutes(); // minutes since midnight
-        const [hours, minutes] = existingAttendance.scanTime.split(':').map(Number);
+        const [hours, minutes, seconds] = existingAttendance.scanTime.split(':').map(Number);
         const lastScanTime = hours * 60 + minutes;
         const timeDifference = currentTime - lastScanTime;
         
-        if (timeDifference < 30) {
+        console.log(`Time check for ${employee.name}:`, {
+          currentTime: `${now.getHours()}:${now.getMinutes()}`,
+          lastScanTime: existingAttendance.scanTime,
+          timeDifferenceMinutes: timeDifference
+        });
+        
+        if (timeDifference < 5) {
           return res.status(400).json({ 
             error: "Already attended", 
-            message: `${employee.name} sudah melakukan scan QR untuk meeting ini pada ${existingAttendance.scanTime}. Silakan tunggu minimal 30 menit untuk scan ulang.`,
+            message: `${employee.name} sudah melakukan scan QR untuk meeting ini pada ${existingAttendance.scanTime}. Silakan tunggu minimal 5 menit untuk scan ulang.`,
             lastScanTime: existingAttendance.scanTime,
-            waitTime: `${30 - timeDifference} menit lagi`
+            waitTime: `${5 - timeDifference} menit lagi`,
+            debug: {
+              currentTime: `${now.getHours()}:${now.getMinutes()}`,
+              lastScan: existingAttendance.scanTime,
+              timeDiff: timeDifference
+            }
           });
         } else {
-          console.log(`Allowing re-attendance for ${employee.name} - more than 30 minutes has passed`);
+          console.log(`Allowing re-attendance for ${employee.name} - more than 5 minutes has passed (${timeDifference} minutes)`);
           // Delete previous attendance record to allow new one
-          await storage.deleteMeetingAttendance(existingAttendance.id);
+          try {
+            const deleted = await storage.deleteMeetingAttendance(existingAttendance.id);
+            console.log(`Previous attendance deletion result: ${deleted}`);
+          } catch (error) {
+            console.error(`Error deleting previous attendance:`, error);
+          }
         }
       }
 
