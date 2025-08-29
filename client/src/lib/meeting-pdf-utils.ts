@@ -238,7 +238,8 @@ export function generateMeetingAttendancePDF(data: MeetingAttendanceData): void 
           textColor: [55, 65, 81],
           minCellHeight: 11,
           valign: 'middle',
-          overflow: 'linebreak'
+          overflow: 'linebreak',
+          halign: 'center' // Default alignment untuk semua cell
         },
         headStyles: {
           fillColor: [220, 38, 38],
@@ -250,7 +251,8 @@ export function generateMeetingAttendancePDF(data: MeetingAttendanceData): void 
           cellPadding: 4,
           minCellHeight: 12,
           lineWidth: 0.5,
-          lineColor: [180, 30, 30]
+          lineColor: [180, 30, 30],
+          overflow: 'linebreak'
         },
         alternateRowStyles: {
           fillColor: [249, 250, 251]
@@ -258,14 +260,14 @@ export function generateMeetingAttendancePDF(data: MeetingAttendanceData): void 
         columnStyles: {
           0: { cellWidth: 12, halign: 'center', valign: 'middle' },  // No - lebih lebar
           1: { cellWidth: 18, halign: 'center', valign: 'middle' }, // NIK - proper width  
-          2: { cellWidth: 34, halign: 'left', valign: 'middle' },   // Nama - sedikit dikurangi
+          2: { cellWidth: 32, halign: 'left', valign: 'middle' },   // Nama - sedikit dikurangi
           3: { cellWidth: 24, halign: 'left', valign: 'middle' },   // Department - sedikit dikurangi
           4: { cellWidth: 18, halign: 'center', valign: 'middle' }, // Tanggal - proper
           5: { cellWidth: 20, halign: 'center', valign: 'middle' }, // Waktu - balanced
-          6: { cellWidth: 16, halign: 'center', valign: 'middle' }  // Device - lebih lebar
+          6: { cellWidth: 18, halign: 'center', valign: 'middle' }  // Device - diperlebar lagi
         },
         margin: { left: margin, right: margin },
-        tableWidth: 142, // Total column width: 12+18+34+24+18+20+16 = 142
+        tableWidth: 142, // Total column width: 12+18+32+24+18+20+18 = 142
         showHead: 'everyPage'
       });
     } else {
