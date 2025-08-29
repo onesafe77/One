@@ -53,11 +53,8 @@ export default function MeetingScanner() {
       let errorMessage = error.message || "Gagal melakukan absensi";
       let errorTitle = "Absensi Gagal";
       
-      // Handle specific meeting time validation errors
-      if (error.message?.includes("ABSENSI_MEETING_DITOLAK") || error.message?.includes("diluar jam kerja")) {
-        errorTitle = "❌ ABSENSI MEETING DITOLAK";
-        errorMessage = error.message.replace("❌ ABSENSI_MEETING_DITOLAK - ", "");
-      } else if (error.message?.includes("Already attended")) {
+      // Handle specific meeting errors  
+      if (error.message?.includes("Already attended")) {
         errorTitle = "Sudah Absen";
         errorMessage = "Anda sudah melakukan absensi untuk meeting ini sebelumnya";
       } else if (error.message?.includes("Employee not found")) {
@@ -205,20 +202,6 @@ export default function MeetingScanner() {
           <p className="text-gray-600 dark:text-gray-400 mt-2">
             {meetingToken ? "Form absensi meeting" : "Scan QR code meeting untuk melakukan absensi"}
           </p>
-          
-          {/* Time Warning for Meeting Attendance */}
-          <div className="bg-orange-50 dark:bg-orange-900/20 p-3 rounded-lg mt-4 border border-orange-200 dark:border-orange-800">
-            <p className="text-sm text-orange-800 dark:text-orange-200 font-medium">
-              ⚠️ PERHATIAN: Absensi meeting hanya diizinkan pada jam kerja
-            </p>
-            <p className="text-xs text-orange-700 dark:text-orange-300 mt-1">
-              • Shift 1: 06:00 - 16:00 WIB<br/>
-              • Shift 2: 16:30 - 20:00 WIB
-            </p>
-            <p className="text-xs text-orange-600 dark:text-orange-400 mt-1">
-              Diluar jam tersebut, absensi meeting akan ditolak sistem
-            </p>
-          </div>
           
           {meetingToken && (
             <div className="bg-blue-50 dark:bg-blue-900/20 p-3 rounded-lg mt-4">

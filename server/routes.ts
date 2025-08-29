@@ -1957,32 +1957,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
-      // ⚠️ STRICT TIME VALIDATION FOR MEETING ATTENDANCE - SAME AS EMPLOYEE ATTENDANCE
+      // Record attendance - no time restrictions for meetings
       const now = new Date();
-      const currentTime = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
       const scanTime = now.toTimeString().split(' ')[0]; // HH:MM:SS
       const scanDate = now.toISOString().split('T')[0]; // YYYY-MM-DD
-      
-      console.log(`Meeting attendance time validation: Current time ${currentTime} for meeting ${meeting.title}`);
-      
-      // Check if current time is outside all allowed shift times
-      const isCompletelyOutside = isCompletelyOutsideShiftTimes(currentTime);
-      
-      if (isCompletelyOutside) {
-        return res.status(400).json({ 
-          error: "ABSENSI_MEETING_DITOLAK",
-          message: `❌ ABSENSI MEETING DITOLAK - Diluar jam kerja! Waktu sekarang: ${currentTime}. Absensi meeting hanya diizinkan pada jam kerja: Shift 1 (06:00-16:00) atau Shift 2 (16:30-20:00)`,
-          currentTime: currentTime,
-          allowedHours: "Shift 1 (06:00-16:00) atau Shift 2 (16:30-20:00)",
-          meetingInfo: {
-            title: meeting.title,
-            date: meeting.date,
-            time: `${meeting.startTime} - ${meeting.endTime}`
-          }
-        });
-      }
-      
-      console.log(`Meeting attendance approved at ${currentTime} for employee ${employeeId}`);
 
       const attendance = await storage.createMeetingAttendance({
         meetingId: meeting.id,
@@ -1994,11 +1972,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       res.json({
         success: true,
-        message: `✅ ${employee.name} berhasil absen untuk meeting: ${meeting.title} pada ${currentTime}`,
+        message: `✅ ${employee.name} berhasil absen untuk meeting: ${meeting.title}`,
         attendance,
         meeting,
-        employee,
-        scanTime: currentTime
+        employee
       });
     } catch (error) {
       console.error("Error recording meeting attendance:", error);
