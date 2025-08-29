@@ -816,12 +816,39 @@ export async function registerRoutes(app: Express): Promise<Server> {
       let employee = getCachedEmployee(employeeId);
       
       if (!employee) {
-        // Parallel execution for faster response
+        // Parallel execution for faster response + enhanced employee lookup
+        console.log(`Regular QR Scan - Looking for employee ID: "${employeeId}" (type: ${typeof employeeId})`);
+        
         const [employeeData, todayRoster] = await Promise.all([
           storage.getEmployee(employeeId),
           storage.getRosterByDate(today)
         ]);
         employee = employeeData;
+        
+        // If employee not found by direct lookup, try alternative methods
+        if (!employee) {
+          console.log(`Employee "${employeeId}" not found in direct lookup, trying alternatives...`);
+          
+          const allEmployees = await storage.getAllEmployees();
+          console.log(`Total employees in system: ${allEmployees.length}`);
+          
+          // Try to find by trimmed ID or fuzzy match
+          const foundEmployee = allEmployees.find(emp => 
+            emp.id === employeeId || 
+            emp.id === employeeId.trim() ||
+            emp.id.toLowerCase() === employeeId.toLowerCase() ||
+            emp.name.toLowerCase().includes(employeeId.toLowerCase())
+          );
+          
+          if (foundEmployee) {
+            console.log(`Found employee by alternative lookup: ${foundEmployee.id} - ${foundEmployee.name}`);
+            employee = foundEmployee;
+          } else {
+            console.log(`Employee "${employeeId}" not found in ${allEmployees.length} total employees`);
+            console.log('Sample employee IDs:', allEmployees.slice(0, 5).map(emp => `"${emp.id}"`));
+          }
+        }
+        
         if (employee) setCachedEmployee(employeeId, employee);
         var roster = todayRoster;
       } else {
@@ -832,8 +859,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const todayRoster = roster;
 
       if (!employee) {
-        return res.status(404).json({ message: "Karyawan tidak ditemukan" });
+        return res.status(404).json({ 
+          message: "Karyawan tidak ditemukan",
+          debug: {
+            searchedId: employeeId,
+            idType: typeof employeeId
+          }
+        });
       }
+      
+      console.log(`Regular QR validation - Found employee: ${employee.id} - ${employee.name}`);
 
       // Validate token using QR tokens table (more reliable)
       const qrTokens = await storage.getQrTokensByEmployee(employeeId);
@@ -1942,11 +1977,48 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ error: "Meeting not found or invalid QR code" });
       }
 
-      // Check if employee exists
-      const employee = await storage.getEmployee(employeeId);
+      // Check if employee exists - with detailed logging for debugging
+      console.log(`Meeting QR Scan - Looking for employee ID: "${employeeId}" (type: ${typeof employeeId})`);
+      
+      let employee = await storage.getEmployee(employeeId);
       if (!employee) {
-        return res.status(404).json({ error: "Employee not found" });
+        // Try alternative lookup methods
+        console.log(`Employee "${employeeId}" not found, trying alternative lookups...`);
+        
+        // Try searching by name or NIK
+        const allEmployees = await storage.getAllEmployees();
+        console.log(`Total employees in system: ${allEmployees.length}`);
+        
+        // Log first few employee IDs for comparison
+        console.log('Sample employee IDs:', allEmployees.slice(0, 5).map(emp => `"${emp.id}"`));
+        
+        // Try to find by trimmed ID or exact match
+        const foundEmployee = allEmployees.find(emp => 
+          emp.id === employeeId || 
+          emp.id === employeeId.trim() ||
+          emp.id.toLowerCase() === employeeId.toLowerCase() ||
+          emp.name.toLowerCase().includes(employeeId.toLowerCase())
+        );
+        
+        if (foundEmployee) {
+          console.log(`Found employee by alternative lookup: ${foundEmployee.id} - ${foundEmployee.name}`);
+          // Use the found employee
+          employee = foundEmployee;
+        } else {
+          console.log(`Employee "${employeeId}" not found in ${allEmployees.length} total employees`);
+          return res.status(404).json({ 
+            error: "Employee not found",
+            debug: {
+              searchedId: employeeId,
+              idType: typeof employeeId,
+              totalEmployees: allEmployees.length,
+              sampleIds: allEmployees.slice(0, 3).map(emp => emp.id)
+            }
+          });
+        }
       }
+      
+      console.log(`Meeting attendance - Found employee: ${employee.id} - ${employee.name}`);
 
       // Check if employee already attended this meeting
       const existingAttendance = await storage.checkMeetingAttendance(meeting.id, employeeId);
