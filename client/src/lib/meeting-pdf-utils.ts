@@ -91,17 +91,17 @@ export function generateMeetingAttendancePDF(data: MeetingAttendanceData): void 
 
     // ==================== MODERN INFORMATION CARD ====================
     let yPosition = 58;
-    const cardHeight = 70;
-    const cardMargin = margin + 10;
+    const cardHeight = 65;
+    const cardMargin = margin + 5;
     const cardWidth = pageWidth - 2 * cardMargin;
     
     // Modern card with shadow effect
-    pdf.setFillColor(248, 249, 250); // Ultra light gray background
+    pdf.setFillColor(248, 249, 250);
     pdf.rect(cardMargin, yPosition, cardWidth, cardHeight, 'F');
     
     // Subtle border with modern styling
     pdf.setLineWidth(0.8);
-    pdf.setDrawColor(229, 231, 235); // Light gray border
+    pdf.setDrawColor(229, 231, 235);
     pdf.rect(cardMargin, yPosition, cardWidth, cardHeight, 'S');
     
     // Left accent line - modern red
@@ -110,109 +110,108 @@ export function generateMeetingAttendancePDF(data: MeetingAttendanceData): void 
     pdf.line(cardMargin, yPosition, cardMargin, yPosition + cardHeight);
     
     // Modern header section
-    pdf.setFillColor(220, 38, 38); // Modern red
-    pdf.rect(cardMargin + 1, yPosition + 1, cardWidth - 2, 20, 'F');
-    pdf.setFontSize(13);
+    pdf.setFillColor(220, 38, 38);
+    pdf.rect(cardMargin + 1, yPosition + 1, cardWidth - 2, 18, 'F');
+    pdf.setFontSize(12);
     pdf.setFont('helvetica', 'bold');
     pdf.setTextColor(255, 255, 255);
-    pdf.text('INFORMASI MEETING', cardMargin + 12, yPosition + 14);
+    pdf.text('INFORMASI MEETING', cardMargin + 10, yPosition + 12);
     
     // Content area with proper spacing
     pdf.setFont('helvetica', 'normal');
-    pdf.setFontSize(10);
-    pdf.setTextColor(55, 65, 81); // Modern dark gray
-    yPosition += 28;
-    const lineHeight = 9;
+    pdf.setFontSize(9);
+    pdf.setTextColor(55, 65, 81);
+    yPosition += 25;
+    const lineHeight = 8;
     
     const meetingDate = new Date(data.meeting.date);
     
-    // Modern 2-column layout with consistent spacing
-    const leftColX = cardMargin + 12;
+    // Compact 2-column layout
+    const leftColX = cardMargin + 10;
     const rightColX = cardMargin + cardWidth / 2 + 5;
-    const labelWidth = 35;
     
-    // Left column with modern label styling
+    // Left column - compact styling
     pdf.setFont('helvetica', 'bold');
-    pdf.setFontSize(9);
-    pdf.setTextColor(107, 114, 128); // Modern gray for labels
+    pdf.setFontSize(8);
+    pdf.setTextColor(107, 114, 128);
     pdf.text('Judul Meeting', leftColX, yPosition);
     pdf.setFont('helvetica', 'normal');
-    pdf.setFontSize(10);
-    pdf.setTextColor(31, 41, 55); // Dark text for values
-    pdf.text(data.meeting.title.length > 35 ? data.meeting.title.substring(0, 32) + '...' : data.meeting.title, leftColX, yPosition + 6);
+    pdf.setFontSize(9);
+    pdf.setTextColor(31, 41, 55);
+    pdf.text(data.meeting.title.length > 30 ? data.meeting.title.substring(0, 27) + '...' : data.meeting.title, leftColX, yPosition + 5);
     
     pdf.setFont('helvetica', 'bold');
-    pdf.setFontSize(9);
+    pdf.setFontSize(8);
     pdf.setTextColor(107, 114, 128);
     pdf.text('Tanggal', leftColX, yPosition + lineHeight * 2);
     pdf.setFont('helvetica', 'normal');
-    pdf.setFontSize(10);
+    pdf.setFontSize(9);
     pdf.setTextColor(31, 41, 55);
-    pdf.text(meetingDate.toLocaleDateString('id-ID'), leftColX, yPosition + lineHeight * 2 + 6);
+    pdf.text(meetingDate.toLocaleDateString('id-ID'), leftColX, yPosition + lineHeight * 2 + 5);
     
     pdf.setFont('helvetica', 'bold');
-    pdf.setFontSize(9);
+    pdf.setFontSize(8);
     pdf.setTextColor(107, 114, 128);
     pdf.text('Waktu', leftColX, yPosition + lineHeight * 4);
     pdf.setFont('helvetica', 'normal');
-    pdf.setFontSize(10);
+    pdf.setFontSize(9);
     pdf.setTextColor(31, 41, 55);
-    pdf.text(`${data.meeting.startTime} - ${data.meeting.endTime}`, leftColX, yPosition + lineHeight * 4 + 6);
+    pdf.text(`${data.meeting.startTime} - ${data.meeting.endTime}`, leftColX, yPosition + lineHeight * 4 + 5);
     
     // Right column
     pdf.setFont('helvetica', 'bold');
-    pdf.setFontSize(9);
+    pdf.setFontSize(8);
     pdf.setTextColor(107, 114, 128);
     pdf.text('Lokasi', rightColX, yPosition);
     pdf.setFont('helvetica', 'normal');
-    pdf.setFontSize(10);
+    pdf.setFontSize(9);
     pdf.setTextColor(31, 41, 55);
-    pdf.text(data.meeting.location, rightColX, yPosition + 6);
+    pdf.text(data.meeting.location, rightColX, yPosition + 5);
     
     pdf.setFont('helvetica', 'bold');
-    pdf.setFontSize(9);
+    pdf.setFontSize(8);
     pdf.setTextColor(107, 114, 128);
     pdf.text('Penyelenggara', rightColX, yPosition + lineHeight * 2);
     pdf.setFont('helvetica', 'normal');
-    pdf.setFontSize(10);
+    pdf.setFontSize(9);
     pdf.setTextColor(31, 41, 55);
-    pdf.text(data.meeting.organizer, rightColX, yPosition + lineHeight * 2 + 6);
+    pdf.text(data.meeting.organizer, rightColX, yPosition + lineHeight * 2 + 5);
     
     pdf.setFont('helvetica', 'bold');
-    pdf.setFontSize(9);
+    pdf.setFontSize(8);
     pdf.setTextColor(107, 114, 128);
     pdf.text('Total Peserta Hadir', rightColX, yPosition + lineHeight * 4);
     pdf.setFont('helvetica', 'normal');
-    pdf.setFontSize(10);
-    pdf.setTextColor(220, 38, 38); // Red highlight for count
-    pdf.text(`${data.totalAttendees} orang`, rightColX, yPosition + lineHeight * 4 + 6);
+    pdf.setFontSize(9);
+    pdf.setTextColor(220, 38, 38);
+    pdf.text(`${data.totalAttendees} orang`, rightColX, yPosition + lineHeight * 4 + 5);
 
-    yPosition += cardHeight + 25;
+    yPosition += cardHeight + 18;
 
-    // ==================== MODERN TABLE SECTION ====================
-    // Section header with subtle background
+    // ==================== CLEAN TABLE SECTION ====================
+    // Simple section header
     pdf.setFillColor(249, 250, 251);
-    pdf.rect(margin, yPosition - 8, pageWidth - 2 * margin, 22, 'F');
+    pdf.rect(margin, yPosition - 5, pageWidth - 2 * margin, 18, 'F');
     
     // Left accent line
     pdf.setLineWidth(3);
     pdf.setDrawColor(220, 38, 38);
-    pdf.line(margin, yPosition - 8, margin, yPosition + 14);
+    pdf.line(margin, yPosition - 5, margin, yPosition + 13);
     
     pdf.setFont('helvetica', 'bold');
-    pdf.setFontSize(15);
+    pdf.setFontSize(14);
     pdf.setTextColor(220, 38, 38);
     pdf.text('DAFTAR KEHADIRAN', margin + 8, yPosition + 6);
     
-    // Participant count badge
+    // Compact participant count badge
     pdf.setFillColor(220, 38, 38);
-    pdf.roundedRect(pageWidth - margin - 60, yPosition - 3, 50, 12, 2, 2, 'F');
+    pdf.roundedRect(pageWidth - margin - 55, yPosition - 2, 45, 10, 2, 2, 'F');
     pdf.setFont('helvetica', 'bold');
-    pdf.setFontSize(9);
+    pdf.setFontSize(8);
     pdf.setTextColor(255, 255, 255);
-    pdf.text(`${data.totalAttendees} Peserta`, pageWidth - margin - 57, yPosition + 4);
+    pdf.text(`${data.totalAttendees} Peserta`, pageWidth - margin - 52, yPosition + 3);
     
-    yPosition += 25;
+    yPosition += 20;
 
     if (data.attendance && data.attendance.length > 0) {
       const tableData = data.attendance.map((attendance, index) => [
@@ -220,61 +219,51 @@ export function generateMeetingAttendancePDF(data: MeetingAttendanceData): void 
         attendance.employee?.id || '-',
         attendance.employee?.name || 'Unknown',
         attendance.employee?.department || '-',
-        data.meeting.title.length > 15 ? data.meeting.title.substring(0, 12) + '...' : data.meeting.title,
         new Date(attendance.scanDate).toLocaleDateString('id-ID'),
         attendance.scanTime ? `${attendance.scanTime} WITA` : '-',
         getShortDeviceInfo(attendance.deviceInfo || 'Unknown')
       ]);
 
       autoTable(pdf, {
-        head: [['No', 'NIK', 'Nama Karyawan', 'Department', 'Meeting', 'Tanggal', 'Waktu', 'Device']],
+        head: [['No', 'NIK', 'Nama Karyawan', 'Department', 'Tanggal', 'Waktu', 'Device']],
         body: tableData,
         startY: yPosition,
         theme: 'grid',
         styles: {
-          fontSize: 9,
-          cellPadding: 6,
-          lineColor: [229, 231, 235], // Modern light gray borders
-          lineWidth: 0.5,
+          fontSize: 8,
+          cellPadding: 4,
+          lineColor: [229, 231, 235],
+          lineWidth: 0.3,
           font: 'helvetica',
-          textColor: [55, 65, 81], // Modern dark gray text
-          minCellHeight: 14,
+          textColor: [55, 65, 81],
+          minCellHeight: 12,
           valign: 'middle'
         },
         headStyles: {
-          fillColor: [220, 38, 38], // Modern red
+          fillColor: [220, 38, 38],
           textColor: [255, 255, 255],
           fontStyle: 'bold',
-          fontSize: 10,
+          fontSize: 9,
           halign: 'center',
           valign: 'middle',
-          cellPadding: 8,
-          minCellHeight: 16
+          cellPadding: 5,
+          minCellHeight: 14
         },
         alternateRowStyles: {
-          fillColor: [249, 250, 251] // Very subtle gray zebra effect
+          fillColor: [249, 250, 251]
         },
         columnStyles: {
-          0: { cellWidth: 12, halign: 'center' }, // No
-          1: { cellWidth: 22, halign: 'center' }, // NIK
-          2: { cellWidth: 40, halign: 'left' },   // Nama
-          3: { cellWidth: 30, halign: 'left' },   // Department
-          4: { cellWidth: 22, halign: 'left' },   // Meeting - smaller
-          5: { cellWidth: 18, halign: 'center' }, // Tanggal
-          6: { cellWidth: 20, halign: 'center' }, // Waktu
-          7: { cellWidth: 18, halign: 'center' }  // Device
+          0: { cellWidth: 10, halign: 'center' }, // No - reduced
+          1: { cellWidth: 20, halign: 'center' }, // NIK - reduced  
+          2: { cellWidth: 45, halign: 'left' },   // Nama - increased
+          3: { cellWidth: 35, halign: 'left' },   // Department - increased
+          4: { cellWidth: 20, halign: 'center' }, // Tanggal - reduced
+          5: { cellWidth: 25, halign: 'center' }, // Waktu - increased for WITA
+          6: { cellWidth: 17, halign: 'center' }  // Device - reduced
         },
         margin: { left: margin, right: margin },
-        tableWidth: 'wrap', // Changed from 'auto' to 'wrap' to fit page
-        didDrawPage: (data) => {
-          // Add subtle border around entire table
-          const tableY = data.settings.startY || yPosition;
-          if (data.cursor) {
-            pdf.setDrawColor(220, 38, 38);
-            pdf.setLineWidth(1);
-            pdf.rect(margin, tableY - 2, pageWidth - 2 * margin, data.cursor.y - tableY + 2, 'S');
-          }
-        }
+        tableWidth: pageWidth - 2 * margin, // Fixed width to fit page exactly
+        showHead: 'everyPage'
       });
     } else {
       // Modern empty state message
