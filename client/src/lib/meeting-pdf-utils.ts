@@ -215,12 +215,12 @@ export function generateMeetingAttendancePDF(data: MeetingAttendanceData): void 
 
     if (data.attendance && data.attendance.length > 0) {
       const tableData = data.attendance.map((attendance, index) => [
-        (index + 1).toString(),
+        (index + 1).toString().padStart(2, '0'), // Format nomor dengan leading zero
         attendance.employee?.id || '-',
         attendance.employee?.name || 'Unknown',
         attendance.employee?.department || '-',
         new Date(attendance.scanDate).toLocaleDateString('id-ID'),
-        attendance.scanTime ? `${attendance.scanTime} WITA` : '-',
+        attendance.scanTime ? `${attendance.scanTime}\nWITA` : '-', // Break line for WITA
         getShortDeviceInfo(attendance.deviceInfo || 'Unknown')
       ]);
 
@@ -231,35 +231,38 @@ export function generateMeetingAttendancePDF(data: MeetingAttendanceData): void 
         theme: 'grid',
         styles: {
           fontSize: 8,
-          cellPadding: 4,
+          cellPadding: 3,
           lineColor: [229, 231, 235],
           lineWidth: 0.3,
           font: 'helvetica',
           textColor: [55, 65, 81],
-          minCellHeight: 12,
-          valign: 'middle'
+          minCellHeight: 10,
+          valign: 'middle',
+          overflow: 'linebreak'
         },
         headStyles: {
           fillColor: [220, 38, 38],
           textColor: [255, 255, 255],
           fontStyle: 'bold',
-          fontSize: 9,
+          fontSize: 8,
           halign: 'center',
           valign: 'middle',
-          cellPadding: 5,
-          minCellHeight: 14
+          cellPadding: 4,
+          minCellHeight: 12,
+          lineWidth: 0.5,
+          lineColor: [180, 30, 30]
         },
         alternateRowStyles: {
           fillColor: [249, 250, 251]
         },
         columnStyles: {
-          0: { cellWidth: 10, halign: 'center' }, // No - reduced
-          1: { cellWidth: 20, halign: 'center' }, // NIK - reduced  
-          2: { cellWidth: 45, halign: 'left' },   // Nama - increased
-          3: { cellWidth: 35, halign: 'left' },   // Department - increased
-          4: { cellWidth: 20, halign: 'center' }, // Tanggal - reduced
-          5: { cellWidth: 25, halign: 'center' }, // Waktu - increased for WITA
-          6: { cellWidth: 17, halign: 'center' }  // Device - reduced
+          0: { cellWidth: 8, halign: 'center' },  // No - more compact
+          1: { cellWidth: 18, halign: 'center' }, // NIK - compact  
+          2: { cellWidth: 42, halign: 'left' },   // Nama - optimal
+          3: { cellWidth: 32, halign: 'left' },   // Department - compact
+          4: { cellWidth: 18, halign: 'center' }, // Tanggal - compact
+          5: { cellWidth: 24, halign: 'center' }, // Waktu - fits WITA text
+          6: { cellWidth: 16, halign: 'center' }  // Device - compact
         },
         margin: { left: margin, right: margin },
         tableWidth: pageWidth - 2 * margin, // Fixed width to fit page exactly
