@@ -746,7 +746,7 @@ export default function Meetings() {
                     <TableCell>
                       <div className="flex items-center gap-2 text-sm">
                         <Clock className="w-4 h-4 text-gray-400" />
-                        {att.scanTime}
+                        {att.scanTime} WITA
                       </div>
                     </TableCell>
                     <TableCell className="text-sm text-gray-600 dark:text-gray-400 max-w-[150px]">

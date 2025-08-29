@@ -122,7 +122,7 @@ export function generateMeetingAttendancePDF(data: MeetingAttendanceData): void 
         attendance.employee?.department || '-',
         data.meeting.title.length > 20 ? data.meeting.title.substring(0, 17) + '...' : data.meeting.title,
         new Date(attendance.scanDate).toLocaleDateString('id-ID'),
-        attendance.scanTime || '-',
+        attendance.scanTime ? `${attendance.scanTime} WITA` : '-',
         getShortDeviceInfo(attendance.deviceInfo || 'Unknown')
       ]);
 
