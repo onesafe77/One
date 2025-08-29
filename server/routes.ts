@@ -193,14 +193,42 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.put("/api/employees/:id", async (req, res) => {
     try {
+      console.log(`Updating employee ${req.params.id} with data:`, req.body);
+      
+      // Validate request data
       const validatedData = insertEmployeeSchema.partial().parse(req.body);
+      console.log('Validated data:', validatedData);
+      
+      // Update employee in database
       const employee = await storage.updateEmployee(req.params.id, validatedData);
+      console.log('Update result:', employee);
+      
       if (!employee) {
+        console.log('Employee not found');
         return res.status(404).json({ message: "Karyawan tidak ditemukan" });
       }
+      
+      // Ensure response object is valid
+      if (typeof res.json !== 'function') {
+        console.error('res.json is not a function - response object corrupted');
+        return res.status(500).send('Internal server error');
+      }
+      
+      console.log('Sending successful response');
       res.json(employee);
     } catch (error) {
-      res.status(400).json({ message: "Invalid employee data" });
+      console.error('Error updating employee:', error);
+      
+      // Check if response object is still valid
+      if (typeof res.json === 'function') {
+        res.status(400).json({ 
+          message: "Invalid employee data",
+          error: error instanceof Error ? error.message : 'Unknown error'
+        });
+      } else {
+        console.error('Cannot send error response - res.json not available');
+        res.status(500).send('Internal server error');
+      }
     }
   });
 
