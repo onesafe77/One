@@ -256,16 +256,16 @@ export function generateMeetingAttendancePDF(data: MeetingAttendanceData): void 
           fillColor: [249, 250, 251]
         },
         columnStyles: {
-          0: { cellWidth: 10, halign: 'center', valign: 'middle' },  // No - better proportion
+          0: { cellWidth: 12, halign: 'center', valign: 'middle' },  // No - lebih lebar
           1: { cellWidth: 18, halign: 'center', valign: 'middle' }, // NIK - proper width  
-          2: { cellWidth: 36, halign: 'left', valign: 'middle' },   // Nama - balanced
-          3: { cellWidth: 26, halign: 'left', valign: 'middle' },   // Department - compact
+          2: { cellWidth: 34, halign: 'left', valign: 'middle' },   // Nama - sedikit dikurangi
+          3: { cellWidth: 24, halign: 'left', valign: 'middle' },   // Department - sedikit dikurangi
           4: { cellWidth: 18, halign: 'center', valign: 'middle' }, // Tanggal - proper
           5: { cellWidth: 20, halign: 'center', valign: 'middle' }, // Waktu - balanced
-          6: { cellWidth: 14, halign: 'center', valign: 'middle' }  // Device - compact
+          6: { cellWidth: 16, halign: 'center', valign: 'middle' }  // Device - lebih lebar
         },
         margin: { left: margin, right: margin },
-        tableWidth: 142, // Total column width: 10+18+36+26+18+20+14 = 142
+        tableWidth: 142, // Total column width: 12+18+34+24+18+20+16 = 142
         showHead: 'everyPage'
       });
     } else {
