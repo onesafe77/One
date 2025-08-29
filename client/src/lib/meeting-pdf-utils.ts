@@ -57,101 +57,162 @@ export function generateMeetingAttendancePDF(data: MeetingAttendanceData): void 
     const margin = 20;
     const currentDateTime = new Date();
 
-    // ==================== HEADER SECTION ====================
-    // Tanggal dicetak (top right) - more professional styling
-    pdf.setFontSize(10);
+    // ==================== MODERN HEADER SECTION ====================
+    // Clean background with subtle shadow effect
+    pdf.setFillColor(250, 250, 250);
+    pdf.rect(0, 0, pageWidth, 50, 'F');
+    
+    // Company branding area - subtle
     pdf.setFont('helvetica', 'normal');
-    pdf.setTextColor(80, 80, 80);
-    pdf.text(`Dicetak pada: ${currentDateTime.toLocaleDateString('id-ID')} ${currentDateTime.toLocaleTimeString('id-ID')}`, pageWidth - margin, 18, { align: 'right' });
+    pdf.setFontSize(9);
+    pdf.setTextColor(120, 120, 120);
+    pdf.text('PT. GECL - Sistem Manajemen Meeting', margin, 12);
+    
+    // Print timestamp - top right, modern styling
+    pdf.setFontSize(9);
+    pdf.setTextColor(100, 100, 100);
+    pdf.text(`Dicetak pada: ${currentDateTime.toLocaleDateString('id-ID')} ${currentDateTime.toLocaleTimeString('id-ID')}`, pageWidth - margin, 12, { align: 'right' });
 
-    // Main title - larger and more prominent
-    pdf.setFontSize(22);
+    // Main title - MODERN & BOLD with shadow effect
+    pdf.setFontSize(24);
     pdf.setFont('helvetica', 'bold');
-    pdf.setTextColor(0, 0, 0);
-    pdf.text('LAPORAN KEHADIRAN MEETING', pageWidth / 2, 35, { align: 'center' });
+    pdf.setTextColor(220, 38, 38); // Modern red
+    pdf.text('LAPORAN KEHADIRAN MEETING', pageWidth / 2, 32, { align: 'center' });
 
-    // Double line under title for professional look
-    pdf.setLineWidth(1);
-    pdf.setDrawColor(180, 30, 30); // Dark red
+    // Elegant underline - single bold line
+    pdf.setLineWidth(2);
+    pdf.setDrawColor(220, 38, 38); // Modern red
+    pdf.line(margin + 30, 37, pageWidth - margin - 30, 37);
+    
+    // Subtle accent line
+    pdf.setLineWidth(0.5);
+    pdf.setDrawColor(156, 163, 175); // Cool gray
     pdf.line(margin, 42, pageWidth - margin, 42);
-    pdf.setLineWidth(0.3);
-    pdf.setDrawColor(200, 200, 200); // Light gray
-    pdf.line(margin, 44, pageWidth - margin, 44);
 
-    // ==================== MEETING INFORMATION BOX ====================
-    let yPosition = 55;
-    const boxHeight = 62;
+    // ==================== MODERN INFORMATION CARD ====================
+    let yPosition = 58;
+    const cardHeight = 70;
+    const cardMargin = margin + 10;
+    const cardWidth = pageWidth - 2 * cardMargin;
     
-    // Draw enhanced border box for meeting info with shadow effect
-    pdf.setFillColor(245, 245, 245); // Very light gray background
-    pdf.rect(margin, yPosition - 5, pageWidth - 2 * margin, boxHeight, 'F');
-    pdf.setLineWidth(1);
-    pdf.setDrawColor(180, 30, 30); // Dark red border
-    pdf.rect(margin, yPosition - 5, pageWidth - 2 * margin, boxHeight, 'S');
+    // Modern card with shadow effect
+    pdf.setFillColor(248, 249, 250); // Ultra light gray background
+    pdf.rect(cardMargin, yPosition, cardWidth, cardHeight, 'F');
     
-    // Box header with background
-    pdf.setFillColor(180, 30, 30); // Dark red header
-    pdf.rect(margin, yPosition - 5, pageWidth - 2 * margin, 16, 'F');
-    pdf.setFontSize(14);
+    // Subtle border with modern styling
+    pdf.setLineWidth(0.8);
+    pdf.setDrawColor(229, 231, 235); // Light gray border
+    pdf.rect(cardMargin, yPosition, cardWidth, cardHeight, 'S');
+    
+    // Left accent line - modern red
+    pdf.setLineWidth(4);
+    pdf.setDrawColor(220, 38, 38);
+    pdf.line(cardMargin, yPosition, cardMargin, yPosition + cardHeight);
+    
+    // Modern header section
+    pdf.setFillColor(220, 38, 38); // Modern red
+    pdf.rect(cardMargin + 1, yPosition + 1, cardWidth - 2, 20, 'F');
+    pdf.setFontSize(13);
     pdf.setFont('helvetica', 'bold');
-    pdf.setTextColor(255, 255, 255); // White text
-    pdf.text('INFORMASI MEETING', margin + 8, yPosition + 6);
+    pdf.setTextColor(255, 255, 255);
+    pdf.text('INFORMASI MEETING', cardMargin + 12, yPosition + 14);
     
-    // Meeting details with better spacing and formatting
+    // Content area with proper spacing
     pdf.setFont('helvetica', 'normal');
-    pdf.setFontSize(11);
-    pdf.setTextColor(40, 40, 40); // Dark gray text
-    yPosition += 20;
-    const lineHeight = 8;
+    pdf.setFontSize(10);
+    pdf.setTextColor(55, 65, 81); // Modern dark gray
+    yPosition += 28;
+    const lineHeight = 9;
     
     const meetingDate = new Date(data.meeting.date);
-    // Create two columns for better organization
-    const leftColX = margin + 8;
-    const rightColX = margin + (pageWidth - 2 * margin) / 2 + 8;
     
-    // Left column
+    // Modern 2-column layout with consistent spacing
+    const leftColX = cardMargin + 12;
+    const rightColX = cardMargin + cardWidth / 2 + 5;
+    const labelWidth = 35;
+    
+    // Left column with modern label styling
     pdf.setFont('helvetica', 'bold');
-    pdf.text('Judul Meeting:', leftColX, yPosition);
+    pdf.setFontSize(9);
+    pdf.setTextColor(107, 114, 128); // Modern gray for labels
+    pdf.text('Judul Meeting', leftColX, yPosition);
     pdf.setFont('helvetica', 'normal');
-    pdf.text(data.meeting.title, leftColX + 32, yPosition);
+    pdf.setFontSize(10);
+    pdf.setTextColor(31, 41, 55); // Dark text for values
+    pdf.text(data.meeting.title.length > 35 ? data.meeting.title.substring(0, 32) + '...' : data.meeting.title, leftColX, yPosition + 6);
     
     pdf.setFont('helvetica', 'bold');
-    pdf.text('Tanggal:', leftColX, yPosition + lineHeight);
+    pdf.setFontSize(9);
+    pdf.setTextColor(107, 114, 128);
+    pdf.text('Tanggal', leftColX, yPosition + lineHeight * 2);
     pdf.setFont('helvetica', 'normal');
-    pdf.text(meetingDate.toLocaleDateString('id-ID'), leftColX + 32, yPosition + lineHeight);
+    pdf.setFontSize(10);
+    pdf.setTextColor(31, 41, 55);
+    pdf.text(meetingDate.toLocaleDateString('id-ID'), leftColX, yPosition + lineHeight * 2 + 6);
     
     pdf.setFont('helvetica', 'bold');
-    pdf.text('Waktu:', leftColX, yPosition + lineHeight * 2);
+    pdf.setFontSize(9);
+    pdf.setTextColor(107, 114, 128);
+    pdf.text('Waktu', leftColX, yPosition + lineHeight * 4);
     pdf.setFont('helvetica', 'normal');
-    pdf.text(`${data.meeting.startTime} - ${data.meeting.endTime}`, leftColX + 32, yPosition + lineHeight * 2);
+    pdf.setFontSize(10);
+    pdf.setTextColor(31, 41, 55);
+    pdf.text(`${data.meeting.startTime} - ${data.meeting.endTime}`, leftColX, yPosition + lineHeight * 4 + 6);
     
     // Right column
     pdf.setFont('helvetica', 'bold');
-    pdf.text('Lokasi:', rightColX, yPosition);
+    pdf.setFontSize(9);
+    pdf.setTextColor(107, 114, 128);
+    pdf.text('Lokasi', rightColX, yPosition);
     pdf.setFont('helvetica', 'normal');
-    pdf.text(data.meeting.location, rightColX + 32, yPosition);
+    pdf.setFontSize(10);
+    pdf.setTextColor(31, 41, 55);
+    pdf.text(data.meeting.location, rightColX, yPosition + 6);
     
     pdf.setFont('helvetica', 'bold');
-    pdf.text('Penyelenggara:', rightColX, yPosition + lineHeight);
+    pdf.setFontSize(9);
+    pdf.setTextColor(107, 114, 128);
+    pdf.text('Penyelenggara', rightColX, yPosition + lineHeight * 2);
     pdf.setFont('helvetica', 'normal');
-    pdf.text(data.meeting.organizer, rightColX + 32, yPosition + lineHeight);
+    pdf.setFontSize(10);
+    pdf.setTextColor(31, 41, 55);
+    pdf.text(data.meeting.organizer, rightColX, yPosition + lineHeight * 2 + 6);
     
     pdf.setFont('helvetica', 'bold');
-    pdf.text('Total Hadir:', rightColX, yPosition + lineHeight * 2);
+    pdf.setFontSize(9);
+    pdf.setTextColor(107, 114, 128);
+    pdf.text('Total Peserta Hadir', rightColX, yPosition + lineHeight * 4);
     pdf.setFont('helvetica', 'normal');
-    pdf.text(`${data.totalAttendees} orang`, rightColX + 32, yPosition + lineHeight * 2);
+    pdf.setFontSize(10);
+    pdf.setTextColor(220, 38, 38); // Red highlight for count
+    pdf.text(`${data.totalAttendees} orang`, rightColX, yPosition + lineHeight * 4 + 6);
 
-    yPosition += boxHeight + 20;
+    yPosition += cardHeight + 25;
 
-    // ==================== ATTENDANCE TABLE ====================
-    // Table header with background
-    pdf.setFillColor(250, 250, 250);
-    pdf.rect(margin, yPosition - 5, pageWidth - 2 * margin, 18, 'F');
+    // ==================== MODERN TABLE SECTION ====================
+    // Section header with subtle background
+    pdf.setFillColor(249, 250, 251);
+    pdf.rect(margin, yPosition - 8, pageWidth - 2 * margin, 22, 'F');
+    
+    // Left accent line
+    pdf.setLineWidth(3);
+    pdf.setDrawColor(220, 38, 38);
+    pdf.line(margin, yPosition - 8, margin, yPosition + 14);
+    
     pdf.setFont('helvetica', 'bold');
-    pdf.setFontSize(16);
-    pdf.setTextColor(180, 30, 30); // Dark red
-    pdf.text('DAFTAR KEHADIRAN', margin + 5, yPosition + 8);
-    yPosition += 20;
+    pdf.setFontSize(15);
+    pdf.setTextColor(220, 38, 38);
+    pdf.text('DAFTAR KEHADIRAN', margin + 8, yPosition + 6);
+    
+    // Participant count badge
+    pdf.setFillColor(220, 38, 38);
+    pdf.roundedRect(pageWidth - margin - 60, yPosition - 3, 50, 12, 2, 2, 'F');
+    pdf.setFont('helvetica', 'bold');
+    pdf.setFontSize(9);
+    pdf.setTextColor(255, 255, 255);
+    pdf.text(`${data.totalAttendees} Peserta`, pageWidth - margin - 57, yPosition + 4);
+    
+    yPosition += 25;
 
     if (data.attendance && data.attendance.length > 0) {
       const tableData = data.attendance.map((attendance, index) => [
@@ -159,7 +220,7 @@ export function generateMeetingAttendancePDF(data: MeetingAttendanceData): void 
         attendance.employee?.id || '-',
         attendance.employee?.name || 'Unknown',
         attendance.employee?.department || '-',
-        data.meeting.title.length > 20 ? data.meeting.title.substring(0, 17) + '...' : data.meeting.title,
+        data.meeting.title.length > 15 ? data.meeting.title.substring(0, 12) + '...' : data.meeting.title,
         new Date(attendance.scanDate).toLocaleDateString('id-ID'),
         attendance.scanTime ? `${attendance.scanTime} WITA` : '-',
         getShortDeviceInfo(attendance.deviceInfo || 'Unknown')
@@ -171,97 +232,109 @@ export function generateMeetingAttendancePDF(data: MeetingAttendanceData): void 
         startY: yPosition,
         theme: 'grid',
         styles: {
-          fontSize: 10,
-          cellPadding: 5,
-          lineColor: [220, 220, 220],
-          lineWidth: 0.4,
+          fontSize: 9,
+          cellPadding: 6,
+          lineColor: [229, 231, 235], // Modern light gray borders
+          lineWidth: 0.5,
           font: 'helvetica',
-          textColor: [40, 40, 40],
-          minCellHeight: 12
+          textColor: [55, 65, 81], // Modern dark gray text
+          minCellHeight: 14,
+          valign: 'middle'
         },
         headStyles: {
-          fillColor: [180, 30, 30], // Dark red professional
+          fillColor: [220, 38, 38], // Modern red
           textColor: [255, 255, 255],
           fontStyle: 'bold',
-          fontSize: 11,
+          fontSize: 10,
           halign: 'center',
           valign: 'middle',
-          cellPadding: 6
+          cellPadding: 8,
+          minCellHeight: 16
         },
         alternateRowStyles: {
-          fillColor: [252, 252, 252] // Very light gray for alternate rows
+          fillColor: [249, 250, 251] // Very subtle gray zebra effect
         },
         columnStyles: {
-          0: { cellWidth: 15, halign: 'center' }, // No - wider
-          1: { cellWidth: 25, halign: 'center' }, // NIK - wider
-          2: { cellWidth: 45, halign: 'left' },   // Nama - wider
-          3: { cellWidth: 35, halign: 'left' },   // Department - wider
-          4: { cellWidth: 30, halign: 'left' },   // Meeting - wider
-          5: { cellWidth: 20, halign: 'center' }, // Tanggal - wider
-          6: { cellWidth: 18, halign: 'center' }, // Waktu - wider
-          7: { cellWidth: 20, halign: 'center' }  // Device - wider
+          0: { cellWidth: 12, halign: 'center' }, // No
+          1: { cellWidth: 22, halign: 'center' }, // NIK
+          2: { cellWidth: 40, halign: 'left' },   // Nama
+          3: { cellWidth: 30, halign: 'left' },   // Department
+          4: { cellWidth: 22, halign: 'left' },   // Meeting - smaller
+          5: { cellWidth: 18, halign: 'center' }, // Tanggal
+          6: { cellWidth: 20, halign: 'center' }, // Waktu
+          7: { cellWidth: 18, halign: 'center' }  // Device
         },
         margin: { left: margin, right: margin },
-        tableWidth: 'auto',
-        tableLineColor: [180, 30, 30],
-        tableLineWidth: 0.8
+        tableWidth: 'wrap', // Changed from 'auto' to 'wrap' to fit page
+        didDrawPage: (data) => {
+          // Add subtle border around entire table
+          const tableY = data.settings.startY || yPosition;
+          if (data.cursor) {
+            pdf.setDrawColor(220, 38, 38);
+            pdf.setLineWidth(1);
+            pdf.rect(margin, tableY - 2, pageWidth - 2 * margin, data.cursor.y - tableY + 2, 'S');
+          }
+        }
       });
     } else {
-      // No attendance message
-      pdf.setFont('helvetica', 'italic');
+      // Modern empty state message
+      pdf.setFillColor(249, 250, 251);
+      pdf.rect(margin, yPosition, pageWidth - 2 * margin, 30, 'F');
+      pdf.setLineWidth(1);
+      pdf.setDrawColor(229, 231, 235);
+      pdf.rect(margin, yPosition, pageWidth - 2 * margin, 30, 'S');
+      
+      pdf.setFont('helvetica', 'normal');
       pdf.setFontSize(11);
-      pdf.setTextColor(120, 120, 120);
-      pdf.text('Belum ada peserta yang hadir pada meeting ini.', margin, yPosition + 10);
+      pdf.setTextColor(107, 114, 128);
+      pdf.text('Belum ada peserta yang hadir pada meeting ini.', pageWidth / 2, yPosition + 18, { align: 'center' });
     }
 
-    // ==================== FOOTER SECTION ====================
-    const footerY = pageHeight - 55;
+    // ==================== MODERN FOOTER SECTION ====================
+    const footerY = pageHeight - 40;
     
-    // Footer background
-    pdf.setFillColor(248, 248, 248);
-    pdf.rect(0, footerY - 15, pageWidth, 65, 'F');
+    // Clean footer background
+    pdf.setFillColor(249, 250, 251);
+    pdf.rect(0, footerY - 10, pageWidth, 50, 'F');
     
-    // Footer separator line - double line design
-    pdf.setLineWidth(0.8);
-    pdf.setDrawColor(180, 30, 30);
-    pdf.line(margin, footerY - 10, pageWidth - margin, footerY - 10);
-    pdf.setLineWidth(0.3);
-    pdf.setDrawColor(200, 200, 200);
-    pdf.line(margin, footerY - 8, pageWidth - margin, footerY - 8);
+    // Elegant separator line
+    pdf.setLineWidth(1);
+    pdf.setDrawColor(220, 38, 38);
+    pdf.line(margin, footerY - 5, pageWidth - margin, footerY - 5);
     
-    // Left side - generation info with better formatting
-    pdf.setFont('helvetica', 'normal');
-    pdf.setFontSize(9);
-    pdf.setTextColor(80, 80, 80);
-    pdf.text('Laporan dibuat oleh:', margin, footerY);
-    pdf.setFont('helvetica', 'bold');
-    pdf.text('Sistem Manajemen Meeting PT.GECL', margin, footerY + 8);
+    // Modern footer text - left aligned
     pdf.setFont('helvetica', 'normal');
     pdf.setFontSize(8);
-    pdf.text(`Tanggal: ${currentDateTime.toLocaleDateString('id-ID')} | Waktu: ${currentDateTime.toLocaleTimeString('id-ID')}`, margin, footerY + 16);
+    pdf.setTextColor(107, 114, 128);
+    pdf.text('Laporan dibuat oleh Sistem Manajemen Meeting PT.GECL', margin, footerY + 5);
     
-    // Right side - enhanced signature area
-    const signatureX = pageWidth - 110;
-    pdf.setFillColor(255, 255, 255);
-    pdf.rect(signatureX - 5, footerY - 8, 100, 40, 'F');
-    pdf.setLineWidth(0.5);
-    pdf.setDrawColor(180, 30, 30);
-    pdf.rect(signatureX - 5, footerY - 8, 100, 40, 'S');
-    
-    pdf.setTextColor(40, 40, 40);
-    pdf.setFontSize(10);
-    pdf.setFont('helvetica', 'bold');
-    pdf.text('Mengetahui,', signatureX, footerY - 2);
+    // Print timestamp - right aligned as requested
     pdf.setFont('helvetica', 'normal');
-    pdf.setFontSize(9);
-    pdf.text('Penyelenggara Meeting', signatureX, footerY + 6);
+    pdf.setFontSize(8);
+    pdf.setTextColor(107, 114, 128);
+    pdf.text(`Dicetak pada: ${currentDateTime.toLocaleDateString('id-ID')} ${currentDateTime.toLocaleTimeString('id-ID')}`, pageWidth - margin, footerY + 5, { align: 'right' });
     
-    // Enhanced signature line
-    pdf.setLineWidth(0.8);
-    pdf.setDrawColor(40, 40, 40);
-    pdf.line(signatureX, footerY + 18, signatureX + 75, footerY + 18);
+    // Modern signature area - simplified and elegant
+    const signatureX = pageWidth - 100;
     pdf.setFont('helvetica', 'bold');
-    pdf.text(`(${data.meeting.organizer})`, signatureX + 5, footerY + 26);
+    pdf.setFontSize(9);
+    pdf.setTextColor(55, 65, 81);
+    pdf.text('Mengetahui,', signatureX, footerY + 15);
+    
+    pdf.setFont('helvetica', 'normal');
+    pdf.setFontSize(8);
+    pdf.setTextColor(107, 114, 128);
+    pdf.text('Penyelenggara Meeting', signatureX, footerY + 22);
+    
+    // Clean signature line
+    pdf.setLineWidth(0.8);
+    pdf.setDrawColor(156, 163, 175);
+    pdf.line(signatureX, footerY + 30, signatureX + 70, footerY + 30);
+    
+    pdf.setFont('helvetica', 'bold');
+    pdf.setFontSize(8);
+    pdf.setTextColor(55, 65, 81);
+    pdf.text(`(${data.meeting.organizer})`, signatureX + 5, footerY + 37);
 
     // Generate professional filename
     const dateStr = meetingDate.toISOString().split('T')[0];
