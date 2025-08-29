@@ -2032,33 +2032,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
       
       if (existingAttendance && existingAttendance.scanDate === today) {
-        // Allow re-attendance if more than 5 minutes has passed (meeting window)
+        // Allow re-attendance if more than 15 minutes has passed (proper meeting window)
         const now = new Date();
-        const currentTime = now.getHours() * 60 + now.getMinutes(); // minutes since midnight
+        // Convert to Indonesia time for proper comparison
+        const indonesiaTime = new Date(now.getTime() + (8 * 60 * 60 * 1000)); // WITA (+8)
+        const currentTime = indonesiaTime.getHours() * 60 + indonesiaTime.getMinutes(); // minutes since midnight
         const [hours, minutes, seconds] = existingAttendance.scanTime.split(':').map(Number);
         const lastScanTime = hours * 60 + minutes;
         const timeDifference = currentTime - lastScanTime;
         
         console.log(`Time check for ${employee.name}:`, {
-          currentTime: `${now.getHours()}:${now.getMinutes()}`,
+          currentTime: `${indonesiaTime.getHours().toString().padStart(2, '0')}:${indonesiaTime.getMinutes().toString().padStart(2, '0')} WITA`,
           lastScanTime: existingAttendance.scanTime,
           timeDifferenceMinutes: timeDifference
         });
         
-        if (timeDifference < 5) {
+        if (timeDifference < 15) {
+          const waitMinutes = 15 - timeDifference;
           return res.status(400).json({ 
             error: "Already attended", 
-            message: `${employee.name} sudah melakukan scan QR untuk meeting ini pada ${existingAttendance.scanTime}. Silakan tunggu minimal 5 menit untuk scan ulang.`,
-            lastScanTime: existingAttendance.scanTime,
-            waitTime: `${5 - timeDifference} menit lagi`,
-            debug: {
-              currentTime: `${now.getHours()}:${now.getMinutes()}`,
-              lastScan: existingAttendance.scanTime,
-              timeDiff: timeDifference
-            }
+            message: `${employee.name} sudah melakukan scan QR untuk meeting ini pada ${existingAttendance.scanTime} WITA. Silakan tunggu ${waitMinutes} menit lagi untuk scan ulang.`,
+            lastScanTime: `${existingAttendance.scanTime} WITA`,
+            waitTime: `${waitMinutes} menit lagi`,
+            currentTime: `${indonesiaTime.getHours().toString().padStart(2, '0')}:${indonesiaTime.getMinutes().toString().padStart(2, '0')} WITA`
           });
         } else {
-          console.log(`Allowing re-attendance for ${employee.name} - more than 5 minutes has passed (${timeDifference} minutes)`);
+          console.log(`Allowing re-attendance for ${employee.name} - more than 15 minutes has passed (${timeDifference} minutes)`);
           // Delete previous attendance record to allow new one
           try {
             const deleted = await storage.deleteMeetingAttendance(existingAttendance.id);
@@ -2069,13 +2068,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
 
-      // Record attendance with meeting window flexibility
+      // Record attendance with proper timezone handling
       const now = new Date();
-      const scanTime = now.toTimeString().split(' ')[0]; // HH:MM:SS
-      const scanDate = now.toISOString().split('T')[0]; // YYYY-MM-DD
-      const currentTime = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
+      // Convert to Indonesia time (WIB/WITA) - UTC+7/+8
+      const indonesiaTime = new Date(now.getTime() + (8 * 60 * 60 * 1000)); // WITA (+8)
+      const scanTime = indonesiaTime.toTimeString().split(' ')[0]; // HH:MM:SS
+      const scanDate = indonesiaTime.toISOString().split('T')[0]; // YYYY-MM-DD
+      const currentTime = `${indonesiaTime.getHours().toString().padStart(2, '0')}:${indonesiaTime.getMinutes().toString().padStart(2, '0')}`;
       
-      console.log(`Meeting attendance recorded at ${currentTime} for ${employee.name}`);
+      console.log(`Meeting attendance recorded at ${currentTime} WITA for ${employee.name}`);
 
       const attendance = await storage.createMeetingAttendance({
         meetingId: meeting.id,
@@ -2087,11 +2088,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       res.json({
         success: true,
-        message: `✅ ${employee.name} berhasil absen untuk meeting: ${meeting.title} pada ${currentTime}`,
+        message: `✅ ${employee.name} berhasil absen untuk meeting: ${meeting.title} pada ${currentTime} WITA`,
         attendance,
         meeting,
         employee,
-        scanTime: currentTime,
+        scanTime: `${currentTime} WITA`,
         isReAttendance: !!existingAttendance
       });
     } catch (error) {
