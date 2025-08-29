@@ -215,12 +215,12 @@ export function generateMeetingAttendancePDF(data: MeetingAttendanceData): void 
 
     if (data.attendance && data.attendance.length > 0) {
       const tableData = data.attendance.map((attendance, index) => [
-        (index + 1).toString().padStart(2, '0'), // Format nomor dengan leading zero
+        (index + 1).toString(), // Simple number format
         attendance.employee?.id || '-',
         attendance.employee?.name || 'Unknown',
         attendance.employee?.department || '-',
         new Date(attendance.scanDate).toLocaleDateString('id-ID'),
-        attendance.scanTime ? `${attendance.scanTime}\nWITA` : '-', // Break line for WITA
+        attendance.scanTime ? `${attendance.scanTime} WITA` : '-', // Single line format
         getShortDeviceInfo(attendance.deviceInfo || 'Unknown')
       ]);
 
@@ -230,13 +230,13 @@ export function generateMeetingAttendancePDF(data: MeetingAttendanceData): void 
         startY: yPosition,
         theme: 'grid',
         styles: {
-          fontSize: 7,
-          cellPadding: 2.5,
+          fontSize: 8,
+          cellPadding: 3,
           lineColor: [229, 231, 235],
           lineWidth: 0.3,
           font: 'helvetica',
           textColor: [55, 65, 81],
-          minCellHeight: 9,
+          minCellHeight: 11,
           valign: 'middle',
           overflow: 'linebreak'
         },
@@ -244,11 +244,11 @@ export function generateMeetingAttendancePDF(data: MeetingAttendanceData): void 
           fillColor: [220, 38, 38],
           textColor: [255, 255, 255],
           fontStyle: 'bold',
-          fontSize: 7,
+          fontSize: 8,
           halign: 'center',
           valign: 'middle',
-          cellPadding: 3,
-          minCellHeight: 10,
+          cellPadding: 4,
+          minCellHeight: 12,
           lineWidth: 0.5,
           lineColor: [180, 30, 30]
         },
@@ -256,16 +256,16 @@ export function generateMeetingAttendancePDF(data: MeetingAttendanceData): void 
           fillColor: [249, 250, 251]
         },
         columnStyles: {
-          0: { cellWidth: 7, halign: 'center' },  // No - very compact
-          1: { cellWidth: 16, halign: 'center' }, // NIK - compact  
-          2: { cellWidth: 38, halign: 'left' },   // Nama - reduced
-          3: { cellWidth: 28, halign: 'left' },   // Department - reduced
-          4: { cellWidth: 16, halign: 'center' }, // Tanggal - reduced
-          5: { cellWidth: 22, halign: 'center' }, // Waktu - compact
-          6: { cellWidth: 15, halign: 'center' }  // Device - very compact
+          0: { cellWidth: 10, halign: 'center', valign: 'middle' },  // No - better proportion
+          1: { cellWidth: 18, halign: 'center', valign: 'middle' }, // NIK - proper width  
+          2: { cellWidth: 36, halign: 'left', valign: 'middle' },   // Nama - balanced
+          3: { cellWidth: 26, halign: 'left', valign: 'middle' },   // Department - compact
+          4: { cellWidth: 18, halign: 'center', valign: 'middle' }, // Tanggal - proper
+          5: { cellWidth: 20, halign: 'center', valign: 'middle' }, // Waktu - balanced
+          6: { cellWidth: 14, halign: 'center', valign: 'middle' }  // Device - compact
         },
         margin: { left: margin, right: margin },
-        tableWidth: 142, // Total column width: 7+16+38+28+16+22+15 = 142
+        tableWidth: 142, // Total column width: 10+18+36+26+18+20+14 = 142
         showHead: 'everyPage'
       });
     } else {
