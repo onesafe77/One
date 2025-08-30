@@ -531,6 +531,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       console.log(`Starting bulk upload of ${rosters.length} entries`);
+      
+      // Debug: Log beberapa data pertama yang diterima server
+      console.log('First 3 rosters received by server:');
+      rosters.slice(0, 3).forEach((roster, index) => {
+        console.log(`Roster ${index + 1}:`, {
+          employeeId: roster.employeeId,
+          shift: roster.shift,
+          hariKerja: roster.hariKerja
+        });
+      });
 
       const validatedRosters = [];
       const errors = [];
@@ -625,6 +635,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
       await triggerReportUpdate();
       
       console.log(`Completed: ${createdSchedules.length} created`);
+      
+      // Debug: Verifikasi beberapa data yang tersimpan di database
+      if (createdSchedules.length > 0) {
+        console.log('Verifying first 3 saved records:');
+        const sampleSaved = createdSchedules.slice(0, 3);
+        sampleSaved.forEach((saved, index) => {
+          console.log(`Saved ${index + 1}:`, {
+            employeeId: saved.employeeId,
+            shift: saved.shift,
+            hariKerja: saved.hariKerja
+          });
+        });
+      }
       
       res.status(201).json({
         message: `${createdSchedules.length} roster berhasil ditambahkan`,
