@@ -69,6 +69,7 @@ export interface IStorage {
   createRosterSchedule(schedule: InsertRosterSchedule): Promise<RosterSchedule>;
   updateRosterSchedule(id: string, schedule: Partial<InsertRosterSchedule>): Promise<RosterSchedule | undefined>;
   deleteRosterSchedule(id: string): Promise<boolean>;
+  deleteAllRosterSchedules(): Promise<void>;
   
   // Leave methods
   getLeaveRequest(id: string): Promise<LeaveRequest | undefined>;
@@ -307,6 +308,10 @@ export class MemStorage implements IStorage {
 
   async deleteRosterSchedule(id: string): Promise<boolean> {
     return this.rosterSchedules.delete(id);
+  }
+
+  async deleteAllRosterSchedules(): Promise<void> {
+    this.rosterSchedules.clear();
   }
 
   // Leave methods
@@ -651,6 +656,10 @@ export class DrizzleStorage implements IStorage {
   async deleteRosterSchedule(id: string): Promise<boolean> {
     await this.db.delete(rosterSchedules).where(eq(rosterSchedules.id, id));
     return true;
+  }
+
+  async deleteAllRosterSchedules(): Promise<void> {
+    await this.db.delete(rosterSchedules);
   }
 
   // Leave methods

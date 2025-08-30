@@ -658,6 +658,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Delete all roster data - must come BEFORE the :id route to avoid conflict
+  app.delete("/api/roster/delete-all", async (req, res) => {
+    try {
+      await storage.deleteAllRosterSchedules();
+      
+      // Trigger report cache invalidation
+      await triggerReportUpdate();
+      
+      res.json({ message: "Semua data roster berhasil dihapus" });
+    } catch (error) {
+      console.error("Error deleting all roster data:", error);
+      res.status(500).json({ message: "Gagal menghapus semua data roster" });
+    }
+  });
+
   app.delete("/api/roster/:id", async (req, res) => {
     try {
       const deleted = await storage.deleteRosterSchedule(req.params.id);

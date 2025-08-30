@@ -31,6 +31,7 @@ export default function Roster() {
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [editingRoster, setEditingRoster] = useState<RosterSchedule | null>(null);
   const [shiftFilter, setShiftFilter] = useState("all");
+  const [isDeleteAllDialogOpen, setIsDeleteAllDialogOpen] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [isProcessing, setIsProcessing] = useState(false);
@@ -165,6 +166,28 @@ export default function Roster() {
       toast({
         title: "Error",
         description: "Gagal menghapus roster",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const deleteAllMutation = useMutation({
+    mutationFn: () => apiRequest("/api/roster/delete-all", "DELETE", {}),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/roster"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/qr/validate"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/attendance"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/dashboard"] });
+      setIsDeleteAllDialogOpen(false);
+      toast({
+        title: "Berhasil",
+        description: "Semua data roster berhasil dihapus",
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "Gagal menghapus semua data roster",
         variant: "destructive",
       });
     },
@@ -483,6 +506,16 @@ export default function Roster() {
             >
               <Download className="w-4 h-4 mr-2" />
               Template Excel
+            </Button>
+
+            {/* Delete All Button */}
+            <Button 
+              onClick={() => setIsDeleteAllDialogOpen(true)}
+              variant="destructive"
+              data-testid="delete-all-roster-button"
+            >
+              <Trash2 className="w-4 h-4 mr-2" />
+              Hapus Semua
             </Button>
 
             {/* Upload Excel Dialog */}
@@ -1041,6 +1074,38 @@ export default function Roster() {
           </table>
         </div>
       </CardContent>
+      
+      {/* Delete All Confirmation Dialog */}
+      <Dialog open={isDeleteAllDialogOpen} onOpenChange={setIsDeleteAllDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Konfirmasi Hapus Semua Data</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <p className="text-sm text-gray-600 dark:text-gray-300">
+              Apakah Anda yakin ingin menghapus <strong>SEMUA</strong> data roster? 
+              Tindakan ini tidak dapat dibatalkan dan akan menghapus semua jadwal kerja yang ada.
+            </p>
+            <div className="flex space-x-2 justify-end">
+              <Button 
+                variant="outline" 
+                onClick={() => setIsDeleteAllDialogOpen(false)}
+                disabled={deleteAllMutation.isPending}
+              >
+                Batal
+              </Button>
+              <Button 
+                variant="destructive" 
+                onClick={() => deleteAllMutation.mutate()}
+                disabled={deleteAllMutation.isPending}
+                data-testid="confirm-delete-all-button"
+              >
+                {deleteAllMutation.isPending ? "Menghapus..." : "Ya, Hapus Semua"}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </Card>
   );
 }
