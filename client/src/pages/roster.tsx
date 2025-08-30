@@ -14,6 +14,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { insertRosterSchema } from "@shared/schema";
 import type { Employee, RosterSchedule, AttendanceRecord, InsertRosterSchedule } from "@shared/schema";
 import { Plus, Upload, Download, Filter, Calendar, CheckCircle, Clock, Users, Edit, Trash2, AlertCircle } from "lucide-react";
+import { Progress } from "@/components/ui/progress";
 import { z } from "zod";
 import * as XLSX from 'xlsx';
 import { useAutoSave } from "@/hooks/useAutoSave";
@@ -31,6 +32,10 @@ export default function Roster() {
   const [editingRoster, setEditingRoster] = useState<RosterSchedule | null>(null);
   const [shiftFilter, setShiftFilter] = useState("all");
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [uploadProgress, setUploadProgress] = useState(0);
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [processedCount, setProcessedCount] = useState(0);
+  const [totalCount, setTotalCount] = useState(0);
   const { toast } = useToast();
 
   const { data: employees = [] } = useQuery<Employee[]>({
@@ -176,9 +181,13 @@ export default function Roster() {
       
       setIsUploadDialogOpen(false);
       setSelectedFile(null);
+      setUploadProgress(0);
+      setIsProcessing(false);
+      setProcessedCount(0);
+      setTotalCount(0);
       toast({
         title: "Berhasil",
-        description: "Roster berhasil diupload dari Excel - QR scan akan menggunakan data terbaru",
+        description: `${totalCount} roster berhasil diupload dari Excel - QR scan akan menggunakan data terbaru`,
       });
     },
     onError: (error: any) => {
@@ -186,6 +195,8 @@ export default function Roster() {
       const errorMessage = error.response?.data?.message || error.message || 'Gagal upload roster';
       const errorDetails = error.response?.data?.errors || [];
       
+      setIsProcessing(false);
+      setUploadProgress(0);
       toast({
         title: "Error",
         description: errorDetails.length > 0 ? errorDetails.join(', ') : errorMessage,
@@ -247,68 +258,91 @@ export default function Roster() {
       return;
     }
 
+    setIsProcessing(true);
+    setUploadProgress(0);
+    setProcessedCount(0);
+
     try {
+      // Phase 1: Read Excel file (20% progress)
+      setUploadProgress(10);
       const data = await selectedFile.arrayBuffer();
       const workbook = XLSX.read(data);
       const worksheet = workbook.Sheets[workbook.SheetNames[0]];
       const jsonData = XLSX.utils.sheet_to_json(worksheet);
 
-      console.log('Excel data parsed:', jsonData);
+      console.log(`Excel file loaded with ${jsonData.length} rows`);
+      setUploadProgress(20);
+      setTotalCount(jsonData.length);
 
-      const rosterData: InsertRosterSchedule[] = jsonData.map((row: any, index: number) => {
-        console.log(`Processing row ${index + 1}:`, row);
-
-        // Parse jam kerja format "08:00 - 16:00"
-        const jamKerja = row['Jam Kerja'] || row.jamKerja || '';
-        const jamKerjaParts = jamKerja.split(' - ');
-        const shift = row.Shift || row.shift || 'Shift 1';
+      // Phase 2: Process data in chunks (20% to 80% progress)
+      const rosterData: InsertRosterSchedule[] = [];
+      const chunkSize = 100; // Process 100 rows at a time
+      
+      for (let i = 0; i < jsonData.length; i += chunkSize) {
+        const chunk = jsonData.slice(i, i + chunkSize);
         
-        // Set default times based on shift if jam kerja is not provided
-        let defaultStartTime = '06:00';
-        let defaultEndTime = '16:00';
-        
-        if (shift === 'Shift 2') {
-          defaultStartTime = '16:30';
-          defaultEndTime = '20:00';
-        }
-        
-        const startTime = jamKerjaParts[0] ? jamKerjaParts[0].trim() : defaultStartTime;
-        const endTime = jamKerjaParts[1] ? jamKerjaParts[1].trim() : defaultEndTime;
-
-        // Handle date formatting - ensure it's in YYYY-MM-DD format
-        let rosterDate = row.Tanggal || row.tanggal || row.Date || row.date || selectedDate;
-        
-        // If the date is an Excel serial number, convert it to a proper date
-        if (typeof rosterDate === 'number') {
-          const excelEpoch = new Date(1900, 0, 1);
-          const convertedDate = new Date(excelEpoch.getTime() + (rosterDate - 2) * 24 * 60 * 60 * 1000);
-          rosterDate = convertedDate.toISOString().split('T')[0];
-        } else if (rosterDate && typeof rosterDate === 'string') {
-          // Ensure the date is in YYYY-MM-DD format
-          const dateObj = new Date(rosterDate);
-          if (!isNaN(dateObj.getTime())) {
-            rosterDate = dateObj.toISOString().split('T')[0];
+        const processedChunk = chunk.map((row: any) => {
+          // Parse jam kerja format "08:00 - 16:00"
+          const jamKerja = row['Jam Kerja'] || row.jamKerja || '';
+          const jamKerjaParts = jamKerja.split(' - ');
+          const shift = row.Shift || row.shift || 'Shift 1';
+          
+          // Set default times based on shift if jam kerja is not provided
+          let defaultStartTime = '06:00';
+          let defaultEndTime = '16:00';
+          
+          if (shift === 'Shift 2') {
+            defaultStartTime = '16:30';
+            defaultEndTime = '20:00';
           }
-        }
+          
+          const startTime = jamKerjaParts[0] ? jamKerjaParts[0].trim() : defaultStartTime;
+          const endTime = jamKerjaParts[1] ? jamKerjaParts[1].trim() : defaultEndTime;
 
-        const rosterData = {
-          employeeId: row.NIK || row.nik || row['Employee ID'] || row.employeeId || '',
-          date: rosterDate, // Use formatted date from Excel or fall back to selected date
-          shift: row.Shift || row.shift || 'Shift 1',
-          startTime: startTime,
-          endTime: endTime,
-          jamTidur: String(row['Jam Tidur'] || row.jamTidur || ''),
-          fitToWork: row['Fit To Work'] || row.fitToWork || 'Fit To Work',
-          status: row.Status || row.status || 'scheduled'
-        };
+          // Handle date formatting - ensure it's in YYYY-MM-DD format
+          let rosterDate = row.Tanggal || row.tanggal || row.Date || row.date || selectedDate;
+          
+          // If the date is an Excel serial number, convert it to a proper date
+          if (typeof rosterDate === 'number') {
+            const excelEpoch = new Date(1900, 0, 1);
+            const convertedDate = new Date(excelEpoch.getTime() + (rosterDate - 2) * 24 * 60 * 60 * 1000);
+            rosterDate = convertedDate.toISOString().split('T')[0];
+          } else if (rosterDate && typeof rosterDate === 'string') {
+            // Ensure the date is in YYYY-MM-DD format
+            const dateObj = new Date(rosterDate);
+            if (!isNaN(dateObj.getTime())) {
+              rosterDate = dateObj.toISOString().split('T')[0];
+            }
+          }
 
-        console.log(`Mapped data for row ${index + 1} with date ${selectedDate}:`, rosterData);
-        return rosterData;
-      }).filter(row => row.employeeId && row.shift && row.startTime && row.endTime);
+          return {
+            employeeId: row.NIK || row.nik || row['Employee ID'] || row.employeeId || '',
+            date: rosterDate,
+            shift: row.Shift || row.shift || 'Shift 1',
+            startTime: startTime,
+            endTime: endTime,
+            jamTidur: String(row['Jam Tidur'] || row.jamTidur || ''),
+            fitToWork: row['Fit To Work'] || row.fitToWork || 'Fit To Work',
+            status: row.Status || row.status || 'scheduled'
+          };
+        }).filter(row => row.employeeId && row.shift && row.startTime && row.endTime);
 
-      console.log('Final roster data to upload:', rosterData);
+        rosterData.push(...processedChunk);
+        
+        // Update progress (20% to 80%)
+        const processProgress = 20 + (60 * (i + chunkSize)) / jsonData.length;
+        setUploadProgress(Math.min(processProgress, 80));
+        setProcessedCount(i + chunkSize);
+        
+        // Allow UI to update
+        await new Promise(resolve => setTimeout(resolve, 10));
+      }
+
+      console.log(`Processed ${rosterData.length} valid rows out of ${jsonData.length} total rows`);
+      setUploadProgress(80);
 
       if (rosterData.length === 0) {
+        setIsProcessing(false);
         toast({
           title: "Error",
           description: "Tidak ada data valid ditemukan. Pastikan format Excel sesuai template",
@@ -317,9 +351,14 @@ export default function Roster() {
         return;
       }
 
+      // Phase 3: Upload to server (80% to 100%)
+      setUploadProgress(90);
       uploadMutation.mutate(rosterData);
+      setUploadProgress(100);
+
     } catch (error) {
       console.error('Excel processing error:', error);
+      setIsProcessing(false);
       toast({
         title: "Error",
         description: "Format file Excel tidak valid",
@@ -457,6 +496,7 @@ export default function Roster() {
                       type="file"
                       accept=".xlsx,.xls"
                       onChange={handleFileUpload}
+                      disabled={isProcessing}
                       data-testid="excel-file-input"
                     />
                   </div>
@@ -465,18 +505,60 @@ export default function Roster() {
                       File dipilih: {selectedFile.name}
                     </p>
                   )}
+                  
+                  {/* Progress Bar Section */}
+                  {isProcessing && (
+                    <div className="space-y-3">
+                      <div className="flex justify-between items-center">
+                        <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                          Memproses Excel...
+                        </span>
+                        <span className="text-sm font-medium text-blue-600 dark:text-blue-400">
+                          {uploadProgress.toFixed(0)}%
+                        </span>
+                      </div>
+                      <Progress value={uploadProgress} className="w-full" />
+                      <div className="text-xs text-gray-500 dark:text-gray-400">
+                        {processedCount > 0 && totalCount > 0 && (
+                          <span>Diproses: {processedCount.toLocaleString()} dari {totalCount.toLocaleString()} baris</span>
+                        )}
+                      </div>
+                    </div>
+                  )}
+                  
                   <div className="flex space-x-2">
                     <Button 
                       onClick={processExcelFile}
-                      disabled={!selectedFile || uploadMutation.isPending}
+                      disabled={!selectedFile || isProcessing || uploadMutation.isPending}
                       data-testid="process-excel-button"
+                      className="flex-1"
                     >
-                      {uploadMutation.isPending ? "Mengupload..." : "Upload"}
+                      {isProcessing ? (
+                        <div className="flex items-center space-x-2">
+                          <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                          <span>Memproses...</span>
+                        </div>
+                      ) : uploadMutation.isPending ? (
+                        <div className="flex items-center space-x-2">
+                          <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                          <span>Mengupload...</span>
+                        </div>
+                      ) : (
+                        "Upload"
+                      )}
                     </Button>
-                    <Button variant="outline" onClick={() => {
-                      setIsUploadDialogOpen(false);
-                      setSelectedFile(null);
-                    }}>
+                    <Button 
+                      variant="outline" 
+                      disabled={isProcessing}
+                      onClick={() => {
+                        setIsUploadDialogOpen(false);
+                        setSelectedFile(null);
+                        setUploadProgress(0);
+                        setIsProcessing(false);
+                        setProcessedCount(0);
+                        setTotalCount(0);
+                      }}
+                    >
                       Batal
                     </Button>
                   </div>
