@@ -230,6 +230,7 @@ export default function Roster() {
       endTime: roster.endTime,
       jamTidur: roster.jamTidur || "",
       fitToWork: roster.fitToWork || "Fit To Work",
+      hariKerja: roster.hariKerja || "",
       status: roster.status,
     });
     setIsEditDialogOpen(true);
@@ -323,6 +324,7 @@ export default function Roster() {
             endTime: endTime,
             jamTidur: String(row['Jam Tidur'] || row.jamTidur || ''),
             fitToWork: row['Fit To Work'] || row.fitToWork || 'Fit To Work',
+            hariKerja: row['Hari Kerja'] || row.hariKerja || '',
             status: row.Status || row.status || 'scheduled'
           };
         }).filter(row => row.employeeId && row.shift && row.startTime && row.endTime);
@@ -380,6 +382,7 @@ export default function Roster() {
         'Jam Kerja': '08:00 - 16:00',
         'Jam Tidur': '6',
         'Fit To Work': 'Fit To Work',
+        'Hari Kerja': 'Senin',
         Status: 'scheduled'
       },
       {
@@ -391,6 +394,7 @@ export default function Roster() {
         'Jam Kerja': '18:00 - 06:00',
         'Jam Tidur': '6',
         'Fit To Work': 'Fit To Work',
+        'Hari Kerja': 'Senin',
         Status: 'scheduled'
       }
     ];
@@ -399,12 +403,13 @@ export default function Roster() {
     const instructionData = [
       {},
       {},
-      { NIK: "INSTRUKSI:", Nama: "", 'Nomor Lambung': "", Tanggal: "", Shift: "", 'Jam Kerja': "", 'Jam Tidur': "", 'Fit To Work': "", Status: "" },
-      { NIK: "1. Format Tanggal: YYYY-MM-DD (contoh: 2025-08-30)", Nama: "", 'Nomor Lambung': "", Tanggal: "", Shift: "", 'Jam Kerja': "", 'Jam Tidur': "", 'Fit To Work': "", Status: "" },
-      { NIK: "2. Shift: Shift 1 atau Shift 2", Nama: "", 'Nomor Lambung': "", Tanggal: "", Shift: "", 'Jam Kerja': "", 'Jam Tidur': "", 'Fit To Work': "", Status: "" },
-      { NIK: "3. Jam Kerja: 08:00 - 16:00 (opsional)", Nama: "", 'Nomor Lambung': "", Tanggal: "", Shift: "", 'Jam Kerja': "", 'Jam Tidur': "", 'Fit To Work': "", Status: "" },
-      { NIK: "4. Jam Tidur: angka (contoh: 6, 7, 8)", Nama: "", 'Nomor Lambung': "", Tanggal: "", Shift: "", 'Jam Kerja': "", 'Jam Tidur': "", 'Fit To Work': "", Status: "" },
-      { NIK: "5. Fit To Work: Fit To Work atau Not Fit", Nama: "", 'Nomor Lambung': "", Tanggal: "", Shift: "", 'Jam Kerja': "", 'Jam Tidur': "", 'Fit To Work': "", Status: "" }
+      { NIK: "INSTRUKSI:", Nama: "", 'Nomor Lambung': "", Tanggal: "", Shift: "", 'Jam Kerja': "", 'Jam Tidur': "", 'Fit To Work': "", 'Hari Kerja': "", Status: "" },
+      { NIK: "1. Format Tanggal: YYYY-MM-DD (contoh: 2025-08-30)", Nama: "", 'Nomor Lambung': "", Tanggal: "", Shift: "", 'Jam Kerja': "", 'Jam Tidur': "", 'Fit To Work': "", 'Hari Kerja': "", Status: "" },
+      { NIK: "2. Shift: Shift 1 atau Shift 2", Nama: "", 'Nomor Lambung': "", Tanggal: "", Shift: "", 'Jam Kerja': "", 'Jam Tidur': "", 'Fit To Work': "", 'Hari Kerja': "", Status: "" },
+      { NIK: "3. Jam Kerja: 08:00 - 16:00 (opsional)", Nama: "", 'Nomor Lambung': "", Tanggal: "", Shift: "", 'Jam Kerja': "", 'Jam Tidur': "", 'Fit To Work': "", 'Hari Kerja': "", Status: "" },
+      { NIK: "4. Jam Tidur: angka (contoh: 6, 7, 8)", Nama: "", 'Nomor Lambung': "", Tanggal: "", Shift: "", 'Jam Kerja': "", 'Jam Tidur': "", 'Fit To Work': "", 'Hari Kerja': "", Status: "" },
+      { NIK: "5. Fit To Work: Fit To Work atau Not Fit", Nama: "", 'Nomor Lambung': "", Tanggal: "", Shift: "", 'Jam Kerja': "", 'Jam Tidur': "", 'Fit To Work': "", 'Hari Kerja': "", Status: "" },
+      { NIK: "6. Hari Kerja: nama hari (contoh: Senin, Selasa)", Nama: "", 'Nomor Lambung': "", Tanggal: "", Shift: "", 'Jam Kerja': "", 'Jam Tidur': "", 'Fit To Work': "", 'Hari Kerja': "", Status: "" }
     ];
 
     const allData = [...templateData, ...instructionData];
@@ -861,6 +866,24 @@ export default function Roster() {
                         </FormItem>
                       )}
                     />
+                    <FormField
+                      control={editForm.control}
+                      name="hariKerja"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Hari Kerja</FormLabel>
+                          <FormControl>
+                            <Input 
+                              placeholder="Contoh: Senin, Selasa"
+                              {...field}
+                              value={field.value || ""}
+                              data-testid="edit-roster-hari-kerja-input"
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
                     <div className="flex space-x-2">
                       <Button 
                         type="submit" 
@@ -936,13 +959,13 @@ export default function Roster() {
             <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
               {isLoadingRoster ? (
                 <tr>
-                  <td colSpan={11} className="py-8 text-center text-gray-500 dark:text-gray-400">
+                  <td colSpan={12} className="py-8 text-center text-gray-500 dark:text-gray-400">
                     Loading...
                   </td>
                 </tr>
               ) : rosterWithAttendance.length === 0 ? (
                 <tr>
-                  <td colSpan={11} className="py-8 text-center text-gray-500 dark:text-gray-400">
+                  <td colSpan={12} className="py-8 text-center text-gray-500 dark:text-gray-400">
                     Tidak ada roster untuk tanggal ini
                   </td>
                 </tr>
@@ -967,10 +990,8 @@ export default function Roster() {
                     <td className="py-3 px-4 text-sm text-gray-900 dark:text-white">
                       {roster.shift}
                     </td>
-                    <td className="py-3 px-4">
-                      <Badge variant="outline" className="text-xs">
-                        {(roster as any).workDays !== null && (roster as any).workDays !== undefined ? `${(roster as any).workDays} Hari` : '-'}
-                      </Badge>
+                    <td className="py-3 px-4 text-sm text-gray-900 dark:text-white">
+                      {roster.hariKerja || '-'}
                     </td>
                     <td className="py-3 px-4 text-sm text-gray-900 dark:text-white">
                       {roster.actualJamTidur || roster.jamTidur || '-'}
