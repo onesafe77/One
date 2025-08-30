@@ -275,9 +275,25 @@ export default function Roster() {
         const startTime = jamKerjaParts[0] ? jamKerjaParts[0].trim() : defaultStartTime;
         const endTime = jamKerjaParts[1] ? jamKerjaParts[1].trim() : defaultEndTime;
 
+        // Handle date formatting - ensure it's in YYYY-MM-DD format
+        let rosterDate = row.Tanggal || row.tanggal || row.Date || row.date || selectedDate;
+        
+        // If the date is an Excel serial number, convert it to a proper date
+        if (typeof rosterDate === 'number') {
+          const excelEpoch = new Date(1900, 0, 1);
+          const convertedDate = new Date(excelEpoch.getTime() + (rosterDate - 2) * 24 * 60 * 60 * 1000);
+          rosterDate = convertedDate.toISOString().split('T')[0];
+        } else if (rosterDate && typeof rosterDate === 'string') {
+          // Ensure the date is in YYYY-MM-DD format
+          const dateObj = new Date(rosterDate);
+          if (!isNaN(dateObj.getTime())) {
+            rosterDate = dateObj.toISOString().split('T')[0];
+          }
+        }
+
         const rosterData = {
           employeeId: row.NIK || row.nik || row['Employee ID'] || row.employeeId || '',
-          date: selectedDate, // This will use the currently selected date in the UI
+          date: rosterDate, // Use formatted date from Excel or fall back to selected date
           shift: row.Shift || row.shift || 'Shift 1',
           startTime: startTime,
           endTime: endTime,
@@ -318,6 +334,7 @@ export default function Roster() {
         NIK: 'C-015227',
         Nama: 'SYAHRIAL H',
         'Nomor Lambung': 'GECL 9001',
+        Tanggal: '2025-08-30',
         Shift: 'Shift 1',
         'Jam Kerja': '08:00 - 16:00',
         'Jam Tidur': '6',
@@ -328,6 +345,7 @@ export default function Roster() {
         NIK: 'C-004764',
         Nama: 'SAHRUL HELMI',
         'Nomor Lambung': 'GECL 9002',
+        Tanggal: '2025-08-30',
         Shift: 'Shift 2',
         'Jam Kerja': '18:00 - 06:00',
         'Jam Tidur': '6',
@@ -336,7 +354,20 @@ export default function Roster() {
       }
     ];
 
-    const worksheet = XLSX.utils.json_to_sheet(templateData);
+    // Add instructions and empty rows
+    const instructionData = [
+      {},
+      {},
+      { NIK: "INSTRUKSI:", Nama: "", 'Nomor Lambung': "", Tanggal: "", Shift: "", 'Jam Kerja': "", 'Jam Tidur': "", 'Fit To Work': "", Status: "" },
+      { NIK: "1. Format Tanggal: YYYY-MM-DD (contoh: 2025-08-30)", Nama: "", 'Nomor Lambung': "", Tanggal: "", Shift: "", 'Jam Kerja': "", 'Jam Tidur': "", 'Fit To Work': "", Status: "" },
+      { NIK: "2. Shift: Shift 1 atau Shift 2", Nama: "", 'Nomor Lambung': "", Tanggal: "", Shift: "", 'Jam Kerja': "", 'Jam Tidur': "", 'Fit To Work': "", Status: "" },
+      { NIK: "3. Jam Kerja: 08:00 - 16:00 (opsional)", Nama: "", 'Nomor Lambung': "", Tanggal: "", Shift: "", 'Jam Kerja': "", 'Jam Tidur': "", 'Fit To Work': "", Status: "" },
+      { NIK: "4. Jam Tidur: angka (contoh: 6, 7, 8)", Nama: "", 'Nomor Lambung': "", Tanggal: "", Shift: "", 'Jam Kerja': "", 'Jam Tidur': "", 'Fit To Work': "", Status: "" },
+      { NIK: "5. Fit To Work: Fit To Work atau Not Fit", Nama: "", 'Nomor Lambung': "", Tanggal: "", Shift: "", 'Jam Kerja': "", 'Jam Tidur': "", 'Fit To Work': "", Status: "" }
+    ];
+
+    const allData = [...templateData, ...instructionData];
+    const worksheet = XLSX.utils.json_to_sheet(allData);
     const workbook = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(workbook, worksheet, 'Template Roster');
     
@@ -808,6 +839,7 @@ export default function Roster() {
                 <th className="text-left py-3 px-4 font-medium text-gray-900 dark:text-white">Nama</th>
                 <th className="text-left py-3 px-4 font-medium text-gray-900 dark:text-white">Position</th>
                 <th className="text-left py-3 px-4 font-medium text-gray-900 dark:text-white">Nomor Lambung</th>
+                <th className="text-left py-3 px-4 font-medium text-gray-900 dark:text-white">Tanggal</th>
                 <th className="text-left py-3 px-4 font-medium text-gray-900 dark:text-white">Shift</th>
                 <th className="text-left py-3 px-4 font-medium text-gray-900 dark:text-white">Hari Kerja</th>
                 <th className="text-left py-3 px-4 font-medium text-gray-900 dark:text-white">Jam Tidur</th>
@@ -820,13 +852,13 @@ export default function Roster() {
             <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
               {isLoadingRoster ? (
                 <tr>
-                  <td colSpan={10} className="py-8 text-center text-gray-500 dark:text-gray-400">
+                  <td colSpan={11} className="py-8 text-center text-gray-500 dark:text-gray-400">
                     Loading...
                   </td>
                 </tr>
               ) : rosterWithAttendance.length === 0 ? (
                 <tr>
-                  <td colSpan={10} className="py-8 text-center text-gray-500 dark:text-gray-400">
+                  <td colSpan={11} className="py-8 text-center text-gray-500 dark:text-gray-400">
                     Tidak ada roster untuk tanggal ini
                   </td>
                 </tr>
@@ -844,6 +876,9 @@ export default function Roster() {
                     </td>
                     <td className="py-3 px-4 text-sm text-gray-900 dark:text-white">
                       {roster.employee?.nomorLambung || '-'}
+                    </td>
+                    <td className="py-3 px-4 text-sm text-gray-900 dark:text-white">
+                      {new Date(roster.date).toLocaleDateString('id-ID')}
                     </td>
                     <td className="py-3 px-4 text-sm text-gray-900 dark:text-white">
                       {roster.shift}
