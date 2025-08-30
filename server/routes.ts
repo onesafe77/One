@@ -550,6 +550,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
           try {
             const validatedData = insertRosterSchema.parse(batch[i]);
             
+            // Debug log for first few entries to check hariKerja data
+            if (globalIndex < 3) {
+              console.log(`Sample data ${globalIndex + 1}:`, {
+                employeeId: validatedData.employeeId,
+                shift: validatedData.shift,
+                hariKerja: validatedData.hariKerja
+              });
+            }
+            
             // Check if employee exists in pre-loaded map
             if (!employeeMap.has(validatedData.employeeId)) {
               // Create employee quickly without logging
