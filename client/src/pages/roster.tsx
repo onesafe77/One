@@ -276,7 +276,7 @@ export default function Roster() {
 
       // Phase 2: Process data in chunks (20% to 80% progress)
       const rosterData: InsertRosterSchedule[] = [];
-      const chunkSize = 100; // Process 100 rows at a time
+      const chunkSize = 500; // Process 500 rows at a time for better performance
       
       for (let i = 0; i < jsonData.length; i += chunkSize) {
         const chunk = jsonData.slice(i, i + chunkSize);
@@ -334,8 +334,10 @@ export default function Roster() {
         setUploadProgress(Math.min(processProgress, 80));
         setProcessedCount(i + chunkSize);
         
-        // Allow UI to update
-        await new Promise(resolve => setTimeout(resolve, 10));
+        // Reduce delay for faster processing
+        if ((i + chunkSize) % 2000 === 0) {
+          await new Promise(resolve => setTimeout(resolve, 5));
+        }
       }
 
       console.log(`Processed ${rosterData.length} valid rows out of ${jsonData.length} total rows`);

@@ -530,91 +530,98 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Rosters must be an array" });
       }
 
-      console.log(`Starting bulk upload of ${rosters.length} roster entries`);
+      console.log(`Starting bulk upload of ${rosters.length} entries`);
 
       const validatedRosters = [];
       const errors = [];
-      const batchSize = 50; // Process in smaller batches to improve performance
+      const batchSize = 200; // Increase batch size significantly
 
-      // Process in batches to avoid memory issues and improve performance
+      // Pre-load all employees to avoid repeated database queries
+      const allEmployees = await storage.getAllEmployees();
+      const employeeMap = new Map(allEmployees.map(emp => [emp.id, emp]));
+
+      // Process in larger batches for better performance
       for (let batchStart = 0; batchStart < rosters.length; batchStart += batchSize) {
         const batch = rosters.slice(batchStart, batchStart + batchSize);
         
-        // Validate batch
+        // Validate batch without logging each entry
         for (let i = 0; i < batch.length; i++) {
           const globalIndex = batchStart + i;
           try {
             const validatedData = insertRosterSchema.parse(batch[i]);
             
-            // For bulk upload, we'll create employee if not exists instead of rejecting
-            let employee = await storage.getEmployee(validatedData.employeeId);
-            if (!employee) {
-              // Create a basic employee record for bulk upload
+            // Check if employee exists in pre-loaded map
+            if (!employeeMap.has(validatedData.employeeId)) {
+              // Create employee quickly without logging
               try {
-                await storage.createEmployee({
+                const newEmployee = await storage.createEmployee({
                   id: validatedData.employeeId,
                   name: `Employee ${validatedData.employeeId}`,
                   nomorLambung: `GECL ${Math.random().toString().substr(2, 4)}`,
                   phone: '+628123456789',
                   status: 'active'
                 });
+                employeeMap.set(validatedData.employeeId, newEmployee);
               } catch (createError) {
-                errors.push(`Baris ${globalIndex + 1}: Gagal membuat karyawan dengan NIK ${validatedData.employeeId}`);
+                errors.push(`Baris ${globalIndex + 1}: Gagal membuat karyawan`);
                 continue;
               }
             }
 
             validatedRosters.push(validatedData);
           } catch (error) {
-            errors.push(`Baris ${globalIndex + 1}: Data tidak valid - ${error instanceof Error ? error.message : 'Unknown error'}`);
+            errors.push(`Baris ${globalIndex + 1}: Data tidak valid`);
           }
         }
 
-        // Log progress every 1000 rows
-        if ((batchStart + batchSize) % 1000 === 0 || batchStart + batchSize >= rosters.length) {
-          console.log(`Processed ${Math.min(batchStart + batchSize, rosters.length)} / ${rosters.length} rows`);
+        // Only log progress every 2000 rows
+        if ((batchStart + batchSize) % 2000 === 0 || batchStart + batchSize >= rosters.length) {
+          console.log(`Validated ${Math.min(batchStart + batchSize, rosters.length)} / ${rosters.length}`);
         }
       }
 
       if (errors.length > 0 && errors.length === rosters.length) {
         return res.status(400).json({ 
-          message: "Semua data roster tidak valid", 
-          errors: errors.slice(0, 10) // Limit error messages to first 10 
+          message: "Semua data tidak valid", 
+          errors: errors.slice(0, 5)
         });
       }
 
-      console.log(`${validatedRosters.length} rosters passed validation, creating schedules...`);
+      console.log(`Creating ${validatedRosters.length} schedules...`);
 
-      // Create all valid rosters in batches
+      // Create schedules in larger batches without individual logging
       const createdSchedules = [];
       for (let i = 0; i < validatedRosters.length; i += batchSize) {
         const batch = validatedRosters.slice(i, i + batchSize);
         
-        for (const rosterData of batch) {
+        // Process batch without individual logging
+        const batchPromises = batch.map(async (rosterData) => {
           try {
-            const schedule = await storage.createRosterSchedule(rosterData);
-            createdSchedules.push(schedule);
+            return await storage.createRosterSchedule(rosterData);
           } catch (error) {
-            // Skip duplicates or other creation errors
+            return null; // Skip duplicates
           }
-        }
+        });
 
-        // Log progress
-        if ((i + batchSize) % 1000 === 0 || i + batchSize >= validatedRosters.length) {
-          console.log(`Created ${Math.min(i + batchSize, validatedRosters.length)} / ${validatedRosters.length} schedules`);
+        const batchResults = await Promise.all(batchPromises);
+        createdSchedules.push(...batchResults.filter(result => result !== null));
+
+        // Minimal progress logging
+        if ((i + batchSize) % 2000 === 0 || i + batchSize >= validatedRosters.length) {
+          console.log(`Created ${createdSchedules.length} schedules so far`);
         }
       }
 
-      // Trigger report cache invalidation after bulk update
+      // Trigger cache invalidation
       await triggerReportUpdate();
       
-      console.log(`Bulk upload completed: ${createdSchedules.length} roster created out of ${rosters.length} total`);
+      console.log(`Completed: ${createdSchedules.length} created`);
       
       res.status(201).json({
         message: `${createdSchedules.length} roster berhasil ditambahkan`,
         created: createdSchedules.length,
         total: rosters.length,
-        errors: errors.length > 0 ? errors.slice(0, 5) : undefined // Include first 5 errors if any
+        errors: errors.length > 0 ? errors.slice(0, 3) : undefined
       });
     } catch (error) {
       console.error('Bulk upload error:', error);
