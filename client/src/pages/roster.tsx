@@ -497,8 +497,10 @@ export default function Roster() {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">Semua Shift</SelectItem>
-                <SelectItem value="Shift 1">Shift 1 saja</SelectItem>
-                <SelectItem value="Shift 2">Shift 2 saja</SelectItem>
+                <SelectItem value="SHIFT 1">SHIFT 1</SelectItem>
+                <SelectItem value="SHIFT 2">SHIFT 2</SelectItem>
+                <SelectItem value="OVER SHIFT">OVER SHIFT</SelectItem>
+                <SelectItem value="CUTI">CUTI</SelectItem>
               </SelectContent>
             </Select>
 
