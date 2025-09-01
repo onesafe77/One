@@ -535,7 +535,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Debug: Log 5 data pertama yang diterima server
       console.log('=== SERVER RECEIVED DATA ===');
       rosters.slice(0, 5).forEach((roster, index) => {
-        console.log(`${index + 1}. NIK: ${roster.employeeId}, Date: ${roster.date}, Shift: ${roster.shift}, Hari Kerja: ${roster.hariKerja}`);
+        console.log(`${index + 1}. NIK: ${roster.employeeId}, Date: ${roster.date}, Shift: ${roster.shift}`);
+        console.log(`    Jam Tidur: "${roster.jamTidur}", Hari Kerja: "${roster.hariKerja}", Fit To Work: "${roster.fitToWork}"`);
       });
 
       const validatedRosters = [];

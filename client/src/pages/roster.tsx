@@ -295,6 +295,8 @@ export default function Roster() {
       const jsonData = XLSX.utils.sheet_to_json(worksheet);
 
       console.log(`Excel file loaded with ${jsonData.length} rows`);
+      console.log('=== RAW EXCEL DATA (first 3 rows) ===');
+      console.log(JSON.stringify(jsonData.slice(0, 3), null, 2));
       setUploadProgress(20);
       setTotalCount(jsonData.length);
 
@@ -351,6 +353,15 @@ export default function Roster() {
             status: row.Status || row.status || 'scheduled'
           };
           
+          // Debug log untuk melihat mapping data
+          if (i === 0) { // Log first processed row
+            console.log('=== MAPPING DEBUG ===');
+            console.log('Raw row:', row);
+            console.log('Processed row:', processedRow);
+            console.log('Jam Tidur mapping:', `"${row['Jam Tidur']}" -> "${processedRow.jamTidur}"`);
+            console.log('Hari Kerja mapping:', `"${row['Hari Kerja']}" -> "${processedRow.hariKerja}"`);
+            console.log('Fit To Work mapping:', `"${row['Fit To Work']}" -> "${processedRow.fitToWork}"`);
+          }
           
           return processedRow;
         }).filter(row => row.employeeId && row.shift && row.startTime && row.endTime);
