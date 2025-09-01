@@ -1786,38 +1786,72 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 continue;
               }
 
-              // Convert month name to YYYY-MM format
+              // Convert various month formats to YYYY-MM format
               const currentMonth = new Date().toISOString().slice(0, 7); // "YYYY-MM"
               let finalMonth = currentMonth; // Default to current month
               
               if (monthOrOnSite) {
-                const monthStr = monthOrOnSite.toString().toLowerCase();
+                const monthStr = monthOrOnSite.toString().toLowerCase().trim();
                 const currentYear = new Date().getFullYear();
                 
+                // Handle date formats: dd/mm/yyyy, dd-mm-yyyy, mm/yyyy, etc.
+                if (/^\d{1,2}[\/\-]\d{1,2}[\/\-]\d{4}$/.test(monthStr)) {
+                  // Format: dd/mm/yyyy or dd-mm-yyyy
+                  const dateParts = monthStr.split(/[\/\-]/);
+                  const day = parseInt(dateParts[0]);
+                  const month = parseInt(dateParts[1]);
+                  const year = parseInt(dateParts[2]);
+                  
+                  if (month >= 1 && month <= 12 && year >= 2020 && year <= 2030) {
+                    finalMonth = `${year}-${month.toString().padStart(2, '0')}`;
+                    console.log(`Row ${i + 2}: Converted date "${monthStr}" to month "${finalMonth}"`);
+                  } else {
+                    console.log(`Row ${i + 2}: Invalid date "${monthStr}", using current month`);
+                    finalMonth = currentMonth;
+                  }
+                } 
+                // Handle mm/yyyy or mm-yyyy format
+                else if (/^\d{1,2}[\/\-]\d{4}$/.test(monthStr)) {
+                  const dateParts = monthStr.split(/[\/\-]/);
+                  const month = parseInt(dateParts[0]);
+                  const year = parseInt(dateParts[1]);
+                  
+                  if (month >= 1 && month <= 12 && year >= 2020 && year <= 2030) {
+                    finalMonth = `${year}-${month.toString().padStart(2, '0')}`;
+                    console.log(`Row ${i + 2}: Converted month/year "${monthStr}" to "${finalMonth}"`);
+                  } else {
+                    console.log(`Row ${i + 2}: Invalid month/year "${monthStr}", using current month`);
+                    finalMonth = currentMonth;
+                  }
+                }
                 // Convert Indonesian month names to YYYY-MM format
-                const monthMap: { [key: string]: string } = {
-                  'januari': `${currentYear}-01`,
-                  'februari': `${currentYear}-02`, 
-                  'maret': `${currentYear}-03`,
-                  'april': `${currentYear}-04`,
-                  'mei': `${currentYear}-05`,
-                  'juni': `${currentYear}-06`,
-                  'juli': `${currentYear}-07`,
-                  'agustus': `${currentYear}-08`,
-                  'september': `${currentYear}-09`,
-                  'oktober': `${currentYear}-10`,
-                  'november': `${currentYear}-11`,
-                  'desember': `${currentYear}-12`
-                };
-                
-                if (monthMap[monthStr]) {
-                  finalMonth = monthMap[monthStr];
-                } else if (/^\d{4}-\d{2}$/.test(monthStr)) {
-                  // Already in YYYY-MM format
-                  finalMonth = monthStr;
-                } else {
-                  console.log(`Row ${i + 2}: Format bulan tidak dikenali "${monthStr}", menggunakan bulan sekarang`);
-                  finalMonth = currentMonth;
+                else {
+                  const monthMap: { [key: string]: string } = {
+                    'januari': `${currentYear}-01`,
+                    'februari': `${currentYear}-02`, 
+                    'maret': `${currentYear}-03`,
+                    'april': `${currentYear}-04`,
+                    'mei': `${currentYear}-05`,
+                    'juni': `${currentYear}-06`,
+                    'juli': `${currentYear}-07`,
+                    'agustus': `${currentYear}-08`,
+                    'september': `${currentYear}-09`,
+                    'oktober': `${currentYear}-10`,
+                    'november': `${currentYear}-11`,
+                    'desember': `${currentYear}-12`
+                  };
+                  
+                  if (monthMap[monthStr]) {
+                    finalMonth = monthMap[monthStr];
+                    console.log(`Row ${i + 2}: Converted month name "${monthStr}" to "${finalMonth}"`);
+                  } else if (/^\d{4}-\d{2}$/.test(monthStr)) {
+                    // Already in YYYY-MM format
+                    finalMonth = monthStr;
+                    console.log(`Row ${i + 2}: Month already in correct format "${finalMonth}"`);
+                  } else {
+                    console.log(`Row ${i + 2}: Format bulan tidak dikenali "${monthStr}", menggunakan bulan sekarang`);
+                    finalMonth = currentMonth;
+                  }
                 }
               }
 
