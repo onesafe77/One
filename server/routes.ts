@@ -1776,8 +1776,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
               continue;
             }
 
-            // Format data sesuai template UI: NIK, Nama, Tanggal Terakhir Cuti, Pilihan Cuti, Bulan
-            const [nik, name, lastLeaveDateSerial, leaveOption, monthOrBulan] = row;
+            // Format data sesuai Excel file: NIK, Nama, Nomor Lambung, Tanggal Terakhir Cuti, Pilihan Cuti, Bulan, OnSite
+            const [nik, name, nomorLambung, lastLeaveDateSerial, leaveOption, monthOrBulan, onSiteData] = row;
             
             try {
               
@@ -1958,8 +1958,40 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
               console.log("Creating monitoring entry for:", nik, name);
               
-              // Default Nomor Lambung is SPARE for all employees
-              const finalNomorLambung = "SPARE";
+              // Validasi format Nomor Lambung
+              let finalNomorLambung = "SPARE"; // Default value
+              if (nomorLambung) {
+                const nomorLambungStr = nomorLambung.toString().trim();
+                // Format yang diizinkan: GECL + spasi + angka, atau SPARE, atau kosong
+                const validFormat = /^(GECL\s+\d+|SPARE)$/i;
+                if (validFormat.test(nomorLambungStr)) {
+                  finalNomorLambung = nomorLambungStr;
+                } else {
+                  console.log(`Row ${i + 2}: Nomor Lambung "${nomorLambungStr}" tidak sesuai format, menggunakan SPARE`);
+                  finalNomorLambung = "SPARE";
+                }
+              }
+
+              // Create leave roster monitoring entry - convert Excel serial to date format if needed
+              let finalOnSite = "";
+              if (onSiteData) {
+                const onSiteStr = onSiteData.toString().trim();
+                // Check if it's a number (Excel serial date)
+                if (!isNaN(Number(onSiteStr)) && Number(onSiteStr) > 40000) {
+                  // Convert Excel serial to date format
+                  const excelEpoch = new Date(1900, 0, 1);
+                  const daysSinceEpoch = Number(onSiteStr) - 2;
+                  const parsedDate = new Date(excelEpoch.getTime() + (daysSinceEpoch * 24 * 60 * 60 * 1000));
+                  finalOnSite = parsedDate.toLocaleDateString('id-ID', {
+                    day: '2-digit',
+                    month: '2-digit', 
+                    year: 'numeric'
+                  });
+                } else {
+                  // Use as text (Ya/Tidak/etc)
+                  finalOnSite = onSiteStr;
+                }
+              }
               await storage.createLeaveRosterMonitoring({
                 nik: nik.toString(),
                 name: name.toString(),
@@ -1971,7 +2003,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 monitoringDays,
                 nextLeaveDate: nextLeaveDate || null,
                 status: finalStatus,
-                onSite: null
+                onSite: finalOnSite || null
               });
 
               successCount++;
