@@ -207,7 +207,6 @@ export class MemStorage implements IStorage {
       ...insertEmployee,
       id,
       position: insertEmployee.position || null,
-      nomorLambung: insertEmployee.nomorLambung || null,
       department: insertEmployee.department || null,
       investorGroup: insertEmployee.investorGroup || null,
       qrCode: insertEmployee.qrCode || null, // Add QR Code field

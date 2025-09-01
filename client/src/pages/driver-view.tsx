@@ -11,7 +11,6 @@ interface Employee {
   id: string;
   name: string;
   position: string;
-  nomorLambung: string;
   department: string;
   investorGroup: string;
   phone: string;
@@ -83,8 +82,6 @@ export default function DriverView() {
       // Cari berdasarkan nama (partial match)
       if (emp.name.toLowerCase().includes(searchTerm)) return true;
       
-      // Cari berdasarkan nomor lambung jika ada
-      if (emp.nomorLambung && emp.nomorLambung.toLowerCase().includes(searchTerm)) return true;
       
       // Cari berdasarkan posisi jika ada
       if (emp.position && emp.position.toLowerCase().includes(searchTerm)) return true;
@@ -143,7 +140,7 @@ export default function DriverView() {
           <div className="flex gap-2">
             <div className="relative">
               <Input
-                placeholder="Masukkan NIK, nama, nomor lambung, atau posisi karyawan..."
+                placeholder="Masukkan NIK, nama, atau posisi karyawan..."
                 value={nik}
                 onChange={(e) => {
                   const value = e.target.value;
@@ -157,7 +154,6 @@ export default function DriverView() {
                     const matchedEmployees = employeeList.filter((emp: Employee) => {
                       return emp.name.toLowerCase().includes(searchTerm) ||
                              emp.id.toLowerCase().includes(searchTerm) ||
-                             (emp.nomorLambung && emp.nomorLambung.toLowerCase().includes(searchTerm)) ||
                              (emp.position && emp.position.toLowerCase().includes(searchTerm));
                     }).slice(0, 5);
                     
@@ -185,7 +181,7 @@ export default function DriverView() {
                     >
                       <div className="font-medium">{emp.name}</div>
                       <div className="text-sm text-gray-600 dark:text-gray-400">
-                        NIK: {emp.id} | {emp.position} | {emp.nomorLambung}
+                        NIK: {emp.id} | {emp.position} | {emp.department}
                       </div>
                     </div>
                   ))}
@@ -201,7 +197,7 @@ export default function DriverView() {
           {nik && !searchEmployee && (
             <div className="text-red-500 text-sm space-y-1">
               <p>Karyawan dengan kata kunci "{nik}" tidak ditemukan</p>
-              <p className="text-xs text-gray-500">Coba cari dengan NIK, nama, nomor lambung, atau posisi karyawan</p>
+              <p className="text-xs text-gray-500">Coba cari dengan NIK, nama, atau posisi karyawan</p>
             </div>
           )}
         </CardContent>
@@ -229,10 +225,6 @@ export default function DriverView() {
               <div>
                 <p className="text-sm text-gray-600 dark:text-gray-400">Posisi</p>
                 <p className="font-semibold">{searchEmployee.position}</p>
-              </div>
-              <div>
-                <p className="text-sm text-gray-600 dark:text-gray-400">Nomor Lambung</p>
-                <p className="font-semibold">{searchEmployee.nomorLambung}</p>
               </div>
               <div>
                 <p className="text-sm text-gray-600 dark:text-gray-400">Department</p>

@@ -11,7 +11,6 @@ interface Employee {
   id: string;
   name: string;
   position: string;
-  nomorLambung: string;
   department: string;
   investorGroup: string;
   phone: string;
@@ -92,7 +91,6 @@ export default function MobileDriverView() {
     const employee = employeeList.find((emp: Employee) => {
       if (emp.id.toLowerCase() === searchTerm) return true;
       if (emp.name.toLowerCase().includes(searchTerm)) return true;
-      if (emp.nomorLambung && emp.nomorLambung.toLowerCase().includes(searchTerm)) return true;
       if (emp.position && emp.position.toLowerCase().includes(searchTerm)) return true;
       return false;
     });
@@ -164,7 +162,6 @@ export default function MobileDriverView() {
                     const matchedEmployees = employeeList.filter((emp: Employee) => {
                       return emp.name.toLowerCase().includes(searchTerm) ||
                              emp.id.toLowerCase().includes(searchTerm) ||
-                             (emp.nomorLambung && emp.nomorLambung.toLowerCase().includes(searchTerm)) ||
                              (emp.position && emp.position.toLowerCase().includes(searchTerm));
                     }).slice(0, 3); // Limit untuk mobile
                     
@@ -242,10 +239,6 @@ export default function MobileDriverView() {
                   <div>
                     <p className="text-gray-600 dark:text-gray-400">Posisi</p>
                     <p className="font-semibold">{searchEmployee.position}</p>
-                  </div>
-                  <div>
-                    <p className="text-gray-600 dark:text-gray-400">No. Lambung</p>
-                    <p className="font-semibold">{searchEmployee.nomorLambung}</p>
                   </div>
                   <div>
                     <p className="text-gray-600 dark:text-gray-400">Department</p>

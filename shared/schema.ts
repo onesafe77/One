@@ -8,7 +8,6 @@ export const employees = pgTable("employees", {
   id: varchar("id").primaryKey(),
   name: text("name").notNull(),
   position: text("position"),
-  nomorLambung: text("nomor_lambung"),
   department: text("department"),
   investorGroup: text("investor_group"),
   phone: text("phone").notNull(),
@@ -77,7 +76,6 @@ export const leaveRosterMonitoring = pgTable("leave_roster_monitoring", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   nik: varchar("nik").notNull(),
   name: text("name").notNull(),
-  nomorLambung: text("nomor_lambung"), // Nomor lambung karyawan
   month: varchar("month").notNull(), // Format: "YYYY-MM" e.g. "2024-08"
   investorGroup: text("investor_group").notNull(),
   lastLeaveDate: text("last_leave_date"), // Tanggal terakhir cuti

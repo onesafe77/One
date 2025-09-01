@@ -149,9 +149,6 @@ export default function EmployeePersonalData() {
                   <div className="flex flex-wrap gap-1 md:gap-2 mt-2">
                     <Badge variant="outline" className="text-xs">{employee.position}</Badge>
                     <Badge variant="outline" className="text-xs">{employee.department}</Badge>
-                    {employee.nomorLambung && (
-                      <Badge variant="outline" className="text-xs">{employee.nomorLambung}</Badge>
-                    )}
                   </div>
                 </div>
               </div>

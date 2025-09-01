@@ -565,7 +565,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 const newEmployee = await storage.createEmployee({
                   id: validatedData.employeeId,
                   name: `Employee ${validatedData.employeeId}`,
-                  nomorLambung: `GECL ${Math.random().toString().substr(2, 4)}`,
                   phone: '+628123456789',
                   status: 'active'
                 });
@@ -1776,8 +1775,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
               continue;
             }
 
-            // Format data sesuai Excel file: NIK, Nama, Nomor Lambung, Tanggal Terakhir Cuti, Pilihan Cuti, Bulan, OnSite
-            const [nik, name, nomorLambung, lastLeaveDateSerial, leaveOption, monthOrBulan, onSiteData] = row;
+            // Format data sesuai Excel file: NIK, Nama, Tanggal Terakhir Cuti, Pilihan Cuti, Bulan, OnSite
+            const [nik, name, lastLeaveDateSerial, leaveOption, monthOrBulan, onSiteData] = row;
             
             try {
               
@@ -1958,20 +1957,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
               console.log("Creating monitoring entry for:", nik, name);
               
-              // Validasi format Nomor Lambung
-              let finalNomorLambung = "SPARE"; // Default value
-              if (nomorLambung) {
-                const nomorLambungStr = nomorLambung.toString().trim();
-                // Format yang diizinkan: GECL + spasi + angka, atau SPARE, atau kosong
-                const validFormat = /^(GECL\s+\d+|SPARE)$/i;
-                if (validFormat.test(nomorLambungStr)) {
-                  finalNomorLambung = nomorLambungStr;
-                } else {
-                  console.log(`Row ${i + 2}: Nomor Lambung "${nomorLambungStr}" tidak sesuai format, menggunakan SPARE`);
-                  finalNomorLambung = "SPARE";
-                }
-              }
-
               // Create leave roster monitoring entry - convert Excel serial to date format if needed
               let finalOnSite = "";
               if (onSiteData) {
@@ -1995,7 +1980,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
               await storage.createLeaveRosterMonitoring({
                 nik: nik.toString(),
                 name: name.toString(),
-                nomorLambung: finalNomorLambung,
                 month: finalMonth,
                 investorGroup: investorGroup,
                 lastLeaveDate: finalLastLeaveDate || null,

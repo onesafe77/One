@@ -335,7 +335,7 @@ function generateShiftSection(
       shiftName || '-',
       workDaysText, // Hari Kerja
       attendanceRecord.time || '-', // Jam Masuk
-      employee.nomorLambung || '-',
+      employee.position || '-',
       jamTidur,
       fitToWorkStatus,
       attendanceStatus

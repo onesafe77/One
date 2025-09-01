@@ -704,7 +704,6 @@ export default function LeaveRosterMonitoringPage() {
                   <TableRow>
                     <TableHead>NIK</TableHead>
                     <TableHead>Nama</TableHead>
-                    <TableHead>Nomor Lambung</TableHead>
                     <TableHead>Bulan</TableHead>
                     <TableHead>Investor Group</TableHead>
                     <TableHead>Terakhir Cuti</TableHead>
@@ -718,7 +717,7 @@ export default function LeaveRosterMonitoringPage() {
                 <TableBody>
                   {filteredData.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={11} className="text-center py-8 text-gray-500">
+                      <TableCell colSpan={10} className="text-center py-8 text-gray-500">
                         Tidak ada data monitoring roster cuti
                       </TableCell>
                     </TableRow>
@@ -730,7 +729,6 @@ export default function LeaveRosterMonitoringPage() {
                         <TableRow key={item.id} data-testid={`row-monitoring-${item.nik}`}>
                           <TableCell className="font-medium">{item.nik}</TableCell>
                           <TableCell>{item.name}</TableCell>
-                          <TableCell>{item.nomorLambung || "-"}</TableCell>
                           <TableCell>
                             <Badge variant="secondary">
                               {item.month || "2024-08"}
