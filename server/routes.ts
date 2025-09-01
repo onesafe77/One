@@ -1776,9 +1776,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
               continue;
             }
 
+            // Format data sesuai template: NIK, Nama, Nomor Lambung, Bulan, Tanggal Serial, Pilihan Cuti, OnSite
+            const [nik, name, nomorLambung, monthOrOnSite, lastLeaveDateSerial, leaveOption, onSiteData] = row;
+            
             try {
-              // Format data sesuai template: NIK, Nama, Nomor Lambung, Bulan, Tanggal Serial, Pilihan Cuti, OnSite
-              const [nik, name, nomorLambung, monthOrOnSite, lastLeaveDateSerial, leaveOption, onSiteData] = row;
               
               // Validate required fields
               if (!nik || !name) {
@@ -1794,8 +1795,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 const monthStr = monthOrOnSite.toString().toLowerCase().trim();
                 const currentYear = new Date().getFullYear();
                 
+                // Handle Excel serial date numbers (40000+)
+                if (!isNaN(Number(monthStr)) && Number(monthStr) > 40000 && Number(monthStr) < 50000) {
+                  // Convert Excel serial to date, then extract month
+                  const excelDate = Number(monthStr);
+                  const jsDate = new Date((excelDate - 25569) * 86400 * 1000);
+                  if (!isNaN(jsDate.getTime())) {
+                    const year = jsDate.getFullYear();
+                    const month = (jsDate.getMonth() + 1).toString().padStart(2, '0');
+                    finalMonth = `${year}-${month}`;
+                    console.log(`Row ${i + 2}: Converted Excel serial "${monthStr}" to month "${finalMonth}"`);
+                  } else {
+                    console.log(`Row ${i + 2}: Invalid Excel serial "${monthStr}", using current month`);
+                    finalMonth = currentMonth;
+                  }
+                }
                 // Handle date formats: dd/mm/yyyy, dd-mm-yyyy, mm/yyyy, etc.
-                if (/^\d{1,2}[\/\-]\d{1,2}[\/\-]\d{4}$/.test(monthStr)) {
+                else if (/^\d{1,2}[\/\-]\d{1,2}[\/\-]\d{4}$/.test(monthStr)) {
                   // Format: dd/mm/yyyy or dd-mm-yyyy
                   const dateParts = monthStr.split(/[\/\-]/);
                   const day = parseInt(dateParts[0]);
@@ -1996,7 +2012,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
             } catch (error) {
               console.error(`Error processing row ${i + 2}:`, error);
               console.error("Error details:", error);
-              errors.push(`Row ${i + 2}: ${error instanceof Error ? error.message : 'Unknown error'}`);
+              console.error("Row data:", row);
+              const errorMsg = error instanceof Error ? error.message : 'Unknown error';
+              errors.push(`Row ${i + 2}: ${errorMsg}`);
+              console.log(`Failed to create entry for ${nik || 'unknown'} - ${name || 'unknown'}: ${errorMsg}`);
             }
           }
 
