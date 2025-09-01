@@ -1776,8 +1776,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
               continue;
             }
 
-            // Format data sesuai template: NIK, Nama, Nomor Lambung, Bulan, Tanggal Serial, Pilihan Cuti, OnSite
-            const [nik, name, nomorLambung, monthOrOnSite, lastLeaveDateSerial, leaveOption, onSiteData] = row;
+            // Format data sesuai template UI: NIK, Nama, Tanggal Terakhir Cuti, Pilihan Cuti, Bulan
+            const [nik, name, lastLeaveDateSerial, leaveOption, monthOrBulan] = row;
             
             try {
               
@@ -1791,8 +1791,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
               const currentMonth = new Date().toISOString().slice(0, 7); // "YYYY-MM"
               let finalMonth = currentMonth; // Default to current month
               
-              if (monthOrOnSite) {
-                const monthStr = monthOrOnSite.toString().toLowerCase().trim();
+              if (monthOrBulan) {
+                const monthStr = monthOrBulan.toString().toLowerCase().trim();
                 const currentYear = new Date().getFullYear();
                 
                 // Handle Excel serial date numbers (40000+)
@@ -1958,40 +1958,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
               console.log("Creating monitoring entry for:", nik, name);
               
-              // Validasi format Nomor Lambung
-              let finalNomorLambung = "SPARE"; // Default value
-              if (nomorLambung) {
-                const nomorLambungStr = nomorLambung.toString().trim();
-                // Format yang diizinkan: GECL + spasi + angka, atau SPARE, atau kosong
-                const validFormat = /^(GECL\s+\d+|SPARE)$/i;
-                if (validFormat.test(nomorLambungStr)) {
-                  finalNomorLambung = nomorLambungStr;
-                } else {
-                  console.log(`Row ${i + 2}: Nomor Lambung "${nomorLambungStr}" tidak sesuai format, menggunakan SPARE`);
-                  finalNomorLambung = "SPARE";
-                }
-              }
-
-              // Create leave roster monitoring entry - convert Excel serial to date format if needed
-              let finalOnSite = "";
-              if (onSiteData) {
-                const onSiteStr = onSiteData.toString().trim();
-                // Check if it's a number (Excel serial date)
-                if (!isNaN(Number(onSiteStr)) && Number(onSiteStr) > 40000) {
-                  // Convert Excel serial to date format
-                  const excelEpoch = new Date(1900, 0, 1);
-                  const daysSinceEpoch = Number(onSiteStr) - 2;
-                  const parsedDate = new Date(excelEpoch.getTime() + (daysSinceEpoch * 24 * 60 * 60 * 1000));
-                  finalOnSite = parsedDate.toLocaleDateString('id-ID', {
-                    day: '2-digit',
-                    month: '2-digit', 
-                    year: 'numeric'
-                  });
-                } else {
-                  // Use as text (Ya/Tidak/etc)
-                  finalOnSite = onSiteStr;
-                }
-              }
+              // Default Nomor Lambung is SPARE for all employees
+              const finalNomorLambung = "SPARE";
               await storage.createLeaveRosterMonitoring({
                 nik: nik.toString(),
                 name: name.toString(),
@@ -2003,19 +1971,37 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 monitoringDays,
                 nextLeaveDate: nextLeaveDate || null,
                 status: finalStatus,
-                onSite: finalOnSite || null
+                onSite: null
               });
 
               successCount++;
               console.log(`Successfully created entry for ${nik} - ${name}`);
               
             } catch (error) {
-              console.error(`Error processing row ${i + 2}:`, error);
-              console.error("Error details:", error);
-              console.error("Row data:", row);
-              const errorMsg = error instanceof Error ? error.message : 'Unknown error';
-              errors.push(`Row ${i + 2}: ${errorMsg}`);
-              console.log(`Failed to create entry for ${nik || 'unknown'} - ${name || 'unknown'}: ${errorMsg}`);
+              console.error(`❌ Error processing row ${i + 2}:`, error);
+              console.error("📋 Row data:", row);
+              console.error("🔍 Parsed data:", { nik, name });
+              
+              // Specific error handling
+              if (error instanceof Error) {
+                console.error("💥 Error message:", error.message);
+                console.error("📚 Error stack:", error.stack);
+                
+                // Check if it's a database constraint error
+                if (error.message.includes('unique') || error.message.includes('constraint')) {
+                  console.error("🚨 Database constraint violation detected");
+                  errors.push(`Row ${i + 2}: Data duplikat - ${nik} untuk bulan sudah ada`);
+                } else if (error.message.includes('validation') || error.message.includes('required')) {
+                  console.error("⚠️ Validation error detected");
+                  errors.push(`Row ${i + 2}: Validation error - ${error.message}`);
+                } else {
+                  errors.push(`Row ${i + 2}: ${error.message}`);
+                }
+              } else {
+                errors.push(`Row ${i + 2}: Unknown error`);
+              }
+              
+              console.log(`❌ Failed to create entry for ${nik || 'unknown'} - ${name || 'unknown'}`);
             }
           }
 
