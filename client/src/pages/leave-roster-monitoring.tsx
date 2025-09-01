@@ -1016,7 +1016,7 @@ export default function LeaveRosterMonitoringPage() {
                 <strong>Format Excel dengan Bulan:</strong><br/>
                 • Kolom 1: <strong>NIK</strong> (wajib)<br/>
                 • Kolom 2: <strong>Nama</strong> (wajib)<br/>
-                • Kolom 3: <strong>Tanggal Terakhir Cuti</strong> (opsional, format: YYYY-MM-DD)<br/>
+                • Kolom 3: <strong>Tanggal Terakhir Cuti</strong> (opsional, format: dd-mm-yyyy)<br/>
                 • Kolom 4: <strong>Pilihan Cuti</strong> (opsional, 70 atau 35, default: 70)<br/>
                 • Kolom 5: <strong>Bulan</strong> (opsional, format: YYYY-MM, default: bulan ini)<br/><br/>
                 

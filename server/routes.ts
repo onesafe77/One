@@ -1905,13 +1905,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
               if (lastLeaveDateSerial) {
                 try {
-                  // Handle Excel date format (number of days since 1900)
+                  // Handle Excel date format (number of days since 1900) or dd-mm-yyyy format
                   let lastDate;
                   if (typeof lastLeaveDateSerial === 'number') {
                     // Excel date serial number to JavaScript Date
                     lastDate = new Date((lastLeaveDateSerial - 25569) * 86400 * 1000);
                   } else {
-                    lastDate = new Date(lastLeaveDateSerial);
+                    const dateStr = lastLeaveDateSerial.toString().trim();
+                    // Check if format is dd-mm-yyyy
+                    if (dateStr.includes('-') && dateStr.split('-').length === 3) {
+                      const [day, month, year] = dateStr.split('-');
+                      // Create date in YYYY-MM-DD format for parsing
+                      lastDate = new Date(`${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`);
+                    } else {
+                      // Try parsing as is (fallback for other formats)
+                      lastDate = new Date(lastLeaveDateSerial);
+                    }
                   }
                   
                   if (!isNaN(lastDate.getTime())) {
