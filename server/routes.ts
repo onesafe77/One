@@ -1786,9 +1786,40 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 continue;
               }
 
-              // Use monthOrOnSite as month, default to current month
+              // Convert month name to YYYY-MM format
               const currentMonth = new Date().toISOString().slice(0, 7); // "YYYY-MM"
-              const finalMonth = monthOrOnSite || currentMonth;
+              let finalMonth = currentMonth; // Default to current month
+              
+              if (monthOrOnSite) {
+                const monthStr = monthOrOnSite.toString().toLowerCase();
+                const currentYear = new Date().getFullYear();
+                
+                // Convert Indonesian month names to YYYY-MM format
+                const monthMap: { [key: string]: string } = {
+                  'januari': `${currentYear}-01`,
+                  'februari': `${currentYear}-02`, 
+                  'maret': `${currentYear}-03`,
+                  'april': `${currentYear}-04`,
+                  'mei': `${currentYear}-05`,
+                  'juni': `${currentYear}-06`,
+                  'juli': `${currentYear}-07`,
+                  'agustus': `${currentYear}-08`,
+                  'september': `${currentYear}-09`,
+                  'oktober': `${currentYear}-10`,
+                  'november': `${currentYear}-11`,
+                  'desember': `${currentYear}-12`
+                };
+                
+                if (monthMap[monthStr]) {
+                  finalMonth = monthMap[monthStr];
+                } else if (/^\d{4}-\d{2}$/.test(monthStr)) {
+                  // Already in YYYY-MM format
+                  finalMonth = monthStr;
+                } else {
+                  console.log(`Row ${i + 2}: Format bulan tidak dikenali "${monthStr}", menggunakan bulan sekarang`);
+                  finalMonth = currentMonth;
+                }
+              }
 
               // Auto-generate investor group dari NIK pattern
               let investorGroup = "Default Group";
