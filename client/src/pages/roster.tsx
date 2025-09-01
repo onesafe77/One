@@ -306,12 +306,6 @@ export default function Roster() {
         const chunk = jsonData.slice(i, i + chunkSize);
         
         const processedChunk = chunk.map((row: any) => {
-          // Debug log untuk baris pertama
-          if (rosterData.length < 3) {
-            console.log('Raw Excel row:', row);
-            console.log('Available columns:', Object.keys(row));
-          }
-          
           // Parse jam kerja format "08:00 - 16:00"
           const jamKerja = row['Jam Kerja'] || row.jamKerja || '';
           const jamKerjaParts = jamKerja.split(' - ');
@@ -357,11 +351,6 @@ export default function Roster() {
             status: row.Status || row.status || 'scheduled'
           };
           
-          // Debug log untuk baris pertama setelah diproses
-          if (rosterData.length < 3) {
-            console.log('Processed row:', processedRow);
-            console.log('Hari Kerja value:', processedRow.hariKerja);
-          }
           
           return processedRow;
         }).filter(row => row.employeeId && row.shift && row.startTime && row.endTime);

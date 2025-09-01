@@ -532,14 +532,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       console.log(`Starting bulk upload of ${rosters.length} entries`);
       
-      // Debug: Log beberapa data pertama yang diterima server
-      console.log('First 3 rosters received by server:');
-      rosters.slice(0, 3).forEach((roster, index) => {
-        console.log(`Roster ${index + 1}:`, {
-          employeeId: roster.employeeId,
-          shift: roster.shift,
-          hariKerja: roster.hariKerja
-        });
+      // Debug: Log 5 data pertama yang diterima server
+      console.log('=== SERVER RECEIVED DATA ===');
+      rosters.slice(0, 5).forEach((roster, index) => {
+        console.log(`${index + 1}. NIK: ${roster.employeeId}, Date: ${roster.date}, Shift: ${roster.shift}, Hari Kerja: ${roster.hariKerja}`);
       });
 
       const validatedRosters = [];
@@ -560,14 +556,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
           try {
             const validatedData = insertRosterSchema.parse(batch[i]);
             
-            // Debug log for first few entries to check hariKerja data
-            if (globalIndex < 3) {
-              console.log(`Sample data ${globalIndex + 1}:`, {
-                employeeId: validatedData.employeeId,
-                shift: validatedData.shift,
-                hariKerja: validatedData.hariKerja
-              });
-            }
             
             // Check if employee exists in pre-loaded map
             if (!employeeMap.has(validatedData.employeeId)) {
@@ -638,14 +626,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Debug: Verifikasi beberapa data yang tersimpan di database
       if (createdSchedules.length > 0) {
-        console.log('Verifying first 3 saved records:');
-        const sampleSaved = createdSchedules.slice(0, 3);
+        console.log('=== DATABASE SAVED DATA ===');
+        const sampleSaved = createdSchedules.slice(0, 5);
         sampleSaved.forEach((saved, index) => {
-          console.log(`Saved ${index + 1}:`, {
-            employeeId: saved.employeeId,
-            shift: saved.shift,
-            hariKerja: saved.hariKerja
-          });
+          console.log(`${index + 1}. NIK: ${saved.employeeId}, Date: ${saved.date}, Shift: ${saved.shift}, Hari Kerja: ${saved.hariKerja}`);
         });
       }
       
