@@ -1946,30 +1946,42 @@ export async function registerRoutes(app: Express): Promise<Server> {
                   // Handle berbagai format tanggal
                   let lastDate = null;
                   
-                  // Cek apakah Excel serial number
-                  if (typeof lastLeaveDateSerial === 'number' && lastLeaveDateSerial > 1000) {
-                    // Excel date serial number conversion
-                    // Excel epoch: January 1, 1900 (but Excel incorrectly treats 1900 as leap year)
-                    // More accurate conversion for Excel dates:
-                    const excelEpoch = new Date(1899, 11, 30); // December 30, 1899 (Excel day 0)
+                  // Cek apakah Excel serial number (harus > 40000 untuk tahun 2000+)
+                  if (typeof lastLeaveDateSerial === 'number' && lastLeaveDateSerial > 40000) {
+                    // Excel date serial number conversion yang lebih akurat
+                    // Excel menghitung dari 1 Januari 1900, tapi ada bug leap year di 1900
+                    // Formula yang benar: (serial - 25569) * 86400 * 1000 + Date(1970,0,1)
+                    // Atau menggunakan epoch Excel yang tepat
+                    const excelEpoch = new Date(1899, 11, 30); // 30 Desember 1899
                     const daysSinceEpoch = Math.floor(lastLeaveDateSerial);
                     lastDate = new Date(excelEpoch.getTime() + (daysSinceEpoch * 24 * 60 * 60 * 1000));
                     console.log(`[${nik}] Excel serial ${lastLeaveDateSerial} converted to ${lastDate.toISOString().split('T')[0]}`);
+                  } else if (typeof lastLeaveDateSerial === 'number' && lastLeaveDateSerial > 1000) {
+                    // Kemungkinan format lain atau tanggal yang lebih lama
+                    console.log(`[${nik}] Warning: Excel serial ${lastLeaveDateSerial} seems old, trying conversion`);
+                    const excelEpoch = new Date(1899, 11, 30);
+                    const daysSinceEpoch = Math.floor(lastLeaveDateSerial);
+                    lastDate = new Date(excelEpoch.getTime() + (daysSinceEpoch * 24 * 60 * 60 * 1000));
+                    console.log(`[${nik}] Old Excel serial ${lastLeaveDateSerial} converted to ${lastDate.toISOString().split('T')[0]}`);
                   } else {
                     const dateStr = lastLeaveDateSerial.toString().trim();
                     console.log(`[${nik}] Parsing date string: "${dateStr}"`);
                     
-                    // Format 1: dd/mm/yyyy atau dd-mm-yyyy
+                    // Format 1: dd/mm/yyyy atau dd-mm-yyyy (prioritas utama untuk format Indonesia)
                     if (/^\d{1,2}[\/\-]\d{1,2}[\/\-]\d{4}$/.test(dateStr)) {
-                      const [day, month, year] = dateStr.split(/[\/\-]/);
-                      const dayNum = parseInt(day);
-                      const monthNum = parseInt(month);
-                      const yearNum = parseInt(year);
+                      const parts = dateStr.split(/[\/\-]/);
+                      const dayNum = parseInt(parts[0]);
+                      const monthNum = parseInt(parts[1]);
+                      const yearNum = parseInt(parts[2]);
                       
-                      // Validate date values
+                      console.log(`[${nik}] Parsing DD/MM/YYYY: day=${dayNum}, month=${monthNum}, year=${yearNum}`);
+                      
+                      // Validate date values - expanded year range for 2025
                       if (dayNum >= 1 && dayNum <= 31 && monthNum >= 1 && monthNum <= 12 && yearNum >= 2020 && yearNum <= 2030) {
                         lastDate = new Date(yearNum, monthNum - 1, dayNum);
                         console.log(`[${nik}] DD/MM/YYYY format "${dateStr}" converted to ${lastDate.toISOString().split('T')[0]}`);
+                      } else {
+                        console.log(`[${nik}] Invalid DD/MM/YYYY values: day=${dayNum}, month=${monthNum}, year=${yearNum}`);
                       }
                     }
                     // Format 2: yyyy/mm/dd atau yyyy-mm-dd
@@ -1984,21 +1996,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
                         console.log(`[${nik}] YYYY/MM/DD format "${dateStr}" converted to ${lastDate.toISOString().split('T')[0]}`);
                       }
                     }
-                    // Format 3: mm/dd/yyyy (American format)
-                    else if (/^\d{1,2}[\/\-]\d{1,2}[\/\-]\d{4}$/.test(dateStr)) {
+                    // Format 3: Jika parsing DD/MM/YYYY gagal, coba MM/DD/YYYY (American format)
+                    else if (/^\d{1,2}[\/\-]\d{1,2}[\/\-]\d{4}$/.test(dateStr) && !lastDate) {
                       const parts = dateStr.split(/[\/\-]/);
-                      // Try to detect if it's American format (mm/dd/yyyy) by checking if first part > 12
-                      if (parseInt(parts[0]) > 12 || parseInt(parts[1]) <= 12) {
-                        // Assume dd/mm/yyyy (already handled above)
-                      } else {
-                        // Try mm/dd/yyyy
+                      // Deteksi American format jika part pertama > 12 (pasti month)
+                      if (parseInt(parts[0]) > 12) {
+                        console.log(`[${nik}] Detected American format (first part > 12)`);
+                        // Ini pasti MM/DD/YYYY
                         const monthNum = parseInt(parts[0]);
-                        const dayNum = parseInt(parts[1]);
+                        const dayNum = parseInt(parts[1]); 
                         const yearNum = parseInt(parts[2]);
                         
                         if (dayNum >= 1 && dayNum <= 31 && monthNum >= 1 && monthNum <= 12 && yearNum >= 2020 && yearNum <= 2030) {
                           lastDate = new Date(yearNum, monthNum - 1, dayNum);
                           console.log(`[${nik}] MM/DD/YYYY format "${dateStr}" converted to ${lastDate.toISOString().split('T')[0]}`);
+                        }
+                      } else if (parseInt(parts[1]) > 12) {
+                        console.log(`[${nik}] Detected DD/MM/YYYY format (second part > 12)`);
+                        // Ini pasti DD/MM/YYYY, tapi belum berhasil di atas, coba lagi
+                        const dayNum = parseInt(parts[0]);
+                        const monthNum = parseInt(parts[1]);
+                        const yearNum = parseInt(parts[2]);
+                        
+                        if (dayNum >= 1 && dayNum <= 31 && monthNum >= 1 && monthNum <= 12 && yearNum >= 2020 && yearNum <= 2030) {
+                          lastDate = new Date(yearNum, monthNum - 1, dayNum);
+                          console.log(`[${nik}] DD/MM/YYYY format (retry) "${dateStr}" converted to ${lastDate.toISOString().split('T')[0]}`);
                         }
                       }
                     }
