@@ -1776,7 +1776,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
             }
 
             // Format data sesuai Excel file: NIK, Nama, Tanggal Terakhir Cuti, Pilihan Cuti, Bulan, OnSite
-            const [nik, name, lastLeaveDateSerial, leaveOption, monthOrBulan, onSiteData] = row;
+            // Handle various Excel column formats by checking length
+            let nik, name, lastLeaveDateSerial, leaveOption, monthOrBulan, onSiteData;
+            
+            if (row.length >= 6) {
+              [nik, name, lastLeaveDateSerial, leaveOption, monthOrBulan, onSiteData] = row;
+            } else if (row.length >= 5) {
+              [nik, name, lastLeaveDateSerial, leaveOption, monthOrBulan] = row;
+            } else if (row.length >= 4) {
+              [nik, name, lastLeaveDateSerial, leaveOption] = row;
+            } else if (row.length >= 3) {
+              [nik, name, lastLeaveDateSerial] = row;
+            } else {
+              [nik, name] = row;
+            }
             
             try {
               
@@ -1892,9 +1905,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
               let finalLeaveOption = "70";
               if (leaveOption && (leaveOption.toString() === "70" || leaveOption.toString() === "35")) {
                 finalLeaveOption = leaveOption.toString();
-              } else if (leaveOption) {
-                errors.push(`Row ${i + 2}: Pilihan cuti harus 70 atau 35, got: ${leaveOption}`);
-                continue;
+              } else if (leaveOption && leaveOption.toString().trim() !== "") {
+                console.log(`Row ${i + 2}: Invalid leave option "${leaveOption}", using default 70`);
+                // Don't add error, just use default
               }
 
               // Calculate monitoring days and next leave date
@@ -1965,6 +1978,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
               }
 
               console.log("Creating monitoring entry for:", nik, name);
+              console.log("Data to insert:", {
+                nik: nik?.toString(),
+                name: name?.toString(),
+                month: finalMonth,
+                investorGroup,
+                lastLeaveDate: finalLastLeaveDate || null,
+                leaveOption: finalLeaveOption,
+                monitoringDays,
+                nextLeaveDate: nextLeaveDate || null,
+                status: finalStatus,
+                onSite: finalOnSite || null
+              });
               
               // Create leave roster monitoring entry - convert Excel serial to date format if needed
               let finalOnSite = "";
@@ -2005,7 +2030,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
             } catch (error) {
               console.error(`❌ Error processing row ${i + 2}:`, error);
               console.error("📋 Row data:", row);
-              console.error("🔍 Parsed data:", { nik, name });
+              console.error("🔍 Parsed data:", { 
+                nik, 
+                name, 
+                lastLeaveDateSerial, 
+                leaveOption, 
+                monthOrBulan, 
+                onSiteData,
+                finalMonth: finalMonth || 'undefined',
+                finalLastLeaveDate: finalLastLeaveDate || 'undefined',
+                finalLeaveOption: finalLeaveOption || 'undefined',
+                finalStatus: finalStatus || 'undefined'
+              });
               
               // Specific error handling
               if (error instanceof Error) {
@@ -2015,10 +2051,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 // Check if it's a database constraint error
                 if (error.message.includes('unique') || error.message.includes('constraint')) {
                   console.error("🚨 Database constraint violation detected");
-                  errors.push(`Row ${i + 2}: Data duplikat - ${nik} untuk bulan sudah ada`);
+                  errors.push(`Row ${i + 2}: Data duplikat - ${nik} untuk bulan ${finalMonth} sudah ada`);
                 } else if (error.message.includes('validation') || error.message.includes('required')) {
                   console.error("⚠️ Validation error detected");
                   errors.push(`Row ${i + 2}: Validation error - ${error.message}`);
+                } else if (error.message.includes('null') || error.message.includes('NOT NULL')) {
+                  console.error("🔍 NULL constraint violation detected");
+                  errors.push(`Row ${i + 2}: Field yang wajib kosong - periksa NIK, Nama, atau data lainnya`);
                 } else {
                   errors.push(`Row ${i + 2}: ${error.message}`);
                 }
