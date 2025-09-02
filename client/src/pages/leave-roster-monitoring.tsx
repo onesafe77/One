@@ -37,6 +37,7 @@ import {
   Tooltip,
   Legend,
 } from "chart.js";
+import * as XLSX from 'xlsx';
 
 ChartJS.register(
   CategoryScale,
@@ -417,14 +418,27 @@ export default function LeaveRosterMonitoringPage() {
       ["C-045004", "CONTOH NAMA 4", "GECL 004", currentMonth, "10/03/2024", "35", "Ya", "Group C"],
     ];
 
-    const csvContent = templateData.map(row => row.join(",")).join("\n");
-    const blob = new Blob([csvContent], { type: "text/csv" });
-    const url = window.URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = "template_monitoring_roster_cuti_dengan_nomor_lambung.csv";
-    a.click();
-    window.URL.revokeObjectURL(url);
+    // Create Excel workbook
+    const workbook = XLSX.utils.book_new();
+    const worksheet = XLSX.utils.aoa_to_sheet(templateData);
+    
+    // Set column widths
+    const colWidths = [
+      { wch: 12 }, // NIK
+      { wch: 20 }, // Nama
+      { wch: 15 }, // Nomor Lambung
+      { wch: 12 }, // Bulan
+      { wch: 18 }, // Tanggal Terakhir Cuti
+      { wch: 12 }, // Pilihan Cuti
+      { wch: 8 },  // OnSite
+      { wch: 15 }  // Investor Group
+    ];
+    worksheet['!cols'] = colWidths;
+    
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Template Monitoring");
+    
+    // Download Excel file
+    XLSX.writeFile(workbook, "template_monitoring_roster_cuti.xlsx");
   };
 
   // Filter data
