@@ -757,12 +757,16 @@ export default function LeaveRosterMonitoringPage() {
                             </Badge>
                           </TableCell>
                           <TableCell>
-                            <span className="font-semibold">{item.monitoringDays}</span> hari
-                            <div className="text-xs text-gray-500 mt-1">
-                              {item.monitoringDays < 0 ? 
-                                `${Math.abs(item.monitoringDays)} hari sejak cuti terakhir` : 
-                                `${item.monitoringDays} hari ke depan`
+                            <span className="font-semibold">
+                              {item.monitoringDays > 0 
+                                ? `${item.monitoringDays} hari lagi menuju cuti`
+                                : item.monitoringDays === 0 
+                                ? "Hari ini adalah cuti"
+                                : `${Math.abs(item.monitoringDays)} hari (sudah lewat ${Math.abs(item.monitoringDays)} hari dari cuti)`
                               }
+                            </span>
+                            <div className="text-xs text-gray-500 mt-1">
+                              Rumus: Terakhir Cuti - Today = {item.monitoringDays}
                             </div>
                           </TableCell>
                           <TableCell>

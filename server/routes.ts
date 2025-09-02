@@ -1992,37 +1992,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
                   if (lastDate && !isNaN(lastDate.getTime())) {
                     finalLastLeaveDate = lastDate.toISOString().split('T')[0];
                     const today = new Date();
-                    // Rumus original: today - last leave date (hari sejak cuti terakhir)
-                    monitoringDays = Math.floor((today.getTime() - lastDate.getTime()) / (1000 * 60 * 60 * 24));
+                    // Rumus baru: Terakhir Cuti - Today 
+                    monitoringDays = Math.floor((lastDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
                     
                     const workDaysThreshold = finalLeaveOption === "70" ? 70 : 35;
                     const nextDate = new Date(lastDate);
                     nextDate.setDate(lastDate.getDate() + workDaysThreshold);
                     nextLeaveDate = nextDate.toISOString().split('T')[0];
 
-                    // Auto-calculate status berdasarkan monitoring days (dengan rumus baru: last leave date - today)
-                    // Nilai negatif = hari yang sudah lewat sejak cuti terakhir
-                    // Nilai positif = hari ke depan (tanggal cuti di masa depan)
-                    const daysSinceLastLeave = Math.abs(monitoringDays); // Convert to positive for comparison
-                    console.log(`[${nik}] monitoringDays: ${monitoringDays}, workDaysThreshold: ${workDaysThreshold}`);
+                    // Status berdasarkan rumus baru: Terakhir Cuti - Today
+                    // Nilai positif = hari ke depan menuju cuti (belum waktunya cuti)
+                    // Nilai negatif = sudah lewat dari tanggal cuti terakhir
+                    console.log(`[${nik}] monitoringDays: ${monitoringDays} (${monitoringDays > 0 ? 'hari lagi' : monitoringDays < 0 ? 'sudah lewat' : 'hari ini'})`);
                     
-                    // KRITERIA BARU: Kurang dari 10 hari sejak cuti terakhir = status "Menunggu Cuti"
-                    if (monitoringDays > 0 && monitoringDays < 10) {
+                    // Aturan status baru:
+                    if (monitoringDays <= 10 && monitoringDays >= 0) {
                       finalStatus = "Menunggu Cuti";
-                      console.log(`[${nik}] Set to Menunggu Cuti - kurang dari 10 hari (${monitoringDays})`);
-                    }
-                    // H-5 sebelum eligible untuk cuti (kriteria lama)
-                    else if (monitoringDays >= workDaysThreshold - 5 && monitoringDays < workDaysThreshold) {
-                      finalStatus = "Menunggu Cuti";
-                      console.log(`[${nik}] Set to Menunggu Cuti - H-5 rule (${monitoringDays} days)`);
-                    } 
-                    // Sudah eligible untuk cuti (kriteria lama)
-                    else if (monitoringDays >= workDaysThreshold) {
-                      finalStatus = "Menunggu Cuti"; // Ready for leave
-                      console.log(`[${nik}] Set to Menunggu Cuti - eligible (${monitoringDays} >= ${workDaysThreshold})`);
-                    } else {
+                      console.log(`[${nik}] Set to Menunggu Cuti - ${monitoringDays} hari lagi menuju cuti`);
+                    } else if (monitoringDays > 10) {
                       finalStatus = "Aktif";
-                      console.log(`[${nik}] Set to Aktif - default case (${monitoringDays} days)`);
+                      console.log(`[${nik}] Set to Aktif - masih ${monitoringDays} hari lagi`);
+                    } else if (monitoringDays < 0) {
+                      finalStatus = "Cuti Selesai";
+                      console.log(`[${nik}] Set to Cuti Selesai - sudah lewat ${Math.abs(monitoringDays)} hari`);
                     }
                   }
                 } catch (dateError) {

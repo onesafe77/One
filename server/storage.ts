@@ -1075,60 +1075,31 @@ export class DrizzleStorage implements IStorage {
     for (const monitoring of allMonitoring) {
       let newStatus = monitoring.status;
       
-      // FORCE RECALCULATION: Selalu hitung ulang monitoring days menjadi positif
+      // RUMUS BARU: Terakhir Cuti - Today
       let monitoringDays = 0;
       if (monitoring.lastLeaveDate) {
         const lastLeaveDate = new Date(monitoring.lastLeaveDate);
         const todayDate = new Date(today);
-        // Rumus yang benar: today - last leave date = hari sejak cuti terakhir (positif)
-        const diffTime = todayDate.getTime() - lastLeaveDate.getTime();
+        // Rumus baru: Terakhir Cuti - Today
+        const diffTime = lastLeaveDate.getTime() - todayDate.getTime();
         monitoringDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
         
-        // Pastikan selalu positif (jika negatif berarti cuti masih akan datang)
-        if (monitoringDays < 0) {
-          monitoringDays = Math.abs(monitoringDays);
-        }
-        
-        console.log(`[${monitoring.nik}] FIXED: old=${monitoring.monitoringDays}, new=${monitoringDays}, lastLeave=${monitoring.lastLeaveDate}`);
+        console.log(`[${monitoring.nik}] monitoringDays: ${monitoringDays} (${monitoringDays > 0 ? 'hari lagi' : monitoringDays < 0 ? 'sudah lewat' : 'hari ini'}), lastLeave=${monitoring.lastLeaveDate}`);
       }
 
-      // Auto status berdasarkan monitoring days dan leave option
-      const workDaysThreshold = monitoring.leaveOption === "70" ? 70 : 35;
-      
+      // Status berdasarkan rumus baru: Terakhir Cuti - Today
       console.log(`[${monitoring.nik}] Status check - monitoring days: ${monitoringDays}, current status: ${monitoring.status}`);
       
-      // KRITERIA BARU: Kurang dari 10 hari sejak cuti terakhir = status "Menunggu Cuti"
-      if (monitoringDays > 0 && monitoringDays < 10 && monitoring.status === "Aktif") {
+      // Aturan status baru:
+      if (monitoringDays <= 10 && monitoringDays >= 0) {
         newStatus = "Menunggu Cuti";
-        console.log(`[${monitoring.nik}] ✅ UPDATED: Changed to Menunggu Cuti - kurang dari 10 hari (${monitoringDays} hari)`);
-      } 
-      // H-5 sebelum eligible untuk cuti (kriteria lama)
-      else if (monitoringDays >= workDaysThreshold - 5 && monitoringDays < workDaysThreshold && monitoring.status === "Aktif") {
-        newStatus = "Menunggu Cuti";
-        console.log(`[${monitoring.nik}] Changed to Menunggu Cuti - H-5 rule (${monitoringDays} days)`);
-      } 
-      // Sudah eligible untuk cuti (kriteria lama)
-      else if (monitoringDays >= workDaysThreshold && monitoring.status !== "Sedang Cuti" && monitoring.status !== "Selesai Cuti") {
-        if (monitoring.status === "Aktif") {
-          newStatus = "Menunggu Cuti";
-          console.log(`[${monitoring.nik}] Changed to Menunggu Cuti - eligible (${monitoringDays} >= ${workDaysThreshold})`);
-        }
-      }
-      
-      // Jika ada next leave date, cek juga berdasarkan tanggal
-      if (monitoring.nextLeaveDate) {
-        const nextLeaveDate = new Date(monitoring.nextLeaveDate);
-        const todayDate = new Date(today);
-        const diffTime = nextLeaveDate.getTime() - todayDate.getTime();
-        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-
-        if (diffDays <= -1) {
-          newStatus = "Selesai Cuti";
-        } else if (diffDays <= 0) {
-          newStatus = "Sedang Cuti";
-        } else if (diffDays <= 5 && monitoring.status === "Aktif") {
-          newStatus = "Menunggu Cuti";
-        }
+        console.log(`[${monitoring.nik}] Set to Menunggu Cuti - ${monitoringDays} hari lagi menuju cuti`);
+      } else if (monitoringDays > 10) {
+        newStatus = "Aktif";
+        console.log(`[${monitoring.nik}] Set to Aktif - masih ${monitoringDays} hari lagi`);
+      } else if (monitoringDays < 0) {
+        newStatus = "Cuti Selesai";
+        console.log(`[${monitoring.nik}] Set to Cuti Selesai - sudah lewat ${Math.abs(monitoringDays)} hari`);
       }
 
       await this.updateLeaveRosterMonitoring(monitoring.id, {
