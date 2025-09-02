@@ -343,6 +343,8 @@ export default function Roster() {
 
           const processedRow = {
             employeeId: row.NIK || row.nik || row['Employee ID'] || row.employeeId || '',
+            employeeName: row.Nama || row.nama || row.Name || row.name || '',
+            nomorLambung: row['Nomor Lambung'] || row.nomorLambung || row.nomor_lambung || '',
             date: rosterDate,
             shift: row.Shift || row.shift || 'Shift 1',
             startTime: startTime,
@@ -358,6 +360,8 @@ export default function Roster() {
             console.log('=== MAPPING DEBUG ===');
             console.log('Raw row:', row);
             console.log('Processed row:', processedRow);
+            console.log('Employee Name mapping:', `"${row['Nama']}" -> "${processedRow.employeeName}"`);
+            console.log('Nomor Lambung mapping:', `"${row['Nomor Lambung']}" -> "${processedRow.nomorLambung}"`);
             console.log('Jam Tidur mapping:', `"${row['Jam Tidur']}" -> "${processedRow.jamTidur}"`);
             console.log('Hari Kerja mapping:', `"${row['Hari Kerja']}" -> "${processedRow.hariKerja}"`);
             console.log('Fit To Work mapping:', `"${row['Fit To Work']}" -> "${processedRow.fitToWork}"`);

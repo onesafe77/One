@@ -555,20 +555,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
         for (let i = 0; i < batch.length; i++) {
           const globalIndex = batchStart + i;
           try {
+            const rawData = batch[i]; // Keep raw data for employee creation
             const validatedData = insertRosterSchema.parse(batch[i]);
             
             
             // Check if employee exists in pre-loaded map
             if (!employeeMap.has(validatedData.employeeId)) {
-              // Create employee quickly without logging
+              // Create employee using data from Excel upload
               try {
+                const employeeName = rawData.employeeName || rawData.name || `Employee ${validatedData.employeeId}`;
+                const nomorLambung = rawData.nomorLambung || rawData.nomor_lambung || null;
+                
                 const newEmployee = await storage.createEmployee({
                   id: validatedData.employeeId,
-                  name: `Employee ${validatedData.employeeId}`,
+                  name: employeeName,
+                  nomorLambung: nomorLambung,
                   phone: '+628123456789',
                   status: 'active'
                 });
                 employeeMap.set(validatedData.employeeId, newEmployee);
+                
+                // Log employee creation with nomor lambung
+                console.log(`Created employee: ${validatedData.employeeId} - ${employeeName} (${nomorLambung || 'No Nomor Lambung'})`);
               } catch (createError) {
                 errors.push(`Baris ${globalIndex + 1}: Gagal membuat karyawan`);
                 continue;
