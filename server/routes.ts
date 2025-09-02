@@ -1706,6 +1706,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Clear all leave roster monitoring data (must be before :id route)
+  app.delete("/api/leave-roster-monitoring/clear-all", async (req, res) => {
+    try {
+      await storage.deleteAllLeaveRosterMonitoring();
+      res.json({ 
+        success: true,
+        message: "Semua data roster monitoring berhasil dihapus"
+      });
+    } catch (error) {
+      console.error("Error clearing leave roster monitoring data:", error);
+      res.status(500).json({ 
+        error: "Failed to clear data", 
+        details: error instanceof Error ? error.message : 'Unknown error' 
+      });
+    }
+  });
+
   app.delete("/api/leave-roster-monitoring/:id", async (req, res) => {
     try {
       const success = await storage.deleteLeaveRosterMonitoring(req.params.id);
@@ -1726,23 +1743,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error updating leave roster status:", error);
       res.status(500).json({ message: "Failed to update leave roster status" });
-    }
-  });
-
-  // Clear all leave roster monitoring data
-  app.delete("/api/leave-roster-monitoring/clear-all", async (req, res) => {
-    try {
-      await storage.deleteAllLeaveRosterMonitoring();
-      res.json({ 
-        success: true,
-        message: "Semua data roster monitoring berhasil dihapus"
-      });
-    } catch (error) {
-      console.error("Error clearing leave roster monitoring data:", error);
-      res.status(500).json({ 
-        error: "Failed to clear data", 
-        details: error instanceof Error ? error.message : 'Unknown error' 
-      });
     }
   });
 
