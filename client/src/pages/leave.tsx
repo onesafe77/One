@@ -474,7 +474,19 @@ export default function Leave() {
 
   const filteredLeaveRequests = leaveRequests.filter(request => {
     // Status filter
-    const statusMatch = statusFilter === "all" || request.status === statusFilter;
+    let statusMatch = false;
+    
+    if (statusFilter === "all") {
+      statusMatch = true;
+    } else if (statusFilter === "overdue") {
+      // Filter untuk yang lewat satu hari atau lebih menunggu cuti
+      const today = new Date();
+      const startDate = new Date(request.startDate);
+      const daysDiff = Math.floor((today.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24));
+      statusMatch = request.status === "pending" && daysDiff >= 1;
+    } else {
+      statusMatch = request.status === statusFilter;
+    }
     
     // Name search (case insensitive)
     const nameMatch = searchName === "" || 
@@ -1454,6 +1466,7 @@ export default function Leave() {
                         <SelectItem value="pending">⏳ Menunggu</SelectItem>
                         <SelectItem value="approved">✅ Disetujui</SelectItem>
                         <SelectItem value="rejected">❌ Ditolak</SelectItem>
+                        <SelectItem value="overdue">🚨 Terlambat Cuti</SelectItem>
                       </SelectContent>
                     </Select>
                     <Button
