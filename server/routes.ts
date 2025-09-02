@@ -1793,11 +1793,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
               continue;
             }
 
-            // Format data sesuai Excel file: NIK, Nama, Nomor Lambung, Bulan, Tanggal Terakhir Cuti, Pilihan Cuti, OnSite
+            // Format data sesuai Excel file: NIK, Nama, Nomor Lambung, Bulan, Tanggal Terakhir Cuti, Pilihan Cuti, OnSite, Investor Group
             // Handle various Excel column formats by checking length
-            let nik, name, nomorLambung, monthOrBulan, lastLeaveDateSerial, leaveOption, onSiteData;
+            let nik, name, nomorLambung, monthOrBulan, lastLeaveDateSerial, leaveOption, onSiteData, investorGroupData;
             
-            if (row.length >= 7) {
+            if (row.length >= 8) {
+              [nik, name, nomorLambung, monthOrBulan, lastLeaveDateSerial, leaveOption, onSiteData, investorGroupData] = row;
+            } else if (row.length >= 7) {
               [nik, name, nomorLambung, monthOrBulan, lastLeaveDateSerial, leaveOption, onSiteData] = row;
             } else if (row.length >= 6) {
               [nik, name, nomorLambung, monthOrBulan, lastLeaveDateSerial, leaveOption] = row;
@@ -1811,7 +1813,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
               [nik, name] = row;
             }
             
-            console.log(`Parsed values - NIK: ${nik}, Name: ${name}, NomorLambung: ${nomorLambung}, Month: ${monthOrBulan}, LastLeaveDate: ${lastLeaveDateSerial}, LeaveOption: ${leaveOption}, OnSite: ${onSiteData}`);
+            console.log(`Parsed values - NIK: ${nik}, Name: ${name}, NomorLambung: ${nomorLambung}, Month: ${monthOrBulan}, LastLeaveDate: ${lastLeaveDateSerial}, LeaveOption: ${leaveOption}, OnSite: ${onSiteData}, InvestorGroup: ${investorGroupData}`);
             
             try {
               
@@ -1924,22 +1926,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 }
               }
 
-              // Auto-generate investor group dari NIK pattern
+              // Use investor group from Excel, default to "Default Group" if not provided
               let investorGroup = "Default Group";
-              const nikStr = nik.toString();
-              if (nikStr.startsWith('C-0')) {
-                const nikNum = parseInt(nikStr.split('-')[1]);
-                if (nikNum >= 1 && nikNum <= 20000) {
-                  investorGroup = "Bu Resty";
-                } else if (nikNum >= 20001 && nikNum <= 40000) {
-                  investorGroup = "Group A";
-                } else if (nikNum >= 40001 && nikNum <= 60000) {
-                  investorGroup = "Group B";
-                } else if (nikNum >= 60001 && nikNum <= 80000) {
-                  investorGroup = "Group C";
-                } else {
-                  investorGroup = "Group D";
-                }
+              if (investorGroupData && investorGroupData.toString().trim()) {
+                investorGroup = investorGroupData.toString().trim();
               }
 
               // Validate leave option atau default ke 70
