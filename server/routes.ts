@@ -1943,45 +1943,85 @@ export async function registerRoutes(app: Express): Promise<Server> {
               if (lastLeaveDateSerial) {
                 console.log(`[${nik}] Processing lastLeaveDateSerial: ${lastLeaveDateSerial}, type: ${typeof lastLeaveDateSerial}`);
                 try {
-                  // Handle Excel date format (number of days since 1900) or dd-mm-yyyy format
-                  let lastDate;
+                  // Handle berbagai format tanggal
+                  let lastDate = null;
+                  
+                  // Cek apakah Excel serial number
                   if (typeof lastLeaveDateSerial === 'number' && lastLeaveDateSerial > 1000) {
-                    // Excel date serial number to JavaScript Date
-                    // Excel counts from January 1, 1900 but has a leap year bug (treats 1900 as leap year)
-                    // Excel day 1 = January 1, 1900
-                    // More accurate conversion:
-                    const excelEpoch = new Date(1900, 0, 1); // January 1, 1900
-                    const daysSinceEpoch = lastLeaveDateSerial - 1; // Excel day 1 = Jan 1, 1900
+                    // Excel date serial number conversion
+                    // Excel epoch: January 1, 1900 (but Excel incorrectly treats 1900 as leap year)
+                    // More accurate conversion for Excel dates:
+                    const excelEpoch = new Date(1899, 11, 30); // December 30, 1899 (Excel day 0)
+                    const daysSinceEpoch = Math.floor(lastLeaveDateSerial);
                     lastDate = new Date(excelEpoch.getTime() + (daysSinceEpoch * 24 * 60 * 60 * 1000));
                     console.log(`[${nik}] Excel serial ${lastLeaveDateSerial} converted to ${lastDate.toISOString().split('T')[0]}`);
                   } else {
                     const dateStr = lastLeaveDateSerial.toString().trim();
-                    // Check if format is dd/mm/yyyy or dd-mm-yyyy
+                    console.log(`[${nik}] Parsing date string: "${dateStr}"`);
+                    
+                    // Format 1: dd/mm/yyyy atau dd-mm-yyyy
                     if (/^\d{1,2}[\/\-]\d{1,2}[\/\-]\d{4}$/.test(dateStr)) {
                       const [day, month, year] = dateStr.split(/[\/\-]/);
-                      // Create date in YYYY-MM-DD format for parsing
                       const dayNum = parseInt(day);
                       const monthNum = parseInt(month);
                       const yearNum = parseInt(year);
                       
                       // Validate date values
-                      if (dayNum >= 1 && dayNum <= 31 && monthNum >= 1 && monthNum <= 12 && yearNum >= 2020) {
-                        lastDate = new Date(yearNum, monthNum - 1, dayNum); // month is 0-indexed in Date constructor
-                        console.log(`[${nik}] Date string "${dateStr}" converted to ${lastDate.toISOString().split('T')[0]}`);
-                      } else {
-                        console.log(`[${nik}] Invalid date values in "${dateStr}"`);
-                        lastDate = null;
+                      if (dayNum >= 1 && dayNum <= 31 && monthNum >= 1 && monthNum <= 12 && yearNum >= 2020 && yearNum <= 2030) {
+                        lastDate = new Date(yearNum, monthNum - 1, dayNum);
+                        console.log(`[${nik}] DD/MM/YYYY format "${dateStr}" converted to ${lastDate.toISOString().split('T')[0]}`);
                       }
-                    } else {
-                      // Try parsing as is (fallback for other formats)
-                      lastDate = new Date(lastLeaveDateSerial);
-                      console.log(`[${nik}] Fallback parsing for "${dateStr}"`);
+                    }
+                    // Format 2: yyyy/mm/dd atau yyyy-mm-dd
+                    else if (/^\d{4}[\/\-]\d{1,2}[\/\-]\d{1,2}$/.test(dateStr)) {
+                      const [year, month, day] = dateStr.split(/[\/\-]/);
+                      const dayNum = parseInt(day);
+                      const monthNum = parseInt(month);
+                      const yearNum = parseInt(year);
+                      
+                      if (dayNum >= 1 && dayNum <= 31 && monthNum >= 1 && monthNum <= 12 && yearNum >= 2020 && yearNum <= 2030) {
+                        lastDate = new Date(yearNum, monthNum - 1, dayNum);
+                        console.log(`[${nik}] YYYY/MM/DD format "${dateStr}" converted to ${lastDate.toISOString().split('T')[0]}`);
+                      }
+                    }
+                    // Format 3: mm/dd/yyyy (American format)
+                    else if (/^\d{1,2}[\/\-]\d{1,2}[\/\-]\d{4}$/.test(dateStr)) {
+                      const parts = dateStr.split(/[\/\-]/);
+                      // Try to detect if it's American format (mm/dd/yyyy) by checking if first part > 12
+                      if (parseInt(parts[0]) > 12 || parseInt(parts[1]) <= 12) {
+                        // Assume dd/mm/yyyy (already handled above)
+                      } else {
+                        // Try mm/dd/yyyy
+                        const monthNum = parseInt(parts[0]);
+                        const dayNum = parseInt(parts[1]);
+                        const yearNum = parseInt(parts[2]);
+                        
+                        if (dayNum >= 1 && dayNum <= 31 && monthNum >= 1 && monthNum <= 12 && yearNum >= 2020 && yearNum <= 2030) {
+                          lastDate = new Date(yearNum, monthNum - 1, dayNum);
+                          console.log(`[${nik}] MM/DD/YYYY format "${dateStr}" converted to ${lastDate.toISOString().split('T')[0]}`);
+                        }
+                      }
+                    }
+                    // Format 4: Tanggal text (15 Januari 2024, dll)
+                    else {
+                      // Try parsing as ISO date or natural language
+                      const tempDate = new Date(dateStr);
+                      if (!isNaN(tempDate.getTime()) && tempDate.getFullYear() >= 2020 && tempDate.getFullYear() <= 2030) {
+                        lastDate = tempDate;
+                        console.log(`[${nik}] Text format "${dateStr}" converted to ${lastDate.toISOString().split('T')[0]}`);
+                      } else {
+                        console.log(`[${nik}] Unable to parse date: "${dateStr}"`);
+                      }
                     }
                   }
                   
+                  // Validasi final dan perhitungan
                   if (lastDate && !isNaN(lastDate.getTime())) {
                     finalLastLeaveDate = lastDate.toISOString().split('T')[0];
                     const today = new Date();
+                    today.setHours(0, 0, 0, 0); // Reset to start of day for accurate comparison
+                    lastDate.setHours(0, 0, 0, 0); // Reset to start of day
+                    
                     // Rumus baru: Terakhir Cuti - Today 
                     monitoringDays = Math.floor((lastDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
                     
@@ -1991,24 +2031,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
                     nextLeaveDate = nextDate.toISOString().split('T')[0];
 
                     // Status berdasarkan rumus baru: Terakhir Cuti - Today
-                    // Nilai positif = hari ke depan menuju cuti (belum waktunya cuti)
-                    // Nilai negatif = sudah lewat dari tanggal cuti terakhir
-                    console.log(`[${nik}] monitoringDays: ${monitoringDays} (${monitoringDays > 0 ? 'hari lagi' : monitoringDays < 0 ? 'sudah lewat' : 'hari ini'})`);
+                    console.log(`[${nik}] SUCCESS: Parsed date ${finalLastLeaveDate}, monitoringDays: ${monitoringDays} (${monitoringDays > 0 ? 'hari lagi' : monitoringDays < 0 ? 'sudah lewat' : 'hari ini'})`);
                     
                     // Aturan status baru:
                     if (monitoringDays <= 10 && monitoringDays >= 0) {
                       finalStatus = "Menunggu Cuti";
-                      console.log(`[${nik}] Set to Menunggu Cuti - ${monitoringDays} hari lagi menuju cuti`);
                     } else if (monitoringDays > 10) {
                       finalStatus = "Aktif";
-                      console.log(`[${nik}] Set to Aktif - masih ${monitoringDays} hari lagi`);
                     } else if (monitoringDays < 0) {
                       finalStatus = "Cuti Selesai";
-                      console.log(`[${nik}] Set to Cuti Selesai - sudah lewat ${Math.abs(monitoringDays)} hari`);
                     }
+                  } else {
+                    // Tanggal tidak bisa diparsing
+                    console.log(`[${nik}] ERROR: Failed to parse date "${lastLeaveDateSerial}"`);
+                    errors.push(`Row ${i + 2}: Format tanggal tidak valid "${lastLeaveDateSerial}". Gunakan format: DD/MM/YYYY, DD-MM-YYYY, atau YYYY-MM-DD`);
                   }
                 } catch (dateError) {
-                  console.error("Date parsing error:", dateError);
+                  console.error(`[${nik}] Date parsing error:`, dateError);
+                  errors.push(`Row ${i + 2}: Error parsing tanggal "${lastLeaveDateSerial}": ${dateError.message}`);
                 }
               }
 
