@@ -1786,6 +1786,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           for (let i = 0; i < rows.length; i++) {
             const row = rows[i];
             console.log(`Processing row ${i + 2}:`, row);
+            console.log(`Row length: ${row.length}`);
             
             if (!row || row.length < 2) {
               errors.push(`Row ${i + 2}: Data tidak lengkap (minimal NIK dan Nama)`);
@@ -1809,6 +1810,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
             } else {
               [nik, name] = row;
             }
+            
+            console.log(`Parsed values - NIK: ${nik}, Name: ${name}, NomorLambung: ${nomorLambung}, Month: ${monthOrBulan}, LastLeaveDate: ${lastLeaveDateSerial}, LeaveOption: ${leaveOption}, OnSite: ${onSiteData}`);
             
             try {
               
@@ -1948,6 +1951,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
               }
 
               if (lastLeaveDateSerial) {
+                console.log(`[${nik}] Processing lastLeaveDateSerial: ${lastLeaveDateSerial}, type: ${typeof lastLeaveDateSerial}`);
                 try {
                   // Handle Excel date format (number of days since 1900) or dd-mm-yyyy format
                   let lastDate;
