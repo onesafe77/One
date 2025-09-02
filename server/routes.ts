@@ -1803,6 +1803,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
               const currentMonth = new Date().toISOString().slice(0, 7); // "YYYY-MM"
               let finalMonth = currentMonth; // Default to current month
               
+              // Calculate monitoring days and next leave date
+              let monitoringDays = 0;
+              let nextLeaveDate = "";
+              let finalLastLeaveDate = "";
+              let finalStatus = "Aktif";
+              let finalLeaveOption = "70";
+              let finalOnSite = "";
+              
               if (monthOrBulan) {
                 const monthStr = monthOrBulan.toString().toLowerCase().trim();
                 const currentYear = new Date().getFullYear();
@@ -1902,19 +1910,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
               }
 
               // Validate leave option atau default ke 70
-              let finalLeaveOption = "70";
               if (leaveOption && (leaveOption.toString() === "70" || leaveOption.toString() === "35")) {
                 finalLeaveOption = leaveOption.toString();
               } else if (leaveOption && leaveOption.toString().trim() !== "") {
                 console.log(`Row ${i + 2}: Invalid leave option "${leaveOption}", using default 70`);
                 // Don't add error, just use default
               }
-
-              // Calculate monitoring days and next leave date
-              let monitoringDays = 0;
-              let nextLeaveDate = "";
-              let finalLastLeaveDate = "";
-              let finalStatus = "Aktif";
 
               if (lastLeaveDateSerial) {
                 try {
@@ -1992,7 +1993,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
               });
               
               // Create leave roster monitoring entry - convert Excel serial to date format if needed
-              let finalOnSite = "";
               if (onSiteData) {
                 const onSiteStr = onSiteData.toString().trim();
                 // Check if it's a number (Excel serial date)
@@ -2036,11 +2036,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 lastLeaveDateSerial, 
                 leaveOption, 
                 monthOrBulan, 
-                onSiteData,
-                finalMonth: finalMonth || 'undefined',
-                finalLastLeaveDate: finalLastLeaveDate || 'undefined',
-                finalLeaveOption: finalLeaveOption || 'undefined',
-                finalStatus: finalStatus || 'undefined'
+                onSiteData
               });
               
               // Specific error handling
@@ -2051,7 +2047,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 // Check if it's a database constraint error
                 if (error.message.includes('unique') || error.message.includes('constraint')) {
                   console.error("🚨 Database constraint violation detected");
-                  errors.push(`Row ${i + 2}: Data duplikat - ${nik} untuk bulan ${finalMonth} sudah ada`);
+                  errors.push(`Row ${i + 2}: Data duplikat - ${nik} untuk bulan sudah ada`);
                 } else if (error.message.includes('validation') || error.message.includes('required')) {
                   console.error("⚠️ Validation error detected");
                   errors.push(`Row ${i + 2}: Validation error - ${error.message}`);
