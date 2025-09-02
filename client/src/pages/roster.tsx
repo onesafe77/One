@@ -197,6 +197,8 @@ export default function Roster() {
     mutationFn: (data: InsertRosterSchedule[]) => apiRequest("/api/roster/bulk", "POST", { rosters: data }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/roster"] });
+      // Invalidate employees cache untuk memastikan nomor lambung terbaru terlihat
+      queryClient.invalidateQueries({ queryKey: ["/api/employees"] });
       // Invalidate QR validation cache untuk memastikan scan result menggunakan data roster terbaru
       queryClient.invalidateQueries({ queryKey: ["/api/qr/validate"] });
       // Invalidate attendance cache karena roster berubah bisa mempengaruhi validasi shift
@@ -210,7 +212,7 @@ export default function Roster() {
       setTotalCount(0);
       toast({
         title: "Berhasil",
-        description: `${totalCount} roster berhasil diupload dari Excel - QR scan akan menggunakan data terbaru`,
+        description: `${totalCount} roster berhasil diupload dari Excel dengan nomor lambung terbaru`,
       });
     },
     onError: (error: any) => {

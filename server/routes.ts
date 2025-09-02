@@ -560,12 +560,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
             
             
             // Check if employee exists in pre-loaded map
-            if (!employeeMap.has(validatedData.employeeId)) {
-              // Create employee using data from Excel upload
+            const existingEmployee = employeeMap.get(validatedData.employeeId);
+            const employeeName = rawData.employeeName || rawData.name || `Employee ${validatedData.employeeId}`;
+            const nomorLambung = rawData.nomorLambung || rawData.nomor_lambung || null;
+            
+            if (!existingEmployee) {
+              // Create new employee using data from Excel upload
               try {
-                const employeeName = rawData.employeeName || rawData.name || `Employee ${validatedData.employeeId}`;
-                const nomorLambung = rawData.nomorLambung || rawData.nomor_lambung || null;
-                
                 const newEmployee = await storage.createEmployee({
                   id: validatedData.employeeId,
                   name: employeeName,
@@ -580,6 +581,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
               } catch (createError) {
                 errors.push(`Baris ${globalIndex + 1}: Gagal membuat karyawan`);
                 continue;
+              }
+            } else {
+              // Update existing employee with nomor lambung if provided and different
+              if (nomorLambung && existingEmployee.nomorLambung !== nomorLambung) {
+                try {
+                  await storage.updateEmployee(validatedData.employeeId, {
+                    nomorLambung: nomorLambung
+                  });
+                  // Update the map with new data
+                  employeeMap.set(validatedData.employeeId, {
+                    ...existingEmployee,
+                    nomorLambung: nomorLambung
+                  });
+                  console.log(`Updated employee nomor lambung: ${validatedData.employeeId} - ${nomorLambung}`);
+                } catch (updateError) {
+                  console.log(`Failed to update nomor lambung for ${validatedData.employeeId}`);
+                }
               }
             }
 
