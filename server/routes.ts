@@ -1792,18 +1792,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
               continue;
             }
 
-            // Format data sesuai Excel file: NIK, Nama, Nomor Lambung, Tanggal Terakhir Cuti, Pilihan Cuti, Bulan, OnSite
+            // Format data sesuai Excel file: NIK, Nama, Nomor Lambung, Bulan, Tanggal Terakhir Cuti, Pilihan Cuti, OnSite
             // Handle various Excel column formats by checking length
-            let nik, name, nomorLambung, lastLeaveDateSerial, leaveOption, monthOrBulan, onSiteData;
+            let nik, name, nomorLambung, monthOrBulan, lastLeaveDateSerial, leaveOption, onSiteData;
             
             if (row.length >= 7) {
-              [nik, name, nomorLambung, lastLeaveDateSerial, leaveOption, monthOrBulan, onSiteData] = row;
+              [nik, name, nomorLambung, monthOrBulan, lastLeaveDateSerial, leaveOption, onSiteData] = row;
             } else if (row.length >= 6) {
-              [nik, name, nomorLambung, lastLeaveDateSerial, leaveOption, monthOrBulan] = row;
+              [nik, name, nomorLambung, monthOrBulan, lastLeaveDateSerial, leaveOption] = row;
             } else if (row.length >= 5) {
-              [nik, name, nomorLambung, lastLeaveDateSerial, leaveOption] = row;
+              [nik, name, nomorLambung, monthOrBulan, lastLeaveDateSerial] = row;
             } else if (row.length >= 4) {
-              [nik, name, nomorLambung, lastLeaveDateSerial] = row;
+              [nik, name, nomorLambung, monthOrBulan] = row;
             } else if (row.length >= 3) {
               [nik, name, nomorLambung] = row;
             } else {
@@ -1885,17 +1885,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 else {
                   const monthMap: { [key: string]: string } = {
                     'januari': `${currentYear}-01`,
+                    'january': `${currentYear}-01`,
                     'februari': `${currentYear}-02`, 
+                    'february': `${currentYear}-02`,
                     'maret': `${currentYear}-03`,
+                    'march': `${currentYear}-03`,
                     'april': `${currentYear}-04`,
                     'mei': `${currentYear}-05`,
+                    'may': `${currentYear}-05`,
                     'juni': `${currentYear}-06`,
+                    'june': `${currentYear}-06`,
                     'juli': `${currentYear}-07`,
+                    'july': `${currentYear}-07`,
                     'agustus': `${currentYear}-08`,
+                    'august': `${currentYear}-08`,
                     'september': `${currentYear}-09`,
                     'oktober': `${currentYear}-10`,
+                    'october': `${currentYear}-10`,
                     'november': `${currentYear}-11`,
-                    'desember': `${currentYear}-12`
+                    'desember': `${currentYear}-12`,
+                    'december': `${currentYear}-12`
                   };
                   
                   if (monthMap[monthStr]) {
@@ -1957,8 +1966,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
                     if (/^\d{1,2}[\/\-]\d{1,2}[\/\-]\d{4}$/.test(dateStr)) {
                       const [day, month, year] = dateStr.split(/[\/\-]/);
                       // Create date in YYYY-MM-DD format for parsing
-                      lastDate = new Date(`${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`);
-                      console.log(`[${nik}] Date string "${dateStr}" converted to ${lastDate.toISOString().split('T')[0]}`);
+                      const dayNum = parseInt(day);
+                      const monthNum = parseInt(month);
+                      const yearNum = parseInt(year);
+                      
+                      // Validate date values
+                      if (dayNum >= 1 && dayNum <= 31 && monthNum >= 1 && monthNum <= 12 && yearNum >= 2020) {
+                        lastDate = new Date(yearNum, monthNum - 1, dayNum); // month is 0-indexed in Date constructor
+                        console.log(`[${nik}] Date string "${dateStr}" converted to ${lastDate.toISOString().split('T')[0]}`);
+                      } else {
+                        console.log(`[${nik}] Invalid date values in "${dateStr}"`);
+                        lastDate = null;
+                      }
                     } else {
                       // Try parsing as is (fallback for other formats)
                       lastDate = new Date(lastLeaveDateSerial);
@@ -1966,7 +1985,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
                     }
                   }
                   
-                  if (!isNaN(lastDate.getTime())) {
+                  if (lastDate && !isNaN(lastDate.getTime())) {
                     finalLastLeaveDate = lastDate.toISOString().split('T')[0];
                     const today = new Date();
                     // Rumus original: today - last leave date (hari sejak cuti terakhir)
