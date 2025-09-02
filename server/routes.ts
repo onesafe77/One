@@ -1729,6 +1729,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Clear all leave roster monitoring data
+  app.delete("/api/leave-roster-monitoring/clear-all", async (req, res) => {
+    try {
+      await storage.deleteAllLeaveRosterMonitoring();
+      res.json({ 
+        success: true,
+        message: "Semua data roster monitoring berhasil dihapus"
+      });
+    } catch (error) {
+      console.error("Error clearing leave roster monitoring data:", error);
+      res.status(500).json({ 
+        error: "Failed to clear data", 
+        details: error instanceof Error ? error.message : 'Unknown error' 
+      });
+    }
+  });
+
   // Excel upload endpoint for leave roster monitoring
   app.post("/api/leave-roster-monitoring/upload-excel", async (req, res) => {
     try {
@@ -1817,9 +1834,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 
                 // Handle Excel serial date numbers (40000+)
                 if (!isNaN(Number(monthStr)) && Number(monthStr) > 40000 && Number(monthStr) < 50000) {
-                  // Convert Excel serial to date, then extract month
+                  // Convert Excel serial to date, then extract month using correct formula
                   const excelDate = Number(monthStr);
-                  const jsDate = new Date((excelDate - 25569) * 86400 * 1000);
+                  const excelEpoch = new Date(1900, 0, 1); // January 1, 1900
+                  const daysSinceEpoch = excelDate - 1; // Excel day 1 = Jan 1, 1900
+                  const jsDate = new Date(excelEpoch.getTime() + (daysSinceEpoch * 24 * 60 * 60 * 1000));
                   if (!isNaN(jsDate.getTime())) {
                     const year = jsDate.getFullYear();
                     const month = (jsDate.getMonth() + 1).toString().padStart(2, '0');
@@ -1921,19 +1940,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 try {
                   // Handle Excel date format (number of days since 1900) or dd-mm-yyyy format
                   let lastDate;
-                  if (typeof lastLeaveDateSerial === 'number') {
+                  if (typeof lastLeaveDateSerial === 'number' && lastLeaveDateSerial > 1000) {
                     // Excel date serial number to JavaScript Date
-                    lastDate = new Date((lastLeaveDateSerial - 25569) * 86400 * 1000);
+                    // Excel counts from January 1, 1900 but has a leap year bug (treats 1900 as leap year)
+                    // Excel day 1 = January 1, 1900
+                    // More accurate conversion:
+                    const excelEpoch = new Date(1900, 0, 1); // January 1, 1900
+                    const daysSinceEpoch = lastLeaveDateSerial - 1; // Excel day 1 = Jan 1, 1900
+                    lastDate = new Date(excelEpoch.getTime() + (daysSinceEpoch * 24 * 60 * 60 * 1000));
+                    console.log(`[${nik}] Excel serial ${lastLeaveDateSerial} converted to ${lastDate.toISOString().split('T')[0]}`);
                   } else {
                     const dateStr = lastLeaveDateSerial.toString().trim();
-                    // Check if format is dd-mm-yyyy
-                    if (dateStr.includes('-') && dateStr.split('-').length === 3) {
-                      const [day, month, year] = dateStr.split('-');
+                    // Check if format is dd/mm/yyyy or dd-mm-yyyy
+                    if (/^\d{1,2}[\/\-]\d{1,2}[\/\-]\d{4}$/.test(dateStr)) {
+                      const [day, month, year] = dateStr.split(/[\/\-]/);
                       // Create date in YYYY-MM-DD format for parsing
                       lastDate = new Date(`${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`);
+                      console.log(`[${nik}] Date string "${dateStr}" converted to ${lastDate.toISOString().split('T')[0]}`);
                     } else {
                       // Try parsing as is (fallback for other formats)
                       lastDate = new Date(lastLeaveDateSerial);
+                      console.log(`[${nik}] Fallback parsing for "${dateStr}"`);
                     }
                   }
                   
@@ -1997,9 +2024,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 const onSiteStr = onSiteData.toString().trim();
                 // Check if it's a number (Excel serial date)
                 if (!isNaN(Number(onSiteStr)) && Number(onSiteStr) > 40000) {
-                  // Convert Excel serial to date format
+                  // Convert Excel serial to date format using correct formula
                   const excelEpoch = new Date(1900, 0, 1);
-                  const daysSinceEpoch = Number(onSiteStr) - 2;
+                  const daysSinceEpoch = Number(onSiteStr) - 1; // Fixed conversion
                   const parsedDate = new Date(excelEpoch.getTime() + (daysSinceEpoch * 24 * 60 * 60 * 1000));
                   finalOnSite = parsedDate.toLocaleDateString('id-ID', {
                     day: '2-digit',

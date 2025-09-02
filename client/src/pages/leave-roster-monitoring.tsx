@@ -228,9 +228,9 @@ export default function LeaveRosterMonitoringPage() {
     },
   });
 
-  // Delete all data mutation
+  // Clear all data mutation
   const deleteAllMutation = useMutation({
-    mutationFn: () => apiRequest("/api/leave-roster-monitoring/delete-all", "DELETE"),
+    mutationFn: () => apiRequest("/api/leave-roster-monitoring/clear-all", "DELETE"),
     onSuccess: () => {
       toast({
         title: "Berhasil",
