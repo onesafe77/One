@@ -1002,10 +1002,10 @@ export default function LeaveRosterMonitoringPage() {
           
           <div className="space-y-4">
             <div>
-              <Label>File Excel (.xlsx, .csv)</Label>
+              <Label>File Excel (.xlsx)</Label>
               <Input
                 type="file"
-                accept=".xlsx,.xls,.csv"
+                accept=".xlsx,.xls"
                 onChange={(e) => {
                   const file = e.target.files?.[0];
                   if (file) {
