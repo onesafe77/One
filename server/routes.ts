@@ -1789,7 +1789,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
             console.log(`Row length: ${row.length}`);
             
             if (!row || row.length < 2) {
-              errors.push(`Row ${i + 2}: Data tidak lengkap (minimal NIK dan Nama)`);
+              console.log(`Row ${i + 2}: Skipping empty row`);
+              continue;
+            }
+            
+            // Skip rows with empty or invalid data
+            const hasValidData = row.some(cell => 
+              cell !== null && 
+              cell !== undefined && 
+              cell !== '' && 
+              cell !== '#N/A' && 
+              cell.toString().trim() !== ''
+            );
+            
+            if (!hasValidData) {
+              console.log(`Row ${i + 2}: Skipping row with no valid data`);
               continue;
             }
 
@@ -1818,8 +1832,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
             try {
               
               // Validate required fields
-              if (!nik || !name) {
-                errors.push(`Row ${i + 2}: NIK dan Nama harus diisi`);
+              if (!nik || !name || nik.toString().trim() === '' || name.toString().trim() === '') {
+                console.log(`Row ${i + 2}: Skipping row with empty NIK or Name - NIK: "${nik}", Name: "${name}"`);
+                continue;
+              }
+              
+              // Skip rows with #N/A values
+              if (nik.toString().includes('#N/A') || name.toString().includes('#N/A')) {
+                console.log(`Row ${i + 2}: Skipping row with #N/A values`);
                 continue;
               }
 
@@ -1928,7 +1948,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
               // Use investor group from Excel, default to "Default Group" if not provided
               let investorGroup = "Default Group";
-              if (investorGroupData && investorGroupData.toString().trim()) {
+              if (investorGroupData && 
+                  investorGroupData.toString().trim() && 
+                  !investorGroupData.toString().includes('#N/A') &&
+                  investorGroupData.toString().trim() !== '') {
                 investorGroup = investorGroupData.toString().trim();
               }
 
@@ -2066,7 +2089,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
                   } else {
                     // Tanggal tidak bisa diparsing
                     console.log(`[${nik}] ERROR: Failed to parse date "${lastLeaveDateSerial}"`);
-                    errors.push(`Row ${i + 2}: Format tanggal tidak valid "${lastLeaveDateSerial}". Gunakan format: DD/MM/YYYY, DD-MM-YYYY, atau YYYY-MM-DD`);
+                    // Set to current date as fallback instead of error
+                    const today = new Date();
+                    finalLastLeaveDate = today.toISOString().split('T')[0];
+                    monitoringDays = 0;
+                    console.log(`[${nik}] Using current date as fallback: ${finalLastLeaveDate}`);
+                    errors.push(`Row ${i + 2}: Format tanggal tidak valid "${lastLeaveDateSerial}", menggunakan tanggal hari ini sebagai fallback`);
                   }
                 } catch (dateError) {
                   console.error(`[${nik}] Date parsing error:`, dateError);
