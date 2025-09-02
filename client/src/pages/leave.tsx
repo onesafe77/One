@@ -158,6 +158,10 @@ export default function Leave() {
   const [openCombobox, setOpenCombobox] = useState(false);
   const [employeeSearchValue, setEmployeeSearchValue] = useState("");
   
+  // Search and filter states
+  const [searchName, setSearchName] = useState("");
+  const [searchNIK, setSearchNIK] = useState("");
+  
   // HR PDF Upload states
   const [hrUploadingFiles, setHrUploadingFiles] = useState<{[key: string]: boolean}>({});
   const [hrUploadedFiles, setHrUploadedFiles] = useState<{[key: string]: string}>({});
@@ -468,9 +472,20 @@ export default function Leave() {
     return attachmentPath;
   };
 
-  const filteredLeaveRequests = leaveRequests.filter(request => 
-    statusFilter === "all" || request.status === statusFilter
-  );
+  const filteredLeaveRequests = leaveRequests.filter(request => {
+    // Status filter
+    const statusMatch = statusFilter === "all" || request.status === statusFilter;
+    
+    // Name search (case insensitive)
+    const nameMatch = searchName === "" || 
+      getEmployeeName(request.employeeId).toLowerCase().includes(searchName.toLowerCase());
+    
+    // NIK search (case insensitive)
+    const nikMatch = searchNIK === "" || 
+      request.employeeId.toLowerCase().includes(searchNIK.toLowerCase());
+    
+    return statusMatch && nameMatch && nikMatch;
+  });
 
   const handleApprove = (id: string) => {
     updateStatusMutation.mutate({ id, status: 'approved' });
@@ -1415,17 +1430,45 @@ export default function Leave() {
                   </div>
                 </div>
                 <div className="flex items-center gap-3">
-                  <Select value={statusFilter} onValueChange={setStatusFilter}>
-                    <SelectTrigger className="w-40 h-10 border-2 border-blue-200 dark:border-blue-700" data-testid="leave-status-filter">
-                      <SelectValue placeholder="Semua Status" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">🌐 Semua Status</SelectItem>
-                      <SelectItem value="pending">⏳ Menunggu</SelectItem>
-                      <SelectItem value="approved">✅ Disetujui</SelectItem>
-                      <SelectItem value="rejected">❌ Ditolak</SelectItem>
-                    </SelectContent>
-                  </Select>
+                  <div className="flex items-center gap-2">
+                    <Input
+                      placeholder="Cari nama..."
+                      value={searchName}
+                      onChange={(e) => setSearchName(e.target.value)}
+                      className="w-40 h-10 border-2 border-blue-200 dark:border-blue-700"
+                      data-testid="search-name-input"
+                    />
+                    <Input
+                      placeholder="Cari NIK..."
+                      value={searchNIK}
+                      onChange={(e) => setSearchNIK(e.target.value)}
+                      className="w-40 h-10 border-2 border-blue-200 dark:border-blue-700"
+                      data-testid="search-nik-input"
+                    />
+                    <Select value={statusFilter} onValueChange={setStatusFilter}>
+                      <SelectTrigger className="w-40 h-10 border-2 border-blue-200 dark:border-blue-700" data-testid="leave-status-filter">
+                        <SelectValue placeholder="Semua Status" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">🌐 Semua Status</SelectItem>
+                        <SelectItem value="pending">⏳ Menunggu</SelectItem>
+                        <SelectItem value="approved">✅ Disetujui</SelectItem>
+                        <SelectItem value="rejected">❌ Ditolak</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <Button
+                      variant="outline"
+                      onClick={() => {
+                        setSearchName("");
+                        setSearchNIK("");
+                        setStatusFilter("all");
+                      }}
+                      className="h-10 border-2 border-blue-200 dark:border-blue-700"
+                      data-testid="clear-filters-button"
+                    >
+                      🗑️ Clear
+                    </Button>
+                  </div>
                 </div>
               </div>
             </CardHeader>
