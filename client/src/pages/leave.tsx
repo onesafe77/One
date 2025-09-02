@@ -427,6 +427,10 @@ export default function Leave() {
     return employees.find(emp => emp.id === employeeId)?.name || 'Unknown';
   };
 
+  const getNomorLambung = (employeeId: string) => {
+    return employees.find(emp => emp.id === employeeId)?.nomorLambung || '-';
+  };
+
   const getLeaveTypeLabel = (type: string) => {
     const types: { [key: string]: string } = {
       'annual': 'Cuti Tahunan',
@@ -1493,6 +1497,7 @@ export default function Leave() {
                     <thead className="bg-blue-100 dark:bg-blue-900/30">
                       <tr>
                         <th className="text-left py-4 px-4 font-semibold text-blue-800 dark:text-blue-200 text-sm">👤 Karyawan</th>
+                        <th className="text-left py-4 px-4 font-semibold text-blue-800 dark:text-blue-200 text-sm">🚗 Nomor Lambung</th>
                         <th className="text-left py-4 px-4 font-semibold text-blue-800 dark:text-blue-200 text-sm">📅 Tanggal</th>
                         <th className="text-left py-4 px-4 font-semibold text-blue-800 dark:text-blue-200 text-sm">📋 Jenis</th>
                         <th className="text-left py-4 px-4 font-semibold text-blue-800 dark:text-blue-200 text-sm">⏱️ Durasi</th>
@@ -1504,7 +1509,7 @@ export default function Leave() {
                     <tbody className="divide-y divide-blue-100 dark:divide-blue-800">
                       {isLoading ? (
                         <tr>
-                          <td colSpan={7} className="py-8 text-center">
+                          <td colSpan={8} className="py-8 text-center">
                             <div className="flex flex-col items-center">
                               <div className="animate-spin w-8 h-8 border-4 border-blue-200 border-t-blue-600 rounded-full mb-2"></div>
                               <div className="text-blue-600 dark:text-blue-400 font-medium">Loading data cuti...</div>
@@ -1513,7 +1518,7 @@ export default function Leave() {
                         </tr>
                       ) : filteredLeaveRequests.length === 0 ? (
                         <tr>
-                          <td colSpan={7} className="py-8 text-center">
+                          <td colSpan={8} className="py-8 text-center">
                             <div className="flex flex-col items-center">
                               <div className="w-16 h-16 bg-blue-100 dark:bg-blue-900/30 rounded-full flex items-center justify-center mb-3">
                                 <FileText className="w-8 h-8 text-blue-400" />
@@ -1535,6 +1540,13 @@ export default function Leave() {
                                   <div className="font-semibold text-gray-900 dark:text-white">{getEmployeeName(request.employeeId)}</div>
                                   <div className="text-xs text-gray-500 dark:text-gray-400">{request.employeeId}</div>
                                 </div>
+                              </div>
+                            </td>
+                            <td className="py-4 px-4">
+                              <div className="text-center">
+                                <span className="bg-gray-100 dark:bg-gray-800 px-2 py-1 rounded text-sm font-medium text-gray-700 dark:text-gray-300">
+                                  {getNomorLambung(request.employeeId)}
+                                </span>
                               </div>
                             </td>
                             <td className="py-4 px-4">
