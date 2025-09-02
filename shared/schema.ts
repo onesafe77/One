@@ -76,6 +76,7 @@ export const leaveRosterMonitoring = pgTable("leave_roster_monitoring", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   nik: varchar("nik").notNull(),
   name: text("name").notNull(),
+  nomorLambung: text("nomor_lambung"),
   month: varchar("month").notNull(), // Format: "YYYY-MM" e.g. "2024-08"
   investorGroup: text("investor_group").notNull(),
   lastLeaveDate: text("last_leave_date"), // Tanggal terakhir cuti

@@ -1792,18 +1792,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
               continue;
             }
 
-            // Format data sesuai Excel file: NIK, Nama, Tanggal Terakhir Cuti, Pilihan Cuti, Bulan, OnSite
+            // Format data sesuai Excel file: NIK, Nama, Nomor Lambung, Tanggal Terakhir Cuti, Pilihan Cuti, Bulan, OnSite
             // Handle various Excel column formats by checking length
-            let nik, name, lastLeaveDateSerial, leaveOption, monthOrBulan, onSiteData;
+            let nik, name, nomorLambung, lastLeaveDateSerial, leaveOption, monthOrBulan, onSiteData;
             
-            if (row.length >= 6) {
-              [nik, name, lastLeaveDateSerial, leaveOption, monthOrBulan, onSiteData] = row;
+            if (row.length >= 7) {
+              [nik, name, nomorLambung, lastLeaveDateSerial, leaveOption, monthOrBulan, onSiteData] = row;
+            } else if (row.length >= 6) {
+              [nik, name, nomorLambung, lastLeaveDateSerial, leaveOption, monthOrBulan] = row;
             } else if (row.length >= 5) {
-              [nik, name, lastLeaveDateSerial, leaveOption, monthOrBulan] = row;
+              [nik, name, nomorLambung, lastLeaveDateSerial, leaveOption] = row;
             } else if (row.length >= 4) {
-              [nik, name, lastLeaveDateSerial, leaveOption] = row;
+              [nik, name, nomorLambung, lastLeaveDateSerial] = row;
             } else if (row.length >= 3) {
-              [nik, name, lastLeaveDateSerial] = row;
+              [nik, name, nomorLambung] = row;
             } else {
               [nik, name] = row;
             }
@@ -2009,6 +2011,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
               console.log("Data to insert:", {
                 nik: nik?.toString(),
                 name: name?.toString(),
+                nomorLambung: nomorLambung?.toString() || null,
                 month: finalMonth,
                 investorGroup,
                 lastLeaveDate: finalLastLeaveDate || null,
@@ -2041,6 +2044,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
               await storage.createLeaveRosterMonitoring({
                 nik: nik.toString(),
                 name: name.toString(),
+                nomorLambung: nomorLambung?.toString() || null,
                 month: finalMonth,
                 investorGroup: investorGroup,
                 lastLeaveDate: finalLastLeaveDate || null,

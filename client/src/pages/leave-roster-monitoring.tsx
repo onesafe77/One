@@ -53,6 +53,7 @@ interface LeaveRosterMonitoring {
   id: string;
   nik: string;
   name: string;
+  nomorLambung: string | null;
   investorGroup: string;
   lastLeaveDate: string | null;
   leaveOption: string; // "70" atau "35"
@@ -98,6 +99,7 @@ export default function LeaveRosterMonitoringPage() {
   const [formData, setFormData] = useState({
     nik: "",
     name: "",
+    nomorLambung: "",
     month: new Date().toISOString().slice(0, 7), // Default: current month
     investorGroup: "",
     lastLeaveDate: "",
@@ -280,6 +282,7 @@ export default function LeaveRosterMonitoringPage() {
     setFormData({
       nik: "",
       name: "",
+      nomorLambung: "",
       month: new Date().toISOString().slice(0, 7), // Default: current month
       investorGroup: "",
       lastLeaveDate: "",
@@ -363,6 +366,7 @@ export default function LeaveRosterMonitoringPage() {
     setFormData({
       nik: item.nik,
       name: item.name,
+      nomorLambung: item.nomorLambung || "",
       month: (item as any).month || new Date().toISOString().slice(0, 7),
       investorGroup: item.investorGroup,
       lastLeaveDate: item.lastLeaveDate || "",
@@ -407,10 +411,10 @@ export default function LeaveRosterMonitoringPage() {
     const currentMonth = new Date().toISOString().slice(0, 7); // "YYYY-MM"
     const templateData = [
       ["NIK", "Nama", "Nomor Lambung", "Bulan", "Tanggal Terakhir Cuti", "Pilihan Cuti", "OnSite"],
-      ["C-015001", "CONTOH NAMA 1", "GECL 001", currentMonth, "2024-01-15", "70", "Ya"],
-      ["C-025002", "CONTOH NAMA 2", "GECL 002", currentMonth, "2024-02-20", "35", "Tidak"],
+      ["C-015001", "CONTOH NAMA 1", "GECL 001", currentMonth, "15-01-2024", "70", "Ya"],
+      ["C-025002", "CONTOH NAMA 2", "GECL 002", currentMonth, "20-02-2024", "35", "Tidak"],
       ["C-035003", "CONTOH NAMA 3", "SPARE", currentMonth, "", "70", ""],
-      ["C-045004", "CONTOH NAMA 4", "GECL 004", currentMonth, "2024-03-10", "35", "Ya"],
+      ["C-045004", "CONTOH NAMA 4", "GECL 004", currentMonth, "10-03-2024", "35", "Ya"],
     ];
 
     const csvContent = templateData.map(row => row.join(",")).join("\n");
@@ -704,6 +708,7 @@ export default function LeaveRosterMonitoringPage() {
                   <TableRow>
                     <TableHead>NIK</TableHead>
                     <TableHead>Nama</TableHead>
+                    <TableHead>Nomor Lambung</TableHead>
                     <TableHead>Bulan</TableHead>
                     <TableHead>Investor Group</TableHead>
                     <TableHead>Terakhir Cuti</TableHead>
@@ -717,7 +722,7 @@ export default function LeaveRosterMonitoringPage() {
                 <TableBody>
                   {filteredData.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={10} className="text-center py-8 text-gray-500">
+                      <TableCell colSpan={11} className="text-center py-8 text-gray-500">
                         Tidak ada data monitoring roster cuti
                       </TableCell>
                     </TableRow>
@@ -729,6 +734,11 @@ export default function LeaveRosterMonitoringPage() {
                         <TableRow key={item.id} data-testid={`row-monitoring-${item.nik}`}>
                           <TableCell className="font-medium">{item.nik}</TableCell>
                           <TableCell>{item.name}</TableCell>
+                          <TableCell>
+                            {item.nomorLambung || (
+                              <span className="text-gray-400">-</span>
+                            )}
+                          </TableCell>
                           <TableCell>
                             <Badge variant="secondary">
                               {item.month || "2024-08"}
@@ -846,6 +856,16 @@ export default function LeaveRosterMonitoringPage() {
                 placeholder="Nama karyawan"
                 required
                 data-testid="input-name"
+              />
+            </div>
+
+            <div>
+              <Label>Nomor Lambung</Label>
+              <Input
+                value={formData.nomorLambung}
+                onChange={(e) => setFormData(prev => ({ ...prev, nomorLambung: e.target.value }))}
+                placeholder="Nomor lambung (opsional)"
+                data-testid="input-nomor-lambung"
               />
             </div>
 
