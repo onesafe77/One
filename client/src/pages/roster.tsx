@@ -213,13 +213,16 @@ export default function Roster() {
   const uploadMutation = useMutation({
     mutationFn: (data: InsertRosterSchedule[]) => apiRequest("/api/roster/bulk", "POST", { rosters: data }),
     onSuccess: () => {
+      // Force invalidate all roster related queries
       queryClient.invalidateQueries({ queryKey: ["/api/roster"] });
-      // Invalidate employees cache untuk memastikan nomor lambung terbaru terlihat
+      queryClient.refetchQueries({ queryKey: ["/api/roster"] }); // Force refetch
       queryClient.invalidateQueries({ queryKey: ["/api/employees"] });
-      // Invalidate QR validation cache untuk memastikan scan result menggunakan data roster terbaru
       queryClient.invalidateQueries({ queryKey: ["/api/qr/validate"] });
-      // Invalidate attendance cache karena roster berubah bisa mempengaruhi validasi shift
       queryClient.invalidateQueries({ queryKey: ["/api/attendance"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/dashboard"] });
+      
+      // Clear any cached roster data
+      queryClient.removeQueries({ queryKey: ["/api/roster"] });
       
       setIsUploadDialogOpen(false);
       setSelectedFile(null);
