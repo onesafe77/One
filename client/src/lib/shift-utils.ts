@@ -1,14 +1,16 @@
 // Utility functions for shift determination and display
 
-// Function to get current local time
+// Function to get current local time (Indonesia timezone)
 export function getCurrentTime(): Date {
-  return new Date();
+  const now = new Date();
+  return new Date(now.toLocaleString("en-US", {timeZone: "Asia/Jakarta"}));
 }
 
-// Function to get current local time string in HH:MM format
+// Function to get current local time string in HH:MM format (Indonesia timezone)
 export function getCurrentTimeString(): string {
   const now = new Date();
-  return `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
+  const indonesiaTime = new Date(now.toLocaleString("en-US", {timeZone: "Asia/Jakarta"}));
+  return `${indonesiaTime.getHours().toString().padStart(2, '0')}:${indonesiaTime.getMinutes().toString().padStart(2, '0')}`;
 }
 
 export function determineShiftByTime(time: string): string {
