@@ -51,6 +51,7 @@ export default function Roster() {
       return response.json();
     },
     staleTime: 0, // Always fetch fresh data
+    refetchOnWindowFocus: true, // Refresh when window focused
   });
 
   const { data: attendance = [] } = useQuery<AttendanceRecord[]>({
