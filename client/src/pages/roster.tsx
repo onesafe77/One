@@ -512,11 +512,20 @@ export default function Roster() {
     }
   }));
 
+  // Calculate statistics based on filtered data (by date and shift)
+  const filteredAttendance = attendance.filter(att => {
+    // Match with filtered roster schedules
+    const matchingRoster = filteredRosterSchedules.find(roster => roster.employeeId === att.employeeId);
+    return !!matchingRoster;
+  });
+
+  const cutiCount = filteredRosterSchedules.filter(roster => roster.shift === 'CUTI').length;
+
   const stats = {
-    scheduled: rosterSchedules.length,
-    present: attendance.length,
-    absent: rosterSchedules.length - attendance.length,
-    onLeave: 0 // This would need to be calculated from leave data
+    scheduled: filteredRosterSchedules.length,
+    present: filteredAttendance.length, 
+    absent: filteredRosterSchedules.length - filteredAttendance.length - cutiCount,
+    onLeave: cutiCount
   };
 
   return (
