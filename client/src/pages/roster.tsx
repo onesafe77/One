@@ -495,6 +495,8 @@ export default function Roster() {
 
   const filteredRosterSchedules = rosterSchedules.filter(roster => {
     if (shiftFilter === "all") return true;
+    if (shiftFilter === "SHIFT 1") return roster.shift === "SHIFT 1";
+    if (shiftFilter === "SHIFT 2") return roster.shift === "SHIFT 2";
     return roster.shift === shiftFilter;
   });
 
