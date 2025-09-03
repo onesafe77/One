@@ -13,7 +13,7 @@ export default function Landing() {
               <QrCode className="w-10 h-10 text-white" />
             </div>
           </div>
-          <h1 className="text-5xl md:text-6xl font-bold bg-gradient-to-r from-gray-900 via-gray-800 to-gray-700 bg-clip-text text-transparent dark:from-white dark:via-gray-100 dark:to-gray-300 mb-6 text-center">Selamat Datang di Aplikasi Abensi Karyawan</h1>
+          <h1 className="text-5xl md:text-6xl font-bold bg-gradient-to-r from-gray-900 via-gray-800 to-gray-700 bg-clip-text text-transparent dark:from-white dark:via-gray-100 dark:to-gray-300 mb-6 text-center">Selamat Datang di Aplikasi Abensi PT.GECL</h1>
           <p className="text-xl md:text-2xl text-gray-600 dark:text-gray-300 max-w-3xl mx-auto leading-relaxed font-light">
             Sistem manajemen kehadiran karyawan modern dengan teknologi QR Code untuk tracking yang akurat dan efisien.
           </p>
