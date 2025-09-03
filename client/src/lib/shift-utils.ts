@@ -3,13 +3,19 @@
 // Function to get current local time (Indonesia timezone)
 export function getCurrentTime(): Date {
   const now = new Date();
-  return new Date(now.toLocaleString("en-US", {timeZone: "Asia/Jakarta"}));
+  // Convert to Indonesia timezone (WITA UTC+8)
+  const indonesiaOffset = 8 * 60; // 8 hours in minutes
+  const utc = now.getTime() + (now.getTimezoneOffset() * 60000);
+  return new Date(utc + (indonesiaOffset * 60000));
 }
 
 // Function to get current local time string in HH:MM format (Indonesia timezone)
 export function getCurrentTimeString(): string {
   const now = new Date();
-  const indonesiaTime = new Date(now.toLocaleString("en-US", {timeZone: "Asia/Jakarta"}));
+  // Convert to Indonesia timezone (WITA UTC+8)
+  const indonesiaOffset = 8 * 60; // 8 hours in minutes
+  const utc = now.getTime() + (now.getTimezoneOffset() * 60000);
+  const indonesiaTime = new Date(utc + (indonesiaOffset * 60000));
   return `${indonesiaTime.getHours().toString().padStart(2, '0')}:${indonesiaTime.getMinutes().toString().padStart(2, '0')}`;
 }
 

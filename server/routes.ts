@@ -402,7 +402,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Get current time for precise shift validation (menggunakan waktu Indonesia WIB/WITA)
       const now = new Date();
-      const indonesiaTime = new Date(now.toLocaleString("en-US", {timeZone: "Asia/Jakarta"}));
+      // Convert to Indonesia timezone (WITA UTC+8)
+      const indonesiaOffset = 8 * 60; // 8 hours in minutes
+      const utc = now.getTime() + (now.getTimezoneOffset() * 60000);
+      const indonesiaTime = new Date(utc + (indonesiaOffset * 60000));
       const currentTime = `${indonesiaTime.getHours().toString().padStart(2, '0')}:${indonesiaTime.getMinutes().toString().padStart(2, '0')}`;
       
       console.log(`Validating shift for ${validatedData.employeeId}: Current time ${currentTime}, Scheduled ${scheduledEmployee.shift} (${scheduledEmployee.startTime} - ${scheduledEmployee.endTime})`);
@@ -996,7 +999,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       let timeValidation = null;
       if (employeeRoster) {
         const now = new Date();
-        const indonesiaTime = new Date(now.toLocaleString("en-US", {timeZone: "Asia/Jakarta"}));
+        // Convert to Indonesia timezone (WITA UTC+8)
+        const indonesiaOffset = 8 * 60; // 8 hours in minutes
+        const utc = now.getTime() + (now.getTimezoneOffset() * 60000);
+        const indonesiaTime = new Date(utc + (indonesiaOffset * 60000));
         const currentTime = `${indonesiaTime.getHours().toString().padStart(2, '0')}:${indonesiaTime.getMinutes().toString().padStart(2, '0')}`;
         const isValidTiming = isValidShiftTimeByName(currentTime, employeeRoster.shift);
         const timeRange = getShiftTimeRange(employeeRoster.shift);
