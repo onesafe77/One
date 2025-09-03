@@ -2127,7 +2127,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
                   }
                 } catch (dateError) {
                   console.error(`[${nik}] Date parsing error:`, dateError);
-                  errors.push(`Row ${i + 2}: Error parsing tanggal "${lastLeaveDateSerial}": ${dateError.message}`);
+                  errors.push(`Row ${i + 2}: Error parsing tanggal "${lastLeaveDateSerial}": ${dateError instanceof Error ? dateError.message : String(dateError)}`);
                 }
               }
 
