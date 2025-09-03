@@ -195,50 +195,6 @@ export type InsertLeaveHistory = z.infer<typeof insertLeaveHistorySchema>;
 export type LeaveRosterMonitoring = typeof leaveRosterMonitoring.$inferSelect;
 export type InsertLeaveRosterMonitoring = z.infer<typeof insertLeaveRosterMonitoringSchema>;
 
-// WhatsApp Blast schemas
-export const whatsappBlasts = pgTable("whatsapp_blasts", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  title: varchar("title").notNull(),
-  message: text("message").notNull(),
-  imageUrl: varchar("image_url"),
-  targetType: varchar("target_type").notNull().default("all"), // all, department, specific
-  targetValue: text("target_value"), // department name or specific NIKs (JSON array)
-  totalRecipients: integer("total_recipients").default(0),
-  successCount: integer("success_count").default(0),
-  failedCount: integer("failed_count").default(0),
-  status: varchar("status").notNull().default("pending"), // pending, processing, completed, failed
-  createdBy: varchar("created_by"),
-  createdAt: timestamp("created_at").defaultNow(),
-  completedAt: timestamp("completed_at")
-});
-
-export const whatsappBlastResults = pgTable("whatsapp_blast_results", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  blastId: varchar("blast_id").notNull().references(() => whatsappBlasts.id, { onDelete: "cascade" }),
-  employeeId: varchar("employee_id").notNull().references(() => employees.id),
-  phoneNumber: varchar("phone_number").notNull(),
-  status: varchar("status").notNull().default("pending"), // pending, sent, failed
-  errorMessage: text("error_message"),
-  sentAt: timestamp("sent_at"),
-  createdAt: timestamp("created_at").defaultNow()
-});
-
-export const insertWhatsappBlastSchema = createInsertSchema(whatsappBlasts).omit({
-  id: true,
-  createdAt: true,
-  completedAt: true
-});
-
-export const insertWhatsappBlastResultSchema = createInsertSchema(whatsappBlastResults).omit({
-  id: true,
-  createdAt: true,
-  sentAt: true
-});
-
-export type WhatsappBlast = typeof whatsappBlasts.$inferSelect;
-export type InsertWhatsappBlast = z.infer<typeof insertWhatsappBlastSchema>;
-export type WhatsappBlastResult = typeof whatsappBlastResults.$inferSelect;
-export type InsertWhatsappBlastResult = z.infer<typeof insertWhatsappBlastResultSchema>;
 
 // Meeting attendance system
 export const meetings = pgTable("meetings", {

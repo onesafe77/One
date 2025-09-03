@@ -30,7 +30,6 @@ const navigation = [
   { name: "Scan QR Meeting", href: "/meeting-scanner", icon: Smartphone },
   { name: "Driver View", href: "/driver-view", icon: User },
   { name: "Laporan", href: "/reports", icon: FileText },
-  { name: "Blast WhatsApp", href: "/whatsapp-blast", icon: MessageSquare },
 ];
 
 interface SidebarProps {

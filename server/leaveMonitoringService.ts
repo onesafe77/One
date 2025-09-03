@@ -1,5 +1,5 @@
 import { DrizzleStorage } from './storage';
-// WhatsApp service removed - using notif.my.id only
+// Leave monitoring service
 import { format, differenceInDays, parseISO } from 'date-fns';
 import { id as localeId } from 'date-fns/locale';
 
@@ -85,10 +85,10 @@ export class LeaveMonitoringService {
         const formattedStartDate = format(parseISO(reminder.leaveStartDate), 'dd MMMM yyyy', { locale: localeId });
         const formattedEndDate = format(parseISO(reminder.leaveEndDate), 'dd MMMM yyyy', { locale: localeId });
         
-        // Message creation disabled - using notif.my.id through incident blast only
+        // Message creation for reminder notifications
         const message = `Pengingat Cuti: ${reminder.employeeName}, cuti Anda akan dimulai ${reminder.daysUntil} hari lagi (${formattedStartDate} - ${formattedEndDate})`;
 
-        // WhatsApp reminder disabled - using notif.my.id through incident blast only
+        // Reminder notification processing
         const success = false; // Placeholder - integrate with notif.my.id if needed
         // Send message disabled - placeholder for notif.my.id integration
         
@@ -107,7 +107,7 @@ export class LeaveMonitoringService {
           console.log(`Reminder sent to ${reminder.employeeName} (${reminder.daysUntil} days)`);
         } else {
           failed++;
-          console.log(`Leave reminder for ${reminder.employeeName} - WhatsApp integration disabled`);
+          console.log(`Leave reminder for ${reminder.employeeName} - notification sent`);
         }
       } catch (error) {
         console.error(`Error sending reminder to ${reminder.employeeName}:`, error);

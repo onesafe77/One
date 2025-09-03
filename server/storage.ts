@@ -17,10 +17,6 @@ import {
   type InsertLeaveHistory,
   type LeaveRosterMonitoring,
   type InsertLeaveRosterMonitoring,
-  type WhatsappBlast,
-  type InsertWhatsappBlast,
-  type WhatsappBlastResult,
-  type InsertWhatsappBlastResult,
   type Meeting,
   type InsertMeeting,
   type MeetingAttendance,
@@ -34,8 +30,6 @@ import {
   leaveBalances,
   leaveHistory,
   leaveRosterMonitoring,
-  whatsappBlasts,
-  whatsappBlastResults,
   meetings,
   meetingAttendance
 } from "@shared/schema";
@@ -115,15 +109,6 @@ export interface IStorage {
   deleteAllLeaveRosterMonitoring(): Promise<void>;
   updateLeaveRosterStatus(): Promise<void>; // Update status berdasarkan tanggal
   
-  // WhatsApp Blast methods
-  createWhatsappBlast(blast: InsertWhatsappBlast): Promise<WhatsappBlast>;
-  getAllWhatsappBlasts(): Promise<WhatsappBlast[]>;
-  getWhatsappBlast(id: string): Promise<WhatsappBlast | undefined>;
-  updateWhatsappBlast(id: string, updates: Partial<WhatsappBlast>): Promise<WhatsappBlast | undefined>;
-  deleteWhatsappBlast(id: string): Promise<boolean>;
-  createWhatsappBlastResult(result: InsertWhatsappBlastResult): Promise<WhatsappBlastResult>;
-  getWhatsappBlastResults(blastId: string): Promise<WhatsappBlastResult[]>;
-  updateWhatsappBlastResult(id: string, updates: Partial<WhatsappBlastResult>): Promise<WhatsappBlastResult | undefined>;
 
   // Meeting methods
   getMeeting(id: string): Promise<Meeting | undefined>;
@@ -389,59 +374,6 @@ export class MemStorage implements IStorage {
     return qrToken ? qrToken.token === token && qrToken.isActive : false;
   }
 
-  // WhatsApp Blast methods
-  async createWhatsappBlast(blast: InsertWhatsappBlast): Promise<WhatsappBlast> {
-    const whatsappBlast: WhatsappBlast = {
-      id: randomUUID(),
-      ...blast,
-      status: blast.status ?? 'pending',
-      imageUrl: blast.imageUrl ?? null,
-      targetValue: blast.targetValue ?? null,
-      totalRecipients: blast.totalRecipients ?? null,
-      successCount: blast.successCount ?? null,
-      failedCount: blast.failedCount ?? null,
-      createdBy: blast.createdBy ?? null,
-      createdAt: new Date(),
-      completedAt: null
-    };
-    return whatsappBlast;
-  }
-
-  async getAllWhatsappBlasts(): Promise<WhatsappBlast[]> {
-    return [];
-  }
-
-  async getWhatsappBlast(id: string): Promise<WhatsappBlast | undefined> {
-    return undefined;
-  }
-
-  async updateWhatsappBlast(id: string, updates: Partial<WhatsappBlast>): Promise<WhatsappBlast | undefined> {
-    return undefined;
-  }
-
-  async deleteWhatsappBlast(id: string): Promise<boolean> {
-    return false;
-  }
-
-  async createWhatsappBlastResult(result: InsertWhatsappBlastResult): Promise<WhatsappBlastResult> {
-    const blastResult: WhatsappBlastResult = {
-      id: randomUUID(),
-      ...result,
-      status: result.status ?? 'pending',
-      errorMessage: result.errorMessage ?? null,
-      createdAt: new Date(),
-      sentAt: null
-    };
-    return blastResult;
-  }
-
-  async getWhatsappBlastResults(blastId: string): Promise<WhatsappBlastResult[]> {
-    return [];
-  }
-
-  async updateWhatsappBlastResult(id: string, updates: Partial<WhatsappBlastResult>): Promise<WhatsappBlastResult | undefined> {
-    return undefined;
-  }
 
   // Stub implementations for MemStorage (not used in production)
   async getLeaveReminder(leaveRequestId: string, reminderType: string): Promise<LeaveReminder | undefined> {
@@ -943,70 +875,6 @@ export class DrizzleStorage implements IStorage {
     return { success: successCount, errors };
   }
 
-  // WhatsApp Blast methods implementation
-  async createWhatsappBlast(blast: InsertWhatsappBlast): Promise<WhatsappBlast> {
-    const [result] = await this.db
-      .insert(whatsappBlasts)
-      .values(blast)
-      .returning();
-    return result;
-  }
-
-  async getAllWhatsappBlasts(): Promise<WhatsappBlast[]> {
-    return await this.db
-      .select()
-      .from(whatsappBlasts)
-      .orderBy(drizzleSql`created_at DESC`);
-  }
-
-  async getWhatsappBlast(id: string): Promise<WhatsappBlast | undefined> {
-    const [result] = await this.db
-      .select()
-      .from(whatsappBlasts)
-      .where(eq(whatsappBlasts.id, id));
-    return result;
-  }
-
-  async updateWhatsappBlast(id: string, updates: Partial<WhatsappBlast>): Promise<WhatsappBlast | undefined> {
-    const [result] = await this.db
-      .update(whatsappBlasts)
-      .set(updates)
-      .where(eq(whatsappBlasts.id, id))
-      .returning();
-    return result;
-  }
-
-  async deleteWhatsappBlast(id: string): Promise<boolean> {
-    const result = await this.db
-      .delete(whatsappBlasts)
-      .where(eq(whatsappBlasts.id, id));
-    return result.rowCount > 0;
-  }
-
-  async createWhatsappBlastResult(result: InsertWhatsappBlastResult): Promise<WhatsappBlastResult> {
-    const [blastResult] = await this.db
-      .insert(whatsappBlastResults)
-      .values(result)
-      .returning();
-    return blastResult;
-  }
-
-  async getWhatsappBlastResults(blastId: string): Promise<WhatsappBlastResult[]> {
-    return await this.db
-      .select()
-      .from(whatsappBlastResults)
-      .where(eq(whatsappBlastResults.blastId, blastId))
-      .orderBy(drizzleSql`created_at DESC`);
-  }
-
-  async updateWhatsappBlastResult(id: string, updates: Partial<WhatsappBlastResult>): Promise<WhatsappBlastResult | undefined> {
-    const [result] = await this.db
-      .update(whatsappBlastResults)
-      .set(updates)
-      .where(eq(whatsappBlastResults.id, id))
-      .returning();
-    return result;
-  }
 
   // Leave Roster Monitoring methods implementation
   async getLeaveRosterMonitoring(id: string): Promise<LeaveRosterMonitoring | undefined> {
