@@ -470,14 +470,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const roster = await storage.getRosterByDate(date);
       const attendance = await storage.getAllAttendance(date);
       const leaveMonitoring = await storage.getAllLeaveRosterMonitoring();
+      const allEmployees = await storage.getAllEmployees(); // Add employee data
       
-      // Enrich roster dengan data attendance dan leave monitoring (hari kerja)
+      // Enrich roster dengan data employee, attendance, dan leave monitoring
       const enrichedRoster = roster.map(schedule => {
         const attendanceRecord = attendance.find(att => att.employeeId === schedule.employeeId);
         const leaveRecord = leaveMonitoring.find(leave => leave.nik === schedule.employeeId);
+        const employee = allEmployees.find(emp => emp.id === schedule.employeeId); // Join employee
         
         return {
           ...schedule,
+          employee: employee, // Add complete employee data
           hasAttended: !!attendanceRecord,
           attendanceTime: attendanceRecord?.time || null,
           actualJamTidur: attendanceRecord?.jamTidur || schedule.jamTidur,
