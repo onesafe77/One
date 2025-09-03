@@ -353,8 +353,8 @@ export default function Roster() {
             endTime: endTime,
             jamTidur: String(row['Jam Tidur'] || row.jamTidur || ''),
             fitToWork: row['Fit To Work'] || row.fitToWork || 'Fit To Work',
-            hariKerja: row['Hari Kerja'] || row.hariKerja || '',
-            status: row.Status || row.status || 'scheduled'
+            hariKerja: row.Status || row['Hari Kerja'] || row.hariKerja || '',
+            status: row.status || 'scheduled'
           };
           
           // Debug log untuk melihat mapping data
@@ -365,7 +365,7 @@ export default function Roster() {
             console.log('Employee Name mapping:', `"${row['Nama']}" -> "${processedRow.employeeName}"`);
             console.log('Nomor Lambung mapping:', `"${row['Nomor Lambung']}" -> "${processedRow.nomorLambung}"`);
             console.log('Jam Tidur mapping:', `"${row['Jam Tidur']}" -> "${processedRow.jamTidur}"`);
-            console.log('Hari Kerja mapping:', `"${row['Hari Kerja']}" -> "${processedRow.hariKerja}"`);
+            console.log('Hari Kerja mapping:', `"${row.Status}" -> "${processedRow.hariKerja}"`);
             console.log('Fit To Work mapping:', `"${row['Fit To Work']}" -> "${processedRow.fitToWork}"`);
           }
           
