@@ -327,9 +327,8 @@ export default function Roster() {
           const startTime = jamKerjaParts[0] ? jamKerjaParts[0].trim() : defaultStartTime;
           const endTime = jamKerjaParts[1] ? jamKerjaParts[1].trim() : defaultEndTime;
 
-          // Handle date formatting - fix Excel column mapping
-          // The actual date is in the "Shift" column (Excel serial number)
-          let rosterDate = row.Shift || row.Tanggal || row.tanggal || row.Date || row.date || selectedDate;
+          // Handle date formatting - use correct Tanggal column
+          let rosterDate = row.Tanggal || row.tanggal || row.Date || row.date || selectedDate;
           
           // If the date is an Excel serial number, convert it to a proper date
           if (typeof rosterDate === 'number') {
@@ -349,12 +348,12 @@ export default function Roster() {
             employeeName: row.Nama || row.nama || row.Name || row.name || '',
             nomorLambung: row['Nomor Lambung'] || row.nomorLambung || row.nomor_lambung || '',
             date: rosterDate,
-            shift: row['Jam Kerja'] || row.jamKerja || 'SHIFT 1',
+            shift: row.Shift || row.shift || 'SHIFT 1',
             startTime: startTime,
             endTime: endTime,
             jamTidur: String(row['Jam Tidur'] || row.jamTidur || ''),
             fitToWork: row['Fit To Work'] || row.fitToWork || 'Fit To Work',
-            hariKerja: row.Status || row['Hari Kerja'] || row.hariKerja || '',
+            hariKerja: row['Hari Kerja'] || row.hariKerja || '',
             status: row.status || 'scheduled'
           };
           
@@ -363,9 +362,9 @@ export default function Roster() {
             console.log('=== MAPPING DEBUG ===');
             console.log('Raw row:', row);
             console.log('Processed row:', processedRow);
-            console.log('Date mapping:', `"${row.Shift}" -> "${processedRow.date}"`);
-            console.log('Shift mapping:', `"${row['Jam Kerja']}" -> "${processedRow.shift}"`);
-            console.log('Hari Kerja mapping:', `"${row.Status}" -> "${processedRow.hariKerja}"`);
+            console.log('Date mapping:', `"${row.Tanggal}" -> "${processedRow.date}"`);
+            console.log('Shift mapping:', `"${row.Shift}" -> "${processedRow.shift}"`);
+            console.log('Hari Kerja mapping:', `"${row['Hari Kerja']}" -> "${processedRow.hariKerja}"`);
             console.log('Employee Name mapping:', `"${row['Nama']}" -> "${processedRow.employeeName}"`);
           }
           
