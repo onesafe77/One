@@ -21,6 +21,9 @@ import {
   type InsertMeeting,
   type MeetingAttendance,
   type InsertMeetingAttendance,
+  type User,
+  type UpsertUser,
+  users,
   employees,
   attendanceRecords,
   rosterSchedules,
@@ -41,6 +44,10 @@ import { sql as drizzleSql } from "drizzle-orm";
 import { db } from "./db";
 
 export interface IStorage {
+  // User operations (required for Replit Auth)
+  getUser(id: string): Promise<User | undefined>;
+  upsertUser(user: UpsertUser): Promise<User>;
+
   // Employee methods
   getEmployee(id: string): Promise<Employee | undefined>;
   getAllEmployees(): Promise<Employee[]>;
@@ -127,6 +134,7 @@ export interface IStorage {
 }
 
 export class MemStorage implements IStorage {
+  private users: Map<string, User>;
   private employees: Map<string, Employee>;
   private attendanceRecords: Map<string, AttendanceRecord>;
   private rosterSchedules: Map<string, RosterSchedule>;
@@ -134,6 +142,7 @@ export class MemStorage implements IStorage {
   private qrTokens: Map<string, QrToken>;
 
   constructor() {
+    this.users = new Map();
     this.employees = new Map();
     this.attendanceRecords = new Map();
     this.rosterSchedules = new Map();
@@ -153,6 +162,25 @@ export class MemStorage implements IStorage {
     // No sample attendance - will be created through QR scan attendance system
 
     // No sample leave requests - will be created by employees as needed
+  }
+
+  // User operations (required for Replit Auth)
+  async getUser(id: string): Promise<User | undefined> {
+    return this.users.get(id);
+  }
+
+  async upsertUser(userData: UpsertUser): Promise<User> {
+    const user: User = {
+      id: userData.id || randomUUID(),
+      email: userData.email || null,
+      firstName: userData.firstName || null,
+      lastName: userData.lastName || null,
+      profileImageUrl: userData.profileImageUrl || null,
+      createdAt: userData.createdAt || new Date(),
+      updatedAt: new Date(),
+    };
+    this.users.set(user.id, user);
+    return user;
   }
 
   // Employee methods
@@ -498,6 +526,30 @@ export class DrizzleStorage implements IStorage {
   constructor() {
     const sql = neon(process.env.DATABASE_URL!);
     this.db = drizzle(sql);
+  }
+
+  // User operations implementation (required for Replit Auth)
+  async getUser(id: string): Promise<User | undefined> {
+    const [user] = await this.db
+      .select()
+      .from(users)
+      .where(eq(users.id, id));
+    return user;
+  }
+
+  async upsertUser(userData: UpsertUser): Promise<User> {
+    const [user] = await this.db
+      .insert(users)
+      .values(userData)
+      .onConflictDoUpdate({
+        target: users.id,
+        set: {
+          ...userData,
+          updatedAt: new Date(),
+        },
+      })
+      .returning();
+    return user;
   }
 
   // Employee methods

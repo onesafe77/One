@@ -9,6 +9,8 @@ import { useState } from "react";
 import { Sidebar } from "@/components/layout/sidebar";
 import { Header } from "@/components/layout/header";
 
+import { useAuth } from "@/hooks/useAuth";
+
 import Dashboard from "@/pages/dashboard";
 import QRGenerator from "@/pages/qr-generator";
 import Scanner from "@/pages/scanner";
@@ -23,6 +25,7 @@ import MeetingScanner from "@/pages/meeting-scanner";
 import DriverView from "@/pages/driver-view";
 import MobileDriverView from "@/pages/mobile-driver-view";
 import EmployeePersonalData from "@/pages/employee-personal-data";
+import Landing from "@/pages/landing";
 
 import NotFound from "@/pages/not-found";
 
@@ -45,11 +48,19 @@ const routes = [
 ];
 
 function Router() {
+  const { isAuthenticated, isLoading } = useAuth();
+
   return (
     <Switch>
-      {routes.map((route) => (
-        <Route key={route.path} path={route.path} component={route.component} />
-      ))}
+      {isLoading || !isAuthenticated ? (
+        <Route path="/" component={Landing} />
+      ) : (
+        <>
+          {routes.map((route) => (
+            <Route key={route.path} path={route.path} component={route.component} />
+          ))}
+        </>
+      )}
       <Route component={NotFound} />
     </Switch>
   );
