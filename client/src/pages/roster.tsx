@@ -46,9 +46,24 @@ export default function Roster() {
   const { data: rosterSchedules = [], isLoading: isLoadingRoster } = useQuery<any[]>({
     queryKey: ["/api/roster", selectedDate],
     queryFn: async () => {
-      const response = await fetch(`/api/roster?date=${selectedDate}`);
+      const response = await fetch(`/api/roster?date=${selectedDate}`, {
+        cache: 'no-cache',
+        headers: {
+          'Cache-Control': 'no-cache',
+          'Pragma': 'no-cache'
+        }
+      });
       if (!response.ok) throw new Error('Failed to fetch roster');
-      return response.json();
+      const data = await response.json();
+      console.log(`🔄 Fetched ${data.length} roster entries for ${selectedDate}`);
+      if (data.length > 0) {
+        console.log('📋 Sample roster data:', data.slice(0, 3).map(r => ({
+          name: r.employee?.name || 'N/A',
+          hariKerja: r.hariKerja,
+          shift: r.shift
+        })));
+      }
+      return data;
     },
     staleTime: 0, // Always fetch fresh data
     refetchOnWindowFocus: true, // Refresh when window focused
