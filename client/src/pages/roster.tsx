@@ -294,7 +294,14 @@ export default function Roster() {
       setUploadProgress(10);
       const data = await selectedFile.arrayBuffer();
       const workbook = XLSX.read(data);
-      const worksheet = workbook.Sheets[workbook.SheetNames[0]];
+      
+      // Read from "Template Roster" sheet specifically (like pandas)
+      const sheetName = workbook.SheetNames.includes('Template Roster') 
+        ? 'Template Roster' 
+        : workbook.SheetNames[0];
+      
+      console.log('📋 Reading from sheet:', sheetName);
+      const worksheet = workbook.Sheets[sheetName];
       const jsonData = XLSX.utils.sheet_to_json(worksheet);
 
       console.log(`Excel file loaded with ${jsonData.length} rows`);
@@ -358,15 +365,15 @@ export default function Roster() {
             status: row.status || 'scheduled'
           };
           
-          // Debug log untuk melihat mapping data
+          // Debug log untuk melihat mapping data (seperti pandas)
           if (i < 3) { // Log first 3 rows untuk debug
-            console.log(`=== MAPPING DEBUG ROW ${i + 1} ===`);
-            console.log('Raw row:', row);
-            console.log('Available columns:', Object.keys(row));
-            console.log('Tanggal value:', row.Tanggal, 'type:', typeof row.Tanggal);
-            console.log('Shift value:', row.Shift, 'type:', typeof row.Shift);
-            console.log('Hari Kerja value:', row['Hari Kerja'], 'type:', typeof row['Hari Kerja']);
-            console.log('Processed row:', processedRow);
+            console.log(`=== PANDAS-STYLE MAPPING ROW ${i + 1} ===`);
+            console.log('📊 Raw Excel row:', row);
+            console.log('🔍 Available columns:', Object.keys(row));
+            console.log('📅 Tanggal (Excel serial):', row.Tanggal, 'type:', typeof row.Tanggal);
+            console.log('⚡ Shift:', row.Shift, 'type:', typeof row.Shift);
+            console.log('🎯 Hari Kerja (EXACT):', row['Hari Kerja'], 'type:', typeof row['Hari Kerja']);
+            console.log('✅ Processed result:', processedRow);
             console.log('===================');
           }
           
