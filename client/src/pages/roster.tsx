@@ -50,6 +50,7 @@ export default function Roster() {
       if (!response.ok) throw new Error('Failed to fetch roster');
       return response.json();
     },
+    staleTime: 0, // Always fetch fresh data
   });
 
   const { data: attendance = [] } = useQuery<AttendanceRecord[]>({
