@@ -358,14 +358,15 @@ export default function Roster() {
           };
           
           // Debug log untuk melihat mapping data
-          if (i === 0) { // Log first processed row
-            console.log('=== MAPPING DEBUG ===');
+          if (i < 3) { // Log first 3 rows untuk debug
+            console.log(`=== MAPPING DEBUG ROW ${i + 1} ===`);
             console.log('Raw row:', row);
+            console.log('Available columns:', Object.keys(row));
+            console.log('Tanggal value:', row.Tanggal, 'type:', typeof row.Tanggal);
+            console.log('Shift value:', row.Shift, 'type:', typeof row.Shift);
+            console.log('Hari Kerja value:', row['Hari Kerja'], 'type:', typeof row['Hari Kerja']);
             console.log('Processed row:', processedRow);
-            console.log('Date mapping:', `"${row.Tanggal}" -> "${processedRow.date}"`);
-            console.log('Shift mapping:', `"${row.Shift}" -> "${processedRow.shift}"`);
-            console.log('Hari Kerja mapping:', `"${row['Hari Kerja']}" -> "${processedRow.hariKerja}"`);
-            console.log('Employee Name mapping:', `"${row['Nama']}" -> "${processedRow.employeeName}"`);
+            console.log('===================');
           }
           
           return processedRow;
