@@ -59,17 +59,17 @@ function isValidRosterTime(currentTime: string, startTime: string, endTime: stri
   return true; // Temporary - akan menggunakan shift-based validation
 }
 
-// STRICT: Fungsi validasi waktu berdasarkan nama shift - TIDAK BOLEH ABSENSI DILUAR JAM KERJA
+// Fungsi validasi waktu berdasarkan nama shift - dengan window yang lebih fleksibel
 function isValidShiftTimeByName(currentTime: string, shiftName: string): boolean {
   const [hours, minutes] = currentTime.split(':').map(Number);
   const totalMinutes = hours * 60 + minutes;
   
   if (shiftName === "Shift 1") {
-    // Shift 1: STRICT - Hanya boleh scan dari 06:00 sampai 16:00
-    return totalMinutes >= 360 && totalMinutes <= 960;
+    // Shift 1: Boleh scan dari 06:00 sampai 18:00
+    return totalMinutes >= 360 && totalMinutes <= 1080;
   } else if (shiftName === "Shift 2") {
-    // Shift 2: STRICT - Hanya boleh scan dari 16:30 sampai 20:00
-    return totalMinutes >= 990 && totalMinutes <= 1200;
+    // Shift 2: FLEXIBLE - Boleh scan dari 12:00 sampai 23:59 (siang hingga malam)
+    return totalMinutes >= 720 && totalMinutes <= 1439;
   }
   
   // CRITICAL: Diluar shift yang ditentukan = TIDAK BOLEH ABSENSI
@@ -79,9 +79,9 @@ function isValidShiftTimeByName(currentTime: string, shiftName: string): boolean
 // Function to get shift time range for error messages
 function getShiftTimeRange(shiftName: string): { start: string; end: string } {
   if (shiftName === "Shift 1") {
-    return { start: "06:00", end: "16:00" };
+    return { start: "06:00", end: "18:00" };
   } else if (shiftName === "Shift 2") {
-    return { start: "16:30", end: "20:00" };
+    return { start: "12:00", end: "23:59" };
   }
   return { start: "00:00", end: "23:59" };
 }
@@ -92,8 +92,8 @@ function isCompletelyOutsideShiftTimes(currentTime: string): boolean {
   const totalMinutes = hours * 60 + minutes;
   
   // Check if time falls within any shift window
-  const isInShift1Window = totalMinutes >= 360 && totalMinutes <= 960; // 06:00-16:00
-  const isInShift2Window = totalMinutes >= 990 && totalMinutes <= 1200; // 16:30-20:00
+  const isInShift1Window = totalMinutes >= 360 && totalMinutes <= 1080; // 06:00-18:00
+  const isInShift2Window = totalMinutes >= 720 && totalMinutes <= 1439; // 12:00-23:59
   
   return !isInShift1Window && !isInShift2Window;
 }
@@ -417,7 +417,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         
         let errorMessage;
         if (isCompletelyOutside) {
-          errorMessage = `❌ ABSENSI DITOLAK - Diluar jam kerja! Waktu sekarang: ${currentTime}. Jam kerja: Shift 1 (06:00-16:00) atau Shift 2 (16:30-20:00)`;
+          errorMessage = `❌ ABSENSI DITOLAK - Diluar jam kerja! Waktu sekarang: ${currentTime}. Jam kerja: Shift 1 (06:00-18:00) atau Shift 2 (12:00-23:59)`;
         } else {
           errorMessage = `❌ ABSENSI DITOLAK - Tidak sesuai shift! Anda dijadwalkan ${scheduledEmployee.shift} (${timeRange.start}-${timeRange.end}). Waktu sekarang: ${currentTime}`;
         }
@@ -1003,7 +1003,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         let warning = null;
         if (!isValidTiming) {
           if (isCompletelyOutside) {
-            warning = `⚠️ PERINGATAN: Saat ini diluar jam kerja (${currentTime}). Absensi hanya diizinkan pada Shift 1 (06:00-16:00) atau Shift 2 (16:30-20:00)`;
+            warning = `⚠️ PERINGATAN: Saat ini diluar jam kerja (${currentTime}). Absensi hanya diizinkan pada Shift 1 (06:00-18:00) atau Shift 2 (12:00-23:59)`;
           } else {
             warning = `⚠️ PERINGATAN: Waktu sekarang (${currentTime}) tidak sesuai dengan shift Anda (${employeeRoster.shift}: ${timeRange.start}-${timeRange.end})`;
           }

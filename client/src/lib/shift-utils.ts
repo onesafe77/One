@@ -33,23 +33,23 @@ export function isValidShiftTime(currentTime: string, scheduledShift: string): b
   const totalMinutes = hours * 60 + minutes;
   
   if (scheduledShift === "Shift 1") {
-    // Shift 1: STRICT - Hanya boleh scan antara jam 06:00 sampai 16:00
-    return totalMinutes >= 360 && totalMinutes <= 960;
+    // Shift 1: Boleh scan antara jam 06:00 sampai 18:00
+    return totalMinutes >= 360 && totalMinutes <= 1080;
   } else if (scheduledShift === "Shift 2") {
-    // Shift 2: STRICT - Hanya boleh scan antara jam 16:30 sampai 20:00
-    return totalMinutes >= 990 && totalMinutes <= 1200;
+    // Shift 2: FLEXIBLE - Boleh scan dari jam 12:00 sampai 23:59 (siang hingga malam)
+    return totalMinutes >= 720 && totalMinutes <= 1439;
   }
   
-  // STRICT: Diluar shift yang ditentukan tidak boleh absensi
+  // Diluar shift yang ditentukan tidak boleh absensi
   return false;
 }
 
 export function getShiftDescription(shift: string): string {
   switch (shift) {
     case "Shift 1":
-      return "Shift 1 (06:00 - 16:00)"; // Waktu window check-in sesuai validasi
+      return "Shift 1 (06:00 - 18:00)"; // Waktu window check-in sesuai validasi
     case "Shift 2":
-      return "Shift 2 (16:30 - 20:00)"; // Waktu window check-in sesuai validasi
+      return "Shift 2 (12:00 - 23:59)"; // Waktu window check-in sesuai validasi
     default:
       return shift;
   }
@@ -59,9 +59,9 @@ export function getShiftDescription(shift: string): string {
 export function getShiftTimeRange(shift: string): { start: string; end: string } {
   switch (shift) {
     case "Shift 1":
-      return { start: "06:00", end: "16:00" };
+      return { start: "06:00", end: "18:00" };
     case "Shift 2":
-      return { start: "16:30", end: "20:00" };
+      return { start: "12:00", end: "23:59" };
     default:
       return { start: "00:00", end: "23:59" };
   }
