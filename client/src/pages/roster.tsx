@@ -377,7 +377,7 @@ export default function Roster() {
             endTime: endTime,
             jamTidur: String(row['Jam Tidur'] || row.jamTidur || ''),
             fitToWork: row['Fit To Work'] || row.fitToWork || 'Fit To Work',
-            hariKerja: row['Hari Kerja'] || row.hariKerja || '',
+            hariKerja: String(row['Hari Kerja'] || row.hariKerja || ''),
             status: row.status || 'scheduled'
           };
           
@@ -500,7 +500,7 @@ export default function Roster() {
 
   const rosterWithAttendance = filteredRosterSchedules.map(roster => ({
     ...roster,
-    employee: employees.find(emp => emp.id === roster.employeeId),
+    employee: roster.employee || employees.find(emp => emp.id === roster.employeeId), // Use API employee data first
     attendance: {
       status: roster.hasAttended ? 'present' : 'absent',
       time: roster.attendanceTime
