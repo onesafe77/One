@@ -39,7 +39,7 @@ import {
 import { randomUUID } from "crypto";
 import { drizzle } from "drizzle-orm/neon-http";
 import { neon } from "@neondatabase/serverless";
-import { eq, and, gte, lte, isNotNull, ne } from "drizzle-orm";
+import { eq, and } from "drizzle-orm";
 import { sql as drizzleSql } from "drizzle-orm";
 import { db } from "./db";
 
@@ -988,67 +988,6 @@ export class DrizzleStorage implements IStorage {
     await this.db.delete(leaveRosterMonitoring);
   }
 
-  // Menghitung hari kerja berdasarkan data roster (bukan calendar days)
-  async calculateWorkingDaysFromRoster(nik: string, fromDate: string, toDate: string): Promise<number> {
-    try {
-      // Cari employee berdasarkan ID (NIK adalah ID employee)
-      const employee = await this.db
-        .select()
-        .from(employees)
-        .where(eq(employees.id, nik))
-        .limit(1);
-      
-      if (!employee || employee.length === 0) {
-        console.log(`[${nik}] Employee not found, fallback to 0`);
-        return 0;
-      }
-
-      const employeeId = employee[0].id;
-      
-      // Query roster data antara fromDate dan toDate untuk employee ini
-      const rosterData = await this.db
-        .select({
-          date: rosterSchedules.date,
-          hariKerja: rosterSchedules.hariKerja,
-          shift: rosterSchedules.shift,
-          status: rosterSchedules.status
-        })
-        .from(rosterSchedules)
-        .where(
-          and(
-            eq(rosterSchedules.employeeId, employeeId),
-            gte(rosterSchedules.date, fromDate),
-            lte(rosterSchedules.date, toDate),
-            // Hanya ambil yang ada hari kerjanya dan bukan CUTI
-            isNotNull(rosterSchedules.hariKerja),
-            ne(rosterSchedules.shift, 'CUTI')
-          )
-        )
-        .orderBy(rosterSchedules.date);
-
-      if (!rosterData || rosterData.length === 0) {
-        console.log(`[${nik}] No roster data found between ${fromDate} and ${toDate}, fallback to 0`);
-        return 0;
-      }
-
-      // Ambil hari kerja dari tanggal terakhir cuti dan hari ini
-      const lastLeaveWorkingDay = rosterData.length > 0 ? parseInt(rosterData[rosterData.length - 1].hariKerja || '0') : 0;
-      const currentWorkingDay = rosterData.length > 0 ? parseInt(rosterData[0].hariKerja || '0') : 0;
-      
-      // Hitung selisih hari kerja: Hari kerja terakhir - Hari kerja saat ini
-      const workingDaysDifference = lastLeaveWorkingDay - currentWorkingDay;
-      
-      console.log(`[${nik}] Working days calculation: Last=${lastLeaveWorkingDay}, Current=${currentWorkingDay}, Diff=${workingDaysDifference}`);
-      console.log(`[${nik}] Roster data count: ${rosterData.length} entries from ${fromDate} to ${toDate}`);
-      
-      return workingDaysDifference;
-      
-    } catch (error) {
-      console.error(`[${nik}] Error in calculateWorkingDaysFromRoster:`, error);
-      throw error;
-    }
-  }
-
   async updateLeaveRosterStatus(): Promise<void> {
     const today = new Date().toISOString().split('T')[0];
     const allMonitoring = await this.getAllLeaveRosterMonitoring();
@@ -1056,41 +995,31 @@ export class DrizzleStorage implements IStorage {
     for (const monitoring of allMonitoring) {
       let newStatus = monitoring.status;
       
-      // RUMUS BARU: Berdasarkan Hari Kerja di Roster (bukan calendar days)
+      // RUMUS BARU: Terakhir Cuti - Today
       let monitoringDays = 0;
-      if (monitoring.lastLeaveDate && monitoring.nik) {
-        try {
-          // Hitung hari kerja berdasarkan data roster
-          monitoringDays = await this.calculateWorkingDaysFromRoster(
-            monitoring.nik, 
-            monitoring.lastLeaveDate, 
-            today
-          );
-          
-          console.log(`[${monitoring.nik}] monitoringDays: ${monitoringDays} hari kerja (${monitoringDays > 0 ? 'hari kerja lagi' : monitoringDays < 0 ? 'sudah lewat' : 'hari ini'}), lastLeave=${monitoring.lastLeaveDate}`);
-        } catch (error) {
-          console.error(`[${monitoring.nik}] Error calculating working days:`, error);
-          // Fallback ke perhitungan calendar days jika error
-          const lastLeaveDate = new Date(monitoring.lastLeaveDate);
-          const todayDate = new Date(today);
-          const diffTime = lastLeaveDate.getTime() - todayDate.getTime();
-          monitoringDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
-        }
+      if (monitoring.lastLeaveDate) {
+        const lastLeaveDate = new Date(monitoring.lastLeaveDate);
+        const todayDate = new Date(today);
+        // Rumus baru: Terakhir Cuti - Today
+        const diffTime = lastLeaveDate.getTime() - todayDate.getTime();
+        monitoringDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+        
+        console.log(`[${monitoring.nik}] monitoringDays: ${monitoringDays} (${monitoringDays > 0 ? 'hari lagi' : monitoringDays < 0 ? 'sudah lewat' : 'hari ini'}), lastLeave=${monitoring.lastLeaveDate}`);
       }
 
-      // Status berdasarkan hari kerja dari roster
-      console.log(`[${monitoring.nik}] Status check - monitoring working days: ${monitoringDays}, current status: ${monitoring.status}`);
+      // Status berdasarkan rumus baru: Terakhir Cuti - Today
+      console.log(`[${monitoring.nik}] Status check - monitoring days: ${monitoringDays}, current status: ${monitoring.status}`);
       
-      // Aturan status berdasarkan hari kerja:
+      // Aturan status baru:
       if (monitoringDays <= 10 && monitoringDays >= 0) {
         newStatus = "Menunggu Cuti";
-        console.log(`[${monitoring.nik}] Set to Menunggu Cuti - ${monitoringDays} hari kerja lagi menuju cuti`);
+        console.log(`[${monitoring.nik}] Set to Menunggu Cuti - ${monitoringDays} hari lagi menuju cuti`);
       } else if (monitoringDays > 10) {
         newStatus = "Aktif";
-        console.log(`[${monitoring.nik}] Set to Aktif - masih ${monitoringDays} hari kerja lagi`);
+        console.log(`[${monitoring.nik}] Set to Aktif - masih ${monitoringDays} hari lagi`);
       } else if (monitoringDays < 0) {
         newStatus = "Cuti Selesai";
-        console.log(`[${monitoring.nik}] Set to Cuti Selesai - sudah lewat ${Math.abs(monitoringDays)} hari kerja`);
+        console.log(`[${monitoring.nik}] Set to Cuti Selesai - sudah lewat ${Math.abs(monitoringDays)} hari`);
       }
 
       await this.updateLeaveRosterMonitoring(monitoring.id, {
