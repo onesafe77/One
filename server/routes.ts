@@ -1,5 +1,6 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
+import multer from 'multer';
 
 import { storage } from "./storage";
 import { ObjectStorageService, ObjectNotFoundError } from "./objectStorage";
@@ -2464,6 +2465,80 @@ export async function registerRoutes(app: Express): Promise<Server> {
         </html>
       `);
     }
+  });
+
+  // PDF Upload endpoint
+  const storage_upload = multer({
+    storage: multer.diskStorage({
+      destination: function (req, file, cb) {
+        const fs = require('fs');
+        const path = require('path');
+        const uploadDir = path.join(process.cwd(), 'uploads', 'pdf');
+        
+        // Create directory if it doesn't exist
+        if (!fs.existsSync(uploadDir)) {
+          fs.mkdirSync(uploadDir, { recursive: true });
+        }
+        
+        cb(null, uploadDir);
+      },
+      filename: function (req, file, cb) {
+        // Generate unique filename with timestamp
+        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+        cb(null, 'form-' + uniqueSuffix + '.pdf');
+      }
+    }),
+    fileFilter: function (req, file, cb) {
+      // Only allow PDF files
+      if (file.mimetype === 'application/pdf') {
+        cb(null, true);
+      } else {
+        cb(new Error('Hanya file PDF yang diperbolehkan'));
+      }
+    },
+    limits: {
+      fileSize: 5 * 1024 * 1024 // 5MB limit
+    }
+  });
+
+  app.post('/api/upload-pdf', storage_upload.single('pdf'), (req, res) => {
+    try {
+      if (!req.file) {
+        return res.status(400).json({ error: 'Tidak ada file yang diupload' });
+      }
+
+      res.json({
+        success: true,
+        fileName: req.file.filename,
+        filePath: req.file.path,
+        originalName: req.file.originalname,
+        size: req.file.size
+      });
+    } catch (error) {
+      console.error('Error uploading PDF:', error);
+      res.status(500).json({ error: 'Gagal upload PDF' });
+    }
+  });
+
+  // File download endpoint
+  app.get('/api/files/download/:filename', (req, res) => {
+    const fs = require('fs');
+    const path = require('path');
+    const filename = req.params.filename;
+    const filePath = path.join(process.cwd(), 'uploads', 'pdf', filename);
+
+    // Check if file exists
+    if (!fs.existsSync(filePath)) {
+      return res.status(404).json({ error: 'File tidak ditemukan' });
+    }
+
+    // Set appropriate headers for PDF
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `inline; filename="${filename}"`);
+    
+    // Stream the file
+    const fileStream = fs.createReadStream(filePath);
+    fileStream.pipe(res);
   });
 
   const httpServer = createServer(app);

@@ -195,6 +195,9 @@ export default function Leave() {
   const [hrUploadingFiles, setHrUploadingFiles] = useState<{[key: string]: boolean}>({});
   const [hrUploadedFiles, setHrUploadedFiles] = useState<{[key: string]: string}>({});
   
+  // PDF Upload states  
+  const [selectedPdfFile, setSelectedPdfFile] = useState<File | null>(null);
+  
   // Upload Roster States
   const [file, setFile] = useState<File | null>(null);
   const [isUploadingRoster, setIsUploadingRoster] = useState(false);
@@ -449,6 +452,69 @@ export default function Leave() {
         description: "Gagal mengupload file PDF",
         variant: "destructive",
       });
+    }
+  };
+
+  // PDF Upload handlers
+  const handlePdfFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      // Validate PDF file
+      if (file.type !== 'application/pdf') {
+        toast({
+          title: "Error",
+          description: "Hanya file PDF yang diperbolehkan",
+          variant: "destructive",
+        });
+        return;
+      }
+      
+      // Check file size (max 5MB)
+      if (file.size > 5 * 1024 * 1024) {
+        toast({
+          title: "Error", 
+          description: "Ukuran file maksimal 5MB",
+          variant: "destructive",
+        });
+        return;
+      }
+      
+      setSelectedPdfFile(file);
+    }
+  };
+
+  const handleUploadPdf = async () => {
+    if (!selectedPdfFile) return;
+    
+    setIsUploading(true);
+    const formData = new FormData();
+    formData.append('pdf', selectedPdfFile);
+    
+    try {
+      const response = await fetch('/api/upload-pdf', {
+        method: 'POST',
+        body: formData,
+      });
+      
+      if (!response.ok) {
+        throw new Error('Upload failed');
+      }
+      
+      const result = await response.json();
+      setUploadedAttachmentPath(result.fileName);
+      
+      toast({
+        title: "Upload berhasil",
+        description: "PDF berhasil diupload",
+      });
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Gagal upload PDF",
+        variant: "destructive",
+      });
+    } finally {
+      setIsUploading(false);
     }
   };
 
@@ -1016,24 +1082,59 @@ export default function Leave() {
                   )}
                 />
 
-                {/* Compact File Upload */}
+                {/* PDF File Upload */}
                 <div className="space-y-2">
-                  <label className="text-xs font-medium text-gray-600 dark:text-gray-400">Lampiran (Opsional)</label>
-                  <ObjectUploader
-                    maxNumberOfFiles={1}
-                    maxFileSize={10485760}
-  
-                    onGetUploadParameters={handleGetUploadParameters}
-                    onComplete={handleUploadComplete}
-                    buttonClassName="w-full h-8 text-xs"
-                  >
-                    📎 Upload PDF
-                  </ObjectUploader>
+                  <label className="text-xs font-medium text-gray-600 dark:text-gray-400">Lampiran PDF (Opsional)</label>
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="file"
+                      accept=".pdf,application/pdf"
+                      onChange={handlePdfFileSelect}
+                      className="hidden"
+                      id="pdf-upload"
+                      disabled={isUploading}
+                    />
+                    <label
+                      htmlFor="pdf-upload"
+                      className={`flex-1 h-8 px-3 py-1 text-xs border border-gray-300 dark:border-gray-600 rounded cursor-pointer flex items-center justify-center gap-2 
+                        ${isUploading ? 'bg-gray-100 dark:bg-gray-800 cursor-not-allowed' : 'bg-white dark:bg-gray-900 hover:bg-gray-50 dark:hover:bg-gray-800'}
+                        text-gray-700 dark:text-gray-300`}
+                    >
+                      <FileText className="w-3 h-3" />
+                      {selectedPdfFile ? selectedPdfFile.name : 'Pilih file PDF'}
+                    </label>
+                    {selectedPdfFile && !isUploading && (
+                      <Button
+                        type="button"
+                        size="sm"
+                        onClick={handleUploadPdf}
+                        className="h-8 px-3 text-xs"
+                        disabled={isUploading}
+                      >
+                        Upload
+                      </Button>
+                    )}
+                  </div>
                   {uploadedAttachmentPath && (
-                    <p className="text-xs text-green-600 dark:text-green-400">✓ File uploaded</p>
+                    <div className="flex items-center gap-2">
+                      <p className="text-xs text-green-600 dark:text-green-400">✓ PDF uploaded successfully</p>
+                      <a 
+                        href={`/api/files/download/${uploadedAttachmentPath.split('/').pop()}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-xs text-blue-600 dark:text-blue-400 hover:underline"
+                      >
+                        Lihat PDF
+                      </a>
+                    </div>
                   )}
                   {isUploading && (
-                    <p className="text-xs text-blue-600 dark:text-blue-400">Uploading...</p>
+                    <p className="text-xs text-blue-600 dark:text-blue-400">Uploading PDF...</p>
+                  )}
+                  {selectedPdfFile && !uploadedAttachmentPath && (
+                    <p className="text-xs text-gray-500 dark:text-gray-400">
+                      File size: {(selectedPdfFile.size / 1024 / 1024).toFixed(2)} MB
+                    </p>
                   )}
                 </div>
                 
