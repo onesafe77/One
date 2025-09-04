@@ -363,9 +363,8 @@ function generateShiftSection(
     const employee = data.employees.find(emp => emp.id === rosterRecord.employeeId);
     if (!employee) return;
     
-    // Get monitoring days from leave monitoring data
-    const monitoringDays = (data as any).leaveMonitoring?.find((leave: any) => leave.nik === employee.id)?.monitoringDays;
-    const workDaysText = (monitoringDays !== null && monitoringDays !== undefined) ? `${monitoringDays} Hari` : '-';
+    // Get work days from roster data
+    const workDaysText = rosterRecord.hariKerja || '-';
     
     // Prepare row data - show ALL scheduled employees with their attendance status
     const jamTidur = attendanceRecord?.jamTidur || '-';
@@ -377,9 +376,9 @@ function generateShiftSection(
       employee.name || '-',
       employee.id || '-',
       shiftName || '-',
-      workDaysText, // Hari Kerja
+      workDaysText, // Hari Kerja dari roster
       attendanceTime, // Jam Masuk
-      employee.position || '-',
+      employee.nomorLambung || '-', // Nomor Lambung dari employee data
       jamTidur,
       fitToWorkStatus,
       attendanceStatus
