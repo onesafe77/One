@@ -502,11 +502,47 @@ export default function Leave() {
   });
 
   const handleApprove = (id: string) => {
-    updateStatusMutation.mutate({ id, status: 'approved' });
+    // Check if this is a monitoring request (starts with "monitoring-")
+    if (id.startsWith("monitoring-")) {
+      // Extract the actual monitoring ID 
+      const monitoringId = id.replace("monitoring-", "");
+      
+      // Find the monitoring request data
+      const monitoringRequest = pendingFromMonitoring?.find((req: any) => req.id === id);
+      if (monitoringRequest) {
+        processMonitoringMutation.mutate({
+          monitoringId: monitoringId,
+          employeeId: monitoringRequest.employeeId,
+          employeeName: monitoringRequest.employeeName,
+          phoneNumber: monitoringRequest.phoneNumber || "",
+          startDate: monitoringRequest.startDate || new Date().toISOString().split('T')[0],
+          endDate: monitoringRequest.endDate || new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], // Default 7 days
+          leaveType: monitoringRequest.leaveType,
+          reason: monitoringRequest.reason,
+          attachmentPath: monitoringRequest.attachmentPath,
+          action: "approve"
+        });
+      }
+    } else {
+      // Regular leave request
+      updateStatusMutation.mutate({ id, status: 'approved' });
+    }
   };
 
   const handleReject = (id: string) => {
-    updateStatusMutation.mutate({ id, status: 'rejected' });
+    // Check if this is a monitoring request (starts with "monitoring-")
+    if (id.startsWith("monitoring-")) {
+      // Extract the actual monitoring ID 
+      const monitoringId = id.replace("monitoring-", "");
+      
+      processMonitoringMutation.mutate({
+        monitoringId: monitoringId,
+        action: "reject"
+      });
+    } else {
+      // Regular leave request
+      updateStatusMutation.mutate({ id, status: 'rejected' });
+    }
   };
 
   // Upload Roster functions
