@@ -3,48 +3,24 @@ import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { ThemeProvider } from "@/hooks/use-theme";
-import { Switch, Route } from "wouter";
 
 import { useAuth } from "@/hooks/useAuth";
 import { Workspace } from "@/components/workspace";
 import Landing from "@/pages/landing";
-import PublicScanner from "@/pages/public-scanner";
 
 /**
- * Router component that handles routing with public and private pages
+ * Router component that handles the two-page structure
  */
 function Router() {
   const { isAuthenticated, isLoading } = useAuth();
 
-  return (
-    <Switch>
-      {/* Public Routes - No authentication required */}
-      <Route path="/scan" component={PublicScanner} />
-      <Route path="/public-scan" component={PublicScanner} />
-      
-      {/* Private Routes - Authentication required */}
-      <Route path="/">
-        {() => {
-          // Halaman 1: Landing (Sebelum Login)
-          if (isLoading || !isAuthenticated) {
-            return <Landing />;
-          }
-          // Halaman 2: Workspace (Setelah Login) 
-          return <Workspace />;
-        }}
-      </Route>
-      
-      {/* Default route */}
-      <Route>
-        {() => {
-          if (isLoading || !isAuthenticated) {
-            return <Landing />;
-          }
-          return <Workspace />;
-        }}
-      </Route>
-    </Switch>
-  );
+  // Halaman 1: Landing (Sebelum Login)
+  if (isLoading || !isAuthenticated) {
+    return <Landing />;
+  }
+
+  // Halaman 2: Workspace (Setelah Login) 
+  return <Workspace />;
 }
 
 /**
