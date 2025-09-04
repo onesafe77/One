@@ -90,6 +90,7 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
         <nav className="mt-8 px-4 space-y-2">
           {navigation.map((item) => {
             const isActive = location === item.href;
+            const IconComponent = item.icon;
             return (
               <Link
                 key={item.name}
@@ -105,7 +106,7 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
                   }
                 }}
               >
-                <item.icon className="w-5 h-5 mr-3" />
+                <IconComponent className="w-5 h-5 mr-3" />
                 {item.name}
               </Link>
             );
