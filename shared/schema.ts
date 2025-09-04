@@ -73,6 +73,7 @@ export const leaveRequests = pgTable("leave_requests", {
   leaveType: text("leave_type").notNull(),
   reason: text("reason"),
   attachmentPath: text("attachment_path"), // Path to uploaded PDF file
+  actionAttachmentPath: text("action_attachment_path"), // Path to HR action PDF file
   status: text("status").notNull().default("pending"),
   createdAt: timestamp("created_at").default(sql`now()`),
 });

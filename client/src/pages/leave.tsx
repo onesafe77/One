@@ -198,6 +198,14 @@ export default function Leave() {
   // PDF Upload states  
   const [selectedPdfFile, setSelectedPdfFile] = useState<File | null>(null);
   
+  // Action PDF Upload states
+  const [showActionDialog, setShowActionDialog] = useState(false);
+  const [actionType, setActionType] = useState<'approve' | 'reject' | null>(null);
+  const [actionRequestId, setActionRequestId] = useState<string>('');
+  const [actionPdfFile, setActionPdfFile] = useState<File | null>(null);
+  const [actionPdfUploading, setActionPdfUploading] = useState(false);
+  const [actionPdfPath, setActionPdfPath] = useState<string>('');
+  
   // Upload Roster States
   const [file, setFile] = useState<File | null>(null);
   const [isUploadingRoster, setIsUploadingRoster] = useState(false);
@@ -292,8 +300,8 @@ export default function Leave() {
   });
 
   const updateStatusMutation = useMutation({
-    mutationFn: ({ id, status }: { id: string; status: string }) =>
-      apiRequest(`/api/leave/${id}`, "PUT", { status }),
+    mutationFn: ({ id, status, actionAttachment }: { id: string; status: string; actionAttachment?: string }) =>
+      apiRequest(`/api/leave/${id}`, "PUT", { status, actionAttachmentPath: actionAttachment }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/leave"] });
       toast({
@@ -518,6 +526,77 @@ export default function Leave() {
     }
   };
 
+  // Action PDF Upload handlers
+  const handleActionPdfFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      // Validate PDF file
+      if (file.type !== 'application/pdf') {
+        toast({
+          title: "Error",
+          description: "Hanya file PDF yang diperbolehkan",
+          variant: "destructive",
+        });
+        return;
+      }
+      
+      // Check file size (max 5MB)
+      if (file.size > 5 * 1024 * 1024) {
+        toast({
+          title: "Error", 
+          description: "Ukuran file maksimal 5MB",
+          variant: "destructive",
+        });
+        return;
+      }
+      
+      setActionPdfFile(file);
+    }
+  };
+
+  const handleActionPdfUpload = async () => {
+    if (!actionPdfFile) return;
+    
+    setActionPdfUploading(true);
+    const formData = new FormData();
+    formData.append('pdf', actionPdfFile);
+    
+    try {
+      const response = await fetch('/api/upload-pdf', {
+        method: 'POST',
+        body: formData,
+      });
+      
+      if (!response.ok) {
+        throw new Error('Upload failed');
+      }
+      
+      const result = await response.json();
+      setActionPdfPath(result.fileName);
+      
+      toast({
+        title: "Upload berhasil",
+        description: "PDF berhasil diupload",
+      });
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Gagal upload PDF",
+        variant: "destructive",
+      });
+    } finally {
+      setActionPdfUploading(false);
+    }
+  };
+
+  const handleActionConfirm = () => {
+    if (actionType === 'approve') {
+      handleApproveWithPdf(actionRequestId, actionPdfPath || undefined);
+    } else if (actionType === 'reject') {
+      handleRejectWithPdf(actionRequestId, actionPdfPath || undefined);
+    }
+  };
+
   const getEmployeeName = (employeeId: string) => {
     return employees.find(emp => emp.id === employeeId)?.name || 'Unknown';
   };
@@ -599,6 +678,15 @@ export default function Leave() {
   });
 
   const handleApprove = (id: string) => {
+    // Open action dialog for PDF upload
+    setActionType('approve');
+    setActionRequestId(id);
+    setActionPdfFile(null);
+    setActionPdfPath('');
+    setShowActionDialog(true);
+  };
+
+  const handleApproveWithPdf = (id: string, pdfPath?: string) => {
     // Check if this is a monitoring request (starts with "monitoring-")
     if (id.startsWith("monitoring-")) {
       // Extract the actual monitoring ID 
@@ -616,17 +704,31 @@ export default function Leave() {
           endDate: monitoringRequest.endDate || new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], // Default 7 days
           leaveType: monitoringRequest.leaveType,
           reason: monitoringRequest.reason,
-          attachmentPath: monitoringRequest.attachmentPath,
+          attachmentPath: pdfPath || monitoringRequest.attachmentPath,
           action: "approve"
         });
       }
     } else {
       // Regular leave request
-      updateStatusMutation.mutate({ id, status: 'approved' });
+      updateStatusMutation.mutate({ 
+        id, 
+        status: 'approved',
+        actionAttachment: pdfPath 
+      });
     }
+    setShowActionDialog(false);
   };
 
   const handleReject = (id: string) => {
+    // Open action dialog for PDF upload
+    setActionType('reject');
+    setActionRequestId(id);
+    setActionPdfFile(null);
+    setActionPdfPath('');
+    setShowActionDialog(true);
+  };
+
+  const handleRejectWithPdf = (id: string, pdfPath?: string) => {
     // Check if this is a monitoring request (starts with "monitoring-")
     if (id.startsWith("monitoring-")) {
       // Extract the actual monitoring ID 
@@ -634,12 +736,18 @@ export default function Leave() {
       
       processMonitoringMutation.mutate({
         monitoringId: monitoringId,
-        action: "reject"
+        action: "reject",
+        actionAttachment: pdfPath
       });
     } else {
       // Regular leave request
-      updateStatusMutation.mutate({ id, status: 'rejected' });
+      updateStatusMutation.mutate({ 
+        id, 
+        status: 'rejected',
+        actionAttachment: pdfPath 
+      });
     }
+    setShowActionDialog(false);
   };
 
   // Upload Roster functions
@@ -1565,6 +1673,106 @@ export default function Leave() {
 
         {/* End of unified leave requests */}
       </div>
+
+      {/* Action Dialog with PDF Upload */}
+      <Dialog open={showActionDialog} onOpenChange={setShowActionDialog}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>
+              {actionType === 'approve' ? 'Setujui Permohonan Cuti' : 'Tolak Permohonan Cuti'}
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <p className="text-sm text-gray-600 dark:text-gray-400">
+              Anda akan {actionType === 'approve' ? 'menyetujui' : 'menolak'} permohonan cuti ini.
+              Anda dapat melampirkan dokumen pendukung (opsional).
+            </p>
+            
+            {/* PDF Upload Section */}
+            <div className="space-y-3">
+              <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                Lampiran Dokumen Aksi (Opsional)
+              </label>
+              <div className="flex items-center gap-2">
+                <input
+                  type="file"
+                  accept=".pdf,application/pdf"
+                  onChange={handleActionPdfFileSelect}
+                  className="hidden"
+                  id="action-pdf-upload"
+                  disabled={actionPdfUploading}
+                />
+                <label
+                  htmlFor="action-pdf-upload"
+                  className={`flex-1 h-10 px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded cursor-pointer flex items-center justify-center gap-2 
+                    ${actionPdfUploading ? 'bg-gray-100 dark:bg-gray-800 cursor-not-allowed' : 'bg-white dark:bg-gray-900 hover:bg-gray-50 dark:hover:bg-gray-800'}
+                    text-gray-700 dark:text-gray-300`}
+                >
+                  <FileText className="w-4 h-4" />
+                  {actionPdfFile ? actionPdfFile.name : 'Pilih file PDF'}
+                </label>
+                {actionPdfFile && !actionPdfUploading && !actionPdfPath && (
+                  <Button
+                    type="button"
+                    size="sm"
+                    onClick={handleActionPdfUpload}
+                    className="h-10"
+                    disabled={actionPdfUploading}
+                  >
+                    Upload
+                  </Button>
+                )}
+              </div>
+              
+              {actionPdfPath && (
+                <div className="flex items-center gap-2">
+                  <p className="text-sm text-green-600 dark:text-green-400">✓ PDF uploaded successfully</p>
+                  <a 
+                    href={`/api/files/download/${actionPdfPath}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-sm text-blue-600 dark:text-blue-400 hover:underline"
+                  >
+                    Lihat PDF
+                  </a>
+                </div>
+              )}
+              
+              {actionPdfUploading && (
+                <p className="text-sm text-blue-600 dark:text-blue-400">Uploading PDF...</p>
+              )}
+              
+              {actionPdfFile && !actionPdfPath && (
+                <p className="text-sm text-gray-500 dark:text-gray-400">
+                  File size: {(actionPdfFile.size / 1024 / 1024).toFixed(2)} MB
+                </p>
+              )}
+            </div>
+
+            {/* Action Buttons */}
+            <div className="flex gap-2 pt-4">
+              <Button
+                variant="outline"
+                onClick={() => setShowActionDialog(false)}
+                className="flex-1"
+              >
+                Batal
+              </Button>
+              <Button
+                onClick={handleActionConfirm}
+                disabled={updateStatusMutation.isPending || processMonitoringMutation.isPending}
+                className={`flex-1 ${
+                  actionType === 'approve' 
+                    ? 'bg-green-600 hover:bg-green-700' 
+                    : 'bg-red-600 hover:bg-red-700'
+                }`}
+              >
+                {actionType === 'approve' ? 'Setujui' : 'Tolak'}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
