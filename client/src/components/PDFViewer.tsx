@@ -22,6 +22,27 @@ export function PDFViewer({ pdfPath, title = "Preview PDF", trigger }: PDFViewer
     setLoadError(true);
   };
 
+  const handleIframeLoad = () => {
+    // Check if iframe content is blocked by detecting Chrome's block message
+    setLoadError(false);
+    
+    // Small delay to detect if Chrome blocks the content
+    setTimeout(() => {
+      try {
+        const iframe = document.querySelector('[data-testid="pdf-iframe"]') as HTMLIFrameElement;
+        if (iframe && iframe.contentDocument) {
+          const content = iframe.contentDocument.body?.textContent || '';
+          if (content.includes('blocked') || content.includes('This page has been blocked')) {
+            setLoadError(true);
+          }
+        }
+      } catch (e) {
+        // If we can't access iframe content due to CORS, it might be loaded successfully
+        // or blocked - we'll rely on user feedback
+      }
+    }, 1000);
+  };
+
   const defaultTrigger = (
     <Button
       variant="outline"
@@ -62,7 +83,10 @@ export function PDFViewer({ pdfPath, title = "Preview PDF", trigger }: PDFViewer
           {loadError ? (
             <div className="w-full h-full flex flex-col items-center justify-center text-gray-600 p-4">
               <FileText className="w-12 h-12 mb-4 text-gray-400" />
-              <p className="text-sm mb-2">PDF tidak dapat dimuat</p>
+              <p className="text-sm mb-2 text-center">Browser memblokir preview PDF</p>
+              <p className="text-xs text-gray-500 mb-4 text-center">
+                Chrome mungkin memblokir tampilan PDF dalam preview ini
+              </p>
               <Button
                 variant="outline"
                 size="sm"
@@ -80,7 +104,7 @@ export function PDFViewer({ pdfPath, title = "Preview PDF", trigger }: PDFViewer
               title={title}
               data-testid="pdf-iframe"
               onError={handleIframeError}
-              onLoad={() => setLoadError(false)}
+              onLoad={handleIframeLoad}
             />
           )}
         </div>

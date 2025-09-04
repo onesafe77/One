@@ -2539,6 +2539,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.setHeader('Content-Disposition', `inline; filename="${sanitizedFilename}"`);
       res.setHeader('Cache-Control', 'public, max-age=3600');
       
+      // Add headers to allow iframe embedding and prevent Chrome blocking
+      res.setHeader('X-Frame-Options', 'SAMEORIGIN');
+      res.setHeader('Content-Security-Policy', "frame-ancestors 'self'");
+      res.setHeader('X-Content-Type-Options', 'nosniff');
+      
       // Stream the file
       const fileStream = fs.createReadStream(filePath);
       
