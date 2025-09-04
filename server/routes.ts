@@ -65,10 +65,13 @@ function isValidShiftTimeByName(currentTime: string, shiftName: string): boolean
   const [hours, minutes] = currentTime.split(':').map(Number);
   const totalMinutes = hours * 60 + minutes;
   
-  if (shiftName === "Shift 1") {
+  // Normalize shift name to handle both formats: "Shift 1", "SHIFT 1"
+  const normalizedShift = shiftName.toUpperCase();
+  
+  if (normalizedShift === "SHIFT 1") {
     // Shift 1: STRICT - Hanya boleh scan dari 05:00 sampai 15:30
     return totalMinutes >= 300 && totalMinutes <= 930;
-  } else if (shiftName === "Shift 2") {
+  } else if (normalizedShift === "SHIFT 2") {
     // Shift 2: STRICT - Hanya boleh scan dari 16:00 sampai 20:00
     return totalMinutes >= 960 && totalMinutes <= 1200;
   }
@@ -79,9 +82,12 @@ function isValidShiftTimeByName(currentTime: string, shiftName: string): boolean
 
 // Function to get shift time range for error messages
 function getShiftTimeRange(shiftName: string): { start: string; end: string } {
-  if (shiftName === "Shift 1") {
+  // Normalize shift name to handle both formats: "Shift 1", "SHIFT 1"
+  const normalizedShift = shiftName.toUpperCase();
+  
+  if (normalizedShift === "SHIFT 1") {
     return { start: "05:00", end: "15:30" };
-  } else if (shiftName === "Shift 2") {
+  } else if (normalizedShift === "SHIFT 2") {
     return { start: "16:00", end: "20:00" };
   }
   return { start: "00:00", end: "23:59" };
