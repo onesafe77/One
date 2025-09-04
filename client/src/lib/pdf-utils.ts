@@ -273,20 +273,17 @@ function generateShiftSection(
   doc.setFillColor(220, 220, 220);
   doc.rect(margin, yPosition - 2, finalTableWidth, headerHeight, 'F');
   
-  // Calculate number of attended employees for this shift
-  const attendedEmployeesForShift = data.attendance.filter(record => {
-    const scheduleRecord = scheduledEmployees.find(s => s.employeeId === record.employeeId);
-    return scheduleRecord && scheduleRecord.shift === shiftName;
-  });
+  // We will show ALL scheduled employees for this shift (both attended and not attended)
+  const totalScheduledEmployees = scheduledEmployees.length;
 
-  // Main table border
+  // Main table border - based on ALL scheduled employees, not just attended ones
   doc.setLineWidth(0.5);
-  doc.rect(margin, yPosition - 2, finalTableWidth, (attendedEmployeesForShift.length + 1) * rowHeight + 2);
+  doc.rect(margin, yPosition - 2, finalTableWidth, (totalScheduledEmployees + 1) * rowHeight + 2);
   
   // Vertical grid lines for entire table
   let currentX = margin;
   for (let i = 0; i <= headers.length; i++) {
-    doc.line(currentX, yPosition - 2, currentX, yPosition - 2 + (attendedEmployeesForShift.length + 1) * rowHeight + 2);
+    doc.line(currentX, yPosition - 2, currentX, yPosition - 2 + (totalScheduledEmployees + 1) * rowHeight + 2);
     if (i < headers.length) {
       currentX += columnWidths[i];
     }
@@ -309,32 +306,29 @@ function generateShiftSection(
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(8); // Readable font size for data
   
-  // Only process employees who actually attended (have attendance records)
-  const attendedEmployees = data.attendance.filter(record => {
-    // Check if this attendance record matches the current shift
-    const scheduleRecord = scheduledEmployees.find(s => s.employeeId === record.employeeId);
-    return scheduleRecord && scheduleRecord.shift === shiftName;
-  });
-
-  attendedEmployees.forEach((attendanceRecord, rowIndex) => {
-    const employee = data.employees.find(emp => emp.id === attendanceRecord.employeeId);
+  // Process ALL scheduled employees (both attended and not attended)
+  scheduledEmployees.forEach((rosterRecord, rowIndex) => {
+    // Find attendance record for this employee (if exists)
+    const attendanceRecord = data.attendance.find(att => att.employeeId === rosterRecord.employeeId);
+    const employee = data.employees.find(emp => emp.id === rosterRecord.employeeId);
     if (!employee) return;
     
     // Get monitoring days from leave monitoring data
     const monitoringDays = (data as any).leaveMonitoring?.find((leave: any) => leave.nik === employee.id)?.monitoringDays;
     const workDaysText = (monitoringDays !== null && monitoringDays !== undefined) ? `${monitoringDays} Hari` : '-';
     
-    // Prepare row data - only show employees who scanned QR code
-    const jamTidur = attendanceRecord.jamTidur || '-';
-    const fitToWorkStatus = attendanceRecord.fitToWork || 'Not Fit To Work';
-    const attendanceStatus = attendanceRecord.status === 'present' ? 'Hadir' : 'Tidak Hadir';
+    // Prepare row data - show ALL scheduled employees with their attendance status
+    const jamTidur = attendanceRecord?.jamTidur || '-';
+    const fitToWorkStatus = attendanceRecord?.fitToWork || 'Not Fit To Work';
+    const attendanceStatus = attendanceRecord ? 'Hadir' : 'Tidak Hadir';
+    const attendanceTime = attendanceRecord?.time || '-';
     
     const rowData = [
       employee.name || '-',
       employee.id || '-',
       shiftName || '-',
       workDaysText, // Hari Kerja
-      attendanceRecord.time || '-', // Jam Masuk
+      attendanceTime, // Jam Masuk
       employee.position || '-',
       jamTidur,
       fitToWorkStatus,

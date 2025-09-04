@@ -68,21 +68,13 @@ function isValidShiftTimeByName(currentTime: string, shiftName: string): boolean
   // Normalize shift name to handle both formats: "Shift 1", "SHIFT 1"
   const normalizedShift = shiftName.toUpperCase();
   
-  console.log(`DEBUG: isValidShiftTimeByName - currentTime: ${currentTime}, shiftName: ${shiftName}, normalizedShift: ${normalizedShift}, totalMinutes: ${totalMinutes}`);
-  
   if (normalizedShift === "SHIFT 1") {
     // Shift 1: STRICT - Hanya boleh scan dari 05:00 sampai 15:30
-    const isValid = totalMinutes >= 300 && totalMinutes <= 930;
-    console.log(`DEBUG: SHIFT 1 validation - ${totalMinutes} >= 300 && ${totalMinutes} <= 930 = ${isValid}`);
-    return isValid;
+    return totalMinutes >= 300 && totalMinutes <= 930;
   } else if (normalizedShift === "SHIFT 2") {
     // Shift 2: STRICT - Hanya boleh scan dari 16:00 sampai 20:00
-    const isValid = totalMinutes >= 960 && totalMinutes <= 1200;
-    console.log(`DEBUG: SHIFT 2 validation - ${totalMinutes} >= 960 && ${totalMinutes} <= 1200 = ${isValid}`);
-    return isValid;
+    return totalMinutes >= 960 && totalMinutes <= 1200;
   }
-  
-  console.log(`DEBUG: No matching shift found for: ${normalizedShift}`);
   // CRITICAL: Diluar shift yang ditentukan = TIDAK BOLEH ABSENSI
   return false;
 }
