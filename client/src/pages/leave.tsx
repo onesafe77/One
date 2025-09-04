@@ -8,7 +8,6 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Progress } from "@/components/ui/progress";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -154,7 +153,6 @@ export default function Leave() {
   const [statusFilter, setStatusFilter] = useState("all");
   const [uploadedAttachmentPath, setUploadedAttachmentPath] = useState<string>("");
   const [isUploading, setIsUploading] = useState(false);
-  const [activeTab, setActiveTab] = useState("pengajuan");
   const [openCombobox, setOpenCombobox] = useState(false);
   const [employeeSearchValue, setEmployeeSearchValue] = useState("");
   
@@ -753,24 +751,17 @@ export default function Leave() {
   };
 
   return (
-    <div className="container mx-auto p-4 space-y-4">
-      <div className="flex items-center justify-between mb-4">
+    <div className="container mx-auto p-4 space-y-6">
+      <div className="flex items-center justify-between mb-6">
         <div>
           <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Manajemen Cuti</h1>
           <p className="text-sm text-gray-600 dark:text-gray-400">Sistem manajemen cuti terpadu dengan analitik dan monitoring</p>
         </div>
       </div>
 
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
-        <TabsList className="grid w-full grid-cols-2">
-          <TabsTrigger value="pengajuan" className="text-xs">📝 Pengajuan</TabsTrigger>
-          <TabsTrigger value="manajemen-hr" className="text-xs">🏢 Manajemen HR</TabsTrigger>
-        </TabsList>
-
-        <TabsContent value="pengajuan" className="space-y-4">
-          <div className="grid grid-cols-1 xl:grid-cols-4 gap-4">
-        {/* Compact Leave Form */}
-        <Card className="xl:col-span-1">
+      {/* Form Pengajuan Cuti */}
+      <div className="space-y-4">
+        <Card>
           <CardHeader className="pb-3">
             <CardTitle className="text-lg">Ajukan Cuti</CardTitle>
           </CardHeader>
@@ -993,7 +984,7 @@ export default function Leave() {
         </Card>
         
         {/* Compact Leave List */}
-        <Card className="xl:col-span-3">
+        <Card>
           <CardHeader className="pb-3">
             <div className="flex items-center justify-between">
               <CardTitle className="text-lg">Daftar Cuti</CardTitle>
@@ -1230,10 +1221,8 @@ export default function Leave() {
             </div>
           </CardContent>
         </Card>
-          </div>
-        </TabsContent>
 
-        <TabsContent value="manajemen-hr" className="space-y-6">
+        {/* Daftar Cuti */}
           {/* Section Proses HR - Persetujuan Cuti dari Monitoring */}
           <Card className="bg-gradient-to-r from-orange-50 to-amber-50 dark:from-orange-900/20 dark:to-amber-900/20 border-orange-200 dark:border-orange-800">
             <CardHeader className="pb-4">
@@ -1982,8 +1971,7 @@ export default function Leave() {
               </div>
             </CardContent>
           </Card>
-        </TabsContent>
-      </Tabs>
+      </div>
     </div>
   );
 }
