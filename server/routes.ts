@@ -395,6 +395,35 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!scheduledEmployee) {
         return res.status(400).json({ message: "Karyawan tidak dijadwalkan untuk hari ini" });
       }
+
+      // Validasi status roster berdasarkan kolom "Shift"
+      if (scheduledEmployee.shift === "CUTI") {
+        return res.status(400).json({ 
+          message: "Absensi ditolak. Status Anda CUTI sesuai roster.",
+          rosterStatus: "CUTI",
+          employeeId: validatedData.employeeId,
+          date: validatedData.date
+        });
+      }
+
+      if (scheduledEmployee.shift === "OVERSHIFT") {
+        return res.status(400).json({ 
+          message: "Absensi ditolak. Status Anda OVERSHIFT sesuai roster.",
+          rosterStatus: "OVERSHIFT", 
+          employeeId: validatedData.employeeId,
+          date: validatedData.date
+        });
+      }
+
+      // Hanya terima absensi untuk Shift 1 dan Shift 2
+      if (scheduledEmployee.shift !== "SHIFT 1" && scheduledEmployee.shift !== "SHIFT 2") {
+        return res.status(400).json({ 
+          message: `Absensi ditolak. Status roster tidak valid: ${scheduledEmployee.shift}. Hanya Shift 1 dan Shift 2 yang dapat melakukan absensi.`,
+          rosterStatus: scheduledEmployee.shift,
+          employeeId: validatedData.employeeId,
+          date: validatedData.date
+        });
+      }
       
       const leaveRequests = leaves;
       const approvedLeave = leaveRequests.find(leave => 
