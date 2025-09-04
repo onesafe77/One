@@ -244,10 +244,15 @@ function generateShiftSection(
   
   // IMPORTANT: Also include employees who attended but are not in roster (emergency attendance)
   const unscheduledAttendees = data.attendance.filter(att => {
-    // Find attendance records that don't have a corresponding roster entry
-    const hasRosterEntry = data.roster?.some(r => r.employeeId === att.employeeId && r.date === data.startDate);
+    // Find attendance records that don't have a corresponding WORK shift roster entry
+    // Only check for SHIFT 1 and SHIFT 2, ignore CUTI, LIBUR, etc.
+    const hasWorkShiftRoster = data.roster?.some(r => 
+      r.employeeId === att.employeeId && 
+      r.date === data.startDate && 
+      (r.shift === 'SHIFT 1' || r.shift === 'SHIFT 2')
+    );
     
-    if (hasRosterEntry) return false; // Already in roster
+    if (hasWorkShiftRoster) return false; // Already has work shift roster
     
     if (att.date !== data.startDate) return false; // Wrong date
     
@@ -259,13 +264,9 @@ function generateShiftSection(
     // SHIFT 2: 16:00-20:00 (960-1200 minutes)
     const attendanceShift = (totalMinutes >= 960 && totalMinutes <= 1200) ? 'SHIFT 2' : 'SHIFT 1';
     
-    console.log(`📊 Processing attendance: ${att.employeeId} at ${att.time} (${totalMinutes} min) -> ${attendanceShift}, Current shift: ${shiftName}`);
-    
     // Only include if this attendance belongs to the current shift being processed
     return attendanceShift === shiftName;
   });
-  
-  console.log(`🔍 ${shiftName}: Found ${unscheduledAttendees.length} unscheduled attendees out of ${data.attendance.length} total attendance records`);
   
   // Add unscheduled attendees as temporary roster entries for this specific shift
   unscheduledAttendees.forEach(att => {
