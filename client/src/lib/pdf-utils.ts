@@ -239,84 +239,58 @@ function generateShiftSection(
   doc.text(shiftName.toUpperCase(), margin, yPosition);
   yPosition += 15; // Increased padding between shift title and table
   
-  // Get scheduled employees for this shift first
+  // Get scheduled employees for this shift first (from roster)
   const scheduledEmployees = data.roster?.filter(r => r.shift === shiftName && r.date === data.startDate) || [];
   
-  // IMPORTANT: Also include employees who attended but are not in roster (emergency attendance)
-  console.log(`🔍 Processing ${shiftName} - Total attendance records: ${data.attendance.length}`);
-  
-  const unscheduledAttendees = data.attendance.filter(att => {
-    console.log(`📋 Checking attendance: ${att.employeeId} at ${att.time} on ${att.date}`);
-    
-    // Find attendance records that don't have a corresponding WORK shift roster entry
-    // Only check for SHIFT 1 and SHIFT 2, ignore CUTI, LIBUR, etc.
-    const hasWorkShiftRoster = data.roster?.some(r => 
-      r.employeeId === att.employeeId && 
-      r.date === data.startDate && 
-      (r.shift === 'SHIFT 1' || r.shift === 'SHIFT 2')
-    );
-    
-    console.log(`👤 Employee ${att.employeeId} has work shift roster: ${hasWorkShiftRoster}`);
-    
-    if (hasWorkShiftRoster) {
-      console.log(`❌ ${att.employeeId} already in work roster, skipping`);
-      return false; // Already has work shift roster
-    }
-    
-    if (att.date !== data.startDate) {
-      console.log(`❌ ${att.employeeId} wrong date (${att.date} vs ${data.startDate}), skipping`);
-      return false; // Wrong date
-    }
+  // ALWAYS include ALL attendance records for this shift based on scan time
+  const attendanceForThisShift = data.attendance.filter(att => {
+    if (att.date !== data.startDate) return false; // Wrong date
     
     // Determine which shift this attendance belongs to based on time
     const [hours, minutes] = att.time.split(':').map(Number);
     const totalMinutes = hours * 60 + minutes;
     
-    // SHIFT 1: 05:00-15:30 (300-930 minutes)
+    // SHIFT 1: 05:00-15:30 (300-930 minutes)  
     // SHIFT 2: 16:00-20:00 (960-1200 minutes)
     const attendanceShift = (totalMinutes >= 960 && totalMinutes <= 1200) ? 'SHIFT 2' : 'SHIFT 1';
     
-    console.log(`⏰ ${att.employeeId} at ${att.time} (${totalMinutes} min) → ${attendanceShift}, Processing: ${shiftName}`);
-    
     // Only include if this attendance belongs to the current shift being processed
-    const shouldInclude = attendanceShift === shiftName;
-    console.log(`🎯 ${att.employeeId} should be included in ${shiftName}: ${shouldInclude}`);
-    
-    return shouldInclude;
+    return attendanceShift === shiftName;
   });
   
-  console.log(`✅ Found ${unscheduledAttendees.length} unscheduled attendees for ${shiftName}:`, unscheduledAttendees.map(a => a.employeeId));
-  
-  // Add unscheduled attendees as temporary roster entries for this specific shift
-  unscheduledAttendees.forEach(att => {
-    console.log(`🔍 Looking for employee data for ${att.employeeId}`);
+  // Add all attendance records as roster entries for this shift
+  attendanceForThisShift.forEach(att => {
     const employee = data.employees.find(emp => emp.id === att.employeeId);
-    console.log(`👤 Employee found:`, employee ? `${employee.name} (${employee.id})` : 'NOT FOUND');
     
     if (employee) {
-      const tempRosterEntry = {
-        id: `temp-${att.employeeId}`,
-        employeeId: att.employeeId,
-        date: data.startDate,
-        shift: shiftName, // Assign to current shift being processed
-        startTime: shiftName === 'SHIFT 1' ? '05:00' : '16:00',
-        endTime: shiftName === 'SHIFT 1' ? '15:30' : '20:00',
-        jamTidur: '',
-        fitToWork: 'Fit To Work',
-        hariKerja: '',
-        status: 'emergency_attendance',
-        employee: employee
-      } as any;
+      // Check if employee already exists in scheduledEmployees
+      const existingIndex = scheduledEmployees.findIndex(emp => emp.employeeId === att.employeeId);
       
-      console.log(`➕ Adding ${employee.name} (${att.employeeId}) to ${shiftName} roster`);
-      scheduledEmployees.push(tempRosterEntry);
-    } else {
-      console.log(`❌ No employee data found for ${att.employeeId} - cannot add to roster`);
+      if (existingIndex >= 0) {
+        // Update existing roster entry with attendance data
+        scheduledEmployees[existingIndex] = {
+          ...scheduledEmployees[existingIndex],
+          jamTidur: att.jamTidur || '',
+          fitToWork: att.fitToWork || 'Fit To Work'
+        };
+      } else {
+        // Add new roster entry for attendance
+        scheduledEmployees.push({
+          id: `temp-${att.employeeId}`,
+          employeeId: att.employeeId,
+          date: data.startDate,
+          shift: shiftName,
+          startTime: shiftName === 'SHIFT 1' ? '05:00' : '16:00',
+          endTime: shiftName === 'SHIFT 1' ? '15:30' : '20:00',
+          jamTidur: att.jamTidur || '',
+          fitToWork: att.fitToWork || 'Fit To Work',
+          hariKerja: '',
+          status: 'present',
+          employee: employee
+        } as any);
+      }
     }
   });
-  
-  console.log(`📊 Final ${shiftName} roster count: ${scheduledEmployees.length} employees`);
-  console.log(`📋 ${shiftName} roster employee IDs:`, scheduledEmployees.map(emp => emp.employeeId));
   
   // Table headers with proportional widths
   doc.setFontSize(9); // Header font size
