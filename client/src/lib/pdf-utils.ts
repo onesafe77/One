@@ -259,22 +259,35 @@ function generateShiftSection(
   });
   
   // Add all attendance records as roster entries for this shift
+  console.log(`🔍 Processing ${attendanceForThisShift.length} attendance records for ${shiftName}`);
   attendanceForThisShift.forEach(att => {
     const employee = data.employees.find(emp => emp.id === att.employeeId);
+    console.log(`👤 Employee data for ${att.employeeId}:`, {
+      name: employee?.name,
+      position: employee?.position,
+      nomorLambung: employee?.nomorLambung,
+      department: employee?.department
+    });
     
     if (employee) {
       // Check if employee already exists in scheduledEmployees
       const existingIndex = scheduledEmployees.findIndex(emp => emp.employeeId === att.employeeId);
+      console.log(`📋 Existing roster index: ${existingIndex}`);
       
       if (existingIndex >= 0) {
         // Update existing roster entry with attendance data
+        console.log(`✏️ Updating existing roster entry for ${employee.name}`);
         scheduledEmployees[existingIndex] = {
           ...scheduledEmployees[existingIndex],
           jamTidur: att.jamTidur || '',
           fitToWork: att.fitToWork || 'Fit To Work'
         };
       } else {
-        // Add new roster entry for attendance
+        // Add new roster entry for attendance - get hariKerja from any roster for this employee
+        const anyRosterRecord = data.roster?.find(r => r.employeeId === att.employeeId);
+        console.log(`📊 Found roster record for ${att.employeeId}:`, anyRosterRecord?.hariKerja);
+        
+        console.log(`➕ Adding NEW roster entry for ${employee.name} (${att.employeeId})`);
         scheduledEmployees.push({
           id: `temp-${att.employeeId}`,
           employeeId: att.employeeId,
@@ -284,7 +297,7 @@ function generateShiftSection(
           endTime: shiftName.toUpperCase() === 'SHIFT 1' ? '15:30' : '20:00',
           jamTidur: att.jamTidur || '',
           fitToWork: att.fitToWork || 'Fit To Work',
-          hariKerja: '',
+          hariKerja: anyRosterRecord?.hariKerja || '', // Use hariKerja from any roster record for this employee
           status: 'present',
           employee: employee
         } as any);
@@ -372,6 +385,15 @@ function generateShiftSection(
     const attendanceStatus = attendanceRecord ? 'Hadir' : 'Tidak Hadir';
     const attendanceTime = attendanceRecord?.time || '-';
     
+    console.log(`📊 Row data for ${employee.name}:`, {
+      employeeId: employee.id,
+      name: employee.name,
+      position: employee.position,
+      nomorLambung: employee.nomorLambung,
+      hariKerja: workDaysText,
+      rosterHariKerja: rosterRecord.hariKerja
+    });
+    
     const rowData = [
       employee.name || '-',
       employee.id || '-',
@@ -383,6 +405,8 @@ function generateShiftSection(
       fitToWorkStatus,
       attendanceStatus
     ];
+    
+    console.log(`📄 Final row data:`, rowData);
     
     // Alternating row background
     if (rowIndex % 2 === 1) {
