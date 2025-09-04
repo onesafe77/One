@@ -246,10 +246,28 @@ function generateShiftSection(
   const unscheduledAttendees = data.attendance.filter(att => {
     // Find attendance records that don't have a corresponding roster entry
     const hasRosterEntry = data.roster?.some(r => r.employeeId === att.employeeId && r.date === data.startDate);
-    return !hasRosterEntry && att.date === data.startDate;
+    
+    if (hasRosterEntry) return false; // Already in roster
+    
+    if (att.date !== data.startDate) return false; // Wrong date
+    
+    // Determine which shift this attendance belongs to based on time
+    const [hours, minutes] = att.time.split(':').map(Number);
+    const totalMinutes = hours * 60 + minutes;
+    
+    // SHIFT 1: 05:00-15:30 (300-930 minutes)
+    // SHIFT 2: 16:00-20:00 (960-1200 minutes)
+    const attendanceShift = (totalMinutes >= 960 && totalMinutes <= 1200) ? 'SHIFT 2' : 'SHIFT 1';
+    
+    console.log(`📊 Processing attendance: ${att.employeeId} at ${att.time} (${totalMinutes} min) -> ${attendanceShift}, Current shift: ${shiftName}`);
+    
+    // Only include if this attendance belongs to the current shift being processed
+    return attendanceShift === shiftName;
   });
   
-  // Add unscheduled attendees as temporary roster entries for this shift
+  console.log(`🔍 ${shiftName}: Found ${unscheduledAttendees.length} unscheduled attendees out of ${data.attendance.length} total attendance records`);
+  
+  // Add unscheduled attendees as temporary roster entries for this specific shift
   unscheduledAttendees.forEach(att => {
     const employee = data.employees.find(emp => emp.id === att.employeeId);
     if (employee) {
