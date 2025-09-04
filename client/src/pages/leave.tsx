@@ -701,7 +701,7 @@ export default function Leave() {
       const monitoringId = id.replace("monitoring-", "");
       
       // Find the monitoring request data
-      const monitoringRequest = pendingFromMonitoring?.find((req: any) => req.id === id);
+      const monitoringRequest = Array.isArray(pendingFromMonitoring) ? pendingFromMonitoring.find((req: any) => req.id === id) : undefined;
       if (monitoringRequest) {
         processMonitoringMutation.mutate({
           monitoringId: monitoringId,
@@ -1717,7 +1717,7 @@ export default function Leave() {
                       <tr>
                         <td colSpan={5} className="text-center py-8">
                           <div className="w-16 h-16 bg-gray-100 dark:bg-gray-800 rounded-full flex items-center justify-center mx-auto mb-3">
-                            <Clipboard className="w-8 h-8 text-gray-400" />
+                            <FileText className="w-8 h-8 text-gray-400" />
                           </div>
                           <p className="text-gray-600 dark:text-gray-400 font-medium">Tidak ada permohonan cuti</p>
                           <p className="text-gray-500 dark:text-gray-500 text-sm mt-1">Gunakan form di atas untuk mengajukan cuti baru</p>
