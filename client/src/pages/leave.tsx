@@ -16,6 +16,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { ObjectUploader } from "@/components/ObjectUploader";
+import { PDFViewer } from '@/components/PDFViewer';
 import type { UploadResult } from "@uppy/core";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -634,17 +635,24 @@ export default function Leave() {
   };
 
   const convertToProxyPath = (attachmentPath: string): string => {
-    if (!attachmentPath || !attachmentPath.startsWith("https://storage.googleapis.com/")) {
-      return attachmentPath;
+    if (!attachmentPath) return attachmentPath;
+    
+    // Handle local uploaded files (PDF from local uploads/pdf directory)
+    if (attachmentPath.startsWith('/uploads/pdf/') || attachmentPath.includes('/uploads/pdf/')) {
+      const filename = attachmentPath.split('/').pop();
+      return `/api/files/download/${filename}`;
     }
     
-    const url = new URL(attachmentPath);
-    const pathname = url.pathname;
-    
-    const uploadsIndex = pathname.indexOf("/.private/uploads/");
-    if (uploadsIndex !== -1) {
-      const objectId = pathname.substring(uploadsIndex + "/.private/uploads/".length);
-      return `/objects/uploads/${objectId}`;
+    // Handle object storage files
+    if (attachmentPath.startsWith("https://storage.googleapis.com/")) {
+      const url = new URL(attachmentPath);
+      const pathname = url.pathname;
+      
+      const uploadsIndex = pathname.indexOf("/.private/uploads/");
+      if (uploadsIndex !== -1) {
+        const objectId = pathname.substring(uploadsIndex + "/.private/uploads/".length);
+        return `/objects/uploads/${objectId}`;
+      }
     }
     
     return attachmentPath;
@@ -1444,15 +1452,67 @@ export default function Leave() {
                                   {request.attachmentPath && (
                                     <div>
                                       <p className="font-medium text-sm mb-2">Lampiran Dokumen:</p>
-                                      <a 
-                                        href={convertToProxyPath(request.attachmentPath)} 
-                                        target="_blank" 
-                                        rel="noopener noreferrer"
-                                        className="flex items-center space-x-2 text-red-600 hover:text-red-700 dark:text-red-400 bg-gray-50 dark:bg-gray-800 p-3 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
-                                      >
-                                        <span>📎</span>
-                                        <span className="text-sm">Lihat File PDF</span>
-                                      </a>
+                                      <div className="flex gap-2">
+                                        <PDFViewer 
+                                          pdfPath={convertToProxyPath(request.attachmentPath)}
+                                          title="Lampiran Permohonan Cuti"
+                                          trigger={
+                                            <Button
+                                              variant="outline"
+                                              size="sm"
+                                              className="flex items-center space-x-2 text-red-600 hover:text-red-700 dark:text-red-400"
+                                              data-testid={`preview-pdf-${request.id}`}
+                                            >
+                                              <FileText className="w-4 h-4" />
+                                              <span className="text-sm">Preview PDF</span>
+                                            </Button>
+                                          }
+                                        />
+                                        <a 
+                                          href={convertToProxyPath(request.attachmentPath)} 
+                                          target="_blank" 
+                                          rel="noopener noreferrer"
+                                          className="inline-flex items-center space-x-1 text-red-600 hover:text-red-700 dark:text-red-400 text-sm underline"
+                                          data-testid={`download-pdf-${request.id}`}
+                                        >
+                                          <span>📎</span>
+                                          <span>Download</span>
+                                        </a>
+                                      </div>
+                                    </div>
+                                  )}
+                                  
+                                  {/* HR Action Attachment */}
+                                  {(request as any).actionAttachmentPath && (
+                                    <div>
+                                      <p className="font-medium text-sm mb-2">Dokumen HR:</p>
+                                      <div className="flex gap-2">
+                                        <PDFViewer 
+                                          pdfPath={convertToProxyPath((request as any).actionAttachmentPath)}
+                                          title="Dokumen Keputusan HR"
+                                          trigger={
+                                            <Button
+                                              variant="outline"
+                                              size="sm"
+                                              className="flex items-center space-x-2 text-blue-600 hover:text-blue-700 dark:text-blue-400"
+                                              data-testid={`preview-hr-pdf-${request.id}`}
+                                            >
+                                              <FileText className="w-4 h-4" />
+                                              <span className="text-sm">Preview Keputusan HR</span>
+                                            </Button>
+                                          }
+                                        />
+                                        <a 
+                                          href={convertToProxyPath((request as any).actionAttachmentPath)} 
+                                          target="_blank" 
+                                          rel="noopener noreferrer"
+                                          className="inline-flex items-center space-x-1 text-blue-600 hover:text-blue-700 dark:text-blue-400 text-sm underline"
+                                          data-testid={`download-hr-pdf-${request.id}`}
+                                        >
+                                          <span>📎</span>
+                                          <span>Download</span>
+                                        </a>
+                                      </div>
                                     </div>
                                   )}
                                   
