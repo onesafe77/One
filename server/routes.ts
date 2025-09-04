@@ -1,6 +1,8 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import multer from 'multer';
+import fs from 'fs';
+import path from 'path';
 
 import { storage } from "./storage";
 import { ObjectStorageService, ObjectNotFoundError } from "./objectStorage";
@@ -2471,8 +2473,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
   const storage_upload = multer({
     storage: multer.diskStorage({
       destination: function (req, file, cb) {
-        const fs = require('fs');
-        const path = require('path');
         const uploadDir = path.join(process.cwd(), 'uploads', 'pdf');
         
         // Create directory if it doesn't exist
@@ -2523,8 +2523,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // File download endpoint
   app.get('/api/files/download/:filename', (req, res) => {
     try {
-      const fs = require('fs');
-      const path = require('path');
       const filename = req.params.filename;
       
       // Sanitize filename to prevent path traversal
@@ -2544,7 +2542,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Stream the file
       const fileStream = fs.createReadStream(filePath);
       
-      fileStream.on('error', (error) => {
+      fileStream.on('error', (error: any) => {
         console.error('Error streaming PDF file:', error);
         if (!res.headersSent) {
           res.status(500).json({ error: 'Error membaca file PDF' });
