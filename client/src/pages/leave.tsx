@@ -643,6 +643,12 @@ export default function Leave() {
       return `/api/files/download/${filename}`;
     }
     
+    // Handle filename-only paths (from local /api/upload-pdf endpoint)
+    // Check if it's just a filename (no path separators and ends with .pdf)
+    if (!attachmentPath.includes('/') && attachmentPath.endsWith('.pdf')) {
+      return `/api/files/download/${attachmentPath}`;
+    }
+    
     // Handle object storage files
     if (attachmentPath.startsWith("https://storage.googleapis.com/")) {
       const url = new URL(attachmentPath);

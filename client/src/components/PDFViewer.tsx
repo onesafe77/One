@@ -11,9 +11,15 @@ interface PDFViewerProps {
 
 export function PDFViewer({ pdfPath, title = "Preview PDF", trigger }: PDFViewerProps) {
   const [isOpen, setIsOpen] = useState(false);
+  const [loadError, setLoadError] = useState(false);
 
   const handleOpenExternal = () => {
     window.open(pdfPath, '_blank', 'noopener,noreferrer');
+  };
+
+  const handleIframeError = () => {
+    console.error('Error loading PDF in iframe:', pdfPath);
+    setLoadError(true);
   };
 
   const defaultTrigger = (
@@ -53,15 +59,30 @@ export function PDFViewer({ pdfPath, title = "Preview PDF", trigger }: PDFViewer
         </DialogHeader>
         
         <div className="flex-1 min-h-0 border rounded-lg overflow-hidden bg-gray-100">
-          <iframe
-            src={`${pdfPath}#toolbar=1&navpanes=1&scrollbar=1&view=FitH`}
-            className="w-full h-full border-0"
-            title={title}
-            data-testid="pdf-iframe"
-            onError={() => {
-              console.error('Error loading PDF in iframe');
-            }}
-          />
+          {loadError ? (
+            <div className="w-full h-full flex flex-col items-center justify-center text-gray-600 p-4">
+              <FileText className="w-12 h-12 mb-4 text-gray-400" />
+              <p className="text-sm mb-2">PDF tidak dapat dimuat</p>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleOpenExternal}
+                className="flex items-center gap-2"
+              >
+                <ExternalLink className="w-4 h-4" />
+                Buka di Tab Baru
+              </Button>
+            </div>
+          ) : (
+            <iframe
+              src={`${pdfPath}#toolbar=1&navpanes=1&scrollbar=1&view=FitH`}
+              className="w-full h-full border-0"
+              title={title}
+              data-testid="pdf-iframe"
+              onError={handleIframeError}
+              onLoad={() => setLoadError(false)}
+            />
+          )}
         </div>
         
         <div className="flex-shrink-0 text-xs text-gray-500 text-center pt-2">
