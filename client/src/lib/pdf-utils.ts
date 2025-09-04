@@ -242,6 +242,33 @@ function generateShiftSection(
   // Get scheduled employees for this shift first
   const scheduledEmployees = data.roster?.filter(r => r.shift === shiftName && r.date === data.startDate) || [];
   
+  // IMPORTANT: Also include employees who attended but are not in roster (emergency attendance)
+  const unscheduledAttendees = data.attendance.filter(att => {
+    // Find attendance records that don't have a corresponding roster entry
+    const hasRosterEntry = data.roster?.some(r => r.employeeId === att.employeeId && r.date === data.startDate);
+    return !hasRosterEntry && att.date === data.startDate;
+  });
+  
+  // Add unscheduled attendees as temporary roster entries for this shift
+  unscheduledAttendees.forEach(att => {
+    const employee = data.employees.find(emp => emp.id === att.employeeId);
+    if (employee) {
+      scheduledEmployees.push({
+        id: `temp-${att.employeeId}`,
+        employeeId: att.employeeId,
+        date: data.startDate,
+        shift: shiftName, // Assign to current shift being processed
+        startTime: shiftName === 'SHIFT 1' ? '05:00' : '16:00',
+        endTime: shiftName === 'SHIFT 1' ? '15:30' : '20:00',
+        jamTidur: '',
+        fitToWork: 'Fit To Work',
+        hariKerja: '',
+        status: 'emergency_attendance',
+        employee: employee
+      } as any);
+    }
+  });
+  
   // Table headers with proportional widths
   doc.setFontSize(9); // Header font size
   doc.setFont('helvetica', 'bold');
