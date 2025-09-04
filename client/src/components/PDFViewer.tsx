@@ -54,10 +54,13 @@ export function PDFViewer({ pdfPath, title = "Preview PDF", trigger }: PDFViewer
         
         <div className="flex-1 min-h-0 border rounded-lg overflow-hidden bg-gray-100">
           <iframe
-            src={`${pdfPath}#toolbar=1&navpanes=1&scrollbar=1`}
+            src={`${pdfPath}#toolbar=1&navpanes=1&scrollbar=1&view=FitH`}
             className="w-full h-full border-0"
             title={title}
             data-testid="pdf-iframe"
+            onError={() => {
+              console.error('Error loading PDF in iframe');
+            }}
           />
         </div>
         
