@@ -15,22 +15,13 @@ import { Route, Switch } from "wouter";
  * Router component that handles the two-page structure
  */
 function Router() {
-  const { isAuthenticated, isLoading } = useAuth();
-
-  // Cek apakah ada akses publik untuk driver view (scan QR)
+  // Cek akses publik PERTAMA sebelum auth check
   const currentPath = window.location.pathname;
   const urlParams = new URLSearchParams(window.location.search);
-  const hasNikParam = urlParams.has('nik');
-  const hasQrParam = urlParams.has('data') || urlParams.has('qr');
   
-  const isPublicDriverAccess = (
-    (currentPath === '/mobile-driver' && hasNikParam) ||
-    (currentPath === '/driver-view' && hasNikParam) ||
-    (currentPath === '/qr-redirect' && hasQrParam)
-  );
-
-  // Jika akses driver view publik (dari QR scan), tampilkan tanpa auth
-  if (isPublicDriverAccess) {
+  // Jika ada parameter NIK atau QR data, berikan akses publik
+  if (urlParams.has('nik') || urlParams.has('data') || urlParams.has('qr')) {
+    console.log('Public access detected, bypassing auth');
     return (
       <Switch>
         <Route path="/mobile-driver" component={MobileDriverView} />
@@ -52,9 +43,21 @@ function Router() {
             return <div>Redirecting...</div>;
           }}
         </Route>
+        {/* Fallback untuk path lain dengan parameter, redirect ke mobile driver */}
+        <Route>
+          {() => {
+            const nikParam = urlParams.get('nik');
+            if (nikParam) {
+              return <MobileDriverView />;
+            }
+            return <div>Invalid access</div>;
+          }}
+        </Route>
       </Switch>
     );
   }
+
+  const { isAuthenticated, isLoading } = useAuth();
 
   // Halaman 1: Landing (Sebelum Login)
   if (isLoading || !isAuthenticated) {
