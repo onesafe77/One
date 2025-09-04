@@ -1,6 +1,7 @@
 import jsPDF from 'jspdf';
 import type { AttendanceRecord, Employee, RosterSchedule } from '@shared/schema';
 import { determineShiftByTime } from './shift-utils';
+import companyLogo from '@assets/image_1756993494840.png';
 
 interface ReportInfo {
   perusahaan: string;
@@ -47,10 +48,22 @@ export async function generateAttendancePDF(data: ReportData): Promise<void> {
     
     let yPosition = 20;
     
-    // Company Header - PT Goden Energi Cemerlang Lestari
-    doc.setFontSize(12);
-    doc.setFont('helvetica', 'bold');
-    doc.text('PT Goden Energi Cemerlang Lestari', margin, yPosition);
+    // Company Header with Logo
+    try {
+      // Add company logo
+      doc.addImage(companyLogo, 'PNG', margin, yPosition - 5, 30, 15); // Logo with 30x15 size
+      
+      // Company name next to logo
+      doc.setFontSize(12);
+      doc.setFont('helvetica', 'bold');
+      doc.text('PT Goden Energi Cemerlang Lestari', margin + 35, yPosition + 5);
+    } catch (error) {
+      console.warn('Could not add logo to PDF:', error);
+      // Fallback to text only
+      doc.setFontSize(12);
+      doc.setFont('helvetica', 'bold');
+      doc.text('PT Goden Energi Cemerlang Lestari', margin, yPosition);
+    }
     yPosition += 25;
     
     // Main Title
@@ -259,24 +272,15 @@ function generateShiftSection(
   });
   
   // Add all attendance records as roster entries for this shift
-  console.log(`🔍 Processing ${attendanceForThisShift.length} attendance records for ${shiftName}`);
   attendanceForThisShift.forEach(att => {
     const employee = data.employees.find(emp => emp.id === att.employeeId);
-    console.log(`👤 Employee data for ${att.employeeId}:`, {
-      name: employee?.name,
-      position: employee?.position,
-      nomorLambung: employee?.nomorLambung,
-      department: employee?.department
-    });
     
     if (employee) {
       // Check if employee already exists in scheduledEmployees
       const existingIndex = scheduledEmployees.findIndex(emp => emp.employeeId === att.employeeId);
-      console.log(`📋 Existing roster index: ${existingIndex}`);
       
       if (existingIndex >= 0) {
         // Update existing roster entry with attendance data
-        console.log(`✏️ Updating existing roster entry for ${employee.name}`);
         scheduledEmployees[existingIndex] = {
           ...scheduledEmployees[existingIndex],
           jamTidur: att.jamTidur || '',
@@ -285,9 +289,7 @@ function generateShiftSection(
       } else {
         // Add new roster entry for attendance - get hariKerja from any roster for this employee
         const anyRosterRecord = data.roster?.find(r => r.employeeId === att.employeeId);
-        console.log(`📊 Found roster record for ${att.employeeId}:`, anyRosterRecord?.hariKerja);
         
-        console.log(`➕ Adding NEW roster entry for ${employee.name} (${att.employeeId})`);
         scheduledEmployees.push({
           id: `temp-${att.employeeId}`,
           employeeId: att.employeeId,
@@ -385,15 +387,6 @@ function generateShiftSection(
     const attendanceStatus = attendanceRecord ? 'Hadir' : 'Tidak Hadir';
     const attendanceTime = attendanceRecord?.time || '-';
     
-    console.log(`📊 Row data for ${employee.name}:`, {
-      employeeId: employee.id,
-      name: employee.name,
-      position: employee.position,
-      nomorLambung: employee.nomorLambung,
-      hariKerja: workDaysText,
-      rosterHariKerja: rosterRecord.hariKerja
-    });
-    
     const rowData = [
       employee.name || '-',
       employee.id || '-',
@@ -405,8 +398,6 @@ function generateShiftSection(
       fitToWorkStatus,
       attendanceStatus
     ];
-    
-    console.log(`📄 Final row data:`, rowData);
     
     // Alternating row background
     if (rowIndex % 2 === 1) {
@@ -440,7 +431,18 @@ function generateShiftSection(
     // Check if we need a new page with proper margins
     if (yPosition > doc.internal.pageSize.height - bottomMargin - 20) {
       doc.addPage();
-      yPosition = margin + 10;
+      
+      // Add company logo to new page
+      try {
+        doc.addImage(companyLogo, 'PNG', margin, 15, 30, 15);
+        doc.setFontSize(10);
+        doc.setFont('helvetica', 'bold');
+        doc.text('PT Goden Energi Cemerlang Lestari', margin + 35, 25);
+      } catch (error) {
+        console.warn('Could not add logo to new page:', error);
+      }
+      
+      yPosition = margin + 35;
       
       // Repeat table header on new page
       doc.setFontSize(9);
