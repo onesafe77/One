@@ -218,6 +218,7 @@ export function generateMeetingAttendancePDF(data: MeetingAttendanceData): void 
         (index + 1).toString(), // Simple number format
         attendance.employee?.id || '-',
         attendance.employee?.name || 'Unknown',
+        attendance.employee?.position || '-',
         attendance.employee?.department || '-',
         new Date(attendance.scanDate).toLocaleDateString('id-ID'),
         attendance.scanTime ? `${attendance.scanTime} WITA` : '-', // Single line format
@@ -225,7 +226,7 @@ export function generateMeetingAttendancePDF(data: MeetingAttendanceData): void 
       ]);
 
       autoTable(pdf, {
-        head: [['No', 'NIK', 'Nama Karyawan', 'Department', 'Tanggal', 'Waktu', 'Device']],
+        head: [['No', 'NIK', 'Nama Karyawan', 'Position', 'Department', 'Tanggal', 'Waktu', 'Device']],
         body: tableData,
         startY: yPosition,
         theme: 'grid',
@@ -258,16 +259,17 @@ export function generateMeetingAttendancePDF(data: MeetingAttendanceData): void 
           fillColor: [249, 250, 251]
         },
         columnStyles: {
-          0: { cellWidth: 12, halign: 'center', valign: 'middle' },  // No - lebih lebar
-          1: { cellWidth: 18, halign: 'center', valign: 'middle' }, // NIK - proper width  
-          2: { cellWidth: 32, halign: 'left', valign: 'middle' },   // Nama - sedikit dikurangi
-          3: { cellWidth: 24, halign: 'left', valign: 'middle' },   // Department - sedikit dikurangi
-          4: { cellWidth: 18, halign: 'center', valign: 'middle' }, // Tanggal - proper
-          5: { cellWidth: 20, halign: 'center', valign: 'middle' }, // Waktu - balanced
-          6: { cellWidth: 18, halign: 'center', valign: 'middle' }  // Device - diperlebar lagi
+          0: { cellWidth: 10, halign: 'center', valign: 'middle' },  // No
+          1: { cellWidth: 16, halign: 'center', valign: 'middle' }, // NIK
+          2: { cellWidth: 28, halign: 'left', valign: 'middle' },   // Nama
+          3: { cellWidth: 20, halign: 'left', valign: 'middle' },   // Position
+          4: { cellWidth: 20, halign: 'left', valign: 'middle' },   // Department
+          5: { cellWidth: 16, halign: 'center', valign: 'middle' }, // Tanggal
+          6: { cellWidth: 18, halign: 'center', valign: 'middle' }, // Waktu
+          7: { cellWidth: 16, halign: 'center', valign: 'middle' }  // Device
         },
         margin: { left: margin, right: margin },
-        tableWidth: 142, // Total column width: 12+18+32+24+18+20+18 = 142
+        tableWidth: 144, // Total column width: 10+16+28+20+20+16+18+16 = 144
         showHead: 'everyPage'
       });
     } else {
