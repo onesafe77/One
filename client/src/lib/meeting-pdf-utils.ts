@@ -225,7 +225,7 @@ export function generateMeetingAttendancePDF(data: MeetingAttendanceData): void 
       ]);
 
       autoTable(pdf, {
-        head: [['No', 'NIK', 'Nama Karyawan', 'Position', 'Department', 'Tanggal', 'Waktu']],
+        head: [['NO', 'NIK', 'Nama Karyawan', 'Position', 'Department', 'Tanggal', 'Waktu']],
         body: tableData,
         startY: yPosition,
         theme: 'grid',
@@ -264,10 +264,10 @@ export function generateMeetingAttendancePDF(data: MeetingAttendanceData): void 
           3: { cellWidth: 25, halign: 'left', valign: 'middle', cellPadding: { left: 2, right: 2 } },   // Position
           4: { cellWidth: 30, halign: 'left', valign: 'middle', cellPadding: { left: 2, right: 2 } },   // Department
           5: { cellWidth: 20, halign: 'center', valign: 'middle' }, // Tanggal
-          6: { cellWidth: 20, halign: 'center', valign: 'middle' }  // Waktu
+          6: { cellWidth: 25, halign: 'center', valign: 'middle' }  // Waktu
         },
         margin: { left: margin, right: margin },
-        tableWidth: 163, // Total column width: 8+20+40+25+30+20+20 = 163
+        tableWidth: 168, // Total column width: 8+20+40+25+30+20+25 = 168
         showHead: 'everyPage'
       });
     } else {
