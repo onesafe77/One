@@ -226,7 +226,7 @@ export function generateMeetingAttendancePDF(data: MeetingAttendanceData): void 
       ]);
 
       autoTable(pdf, {
-        head: [['No', 'NIK', 'Nama\nKaryawan', 'Position', 'Department', 'Tanggal', 'Waktu', 'Device']],
+        head: [['No', 'NIK', 'Nama Karyawan', 'Position', 'Department', 'Tanggal', 'Waktu', 'Device']],
         body: tableData,
         startY: yPosition,
         theme: 'grid',
@@ -246,30 +246,30 @@ export function generateMeetingAttendancePDF(data: MeetingAttendanceData): void 
           fillColor: [220, 38, 38],
           textColor: [255, 255, 255],
           fontStyle: 'bold',
-          fontSize: 9,
+          fontSize: 8,
           halign: 'center',
           valign: 'middle',
-          cellPadding: 5,
-          minCellHeight: 16,
+          cellPadding: 3,
+          minCellHeight: 12,
           lineWidth: 0.5,
           lineColor: [180, 30, 30],
-          overflow: 'linebreak'
+          overflow: 'hidden'
         },
         alternateRowStyles: {
           fillColor: [249, 250, 251]
         },
         columnStyles: {
-          0: { cellWidth: 12, halign: 'center', valign: 'middle' },  // No
-          1: { cellWidth: 18, halign: 'center', valign: 'middle' }, // NIK
-          2: { cellWidth: 30, halign: 'left', valign: 'middle', cellPadding: { left: 3, right: 2 } },   // Nama
-          3: { cellWidth: 22, halign: 'left', valign: 'middle', cellPadding: { left: 3, right: 2 } },   // Position
-          4: { cellWidth: 22, halign: 'left', valign: 'middle', cellPadding: { left: 3, right: 2 } },   // Department
+          0: { cellWidth: 10, halign: 'center', valign: 'middle' },  // No
+          1: { cellWidth: 16, halign: 'center', valign: 'middle' }, // NIK
+          2: { cellWidth: 32, halign: 'left', valign: 'middle', cellPadding: { left: 3, right: 2 } },   // Nama Karyawan
+          3: { cellWidth: 20, halign: 'left', valign: 'middle', cellPadding: { left: 3, right: 2 } },   // Position
+          4: { cellWidth: 24, halign: 'left', valign: 'middle', cellPadding: { left: 3, right: 2 } },   // Department
           5: { cellWidth: 18, halign: 'center', valign: 'middle' }, // Tanggal
-          6: { cellWidth: 20, halign: 'center', valign: 'middle' }, // Waktu
-          7: { cellWidth: 18, halign: 'center', valign: 'middle' }  // Device
+          6: { cellWidth: 16, halign: 'center', valign: 'middle' }, // Waktu
+          7: { cellWidth: 16, halign: 'center', valign: 'middle' }  // Device
         },
         margin: { left: margin, right: margin },
-        tableWidth: 160, // Total column width: 12+18+30+22+22+18+20+18 = 160
+        tableWidth: 152, // Total column width: 10+16+32+20+24+18+16+16 = 152
         showHead: 'everyPage'
       });
     } else {
