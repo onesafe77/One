@@ -221,12 +221,11 @@ export function generateMeetingAttendancePDF(data: MeetingAttendanceData): void 
         attendance.employee?.position || '-',
         attendance.employee?.department || '-',
         new Date(attendance.scanDate).toLocaleDateString('id-ID'),
-        attendance.scanTime ? `${attendance.scanTime} WITA` : '-', // Single line format
-        getShortDeviceInfo(attendance.deviceInfo || 'Unknown')
+        attendance.scanTime ? `${attendance.scanTime} WITA` : '-' // Single line format
       ]);
 
       autoTable(pdf, {
-        head: [['No', 'NIK', 'Nama Karyawan', 'Position', 'Department', 'Tanggal', 'Waktu', 'Device']],
+        head: [['No', 'NIK', 'Nama Karyawan', 'Position', 'Department', 'Tanggal', 'Waktu']],
         body: tableData,
         startY: yPosition,
         theme: 'grid',
@@ -265,11 +264,10 @@ export function generateMeetingAttendancePDF(data: MeetingAttendanceData): void 
           3: { cellWidth: 25, halign: 'left', valign: 'middle', cellPadding: { left: 2, right: 2 } },   // Position
           4: { cellWidth: 30, halign: 'left', valign: 'middle', cellPadding: { left: 2, right: 2 } },   // Department
           5: { cellWidth: 20, halign: 'center', valign: 'middle' }, // Tanggal
-          6: { cellWidth: 20, halign: 'center', valign: 'middle' }, // Waktu
-          7: { cellWidth: 17, halign: 'center', valign: 'middle' }  // Device
+          6: { cellWidth: 20, halign: 'center', valign: 'middle' }  // Waktu
         },
         margin: { left: margin, right: margin },
-        tableWidth: 180, // Total column width: 8+20+40+25+30+20+20+17 = 180
+        tableWidth: 163, // Total column width: 8+20+40+25+30+20+20 = 163
         showHead: 'everyPage'
       });
     } else {
