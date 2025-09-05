@@ -258,7 +258,7 @@ export function generateMeetingAttendancePDF(data: MeetingAttendanceData): void 
           fillColor: [249, 250, 251]
         },
         columnStyles: {
-          0: { cellWidth: 8, halign: 'center', valign: 'middle' },  // No
+          0: { cellWidth: 12, halign: 'center', valign: 'middle' },  // NO
           1: { cellWidth: 20, halign: 'center', valign: 'middle' }, // NIK
           2: { cellWidth: 40, halign: 'left', valign: 'middle', cellPadding: { left: 2, right: 2 } },   // Nama Karyawan
           3: { cellWidth: 25, halign: 'left', valign: 'middle', cellPadding: { left: 2, right: 2 } },   // Position
@@ -267,7 +267,7 @@ export function generateMeetingAttendancePDF(data: MeetingAttendanceData): void 
           6: { cellWidth: 25, halign: 'center', valign: 'middle' }  // Waktu
         },
         margin: { left: margin, right: margin },
-        tableWidth: 168, // Total column width: 8+20+40+25+30+20+25 = 168
+        tableWidth: 172, // Total column width: 12+20+40+25+30+20+25 = 172
         showHead: 'everyPage'
       });
     } else {
