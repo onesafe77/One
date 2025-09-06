@@ -2588,6 +2588,33 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // One-time endpoint to update existing SPARE employees
+  app.post("/api/admin/update-spare-origin", async (req, res) => {
+    try {
+      const employees = await storage.getAllEmployees();
+      let updateCount = 0;
+      
+      for (const employee of employees) {
+        if (employee.nomorLambung === "SPARE" && !employee.isSpareOrigin) {
+          await storage.updateEmployee(employee.id, { isSpareOrigin: true });
+          updateCount++;
+        }
+      }
+      
+      res.json({ 
+        success: true, 
+        message: `Updated ${updateCount} SPARE employees`,
+        updatedCount: updateCount 
+      });
+    } catch (error) {
+      console.error("Failed to update SPARE employees:", error);
+      res.status(500).json({ 
+        success: false, 
+        message: "Failed to update employees" 
+      });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }

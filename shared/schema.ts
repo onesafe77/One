@@ -31,6 +31,7 @@ export const employees = pgTable("employees", {
   name: text("name").notNull(),
   position: text("position"),
   nomorLambung: text("nomor_lambung"),
+  isSpareOrigin: boolean("is_spare_origin").default(false), // Track jika karyawan asli SPARE
   department: text("department"),
   investorGroup: text("investor_group"),
   phone: text("phone").notNull(),

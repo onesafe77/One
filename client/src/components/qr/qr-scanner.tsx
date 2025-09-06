@@ -17,6 +17,7 @@ interface ScanResult {
   employeeId: string;
   name: string;
   nomorLambung?: string;
+  isSpareOrigin?: boolean;
   scanTime: string;
   status?: 'validated' | 'processing' | 'success' | 'error';
   errorMessage?: string;
@@ -270,6 +271,7 @@ export function QRScanner() {
           employeeId: result.employee.id,
           name: result.employee.name,
           nomorLambung: result.employee.nomorLambung,
+          isSpareOrigin: result.employee.isSpareOrigin || false,
           scanTime: displayTime,
           roster: result.roster,
           status: 'processing' as const
@@ -608,7 +610,9 @@ export function QRScanner() {
                   <div>
                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Nomor Lambung</label>
                     <p className="text-lg font-semibold text-gray-900 dark:text-white" data-testid="scanned-nomor-lambung">
-{scanResult.nomorLambung || '-'}
+{scanResult.isSpareOrigin && scanResult.nomorLambung !== "SPARE" ? 
+                        `SPARE ${scanResult.nomorLambung}` : (scanResult.nomorLambung || '-')
+                      }
                     </p>
                   </div>
                 )}

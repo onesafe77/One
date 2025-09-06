@@ -220,10 +220,12 @@ export class MemStorage implements IStorage {
       ...insertEmployee,
       id,
       position: insertEmployee.position || null,
+      nomorLambung: insertEmployee.nomorLambung || null,
       department: insertEmployee.department || null,
       investorGroup: insertEmployee.investorGroup || null,
       qrCode: insertEmployee.qrCode || null, // Add QR Code field
       status: insertEmployee.status || "active",
+      isSpareOrigin: insertEmployee.nomorLambung === "SPARE" ? true : (insertEmployee.isSpareOrigin || false), // Track SPARE origin
       createdAt: new Date() 
     };
     this.employees.set(employee.id, employee);
@@ -234,7 +236,13 @@ export class MemStorage implements IStorage {
     const existing = this.employees.get(id);
     if (!existing) return undefined;
     
-    const updated = { ...existing, ...updateData };
+    // Preserve isSpareOrigin if employee was originally SPARE
+    let isSpareOrigin = existing.isSpareOrigin;
+    if (existing.nomorLambung === "SPARE" && updateData.nomorLambung && updateData.nomorLambung !== "SPARE") {
+      isSpareOrigin = true; // Mark as SPARE origin when updating from SPARE to new nomor lambung
+    }
+    
+    const updated = { ...existing, ...updateData, isSpareOrigin };
     this.employees.set(id, updated);
     return updated;
   }
