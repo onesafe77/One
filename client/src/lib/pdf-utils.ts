@@ -393,12 +393,7 @@ function generateShiftSection(
       shiftName || '-',
       workDaysText, // Hari Kerja dari roster
       attendanceTime, // Jam Masuk
-      // Format nomor lambung untuk karyawan SPARE yang sudah update
-      employee.nomorLambung === "SPARE" ? "SPARE" : 
-      (employee.nomorLambung && employee.nomorLambung !== '-' && employee.nomorLambung !== 'null' && 
-       employee.nomorLambung.trim() !== '' && employee.nomorLambung !== "SPARE" &&
-       employee.nomorLambung.includes('GECL')) ? 
-       `SPARE ${employee.nomorLambung}` : (employee.nomorLambung || '-'),
+employee.nomorLambung || '-',
       jamTidur,
       fitToWorkStatus,
       attendanceStatus

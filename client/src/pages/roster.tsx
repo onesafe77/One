@@ -1187,18 +1187,8 @@ export default function Roster() {
                         )
                       ) : roster.employee?.nomorLambung && roster.employee.nomorLambung !== '-' && 
                           roster.employee.nomorLambung !== 'null' && roster.employee.nomorLambung.trim() !== '' ? (
-                        // Hanya SPARE yang sudah update dengan GECL yang ditampilkan dengan badge
-                        roster.employee.nomorLambung !== "SPARE" && 
-                        roster.employee.nomorLambung.includes('GECL') ? (
-                          <div className="flex items-center space-x-1">
-                            <Badge variant="secondary" className="bg-orange-100 text-orange-700 dark:bg-orange-900 dark:text-orange-300 text-xs">
-                              SPARE
-                            </Badge>
-                            <span className="text-sm font-medium">{roster.employee.nomorLambung}</span>
-                          </div>
-                        ) : (
-                          roster.employee.nomorLambung
-                        )
+                        // Tampilkan nomor lambung apa adanya untuk karyawan reguler
+                        roster.employee.nomorLambung
                       ) : (
                         '-'
                       )}
