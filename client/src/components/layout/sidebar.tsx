@@ -14,7 +14,7 @@ import {
   Video,
   Smartphone
 } from "lucide-react";
-import companyLogo from "@assets/WhatsApp Image 2024-11-30 at 13.08.33_1755505069008.jpeg";
+import companyLogo from "../../assets/company-logo.png";
 
 const navigation = [
   { name: "Dashboard", href: "/", icon: BarChart3 },
@@ -56,11 +56,11 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
         {/* Logo */}
         <div className="flex items-center justify-center h-16 px-4 bg-primary-600 dark:bg-primary-700">
           <div className="flex items-center space-x-2">
-            <div className="w-10 h-10 bg-white rounded-lg overflow-hidden flex items-center justify-center">
+            <div className="w-12 h-12 bg-white rounded-lg overflow-hidden flex items-center justify-center p-1">
               <img 
                 src={companyLogo} 
-                alt="Company Logo" 
-                className="w-full h-full object-cover"
+                alt="PT Seksan Esensi Cemerlang Lestari" 
+                className="w-full h-full object-contain"
                 onError={(e) => {
                   // Fallback to QR icon if image fails to load
                   const target = e.target as HTMLImageElement;
