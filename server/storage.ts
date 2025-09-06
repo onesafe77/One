@@ -21,6 +21,8 @@ import {
   type InsertMeeting,
   type MeetingAttendance,
   type InsertMeetingAttendance,
+  type SimperMonitoring,
+  type InsertSimperMonitoring,
   type User,
   type UpsertUser,
   users,
@@ -34,7 +36,8 @@ import {
   leaveHistory,
   leaveRosterMonitoring,
   meetings,
-  meetingAttendance
+  meetingAttendance,
+  simperMonitoring
 } from "@shared/schema";
 import { randomUUID } from "crypto";
 import { drizzle } from "drizzle-orm/neon-http";
@@ -131,6 +134,16 @@ export interface IStorage {
   createMeetingAttendance(attendance: InsertMeetingAttendance): Promise<MeetingAttendance>;
   checkMeetingAttendance(meetingId: string, employeeId: string): Promise<MeetingAttendance | undefined>;
   deleteMeetingAttendance(attendanceId: string): Promise<boolean>;
+
+  // SIMPER Monitoring methods
+  getSimperMonitoring(id: string): Promise<SimperMonitoring | undefined>;
+  getSimperMonitoringByNik(nik: string): Promise<SimperMonitoring | undefined>;
+  getAllSimperMonitoring(): Promise<SimperMonitoring[]>;
+  createSimperMonitoring(simper: InsertSimperMonitoring): Promise<SimperMonitoring>;
+  updateSimperMonitoring(id: string, simper: Partial<InsertSimperMonitoring>): Promise<SimperMonitoring | undefined>;
+  deleteSimperMonitoring(id: string): Promise<boolean>;
+  deleteAllSimperMonitoring(): Promise<void>;
+  bulkUploadSimperData(data: Array<{ employeeName: string; nik: string; simperBibExpiredDate?: string; simperTiaExpiredDate?: string }>): Promise<{ success: number; errors: string[] }>;
 }
 
 export class MemStorage implements IStorage {
@@ -140,6 +153,7 @@ export class MemStorage implements IStorage {
   private rosterSchedules: Map<string, RosterSchedule>;
   private leaveRequests: Map<string, LeaveRequest>;
   private qrTokens: Map<string, QrToken>;
+  private simperMonitoring: Map<string, SimperMonitoring>;
 
   constructor() {
     this.users = new Map();
@@ -148,6 +162,7 @@ export class MemStorage implements IStorage {
     this.rosterSchedules = new Map();
     this.leaveRequests = new Map();
     this.qrTokens = new Map();
+    this.simperMonitoring = new Map();
     
     // Initialize with sample data
     this.initializeSampleData();
@@ -524,6 +539,95 @@ export class MemStorage implements IStorage {
 
   async updateLeaveRosterStatus(): Promise<void> {
     // No-op in memory storage
+  }
+
+  // SIMPER Monitoring methods implementation
+  async getSimperMonitoring(id: string): Promise<SimperMonitoring | undefined> {
+    return this.simperMonitoring.get(id);
+  }
+
+  async getSimperMonitoringByNik(nik: string): Promise<SimperMonitoring | undefined> {
+    for (const simper of this.simperMonitoring.values()) {
+      if (simper.nik === nik) {
+        return simper;
+      }
+    }
+    return undefined;
+  }
+
+  async getAllSimperMonitoring(): Promise<SimperMonitoring[]> {
+    return Array.from(this.simperMonitoring.values());
+  }
+
+  async createSimperMonitoring(simperData: InsertSimperMonitoring): Promise<SimperMonitoring> {
+    const simper: SimperMonitoring = {
+      id: randomUUID(),
+      ...simperData,
+      createdAt: new Date(),
+      updatedAt: new Date()
+    };
+    this.simperMonitoring.set(simper.id, simper);
+    return simper;
+  }
+
+  async updateSimperMonitoring(id: string, simperData: Partial<InsertSimperMonitoring>): Promise<SimperMonitoring | undefined> {
+    const existing = this.simperMonitoring.get(id);
+    if (existing) {
+      const updated: SimperMonitoring = {
+        ...existing,
+        ...simperData,
+        updatedAt: new Date()
+      };
+      this.simperMonitoring.set(id, updated);
+      return updated;
+    }
+    return undefined;
+  }
+
+  async deleteSimperMonitoring(id: string): Promise<boolean> {
+    return this.simperMonitoring.delete(id);
+  }
+
+  async deleteAllSimperMonitoring(): Promise<void> {
+    this.simperMonitoring.clear();
+  }
+
+  async bulkUploadSimperData(data: Array<{ employeeName: string; nik: string; simperBibExpiredDate?: string; simperTiaExpiredDate?: string }>): Promise<{ success: number; errors: string[] }> {
+    const errors: string[] = [];
+    let success = 0;
+
+    for (const item of data) {
+      try {
+        if (!item.employeeName || !item.nik) {
+          errors.push(`Data tidak lengkap untuk NIK: ${item.nik || 'kosong'}`);
+          continue;
+        }
+
+        // Check if NIK already exists
+        const existing = await this.getSimperMonitoringByNik(item.nik);
+        if (existing) {
+          // Update existing record
+          await this.updateSimperMonitoring(existing.id, {
+            employeeName: item.employeeName,
+            simperBibExpiredDate: item.simperBibExpiredDate || null,
+            simperTiaExpiredDate: item.simperTiaExpiredDate || null
+          });
+        } else {
+          // Create new record
+          await this.createSimperMonitoring({
+            employeeName: item.employeeName,
+            nik: item.nik,
+            simperBibExpiredDate: item.simperBibExpiredDate || null,
+            simperTiaExpiredDate: item.simperTiaExpiredDate || null
+          });
+        }
+        success++;
+      } catch (error) {
+        errors.push(`Error untuk NIK ${item.nik}: ${error}`);
+      }
+    }
+
+    return { success, errors };
   }
 }
 
@@ -1130,6 +1234,99 @@ export class DrizzleStorage implements IStorage {
       .delete(meetingAttendance)
       .where(eq(meetingAttendance.id, attendanceId));
     return result.rowCount > 0;
+  }
+
+  // SIMPER Monitoring methods implementation for DrizzleStorage
+  async getSimperMonitoring(id: string): Promise<SimperMonitoring | undefined> {
+    const [result] = await this.db
+      .select()
+      .from(simperMonitoring)
+      .where(eq(simperMonitoring.id, id));
+    return result;
+  }
+
+  async getSimperMonitoringByNik(nik: string): Promise<SimperMonitoring | undefined> {
+    const [result] = await this.db
+      .select()
+      .from(simperMonitoring)
+      .where(eq(simperMonitoring.nik, nik));
+    return result;
+  }
+
+  async getAllSimperMonitoring(): Promise<SimperMonitoring[]> {
+    return await this.db
+      .select()
+      .from(simperMonitoring)
+      .orderBy(drizzleSql`created_at DESC`);
+  }
+
+  async createSimperMonitoring(simperData: InsertSimperMonitoring): Promise<SimperMonitoring> {
+    const [result] = await this.db
+      .insert(simperMonitoring)
+      .values(simperData)
+      .returning();
+    return result;
+  }
+
+  async updateSimperMonitoring(id: string, simperData: Partial<InsertSimperMonitoring>): Promise<SimperMonitoring | undefined> {
+    const [result] = await this.db
+      .update(simperMonitoring)
+      .set({
+        ...simperData,
+        updatedAt: new Date()
+      })
+      .where(eq(simperMonitoring.id, id))
+      .returning();
+    return result;
+  }
+
+  async deleteSimperMonitoring(id: string): Promise<boolean> {
+    const result = await this.db
+      .delete(simperMonitoring)
+      .where(eq(simperMonitoring.id, id));
+    return result.rowCount > 0;
+  }
+
+  async deleteAllSimperMonitoring(): Promise<void> {
+    await this.db.delete(simperMonitoring);
+  }
+
+  async bulkUploadSimperData(data: Array<{ employeeName: string; nik: string; simperBibExpiredDate?: string; simperTiaExpiredDate?: string }>): Promise<{ success: number; errors: string[] }> {
+    const errors: string[] = [];
+    let success = 0;
+
+    for (const item of data) {
+      try {
+        if (!item.employeeName || !item.nik) {
+          errors.push(`Data tidak lengkap untuk NIK: ${item.nik || 'kosong'}`);
+          continue;
+        }
+
+        // Check if NIK already exists
+        const existing = await this.getSimperMonitoringByNik(item.nik);
+        if (existing) {
+          // Update existing record
+          await this.updateSimperMonitoring(existing.id, {
+            employeeName: item.employeeName,
+            simperBibExpiredDate: item.simperBibExpiredDate || null,
+            simperTiaExpiredDate: item.simperTiaExpiredDate || null
+          });
+        } else {
+          // Create new record
+          await this.createSimperMonitoring({
+            employeeName: item.employeeName,
+            nik: item.nik,
+            simperBibExpiredDate: item.simperBibExpiredDate || null,
+            simperTiaExpiredDate: item.simperTiaExpiredDate || null
+          });
+        }
+        success++;
+      } catch (error) {
+        errors.push(`Error untuk NIK ${item.nik}: ${error}`);
+      }
+    }
+
+    return { success, errors };
   }
 }
 
