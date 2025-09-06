@@ -397,7 +397,7 @@ function generateShiftSection(
       employee.nomorLambung === "SPARE" ? "SPARE" : 
       (employee.nomorLambung && employee.nomorLambung !== '-' && employee.nomorLambung !== 'null' && 
        employee.nomorLambung.trim() !== '' && employee.nomorLambung !== "SPARE" &&
-       (employee.nomorLambung.includes('GECL') || employee.nomorLambung.includes('SPARE'))) ? 
+       employee.nomorLambung.includes('GECL')) ? 
        `SPARE ${employee.nomorLambung}` : (employee.nomorLambung || '-'),
       jamTidur,
       fitToWorkStatus,

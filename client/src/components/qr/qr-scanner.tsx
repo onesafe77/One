@@ -612,7 +612,7 @@ export function QRScanner() {
                        (scanResult.nomorLambung && scanResult.nomorLambung !== '-' && 
                         scanResult.nomorLambung !== 'null' && scanResult.nomorLambung.trim() !== '' && 
                         scanResult.nomorLambung !== "SPARE" &&
-                        (scanResult.nomorLambung.includes('GECL') || scanResult.nomorLambung.includes('SPARE'))) ? 
+                        scanResult.nomorLambung.includes('GECL')) ? 
                         `SPARE ${scanResult.nomorLambung}` : (scanResult.nomorLambung || '-')
                       }
                     </p>
