@@ -16,6 +16,7 @@ import jsQR from "jsqr";
 interface ScanResult {
   employeeId: string;
   name: string;
+  nomorLambung?: string;
   scanTime: string;
   status?: 'validated' | 'processing' | 'success' | 'error';
   errorMessage?: string;
@@ -266,6 +267,7 @@ export function QRScanner() {
         const employeeData = {
           employeeId: result.employee.id,
           name: result.employee.name,
+          nomorLambung: result.employee.nomorLambung,
           scanTime: displayTime,
           roster: result.roster,
           status: 'processing' as const
@@ -579,6 +581,15 @@ export function QRScanner() {
                     {scanResult.name}
                   </p>
                 </div>
+                
+                {scanResult.nomorLambung && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Nomor Lambung</label>
+                    <p className="text-lg font-semibold text-gray-900 dark:text-white" data-testid="scanned-nomor-lambung">
+                      {scanResult.nomorLambung}
+                    </p>
+                  </div>
+                )}
                 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
