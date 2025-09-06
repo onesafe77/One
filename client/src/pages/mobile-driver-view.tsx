@@ -115,7 +115,7 @@ export default function MobileDriverView() {
   });
 
   // Filter data monitoring untuk employee yang dipilih
-  const employeeMonitoring = leaveRosterMonitoring.find(
+  const employeeMonitoring = (leaveRosterMonitoring as LeaveRosterMonitoring[]).find(
     (item: LeaveRosterMonitoring) => item.nik === searchEmployee?.id
   ) || null;
 
@@ -152,7 +152,7 @@ export default function MobileDriverView() {
     const scannedNik = urlParams.get('nik');
     console.log('🔗 URL params - nik:', scannedNik);
     
-    if (scannedNik && employees && employees.length > 0) {
+    if (scannedNik && employees && Array.isArray(employees) && employees.length > 0) {
       setNik(scannedNik);
       console.log('📱 Auto-searching for employee:', scannedNik);
       // Immediate search - no delay needed
