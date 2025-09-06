@@ -14,7 +14,7 @@ import {
   Video,
   Smartphone
 } from "lucide-react";
-import companyLogo from "../../assets/company-logo.png";
+import companyLogo from "../../assets/company-logo-new.jpg";
 
 const navigation = [
   { name: "Dashboard", href: "/", icon: BarChart3 },
