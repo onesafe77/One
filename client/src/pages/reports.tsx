@@ -142,15 +142,17 @@ export default function Reports() {
         await queryClient.refetchQueries({ queryKey: ["/api/roster"] });
         await queryClient.refetchQueries({ queryKey: ["/api/employees"] });
         
-        // Get fresh data directly from server including leave monitoring
-        const [freshAttendance, freshRoster, freshLeaveMonitoring] = await Promise.all([
+        // Get fresh data directly from server including leave monitoring and employees
+        const [freshAttendance, freshRoster, freshLeaveMonitoring, freshEmployees] = await Promise.all([
           fetch(`/api/attendance?date=${startDate}`).then(res => res.json()),
           fetch(`/api/roster?date=${startDate}`).then(res => res.json()),
-          fetch(`/api/leave-roster-monitoring`).then(res => res.json())
+          fetch(`/api/leave-roster-monitoring`).then(res => res.json()),
+          fetch(`/api/employees`).then(res => res.json())
         ]);
 
         console.log("Fresh attendance data:", freshAttendance);
         console.log("Fresh roster data:", freshRoster);
+        console.log("Fresh employees data (for updated nomor lambung):", freshEmployees.filter((e: any) => e.nomorLambung !== 'SPARE').slice(0, 3));
 
         const filteredAttendance = freshAttendance.filter((record: any) => {
           return record.date >= startDate && record.date <= endDate;
@@ -175,7 +177,7 @@ export default function Reports() {
           }
 
           await generateAttendancePDF({
-            employees,
+            employees: freshEmployees, // Use fresh employee data to show updated nomor lambung
             attendance: filteredAttendance,
             roster: freshRoster,
             leaveMonitoring: freshLeaveMonitoring,
@@ -191,7 +193,7 @@ export default function Reports() {
             description: "Laporan PDF berhasil diunduh",
           });
         } else {
-          exportAttendanceToCSV(filteredAttendance, employees);
+          exportAttendanceToCSV(filteredAttendance, freshEmployees); // Use fresh employee data
           
           toast({
             title: "Berhasil",
@@ -199,8 +201,11 @@ export default function Reports() {
           });
         }
       } else if (reportType === "leave") {
+        // Get fresh employees for leave reports too
+        const freshEmployees = await fetch(`/api/employees`).then(res => res.json());
+        
         if (format === "csv") {
-          exportLeaveToCSV(leaveRequests, employees);
+          exportLeaveToCSV(leaveRequests, freshEmployees); // Use fresh employee data
           
           toast({
             title: "Berhasil",
@@ -213,8 +218,11 @@ export default function Reports() {
           });
         }
       } else if (reportType === "summary") {
+        // Get fresh employees for summary reports too
+        const freshEmployees = await fetch(`/api/employees`).then(res => res.json());
+        
         if (format === "csv") {
-          exportEmployeesToCSV(employees);
+          exportEmployeesToCSV(freshEmployees); // Use fresh employee data
           
           toast({
             title: "Berhasil",
