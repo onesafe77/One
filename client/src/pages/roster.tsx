@@ -13,7 +13,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { insertRosterSchema } from "@shared/schema";
 import type { Employee, RosterSchedule, AttendanceRecord, InsertRosterSchedule } from "@shared/schema";
-import { Plus, Upload, Download, Filter, Calendar, CheckCircle, Clock, Users, Edit, Trash2, AlertCircle } from "lucide-react";
+import { Plus, Upload, Download, Filter, Calendar, CheckCircle, Clock, Users, Edit, Trash2, AlertCircle, Save, X } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
 import { z } from "zod";
 import * as XLSX from 'xlsx';
@@ -37,6 +37,9 @@ export default function Roster() {
   const [isProcessing, setIsProcessing] = useState(false);
   const [processedCount, setProcessedCount] = useState(0);
   const [totalCount, setTotalCount] = useState(0);
+  // Nomor lambung editing states
+  const [editingNomorLambung, setEditingNomorLambung] = useState<{[key: string]: boolean}>({});
+  const [tempNomorLambung, setTempNomorLambung] = useState<{[key: string]: string}>({});
   const { toast } = useToast();
 
   const { data: employees = [] } = useQuery<Employee[]>({
@@ -57,7 +60,7 @@ export default function Roster() {
       const data = await response.json();
       console.log(`🔄 Fetched ${data.length} roster entries for ${selectedDate}`);
       if (data.length > 0) {
-        console.log('📋 Sample roster data:', data.slice(0, 3).map(r => ({
+        console.log('📋 Sample roster data:', data.slice(0, 3).map((r: any) => ({
           name: r.employee?.name || 'N/A',
           hariKerja: r.hariKerja,
           shift: r.shift
@@ -250,6 +253,33 @@ export default function Roster() {
     },
   });
 
+  // Mutation untuk update nomor lambung employee
+  const updateNomorLambungMutation = useMutation({
+    mutationFn: ({ employeeId, nomorLambung }: { employeeId: string; nomorLambung: string }) => 
+      apiRequest(`/api/employees/${employeeId}`, "PUT", { nomorLambung }),
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ["/api/employees"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/roster"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/qr/validate"] });
+      
+      // Reset editing state
+      setEditingNomorLambung(prev => ({ ...prev, [variables.employeeId]: false }));
+      setTempNomorLambung(prev => ({ ...prev, [variables.employeeId]: "" }));
+      
+      toast({
+        title: "Berhasil",
+        description: `Nomor lambung berhasil diupdate ke: ${variables.nomorLambung}`,
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "Gagal mengupdate nomor lambung",
+        variant: "destructive",
+      });
+    },
+  });
+
   const onSubmit = (values: z.infer<typeof formSchema>) => {
     createMutation.mutate({
       ...values,
@@ -285,6 +315,31 @@ export default function Roster() {
     if (confirm("Apakah Anda yakin ingin menghapus roster ini?")) {
       deleteMutation.mutate(rosterId);
     }
+  };
+
+  // Handler functions untuk nomor lambung editing
+  const handleEditNomorLambung = (employeeId: string, currentValue: string) => {
+    setEditingNomorLambung(prev => ({ ...prev, [employeeId]: true }));
+    setTempNomorLambung(prev => ({ ...prev, [employeeId]: currentValue }));
+  };
+
+  const handleSaveNomorLambung = (employeeId: string) => {
+    const newValue = tempNomorLambung[employeeId];
+    if (!newValue || newValue.trim() === '') {
+      toast({
+        title: "Error",
+        description: "Nomor lambung tidak boleh kosong",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    updateNomorLambungMutation.mutate({ employeeId, nomorLambung: newValue.trim() });
+  };
+
+  const handleCancelEditNomorLambung = (employeeId: string) => {
+    setEditingNomorLambung(prev => ({ ...prev, [employeeId]: false }));
+    setTempNomorLambung(prev => ({ ...prev, [employeeId]: "" }));
   };
 
   const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -1075,7 +1130,63 @@ export default function Roster() {
                       {roster.employee?.position || '-'}
                     </td>
                     <td className="py-3 px-4 text-sm text-gray-900 dark:text-white">
-                      {roster.employee?.nomorLambung || '-'}
+                      {roster.employee?.nomorLambung === "SPARE" ? (
+                        editingNomorLambung[roster.employeeId] ? (
+                          <div className="flex items-center space-x-2">
+                            <Input
+                              value={tempNomorLambung[roster.employeeId] || ""}
+                              onChange={(e) => setTempNomorLambung(prev => ({ ...prev, [roster.employeeId]: e.target.value }))}
+                              placeholder="Masukkan nomor lambung"
+                              className="w-32 h-8 text-xs"
+                              onKeyDown={(e) => {
+                                if (e.key === 'Enter') {
+                                  handleSaveNomorLambung(roster.employeeId);
+                                } else if (e.key === 'Escape') {
+                                  handleCancelEditNomorLambung(roster.employeeId);
+                                }
+                              }}
+                              autoFocus
+                            />
+                            <Button
+                              size="sm"
+                              onClick={() => handleSaveNomorLambung(roster.employeeId)}
+                              disabled={updateNomorLambungMutation.isPending}
+                              className="h-6 w-6 p-0"
+                            >
+                              <Save className="w-3 h-3" />
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => handleCancelEditNomorLambung(roster.employeeId)}
+                              className="h-6 w-6 p-0"
+                            >
+                              <X className="w-3 h-3" />
+                            </Button>
+                          </div>
+                        ) : (
+                          <div className="flex items-center space-x-2">
+                            <Badge 
+                              variant="secondary" 
+                              className="bg-orange-100 text-orange-700 dark:bg-orange-900 dark:text-orange-300 cursor-pointer hover:bg-orange-200 dark:hover:bg-orange-800"
+                              onClick={() => handleEditNomorLambung(roster.employeeId, "SPARE")}
+                            >
+                              SPARE
+                            </Badge>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => handleEditNomorLambung(roster.employeeId, "SPARE")}
+                              className="h-6 w-6 p-0"
+                              title="Edit nomor lambung"
+                            >
+                              <Edit className="w-3 h-3" />
+                            </Button>
+                          </div>
+                        )
+                      ) : (
+                        roster.employee?.nomorLambung || '-'
+                      )}
                     </td>
                     <td className="py-3 px-4 text-sm text-gray-900 dark:text-white">
                       {new Date(roster.date).toLocaleDateString('id-ID')}
