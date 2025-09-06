@@ -49,14 +49,21 @@ export default function MobileDriverView() {
 
   // Auto-focus untuk mobile
   useEffect(() => {
+    console.log('🚀 Mobile Driver View loaded');
     // Detect if accessed via QR scan (check URL params)
     const urlParams = new URLSearchParams(window.location.search);
     const scannedNik = urlParams.get('nik');
+    console.log('🔗 URL params - nik:', scannedNik);
+    
     if (scannedNik) {
       setNik(scannedNik);
-      handleSearchWithNik(scannedNik);
+      console.log('📱 Auto-searching for employee:', scannedNik);
+      // Delay untuk memastikan employees data sudah loaded
+      setTimeout(() => {
+        handleSearchWithNik(scannedNik);
+      }, 1000);
     }
-  }, []);
+  }, [employees]); // Depend on employees so it runs when data is loaded
 
   // Query untuk mencari employee berdasarkan NIK
   const { data: employees } = useQuery({
@@ -85,7 +92,9 @@ export default function MobileDriverView() {
   const handleSearchWithNik = (nikValue: string) => {
     if (!nikValue.trim()) return;
     
+    console.log('🔍 Mobile Driver View: Searching for NIK:', nikValue);
     const employeeList = employees as Employee[] || [];
+    console.log('👥 Available employees:', employeeList.length);
     const searchTerm = nikValue.trim().toLowerCase();
     
     const employee = employeeList.find((emp: Employee) => {
@@ -94,6 +103,12 @@ export default function MobileDriverView() {
       if (emp.position && emp.position.toLowerCase().includes(searchTerm)) return true;
       return false;
     });
+    
+    if (employee) {
+      console.log('✅ Employee found:', employee.name, employee.id);
+    } else {
+      console.log('❌ No employee found for:', nikValue);
+    }
     
     setSearchEmployee(employee || null);
     setSuggestions([]);
