@@ -55,11 +55,13 @@ interface LeaveRosterMonitoring {
   nik: string;
   name: string;
   nomorLambung: string | null;
+  month?: string; // Optional month field
   investorGroup: string;
   lastLeaveDate: string | null;
   leaveOption: string; // "70" atau "35"
   monitoringDays: number;
   nextLeaveDate: string | null;
+  onSite?: string | null; // Optional onSite field
   status: string; // Aktif, Menunggu Cuti, Sedang Cuti, Selesai Cuti
   createdAt: string;
   updatedAt: string;
