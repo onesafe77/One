@@ -2629,6 +2629,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/admin/fix-syahrani", async (req, res) => {
     try {
       await storage.updateEmployee("C-005079", { isSpareOrigin: true });
+      // Clear cache to force fresh data
+      clearCachedEmployee("C-005079");
       res.json({ success: true, message: "SYAHRANI KAI fixed" });
     } catch (error) {
       res.status(500).json({ success: false, message: "Failed to fix" });
