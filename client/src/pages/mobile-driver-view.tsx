@@ -46,13 +46,14 @@ export default function MobileDriverView() {
   const [suggestions, setSuggestions] = useState<Employee[]>([]);
   const [activeTab, setActiveTab] = useState<'info' | 'roster' | 'leave' | 'monitoring'>('info');
 
-  // Query untuk mencari employee berdasarkan NIK
-  const { data: employees } = useQuery({
+  // Query untuk mencari employee berdasarkan NIK - OPTIMIZED
+  const { data: employees, isLoading: employeesLoading } = useQuery({
     queryKey: ["/api/employees"],
     enabled: true,
+    staleTime: 10 * 60 * 1000, // 10 minutes cache - employees data doesn't change often
   });
 
-  // Query untuk roster berdasarkan employee yang dipilih
+  // Query untuk roster berdasarkan employee yang dipilih - LAZY LOADING
   const { data: rosterData, isLoading: rosterLoading } = useQuery({
     queryKey: ["/api/roster", { employeeId: searchEmployee?.id }],
     queryFn: async () => {
@@ -61,32 +62,34 @@ export default function MobileDriverView() {
       if (!response.ok) throw new Error('Failed to fetch roster');
       return response.json();
     },
-    enabled: !!searchEmployee,
+    enabled: !!searchEmployee && activeTab === 'roster', // Only load when roster tab active
+    staleTime: 5 * 60 * 1000, // 5 minutes cache
   });
 
-  // Query untuk leave requests berdasarkan employee yang dipilih
+  // Query untuk leave requests berdasarkan employee yang dipilih - LAZY LOADING
   const { data: leaveData, isLoading: leaveLoading } = useQuery({
     queryKey: ["/api/leave"],
-    enabled: !!searchEmployee,
+    enabled: !!searchEmployee && activeTab === 'leave', // Only load when leave tab active
+    staleTime: 3 * 60 * 1000, // 3 minutes cache
   });
 
-  // Query untuk leave monitoring data
+  // Query untuk leave monitoring data - LAZY LOADING
   const { data: upcomingLeaves = [] } = useQuery({
     queryKey: ["/api/leave-monitoring/upcoming"],
-    enabled: !!searchEmployee,
-    refetchInterval: 60000,
+    enabled: !!searchEmployee && activeTab === 'monitoring', // Only load when monitoring tab active
+    staleTime: 2 * 60 * 1000, // 2 minutes cache
   });
 
   const { data: leaveHistory = [] } = useQuery({
     queryKey: ["/api/leave-monitoring/history"],
-    enabled: !!searchEmployee,
-    refetchInterval: 60000,
+    enabled: !!searchEmployee && activeTab === 'monitoring', // Only load when monitoring tab active
+    staleTime: 2 * 60 * 1000, // 2 minutes cache
   });
 
   const { data: pendingLeaves = [] } = useQuery({
     queryKey: ["/api/leave/pending-from-monitoring"],
-    enabled: !!searchEmployee,
-    refetchInterval: 30000,
+    enabled: !!searchEmployee && activeTab === 'monitoring', // Only load when monitoring tab active
+    staleTime: 1 * 60 * 1000, // 1 minute cache
   });
 
   const handleSearchWithNik = (nikValue: string) => {
@@ -114,7 +117,7 @@ export default function MobileDriverView() {
     setSuggestions([]);
   };
 
-  // Auto-focus untuk mobile
+  // Auto-focus untuk mobile - OPTIMIZED
   useEffect(() => {
     console.log('🚀 Mobile Driver View loaded');
     // Detect if accessed via QR scan (check URL params)
@@ -122,13 +125,13 @@ export default function MobileDriverView() {
     const scannedNik = urlParams.get('nik');
     console.log('🔗 URL params - nik:', scannedNik);
     
-    if (scannedNik && employees) {
+    if (scannedNik && employees && employees.length > 0) {
       setNik(scannedNik);
       console.log('📱 Auto-searching for employee:', scannedNik);
-      // Delay untuk memastikan employees data sudah loaded
-      setTimeout(() => {
-        handleSearchWithNik(scannedNik);
-      }, 100);
+      // Immediate search - no delay needed
+      handleSearchWithNik(scannedNik);
+      // Auto set to roster tab for quick access
+      setActiveTab('roster');
     }
   }, [employees]); // Depend on employees so it runs when data is loaded
 
@@ -171,8 +174,22 @@ export default function MobileDriverView() {
       </div>
 
       <div className="p-4 space-y-6">
+        {/* Loading State untuk employees */}
+        {employeesLoading && (
+          <Card className="shadow-xl border-0 bg-white/80 dark:bg-gray-800/80 backdrop-blur-lg">
+            <CardContent className="p-8">
+              <div className="flex flex-col items-center space-y-4">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-4 border-red-500"></div>
+                <p className="text-gray-600 dark:text-gray-300 font-semibold">Loading employee data...</p>
+                <p className="text-gray-400 text-sm">Memuat data karyawan dari server...</p>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
         {/* Modern Search Section */}
-        <Card className="shadow-xl border-0 bg-white/80 dark:bg-gray-800/80 backdrop-blur-lg">
+        {!employeesLoading && (
+          <Card className="shadow-xl border-0 bg-white/80 dark:bg-gray-800/80 backdrop-blur-lg">
           <CardHeader className="pb-4 bg-gradient-to-r from-red-50 to-orange-50 dark:from-red-900/20 dark:to-orange-900/20 rounded-t-lg">
             <CardTitle className="flex items-center gap-3 text-xl font-bold text-gray-800 dark:text-white">
               <div className="p-2 bg-red-500 rounded-full">
@@ -252,10 +269,11 @@ export default function MobileDriverView() {
               </div>
             )}
           </CardContent>
-        </Card>
+          </Card>
+        )}
 
         {/* Employee Info - Modern Card */}
-        {searchEmployee && (
+        {searchEmployee && !employeesLoading && (
           <>
             <Card className="shadow-xl border-0 bg-white/90 dark:bg-gray-800/90 backdrop-blur-lg overflow-hidden">
               <CardHeader className="pb-4 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20">
@@ -347,9 +365,10 @@ export default function MobileDriverView() {
                 </CardHeader>
                 <CardContent className="p-6">
                   {rosterLoading ? (
-                    <div className="text-center py-8">
-                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-green-500 mx-auto"></div>
-                      <p className="text-sm text-gray-500 mt-2">Memuat data roster...</p>
+                    <div className="text-center py-12">
+                      <div className="animate-spin rounded-full h-10 w-10 border-b-4 border-green-500 mx-auto"></div>
+                      <p className="text-gray-600 dark:text-gray-300 font-semibold mt-4">Loading roster data...</p>
+                      <p className="text-gray-400 text-sm mt-2">Mengambil jadwal kerja terbaru...</p>
                     </div>
                   ) : employeeRoster.length > 0 ? (
                     <div className="space-y-4">
@@ -417,9 +436,10 @@ export default function MobileDriverView() {
                 </CardHeader>
                 <CardContent className="p-6">
                   {leaveLoading ? (
-                    <div className="text-center py-8">
-                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-500 mx-auto"></div>
-                      <p className="text-sm text-gray-500 mt-2">Memuat data cuti...</p>
+                    <div className="text-center py-12">
+                      <div className="animate-spin rounded-full h-10 w-10 border-b-4 border-orange-500 mx-auto"></div>
+                      <p className="text-gray-600 dark:text-gray-300 font-semibold mt-4">Loading leave data...</p>
+                      <p className="text-gray-400 text-sm mt-2">Mengambil data cuti terbaru...</p>
                     </div>
                   ) : employeeLeaves.length > 0 ? (
                     <div className="space-y-4">
