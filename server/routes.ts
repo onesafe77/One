@@ -136,6 +136,10 @@ function setCachedEmployee(employeeId: string, data: any) {
   employeeCache.set(employeeId, { data, timestamp: Date.now() });
 }
 
+function clearCachedEmployee(employeeId: string) {
+  employeeCache.delete(employeeId);
+}
+
 export async function registerRoutes(app: Express): Promise<Server> {
 
   // Employee routes
@@ -469,6 +473,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
           allowedTimeRange: `${timeRange.start} - ${timeRange.end}`,
           errorType: isCompletelyOutside ? 'OUTSIDE_WORK_HOURS' : 'WRONG_SHIFT_TIME'
         });
+      }
+
+      // Update nomor lambung jika ada field nomorLambungBaru
+      if (req.body.nomorLambungBaru) {
+        try {
+          await storage.updateEmployee(validatedData.employeeId, {
+            nomorLambung: req.body.nomorLambungBaru
+          });
+          // Clear cache untuk employee yang diupdate
+          clearCachedEmployee(validatedData.employeeId);
+          console.log(`Updated nomor lambung for employee ${validatedData.employeeId} to: ${req.body.nomorLambungBaru}`);
+        } catch (updateError) {
+          console.error('Error updating employee nomor lambung:', updateError);
+          // Continue with attendance creation even if update fails
+        }
       }
 
       const record = await storage.createAttendanceRecord(validatedData);

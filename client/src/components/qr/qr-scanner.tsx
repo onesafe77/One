@@ -25,6 +25,7 @@ interface ScanResult {
 interface AttendanceFormData {
   jamTidur: string;
   fitToWork: string;
+  nomorLambung?: string;
 }
 
 interface RecentActivity {
@@ -46,7 +47,8 @@ export function QRScanner() {
   const [stream, setStream] = useState<MediaStream | null>(null);
   const [attendanceForm, setAttendanceForm] = useState<AttendanceFormData>({
     jamTidur: '',
-    fitToWork: ''
+    fitToWork: '',
+    nomorLambung: ''
   });
   const [isProcessing, setIsProcessing] = useState(false);
   const [lastScanTime, setLastScanTime] = useState<number>(0);
@@ -116,7 +118,7 @@ export function QRScanner() {
       setIsScanning(true);
       scanningRef.current = true;
       setScanResult(null);
-      setAttendanceForm({ jamTidur: '', fitToWork: '' });
+      setAttendanceForm({ jamTidur: '', fitToWork: '', nomorLambung: '' });
       
       if (videoRef.current) {
         videoRef.current.srcObject = mediaStream;
@@ -308,10 +310,13 @@ export function QRScanner() {
   };
 
   const processAttendance = async () => {
-    if (!scanResult || !attendanceForm.jamTidur || !attendanceForm.fitToWork) {
+    if (!scanResult || !attendanceForm.jamTidur || !attendanceForm.fitToWork || 
+        (scanResult.nomorLambung === 'SPARE' && !attendanceForm.nomorLambung)) {
       toast({
         title: "Data Tidak Lengkap",
-        description: "Silakan isi jam tidur dan status fit to work",
+        description: scanResult?.nomorLambung === 'SPARE' 
+          ? "Silakan isi jam tidur, status fit to work, dan nomor lambung baru"
+          : "Silakan isi jam tidur dan status fit to work",
         variant: "destructive",
       });
       return;
@@ -327,17 +332,24 @@ export function QRScanner() {
 
       console.log("Processing attendance for:", scanResult.name);
 
+      const attendanceData: any = {
+        employeeId: scanResult.employeeId,
+        date: today,
+        time: currentTime,
+        jamTidur: attendanceForm.jamTidur,
+        fitToWork: attendanceForm.fitToWork,
+        status: "present"
+      };
+      
+      // Jika nomor lambung SPARE, sertakan nomor lambung baru
+      if (scanResult.nomorLambung === 'SPARE' && attendanceForm.nomorLambung) {
+        attendanceData.nomorLambungBaru = attendanceForm.nomorLambung;
+      }
+
       const response = await fetch("/api/attendance", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          employeeId: scanResult.employeeId,
-          date: today,
-          time: currentTime,
-          jamTidur: attendanceForm.jamTidur,
-          fitToWork: attendanceForm.fitToWork,
-          status: "present"
-        })
+        body: JSON.stringify(attendanceData)
       });
 
       if (!response.ok) {
@@ -367,7 +379,7 @@ export function QRScanner() {
       // Reset form and clear scan result after 3 seconds
       setTimeout(() => {
         setScanResult(null);
-        setAttendanceForm({ jamTidur: '', fitToWork: '' });
+        setAttendanceForm({ jamTidur: '', fitToWork: '', nomorLambung: '' });
         // Restart scanning for next QR
         if (videoRef.current && !scanningRef.current) {
           startScanning();
@@ -647,11 +659,34 @@ export function QRScanner() {
                         <option value="Unfit To Work">Unfit To Work</option>
                       </select>
                     </div>
+                    
+                    {/* Field Nomor Lambung - hanya tampil jika nomor lambung adalah SPARE */}
+                    {scanResult.nomorLambung === 'SPARE' && (
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                          Nomor Lambung Baru <span className="text-red-500">*</span>
+                        </label>
+                        <Input
+                          type="text"
+                          value={attendanceForm.nomorLambung || ''}
+                          onChange={(e) => setAttendanceForm(prev => ({ ...prev, nomorLambung: e.target.value }))}
+                          placeholder="Masukkan nomor lambung baru"
+                          className="w-full"
+                          data-testid="nomor-lambung-input"
+                          required={scanResult.nomorLambung === 'SPARE'}
+                        />
+                      </div>
+                    )}
                   </div>
                   
                   <Button 
                     onClick={processAttendance}
-                    disabled={!attendanceForm.jamTidur || !attendanceForm.fitToWork || isProcessing}
+                    disabled={
+                      !attendanceForm.jamTidur || 
+                      !attendanceForm.fitToWork || 
+                      isProcessing ||
+                      (scanResult.nomorLambung === 'SPARE' && !attendanceForm.nomorLambung)
+                    }
                     className="w-full"
                     data-testid="process-attendance-button"
                   >
@@ -672,7 +707,7 @@ export function QRScanner() {
                 <Button 
                   onClick={() => {
                     setScanResult(null);
-                    setAttendanceForm({ jamTidur: '', fitToWork: '' });
+                    setAttendanceForm({ jamTidur: '', fitToWork: '', nomorLambung: '' });
                   }} 
                   className="w-full"
                   variant={scanResult.status === 'error' ? 'destructive' : 'default'}
