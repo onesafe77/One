@@ -1,7 +1,7 @@
 import jsPDF from 'jspdf';
 import type { AttendanceRecord, Employee, RosterSchedule } from '@shared/schema';
 import { determineShiftByTime } from './shift-utils';
-import companyLogo from '@assets/company-logo-new.jpg';
+import companyLogo from '@assets/image_1756993494840.png';
 
 interface ReportInfo {
   perusahaan: string;
@@ -51,7 +51,7 @@ export async function generateAttendancePDF(data: ReportData): Promise<void> {
     // Company Header with Logo
     try {
       // Add company logo
-      doc.addImage(companyLogo, 'JPEG', margin, yPosition - 5, 30, 15); // Logo with 30x15 size
+      doc.addImage(companyLogo, 'PNG', margin, yPosition - 5, 30, 15); // Logo with 30x15 size
       
       // Company name next to logo
       doc.setFontSize(12);

@@ -14,7 +14,7 @@ import {
   Video,
   Smartphone
 } from "lucide-react";
-import companyLogo from "../../assets/company-logo-new.jpg";
+import companyLogo from "@assets/WhatsApp Image 2024-11-30 at 13.08.33_1755505069008.jpeg";
 
 const navigation = [
   { name: "Dashboard", href: "/", icon: BarChart3 },
@@ -54,13 +54,13 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
         isOpen ? "translate-x-0" : "-translate-x-full"
       )}>
         {/* Logo */}
-        <div className="flex items-center justify-center h-20 px-4 bg-primary-600 dark:bg-primary-700">
-          <div className="flex flex-col items-center space-y-2">
-            <div className="w-12 h-12 bg-white rounded-lg overflow-hidden flex items-center justify-center p-1">
+        <div className="flex items-center justify-center h-16 px-4 bg-primary-600 dark:bg-primary-700">
+          <div className="flex items-center space-x-2">
+            <div className="w-10 h-10 bg-white rounded-lg overflow-hidden flex items-center justify-center">
               <img 
                 src={companyLogo} 
-                alt="PT Goden Energi Cemerlang Lestari" 
-                className="w-full h-full object-contain"
+                alt="Company Logo" 
+                className="w-full h-full object-cover"
                 onError={(e) => {
                   // Fallback to QR icon if image fails to load
                   const target = e.target as HTMLImageElement;
@@ -78,10 +78,7 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
                 }}
               />
             </div>
-            <div className="text-center">
-              <div className="text-sm font-bold text-white leading-tight">PT Goden Energi</div>
-              <div className="text-sm font-bold text-white leading-tight">Cemerlang Lestari</div>
-            </div>
+            <span className="text-xl font-bold text-white">Attendance GECL</span>
           </div>
         </div>
         
