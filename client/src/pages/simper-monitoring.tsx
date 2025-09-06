@@ -240,6 +240,20 @@ export default function SimperMonitoring() {
     },
   });
 
+  // Format date to dd-mm-yyyy
+  const formatDateToDDMMYYYY = (dateString: string | null) => {
+    if (!dateString) return "-";
+    try {
+      const date = new Date(dateString);
+      const day = String(date.getDate()).padStart(2, '0');
+      const month = String(date.getMonth() + 1).padStart(2, '0');
+      const year = date.getFullYear();
+      return `${day}-${month}-${year}`;
+    } catch {
+      return "-";
+    }
+  };
+
   // Get monitoring days and status
   const getMonitoringStatus = (expiredDate: string | null) => {
     if (!expiredDate) return { days: null, status: "Tidak Ada Data", variant: "outline" as const };
@@ -698,10 +712,7 @@ export default function SimperMonitoring() {
                         <TableCell className="font-medium">{simper.employeeName}</TableCell>
                         <TableCell>{simper.nik}</TableCell>
                         <TableCell>
-                          {simper.simperBibExpiredDate 
-                            ? new Date(simper.simperBibExpiredDate).toLocaleDateString('id-ID')
-                            : "-"
-                          }
+                          {formatDateToDDMMYYYY(simper.simperBibExpiredDate)}
                         </TableCell>
                         <TableCell>
                           {bibStatus.days !== null ? `${bibStatus.days} hari` : "-"}
@@ -712,10 +723,7 @@ export default function SimperMonitoring() {
                           </Badge>
                         </TableCell>
                         <TableCell>
-                          {simper.simperTiaExpiredDate 
-                            ? new Date(simper.simperTiaExpiredDate).toLocaleDateString('id-ID')
-                            : "-"
-                          }
+                          {formatDateToDDMMYYYY(simper.simperTiaExpiredDate)}
                         </TableCell>
                         <TableCell>
                           {tiaStatus.days !== null ? `${tiaStatus.days} hari` : "-"}
