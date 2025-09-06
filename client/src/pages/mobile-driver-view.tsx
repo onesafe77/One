@@ -40,6 +40,21 @@ interface LeaveRequest {
   createdAt: string;
 }
 
+interface LeaveRosterMonitoring {
+  id: string;
+  nik: string;
+  name: string;
+  nomorLambung: string;
+  month: string;
+  investorGroup: string;
+  lastLeaveDate: string;
+  leaveOption: string;
+  monitoringDays: number;
+  onSite: string;
+  status: string;
+  nextLeaveDate: string;
+}
+
 export default function MobileDriverView() {
   const [nik, setNik] = useState("");
   const [searchEmployee, setSearchEmployee] = useState<Employee | null>(null);
@@ -91,6 +106,18 @@ export default function MobileDriverView() {
     enabled: !!searchEmployee && activeTab === 'monitoring', // Only load when monitoring tab active
     staleTime: 1 * 60 * 1000, // 1 minute cache
   });
+
+  // Query untuk leave roster monitoring data - COMPREHENSIVE
+  const { data: leaveRosterMonitoring = [], isLoading: monitoringLoading } = useQuery({
+    queryKey: ["/api/leave-roster-monitoring"],
+    enabled: !!searchEmployee && activeTab === 'monitoring', // Only load when monitoring tab active
+    staleTime: 2 * 60 * 1000, // 2 minutes cache
+  });
+
+  // Filter data monitoring untuk employee yang dipilih
+  const employeeMonitoring = leaveRosterMonitoring.find(
+    (item: LeaveRosterMonitoring) => item.nik === searchEmployee?.id
+  ) || null;
 
   const handleSearchWithNik = (nikValue: string) => {
     if (!nikValue.trim()) return;
@@ -487,77 +514,159 @@ export default function MobileDriverView() {
                     <div className="p-2 bg-purple-500 rounded-full">
                       <Bell className="h-5 w-5 text-white" />
                     </div>
-                    Leave Monitoring
+                    Monitoring Cuti
                   </CardTitle>
                   <CardDescription className="text-purple-600 dark:text-purple-300 font-medium">
-                    Monitoring status cuti dan pengingat untuk {searchEmployee.name}
+                    Monitoring siklus cuti dan status untuk {searchEmployee.name}
                   </CardDescription>
                 </CardHeader>
-                <CardContent className="p-6 space-y-6">
-                  {/* Monitoring Cards */}
-                  <div className="grid grid-cols-1 gap-4">
-                    {/* Upcoming Leaves Card */}
-                    <div className="p-4 bg-gradient-to-r from-blue-50 to-cyan-50 dark:from-blue-900/20 dark:to-cyan-900/20 rounded-xl border-2 border-blue-200 dark:border-blue-700">
-                      <div className="flex items-center gap-3 mb-3">
-                        <div className="p-2 bg-blue-500 rounded-full">
-                          <Calendar className="h-4 w-4 text-white" />
-                        </div>
-                        <h3 className="font-bold text-blue-800 dark:text-blue-200">Cuti Mendatang</h3>
-                      </div>
-                      {upcomingLeaves.length > 0 ? (
-                        <p className="text-sm text-blue-700 dark:text-blue-300">
-                          {upcomingLeaves.length} cuti terjadwal dalam 30 hari ke depan
-                        </p>
-                      ) : (
-                        <p className="text-sm text-blue-600 dark:text-blue-400">
-                          Tidak ada cuti terjadwal dalam waktu dekat
-                        </p>
-                      )}
+                <CardContent className="p-6">
+                  {monitoringLoading ? (
+                    <div className="text-center py-12">
+                      <div className="animate-spin rounded-full h-10 w-10 border-b-4 border-purple-500 mx-auto"></div>
+                      <p className="text-gray-600 dark:text-gray-300 font-semibold mt-4">Loading monitoring data...</p>
+                      <p className="text-gray-400 text-sm mt-2">Mengambil data monitoring cuti...</p>
                     </div>
-
-                    {/* Pending Leaves Card */}
-                    <div className="p-4 bg-gradient-to-r from-yellow-50 to-amber-50 dark:from-yellow-900/20 dark:to-amber-900/20 rounded-xl border-2 border-yellow-200 dark:border-yellow-700">
-                      <div className="flex items-center gap-3 mb-3">
-                        <div className="p-2 bg-yellow-500 rounded-full">
-                          <AlertTriangle className="h-4 w-4 text-white" />
+                  ) : employeeMonitoring ? (
+                    <div className="space-y-6">
+                      {/* Status Card - Main */}
+                      <div className="p-6 bg-gradient-to-r from-indigo-50 to-purple-50 dark:from-indigo-900/20 dark:to-purple-900/20 rounded-xl border-2 border-indigo-200 dark:border-indigo-700">
+                        <div className="flex items-center justify-between mb-4">
+                          <h3 className="text-xl font-bold text-indigo-800 dark:text-indigo-200">Status Monitoring</h3>
+                          <div className={`px-4 py-2 rounded-full text-sm font-bold ${
+                            employeeMonitoring.status === 'Aktif' ? 'bg-green-500 text-white' :
+                            employeeMonitoring.status === 'Menunggu Cuti' ? 'bg-yellow-500 text-black' :
+                            employeeMonitoring.status === 'Sedang Cuti' ? 'bg-blue-500 text-white' :
+                            'bg-gray-500 text-white'
+                          }`}>
+                            {employeeMonitoring.status}
+                          </div>
                         </div>
-                        <h3 className="font-bold text-yellow-800 dark:text-yellow-200">Cuti Pending</h3>
-                      </div>
-                      {pendingLeaves.length > 0 ? (
-                        <p className="text-sm text-yellow-700 dark:text-yellow-300">
-                          {pendingLeaves.length} permintaan cuti menunggu persetujuan
-                        </p>
-                      ) : (
-                        <p className="text-sm text-yellow-600 dark:text-yellow-400">
-                          Tidak ada cuti yang menunggu persetujuan
-                        </p>
-                      )}
-                    </div>
-
-                    {/* Leave History Summary */}
-                    <div className="p-4 bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 rounded-xl border-2 border-green-200 dark:border-green-700">
-                      <div className="flex items-center gap-3 mb-3">
-                        <div className="p-2 bg-green-500 rounded-full">
-                          <TrendingUp className="h-4 w-4 text-white" />
+                        <div className="grid grid-cols-2 gap-4">
+                          <div className="text-center">
+                            <p className="text-3xl font-bold text-indigo-700 dark:text-indigo-300">
+                              {employeeMonitoring.monitoringDays}
+                            </p>
+                            <p className="text-sm text-indigo-600 dark:text-indigo-400">Hari Monitoring</p>
+                          </div>
+                          <div className="text-center">
+                            <p className="text-3xl font-bold text-purple-700 dark:text-purple-300">
+                              {employeeMonitoring.leaveOption}
+                            </p>
+                            <p className="text-sm text-purple-600 dark:text-purple-400">Target Hari Kerja</p>
+                          </div>
                         </div>
-                        <h3 className="font-bold text-green-800 dark:text-green-200">Status Cuti</h3>
                       </div>
-                      <div className="grid grid-cols-2 gap-3">
-                        <div className="text-center">
+
+                      {/* Cycle Progress */}
+                      <div className="p-6 bg-gradient-to-r from-emerald-50 to-teal-50 dark:from-emerald-900/20 dark:to-teal-900/20 rounded-xl border-2 border-emerald-200 dark:border-emerald-700">
+                        <div className="flex items-center gap-3 mb-4">
+                          <div className="p-2 bg-emerald-500 rounded-full">
+                            <TrendingUp className="h-5 w-5 text-white" />
+                          </div>
+                          <h3 className="text-lg font-bold text-emerald-800 dark:text-emerald-200">Progress Siklus Cuti</h3>
+                        </div>
+                        
+                        {/* Progress Bar */}
+                        <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-3 mb-4">
+                          <div 
+                            className="bg-gradient-to-r from-emerald-500 to-teal-500 h-3 rounded-full transition-all duration-500"
+                            style={{ 
+                              width: `${Math.min(100, (employeeMonitoring.monitoringDays / parseInt(employeeMonitoring.leaveOption)) * 100)}%` 
+                            }}
+                          ></div>
+                        </div>
+                        
+                        <div className="flex justify-between text-sm">
+                          <span className="text-gray-600 dark:text-gray-400">
+                            {employeeMonitoring.monitoringDays} / {employeeMonitoring.leaveOption} hari
+                          </span>
+                          <span className="font-semibold text-emerald-600 dark:text-emerald-400">
+                            {Math.round((employeeMonitoring.monitoringDays / parseInt(employeeMonitoring.leaveOption)) * 100)}%
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* Dates Information */}
+                      <div className="grid grid-cols-1 gap-4">
+                        {/* Last Leave */}
+                        <div className="p-4 bg-gradient-to-r from-orange-50 to-red-50 dark:from-orange-900/20 dark:to-red-900/20 rounded-xl border-2 border-orange-200 dark:border-orange-700">
+                          <div className="flex items-center gap-3 mb-2">
+                            <div className="p-2 bg-orange-500 rounded-full">
+                              <Calendar className="h-4 w-4 text-white" />
+                            </div>
+                            <h4 className="font-bold text-orange-800 dark:text-orange-200">Terakhir Cuti</h4>
+                          </div>
+                          <p className="text-orange-700 dark:text-orange-300 font-semibold">
+                            {employeeMonitoring.lastLeaveDate ? format(new Date(employeeMonitoring.lastLeaveDate), "dd MMM yyyy") : "Belum ada data"}
+                          </p>
+                        </div>
+
+                        {/* Next Leave */}
+                        <div className="p-4 bg-gradient-to-r from-cyan-50 to-blue-50 dark:from-cyan-900/20 dark:to-blue-900/20 rounded-xl border-2 border-cyan-200 dark:border-cyan-700">
+                          <div className="flex items-center gap-3 mb-2">
+                            <div className="p-2 bg-cyan-500 rounded-full">
+                              <Clock className="h-4 w-4 text-white" />
+                            </div>
+                            <h4 className="font-bold text-cyan-800 dark:text-cyan-200">Target Cuti Berikutnya</h4>
+                          </div>
+                          <p className="text-cyan-700 dark:text-cyan-300 font-semibold">
+                            {employeeMonitoring.nextLeaveDate ? format(new Date(employeeMonitoring.nextLeaveDate), "dd MMM yyyy") : "Belum terhitung"}
+                          </p>
+                        </div>
+                      </div>
+
+                      {/* Additional Info */}
+                      <div className="p-4 bg-gradient-to-r from-gray-50 to-slate-50 dark:from-gray-800 dark:to-slate-800 rounded-xl border-2 border-gray-200 dark:border-gray-700">
+                        <div className="grid grid-cols-2 gap-4 text-sm">
+                          <div>
+                            <p className="text-gray-600 dark:text-gray-400 font-medium">Investor Group</p>
+                            <p className="font-bold text-gray-800 dark:text-white">{employeeMonitoring.investorGroup}</p>
+                          </div>
+                          <div>
+                            <p className="text-gray-600 dark:text-gray-400 font-medium">OnSite Status</p>
+                            <p className="font-bold text-gray-800 dark:text-white">
+                              {employeeMonitoring.onSite || "Tidak diisi"}
+                            </p>
+                          </div>
+                          {employeeMonitoring.nomorLambung && (
+                            <div className="col-span-2">
+                              <p className="text-gray-600 dark:text-gray-400 font-medium">Nomor Lambung</p>
+                              <p className="font-bold text-gray-800 dark:text-white">{employeeMonitoring.nomorLambung}</p>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Quick Stats */}
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="text-center p-4 bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 rounded-xl border border-green-200 dark:border-green-700">
+                          <CheckCircle className="h-8 w-8 text-green-600 mx-auto mb-2" />
                           <p className="text-2xl font-bold text-green-700 dark:text-green-300">
                             {employeeLeaves.filter(l => l.status === 'approved').length}
                           </p>
-                          <p className="text-xs text-green-600 dark:text-green-400">Disetujui</p>
+                          <p className="text-xs text-green-600 dark:text-green-400">Cuti Disetujui</p>
                         </div>
-                        <div className="text-center">
+                        <div className="text-center p-4 bg-gradient-to-br from-red-50 to-rose-50 dark:from-red-900/20 dark:to-rose-900/20 rounded-xl border border-red-200 dark:border-red-700">
+                          <XCircle className="h-8 w-8 text-red-600 mx-auto mb-2" />
                           <p className="text-2xl font-bold text-red-700 dark:text-red-300">
                             {employeeLeaves.filter(l => l.status === 'rejected').length}
                           </p>
-                          <p className="text-xs text-red-600 dark:text-red-400">Ditolak</p>
+                          <p className="text-xs text-red-600 dark:text-red-400">Cuti Ditolak</p>
                         </div>
                       </div>
                     </div>
-                  </div>
+                  ) : (
+                    <div className="text-center py-12">
+                      <AlertTriangle className="h-16 w-16 text-gray-400 mx-auto mb-4" />
+                      <p className="text-gray-600 dark:text-gray-300 font-semibold text-lg mb-2">
+                        Data Monitoring Tidak Ditemukan
+                      </p>
+                      <p className="text-gray-500 dark:text-gray-400 text-sm">
+                        Employee {searchEmployee.name} belum terdaftar dalam sistem monitoring cuti
+                      </p>
+                    </div>
+                  )}
                 </CardContent>
               </Card>
             )}
