@@ -225,6 +225,7 @@ export default function Leave() {
 
   const { data: leaveRequests = [], isLoading } = useQuery<LeaveRequest[]>({
     queryKey: ["/api/leave"],
+    refetchInterval: 30000, // Refresh every 30 seconds
   });
 
   // Analytics queries

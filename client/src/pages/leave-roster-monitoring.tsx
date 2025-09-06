@@ -114,12 +114,14 @@ export default function LeaveRosterMonitoringPage() {
   const { data: monitoringData = [], isLoading, refetch } = useQuery<LeaveRosterMonitoring[]>({
     queryKey: ["/api/leave-roster-monitoring"],
     staleTime: 30000, // 30 seconds
+    refetchInterval: 30000, // Auto-refresh every 30 seconds
   });
 
   // Fetch employees for dropdown
   const { data: employees = [] } = useQuery<Employee[]>({
     queryKey: ["/api/employees"],
     staleTime: 300000, // 5 minutes
+    refetchInterval: 60000, // Auto-refresh every minute
   });
 
   // Create monitoring entry

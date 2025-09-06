@@ -42,6 +42,7 @@ export default function LeaveRequests() {
 
   const { data: leaveRequests = [], isLoading } = useQuery<LeaveRequest[]>({
     queryKey: ["/api/leave-requests"],
+    refetchInterval: 30000, // Refresh every 30 seconds
   });
 
   const form = useForm<z.infer<typeof formSchema>>({
