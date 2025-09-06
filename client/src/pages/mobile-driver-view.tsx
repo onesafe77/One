@@ -47,24 +47,6 @@ export default function MobileDriverView() {
   const [showRoster, setShowRoster] = useState(true);
   const [showLeave, setShowLeave] = useState(false);
 
-  // Auto-focus untuk mobile
-  useEffect(() => {
-    console.log('🚀 Mobile Driver View loaded');
-    // Detect if accessed via QR scan (check URL params)
-    const urlParams = new URLSearchParams(window.location.search);
-    const scannedNik = urlParams.get('nik');
-    console.log('🔗 URL params - nik:', scannedNik);
-    
-    if (scannedNik) {
-      setNik(scannedNik);
-      console.log('📱 Auto-searching for employee:', scannedNik);
-      // Delay untuk memastikan employees data sudah loaded
-      setTimeout(() => {
-        handleSearchWithNik(scannedNik);
-      }, 1000);
-    }
-  }, [employees]); // Depend on employees so it runs when data is loaded
-
   // Query untuk mencari employee berdasarkan NIK
   const { data: employees } = useQuery({
     queryKey: ["/api/employees"],
@@ -113,6 +95,24 @@ export default function MobileDriverView() {
     setSearchEmployee(employee || null);
     setSuggestions([]);
   };
+
+  // Auto-focus untuk mobile
+  useEffect(() => {
+    console.log('🚀 Mobile Driver View loaded');
+    // Detect if accessed via QR scan (check URL params)
+    const urlParams = new URLSearchParams(window.location.search);
+    const scannedNik = urlParams.get('nik');
+    console.log('🔗 URL params - nik:', scannedNik);
+    
+    if (scannedNik && employees) {
+      setNik(scannedNik);
+      console.log('📱 Auto-searching for employee:', scannedNik);
+      // Delay untuk memastikan employees data sudah loaded
+      setTimeout(() => {
+        handleSearchWithNik(scannedNik);
+      }, 100);
+    }
+  }, [employees]); // Depend on employees so it runs when data is loaded
 
   const handleSearch = () => {
     handleSearchWithNik(nik);
