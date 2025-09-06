@@ -13,7 +13,12 @@ export function exportAttendanceToCSV(
     headers,
     ...actualAttendance.map((record, index) => {
       const employee = employees.find(emp => emp.id === record.employeeId);
-      const nomorLambung = employee?.nomorLambung || '-';
+      // Format nomor lambung untuk karyawan SPARE yang sudah update
+      const nomorLambung = employee?.nomorLambung === "SPARE" ? "SPARE" : 
+        (employee?.nomorLambung && employee.nomorLambung !== '-' && employee.nomorLambung !== 'null' && 
+         employee.nomorLambung.trim() !== '' && 
+         (employee.nomorLambung.includes('GECL') || employee.nomorLambung.includes('SPARE'))) ? 
+         `SPARE ${employee.nomorLambung}` : (employee?.nomorLambung || '-');
       
       return [
         (index + 1).toString(),
@@ -64,7 +69,12 @@ export function exportEmployeesToCSV(employees: Employee[]): void {
   const csvData = [
     headers,
     ...employees.map((employee, index) => {
-      const nomorLambung = employee.nomorLambung || '-';
+      // Format nomor lambung untuk karyawan SPARE yang sudah update
+      const nomorLambung = employee.nomorLambung === "SPARE" ? "SPARE" : 
+        (employee.nomorLambung && employee.nomorLambung !== '-' && employee.nomorLambung !== 'null' && 
+         employee.nomorLambung.trim() !== '' && 
+         (employee.nomorLambung.includes('GECL') || employee.nomorLambung.includes('SPARE'))) ? 
+         `SPARE ${employee.nomorLambung}` : (employee.nomorLambung || '-');
       
       return [
         (index + 1).toString(),
