@@ -608,12 +608,7 @@ export function QRScanner() {
                   <div>
                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Nomor Lambung</label>
                     <p className="text-lg font-semibold text-gray-900 dark:text-white" data-testid="scanned-nomor-lambung">
-                      {scanResult.nomorLambung === "SPARE" ? "SPARE" : 
-                       (scanResult.nomorLambung && scanResult.nomorLambung !== '-' && 
-                        scanResult.nomorLambung !== 'null' && scanResult.nomorLambung.trim() !== '' && 
-                        (scanResult.nomorLambung.includes('GECL') || scanResult.nomorLambung.includes('SPARE'))) ? 
-                        `SPARE ${scanResult.nomorLambung}` : (scanResult.nomorLambung || '-')
-                      }
+                      {scanResult.nomorLambung || '-'}
                     </p>
                   </div>
                 )}

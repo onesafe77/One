@@ -1185,21 +1185,8 @@ export default function Roster() {
                             </Button>
                           </div>
                         )
-                      ) : roster.employee?.nomorLambung && roster.employee.nomorLambung !== '-' && 
-                          roster.employee.nomorLambung !== 'null' && roster.employee.nomorLambung.trim() !== '' ? (
-                        // Check if this employee was originally SPARE by looking at attendance history or roster pattern
-                        roster.employee.nomorLambung.includes('GECL') || roster.employee.nomorLambung.includes('SPARE') ? (
-                          <div className="flex items-center space-x-1">
-                            <Badge variant="secondary" className="bg-orange-100 text-orange-700 dark:bg-orange-900 dark:text-orange-300 text-xs">
-                              SPARE
-                            </Badge>
-                            <span className="text-sm font-medium">{roster.employee.nomorLambung}</span>
-                          </div>
-                        ) : (
-                          roster.employee.nomorLambung
-                        )
                       ) : (
-                        '-'
+                        roster.employee?.nomorLambung || '-'
                       )}
                     </td>
                     <td className="py-3 px-4 text-sm text-gray-900 dark:text-white">
