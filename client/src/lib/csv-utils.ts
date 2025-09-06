@@ -16,7 +16,7 @@ export function exportAttendanceToCSV(
       // Format nomor lambung untuk karyawan SPARE yang sudah update
       const nomorLambung = employee?.nomorLambung === "SPARE" ? "SPARE" : 
         (employee?.nomorLambung && employee.nomorLambung !== '-' && employee.nomorLambung !== 'null' && 
-         employee.nomorLambung.trim() !== '' && 
+         employee.nomorLambung.trim() !== '' && employee.nomorLambung !== "SPARE" &&
          (employee.nomorLambung.includes('GECL') || employee.nomorLambung.includes('SPARE'))) ? 
          `SPARE ${employee.nomorLambung}` : (employee?.nomorLambung || '-');
       
@@ -72,7 +72,7 @@ export function exportEmployeesToCSV(employees: Employee[]): void {
       // Format nomor lambung untuk karyawan SPARE yang sudah update
       const nomorLambung = employee.nomorLambung === "SPARE" ? "SPARE" : 
         (employee.nomorLambung && employee.nomorLambung !== '-' && employee.nomorLambung !== 'null' && 
-         employee.nomorLambung.trim() !== '' && 
+         employee.nomorLambung.trim() !== '' && employee.nomorLambung !== "SPARE" &&
          (employee.nomorLambung.includes('GECL') || employee.nomorLambung.includes('SPARE'))) ? 
          `SPARE ${employee.nomorLambung}` : (employee.nomorLambung || '-');
       

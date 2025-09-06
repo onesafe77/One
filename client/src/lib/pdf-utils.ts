@@ -396,7 +396,7 @@ function generateShiftSection(
       // Format nomor lambung untuk karyawan SPARE yang sudah update
       employee.nomorLambung === "SPARE" ? "SPARE" : 
       (employee.nomorLambung && employee.nomorLambung !== '-' && employee.nomorLambung !== 'null' && 
-       employee.nomorLambung.trim() !== '' && 
+       employee.nomorLambung.trim() !== '' && employee.nomorLambung !== "SPARE" &&
        (employee.nomorLambung.includes('GECL') || employee.nomorLambung.includes('SPARE'))) ? 
        `SPARE ${employee.nomorLambung}` : (employee.nomorLambung || '-'),
       jamTidur,
