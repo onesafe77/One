@@ -13,7 +13,8 @@ import {
   insertLeaveRequestSchema,
   insertQrTokenSchema,
   insertMeetingSchema,
-  insertMeetingAttendanceSchema
+  insertMeetingAttendanceSchema,
+  insertSimperMonitoringSchema
 } from "@shared/schema";
 
 // Report cache invalidation and update notification system
@@ -2634,6 +2635,214 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json({ success: true, message: "SYAHRANI KAI fixed" });
     } catch (error) {
       res.status(500).json({ success: false, message: "Failed to fix" });
+    }
+  });
+
+  // SIMPER Monitoring routes
+  app.get("/api/simper-monitoring", async (req, res) => {
+    try {
+      const simperData = await storage.getAllSimperMonitoring();
+      res.json(simperData);
+    } catch (error) {
+      console.error('Error fetching SIMPER data:', error);
+      res.status(500).json({ message: "Failed to fetch SIMPER monitoring data" });
+    }
+  });
+
+  app.get("/api/simper-monitoring/:id", async (req, res) => {
+    try {
+      const simper = await storage.getSimperMonitoring(req.params.id);
+      if (!simper) {
+        return res.status(404).json({ message: "Data SIMPER tidak ditemukan" });
+      }
+      res.json(simper);
+    } catch (error) {
+      console.error('Error fetching SIMPER:', error);
+      res.status(500).json({ message: "Failed to fetch SIMPER data" });
+    }
+  });
+
+  app.get("/api/simper-monitoring/nik/:nik", async (req, res) => {
+    try {
+      const simper = await storage.getSimperMonitoringByNik(req.params.nik);
+      if (!simper) {
+        return res.status(404).json({ message: "Data SIMPER tidak ditemukan untuk NIK tersebut" });
+      }
+      res.json(simper);
+    } catch (error) {
+      console.error('Error fetching SIMPER by NIK:', error);
+      res.status(500).json({ message: "Failed to fetch SIMPER data by NIK" });
+    }
+  });
+
+  app.post("/api/simper-monitoring", async (req, res) => {
+    try {
+      const validatedData = insertSimperMonitoringSchema.parse(req.body);
+      
+      // Check if NIK already exists
+      const existingSimper = await storage.getSimperMonitoringByNik(validatedData.nik);
+      if (existingSimper) {
+        return res.status(409).json({ message: "Data SIMPER untuk NIK ini sudah ada" });
+      }
+
+      const simper = await storage.createSimperMonitoring(validatedData);
+      res.status(201).json(simper);
+    } catch (error) {
+      console.error('Error creating SIMPER:', error);
+      res.status(400).json({ message: "Invalid SIMPER data" });
+    }
+  });
+
+  app.put("/api/simper-monitoring/:id", async (req, res) => {
+    try {
+      const validatedData = insertSimperMonitoringSchema.partial().parse(req.body);
+      const updatedSimper = await storage.updateSimperMonitoring(req.params.id, validatedData);
+      
+      if (!updatedSimper) {
+        return res.status(404).json({ message: "Data SIMPER tidak ditemukan" });
+      }
+      
+      res.json(updatedSimper);
+    } catch (error) {
+      console.error('Error updating SIMPER:', error);
+      res.status(400).json({ message: "Invalid SIMPER data" });
+    }
+  });
+
+  app.delete("/api/simper-monitoring/:id", async (req, res) => {
+    try {
+      const success = await storage.deleteSimperMonitoring(req.params.id);
+      if (!success) {
+        return res.status(404).json({ message: "Data SIMPER tidak ditemukan" });
+      }
+      res.json({ message: "Data SIMPER berhasil dihapus" });
+    } catch (error) {
+      console.error('Error deleting SIMPER:', error);
+      res.status(500).json({ message: "Failed to delete SIMPER data" });
+    }
+  });
+
+  app.delete("/api/simper-monitoring", async (req, res) => {
+    try {
+      await storage.deleteAllSimperMonitoring();
+      res.json({ message: "Semua data SIMPER berhasil dihapus" });
+    } catch (error) {
+      console.error('Error deleting all SIMPER data:', error);
+      res.status(500).json({ message: "Failed to delete all SIMPER data" });
+    }
+  });
+
+  // SIMPER bulk upload Excel
+  app.post("/api/simper-monitoring/upload-excel", upload.single('file'), async (req, res) => {
+    try {
+      if (!req.file) {
+        return res.status(400).json({ message: "File Excel tidak ditemukan" });
+      }
+
+      const XLSX = await import('xlsx');
+      const workbook = XLSX.read(req.file.buffer, { type: 'buffer' });
+      const sheetName = workbook.SheetNames[0];
+      const worksheet = workbook.Sheets[sheetName];
+      const data = XLSX.utils.sheet_to_json(worksheet);
+
+      const simperData = data.map((row: any) => ({
+        employeeName: row['Nama Karyawan'] || row['Nama'] || row['nama'] || '',
+        nik: row['NIK'] || row['nik'] || '',
+        simperBibExpiredDate: row['Tanggal SIMPER BIB Mati'] || row['SIMPER BIB'] || null,
+        simperTiaExpiredDate: row['Tanggal SIMPER TIA Mati'] || row['SIMPER TIA'] || null
+      }));
+
+      const result = await storage.bulkUploadSimperData(simperData);
+      
+      res.json({
+        message: `Upload berhasil: ${result.success} data berhasil diproses`,
+        success: result.success,
+        errors: result.errors
+      });
+
+      // Clean up uploaded file
+      if (req.file.path) {
+        fs.unlinkSync(req.file.path);
+      }
+    } catch (error) {
+      console.error('Error uploading SIMPER Excel:', error);
+      res.status(500).json({ message: "Gagal mengupload file Excel SIMPER" });
+    }
+  });
+
+  // SIMPER Analytics endpoint
+  app.get("/api/simper-monitoring/analytics", async (req, res) => {
+    try {
+      const allSimperData = await storage.getAllSimperMonitoring();
+      const today = new Date();
+      
+      // Calculate monitoring days and status for each SIMPER record
+      const processedData = allSimperData.map(simper => {
+        const processBIB = (expiredDate: string | null) => {
+          if (!expiredDate) return { days: null, status: 'Tidak Ada Data' };
+          
+          const expired = new Date(expiredDate);
+          const diffTime = expired.getTime() - today.getTime();
+          const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+          
+          if (diffDays < 0) return { days: diffDays, status: 'Segera Perpanjang' };
+          if (diffDays < 7) return { days: diffDays, status: 'Mendekati Perpanjangan' };
+          if (diffDays < 30) return { days: diffDays, status: 'Menuju Perpanjangan' };
+          return { days: diffDays, status: 'Aktif' };
+        };
+
+        const bibStatus = processBIB(simper.simperBibExpiredDate);
+        const tiaStatus = processBIB(simper.simperTiaExpiredDate);
+
+        return {
+          ...simper,
+          bibMonitoringDays: bibStatus.days,
+          bibStatus: bibStatus.status,
+          tiaMonitoringDays: tiaStatus.days,
+          tiaStatus: tiaStatus.status
+        };
+      });
+
+      // Calculate statistics
+      const totalKaryawan = processedData.length;
+      
+      const bibStats = {
+        segera: processedData.filter(s => s.bibStatus === 'Segera Perpanjang').length,
+        mendekati: processedData.filter(s => s.bibStatus === 'Mendekati Perpanjangan').length,
+        menuju: processedData.filter(s => s.bibStatus === 'Menuju Perpanjangan').length,
+        aktif: processedData.filter(s => s.bibStatus === 'Aktif').length
+      };
+
+      const tiaStats = {
+        segera: processedData.filter(s => s.tiaStatus === 'Segera Perpanjang').length,
+        mendekati: processedData.filter(s => s.tiaStatus === 'Mendekati Perpanjangan').length,
+        menuju: processedData.filter(s => s.tiaStatus === 'Menuju Perpanjangan').length,
+        aktif: processedData.filter(s => s.tiaStatus === 'Aktif').length
+      };
+
+      // Get critical list (expired or expiring soon)
+      const criticalList = processedData
+        .filter(s => 
+          (s.bibMonitoringDays !== null && s.bibMonitoringDays < 30) ||
+          (s.tiaMonitoringDays !== null && s.tiaMonitoringDays < 30)
+        )
+        .sort((a, b) => {
+          const aMinDays = Math.min(a.bibMonitoringDays || 999, a.tiaMonitoringDays || 999);
+          const bMinDays = Math.min(b.bibMonitoringDays || 999, b.tiaMonitoringDays || 999);
+          return aMinDays - bMinDays;
+        })
+        .slice(0, 10);
+
+      res.json({
+        totalKaryawan,
+        bibStats,
+        tiaStats,
+        criticalList,
+        processedData
+      });
+    } catch (error) {
+      console.error('Error fetching SIMPER analytics:', error);
+      res.status(500).json({ message: "Failed to fetch SIMPER analytics" });
     }
   });
 
