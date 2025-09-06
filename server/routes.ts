@@ -484,6 +484,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
           // Clear cache untuk employee yang diupdate
           clearCachedEmployee(validatedData.employeeId);
           console.log(`Updated nomor lambung for employee ${validatedData.employeeId} to: ${req.body.nomorLambungBaru}`);
+          
+          // Force refresh roster cache so it shows updated nomor lambung immediately
+          console.log(`Forcing roster cache refresh after nomor lambung update for ${validatedData.employeeId}`);
         } catch (updateError) {
           console.error('Error updating employee nomor lambung:', updateError);
           // Continue with attendance creation even if update fails

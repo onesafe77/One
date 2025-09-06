@@ -373,8 +373,18 @@ export function QRScanner() {
         queryClient.invalidateQueries({ queryKey: ["/api/dashboard/attendance-details"] }),
         queryClient.invalidateQueries({ queryKey: ["/api/dashboard/recent-activities"] }),
         queryClient.invalidateQueries({ queryKey: ["/api/roster"] }),
+        queryClient.invalidateQueries({ queryKey: ["/api/employees"] }), // Invalidate employees untuk nomor lambung update
         refetchActivities() // Refresh recent activities immediately
       ]).catch(console.error); // Don't block UI for cache updates
+
+      // Force refetch roster dengan delay untuk memastikan data employee sudah terupdate
+      if (attendanceForm.nomorLambung) {
+        console.log(`🔄 Force refetching roster after nomor lambung update for ${scanResult.name}`);
+        setTimeout(() => {
+          queryClient.refetchQueries({ queryKey: ["/api/roster"] });
+          queryClient.refetchQueries({ queryKey: ["/api/employees"] });
+        }, 1000); // Delay 1 detik untuk memastikan backend selesai update
+      }
       
       // Reset form and clear scan result after 3 seconds
       setTimeout(() => {
