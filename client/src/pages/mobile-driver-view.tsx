@@ -4,7 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Search, User, Calendar, Clock, MapPin, ChevronDown, ChevronUp } from "lucide-react";
+import { Search, User, Calendar, Clock, MapPin, ChevronDown, ChevronUp, Bell, AlertTriangle, TrendingUp, Activity, CheckCircle, XCircle } from "lucide-react";
 import { format } from "date-fns";
 
 interface Employee {
@@ -44,8 +44,7 @@ export default function MobileDriverView() {
   const [nik, setNik] = useState("");
   const [searchEmployee, setSearchEmployee] = useState<Employee | null>(null);
   const [suggestions, setSuggestions] = useState<Employee[]>([]);
-  const [showRoster, setShowRoster] = useState(true);
-  const [showLeave, setShowLeave] = useState(false);
+  const [activeTab, setActiveTab] = useState<'info' | 'roster' | 'leave' | 'monitoring'>('info');
 
   // Query untuk mencari employee berdasarkan NIK
   const { data: employees } = useQuery({
@@ -69,6 +68,25 @@ export default function MobileDriverView() {
   const { data: leaveData, isLoading: leaveLoading } = useQuery({
     queryKey: ["/api/leave"],
     enabled: !!searchEmployee,
+  });
+
+  // Query untuk leave monitoring data
+  const { data: upcomingLeaves = [] } = useQuery({
+    queryKey: ["/api/leave-monitoring/upcoming"],
+    enabled: !!searchEmployee,
+    refetchInterval: 60000,
+  });
+
+  const { data: leaveHistory = [] } = useQuery({
+    queryKey: ["/api/leave-monitoring/history"],
+    enabled: !!searchEmployee,
+    refetchInterval: 60000,
+  });
+
+  const { data: pendingLeaves = [] } = useQuery({
+    queryKey: ["/api/leave/pending-from-monitoring"],
+    enabled: !!searchEmployee,
+    refetchInterval: 30000,
   });
 
   const handleSearchWithNik = (nikValue: string) => {
@@ -125,43 +143,48 @@ export default function MobileDriverView() {
   );
 
   const getShiftBadgeColor = (shift: string) => {
-    return shift === "Shift 1" ? "bg-blue-500" : "bg-orange-500";
+    return shift === "Shift 1" ? "bg-blue-500 text-white" : "bg-orange-500 text-white";
   };
 
   const getStatusBadgeColor = (status: string) => {
     switch (status) {
-      case "present": return "bg-green-500";
-      case "scheduled": return "bg-blue-500";
-      case "pending": return "bg-yellow-500";
-      case "approved": return "bg-green-500";
-      case "rejected": return "bg-red-500";
-      default: return "bg-gray-500";
+      case "present": return "bg-green-500 text-white";
+      case "scheduled": return "bg-blue-500 text-white";
+      case "pending": return "bg-yellow-500 text-black";
+      case "approved": return "bg-green-500 text-white";
+      case "rejected": return "bg-red-500 text-white";
+      default: return "bg-gray-500 text-white";
     }
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-      {/* Mobile Header */}
-      <div className="bg-primary-600 dark:bg-primary-700 text-white p-4 sticky top-0 z-50">
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800">
+      {/* Modern Mobile Header */}
+      <div className="bg-gradient-to-r from-red-600 to-red-700 dark:from-red-700 dark:to-red-800 text-white p-6 sticky top-0 z-50 shadow-xl">
         <div className="text-center">
-          <h1 className="text-xl font-bold">Driver View</h1>
-          <p className="text-sm text-primary-100">Data Karyawan</p>
+          <div className="flex items-center justify-center mb-2">
+            <Activity className="h-6 w-6 mr-2" />
+            <h1 className="text-2xl font-bold">Driver View</h1>
+          </div>
+          <p className="text-red-100 text-sm font-medium">Employee Data & Monitoring System</p>
         </div>
       </div>
 
-      <div className="p-4 space-y-4">
-        {/* Search Section - Mobile Optimized */}
-        <Card className="shadow-sm">
-          <CardHeader className="pb-3">
-            <CardTitle className="flex items-center gap-2 text-lg">
-              <Search className="h-5 w-5" />
+      <div className="p-4 space-y-6">
+        {/* Modern Search Section */}
+        <Card className="shadow-xl border-0 bg-white/80 dark:bg-gray-800/80 backdrop-blur-lg">
+          <CardHeader className="pb-4 bg-gradient-to-r from-red-50 to-orange-50 dark:from-red-900/20 dark:to-orange-900/20 rounded-t-lg">
+            <CardTitle className="flex items-center gap-3 text-xl font-bold text-gray-800 dark:text-white">
+              <div className="p-2 bg-red-500 rounded-full">
+                <Search className="h-5 w-5 text-white" />
+              </div>
               Cari Karyawan
             </CardTitle>
-            <CardDescription className="text-sm">
-              Scan barcode atau masukkan NIK untuk melihat data
+            <CardDescription className="text-gray-600 dark:text-gray-300 font-medium">
+              Scan QR code atau masukkan NIK untuk melihat data lengkap
             </CardDescription>
           </CardHeader>
-          <CardContent className="space-y-3">
+          <CardContent className="space-y-4">
             <div className="relative">
               <Input
                 placeholder="Ketik NIK atau nama karyawan..."
@@ -186,24 +209,24 @@ export default function MobileDriverView() {
                   }
                 }}
                 onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
-                className="text-base" // Better for mobile
+                className="text-base border-2 focus:border-red-500 rounded-xl py-3 px-4"
                 data-testid="input-mobile-nik-search"
               />
               
               {/* Mobile Suggestions */}
               {suggestions.length > 0 && (
-                <div className="absolute top-full left-0 right-0 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-md shadow-lg z-10 mt-1">
+                <div className="absolute top-full left-0 right-0 bg-white dark:bg-gray-800 border-2 border-gray-200 dark:border-gray-700 rounded-xl shadow-xl z-10 mt-2">
                   {suggestions.map((emp) => (
                     <div
                       key={emp.id}
-                      className="px-3 py-3 hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer border-b border-gray-100 dark:border-gray-700 last:border-b-0"
+                      className="px-4 py-3 hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer border-b border-gray-100 dark:border-gray-700 last:border-b-0 first:rounded-t-xl last:rounded-b-xl"
                       onClick={() => {
                         setNik(emp.name);
                         setSearchEmployee(emp);
                         setSuggestions([]);
                       }}
                     >
-                      <div className="font-medium text-sm">{emp.name}</div>
+                      <div className="font-semibold text-sm">{emp.name}</div>
                       <div className="text-xs text-gray-600 dark:text-gray-400">
                         {emp.id} | {emp.position}
                       </div>
@@ -215,223 +238,311 @@ export default function MobileDriverView() {
             
             <Button 
               onClick={handleSearch} 
-              className="w-full"
+              className="w-full bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 text-white font-semibold py-3 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300"
               data-testid="button-mobile-search"
             >
-              <Search className="h-4 w-4 mr-2" />
-              Cari Data
+              <Search className="h-5 w-5 mr-2" />
+              Cari Data Karyawan
             </Button>
             
             {nik && !searchEmployee && (
-              <div className="text-red-500 text-sm text-center">
-                <p>Karyawan "{nik}" tidak ditemukan</p>
+              <div className="text-red-500 text-sm text-center p-3 bg-red-50 dark:bg-red-900/20 rounded-xl">
+                <p className="font-semibold">Karyawan "{nik}" tidak ditemukan</p>
                 <p className="text-xs text-gray-500 mt-1">Coba cari dengan NIK atau nama lengkap</p>
               </div>
             )}
           </CardContent>
         </Card>
 
-        {/* Employee Info - Mobile Card */}
+        {/* Employee Info - Modern Card */}
         {searchEmployee && (
-          <Card className="shadow-sm">
-            <CardHeader className="pb-3">
-              <CardTitle className="flex items-center gap-2 text-lg">
-                <User className="h-5 w-5" />
-                Informasi Karyawan
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-3">
-                <div className="grid grid-cols-2 gap-3 text-sm">
-                  <div>
-                    <p className="text-gray-600 dark:text-gray-400">NIK</p>
-                    <p className="font-semibold" data-testid="text-mobile-employee-nik">{searchEmployee.id}</p>
+          <>
+            <Card className="shadow-xl border-0 bg-white/90 dark:bg-gray-800/90 backdrop-blur-lg overflow-hidden">
+              <CardHeader className="pb-4 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20">
+                <CardTitle className="flex items-center gap-3 text-xl font-bold text-gray-800 dark:text-white">
+                  <div className="p-3 bg-blue-500 rounded-full shadow-lg">
+                    <User className="h-6 w-6 text-white" />
                   </div>
-                  <div>
-                    <p className="text-gray-600 dark:text-gray-400">Nama</p>
-                    <p className="font-semibold" data-testid="text-mobile-employee-name">{searchEmployee.name}</p>
+                  {searchEmployee.name}
+                </CardTitle>
+                <CardDescription className="text-blue-600 dark:text-blue-300 font-semibold text-base">
+                  NIK: {searchEmployee.id}
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="p-6">
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="p-3 bg-gray-50 dark:bg-gray-700/50 rounded-xl">
+                    <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide">Posisi</p>
+                    <p className="font-bold text-gray-800 dark:text-white">{searchEmployee.position}</p>
                   </div>
-                  <div>
-                    <p className="text-gray-600 dark:text-gray-400">Posisi</p>
-                    <p className="font-semibold">{searchEmployee.position}</p>
+                  <div className="p-3 bg-gray-50 dark:bg-gray-700/50 rounded-xl">
+                    <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide">Department</p>
+                    <p className="font-bold text-gray-800 dark:text-white">{searchEmployee.department}</p>
                   </div>
-                  <div>
-                    <p className="text-gray-600 dark:text-gray-400">Department</p>
-                    <p className="font-semibold">{searchEmployee.department}</p>
-                  </div>
-                  <div>
-                    <p className="text-gray-600 dark:text-gray-400">Investor</p>
-                    <p className="font-semibold">{searchEmployee.investorGroup}</p>
+                  <div className="col-span-2 p-3 bg-gray-50 dark:bg-gray-700/50 rounded-xl">
+                    <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide">Investor Group</p>
+                    <p className="font-bold text-gray-800 dark:text-white">{searchEmployee.investorGroup}</p>
                   </div>
                 </div>
-              </div>
-            </CardContent>
-          </Card>
-        )}
+              </CardContent>
+            </Card>
 
-        {/* Toggle Buttons untuk Mobile */}
-        {searchEmployee && (
-          <div className="flex gap-2">
-            <Button
-              variant={showRoster ? "default" : "outline"}
-              onClick={() => {
-                setShowRoster(true);
-                setShowLeave(false);
-              }}
-              className="flex-1 text-sm"
-            >
-              <Calendar className="h-4 w-4 mr-1" />
-              Jadwal Roster
-            </Button>
-            <Button
-              variant={showLeave ? "default" : "outline"}
-              onClick={() => {
-                setShowRoster(false);
-                setShowLeave(true);
-              }}
-              className="flex-1 text-sm"
-            >
-              <MapPin className="h-4 w-4 mr-1" />
-              Riwayat Cuti
-            </Button>
-          </div>
-        )}
-
-        {/* Roster Data - Mobile */}
-        {searchEmployee && showRoster && (
-          <Card className="shadow-sm">
-            <CardHeader className="pb-3">
-              <CardTitle className="flex items-center justify-between text-lg">
-                <div className="flex items-center gap-2">
-                  <Calendar className="h-5 w-5" />
-                  Jadwal Roster Kerja
-                </div>
-              </CardTitle>
-              <CardDescription className="text-sm">
-                Daftar jadwal kerja untuk {searchEmployee.name}
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              {rosterLoading ? (
-                <p className="text-center py-4">Memuat data roster...</p>
-              ) : employeeRoster.length > 0 ? (
-                <div className="space-y-3">
-                  {employeeRoster
-                    .sort((a: RosterSchedule, b: RosterSchedule) => 
-                      new Date(b.date).getTime() - new Date(a.date).getTime()
-                    )
-                    .slice(0, 10)
-                    .map((roster: RosterSchedule) => (
-                      <div key={roster.id} className="border rounded-lg p-3 bg-gray-50 dark:bg-gray-800" data-testid={`mobile-roster-item-${roster.id}`}>
-                        <div className="flex justify-between items-start mb-2">
-                          <div>
-                            <p className="font-semibold text-sm">
-                              {format(new Date(roster.date), "dd MMM yyyy")}
-                            </p>
-                            <div className="flex gap-1 mt-1">
-                              <Badge className={`${getShiftBadgeColor(roster.shift)} text-xs`}>
-                                {roster.shift}
-                              </Badge>
-                              <Badge variant="outline" className={`${getStatusBadgeColor(roster.status)} text-xs`}>
-                                {roster.status}
-                              </Badge>
-                            </div>
-                          </div>
-                          <div className="text-right text-xs">
-                            <div className="flex items-center gap-1">
-                              <Clock className="h-3 w-3" />
-                              <span>{roster.startTime} - {roster.endTime}</span>
-                            </div>
-                            {roster.jamTidur && (
-                              <p className="text-gray-600 dark:text-gray-400 mt-1">
-                                Jam Tidur: {roster.jamTidur}
-                              </p>
-                            )}
-                            <p className="text-gray-600 dark:text-gray-400">
-                              {roster.fitToWork}
-                            </p>
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                </div>
-              ) : (
-                <p className="text-center py-4 text-gray-500">Tidak ada data roster ditemukan</p>
-              )}
-            </CardContent>
-          </Card>
-        )}
-
-        {/* Leave Data - Mobile */}
-        {searchEmployee && showLeave && (
-          <Card className="shadow-sm">
-            <CardHeader className="pb-3">
-              <CardTitle className="flex items-center gap-2 text-lg">
-                <MapPin className="h-5 w-5" />
-                Riwayat Cuti
-              </CardTitle>
-              <CardDescription className="text-sm">
-                Daftar pengajuan cuti untuk {searchEmployee.name}
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              {leaveLoading ? (
-                <p className="text-center py-4">Memuat data cuti...</p>
-              ) : employeeLeaves.length > 0 ? (
-                <div className="space-y-3">
-                  {employeeLeaves
-                    .sort((a: LeaveRequest, b: LeaveRequest) => 
-                      new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-                    )
-                    .slice(0, 5)
-                    .map((leave: LeaveRequest) => (
-                      <div key={leave.id} className="border rounded-lg p-3 bg-gray-50 dark:bg-gray-800" data-testid={`mobile-leave-item-${leave.id}`}>
-                        <div className="flex justify-between items-start">
-                          <div className="flex-1">
-                            <p className="font-semibold text-sm">{leave.leaveType}</p>
-                            <p className="text-xs text-gray-600 dark:text-gray-400 mt-1">
-                              {format(new Date(leave.startDate), "dd MMM yyyy")} - {format(new Date(leave.endDate), "dd MMM yyyy")}
-                            </p>
-                            {leave.reason && (
-                              <p className="text-xs text-gray-600 dark:text-gray-400 mt-1">
-                                Alasan: {leave.reason}
-                              </p>
-                            )}
-                          </div>
-                          <Badge className={`${getStatusBadgeColor(leave.status)} text-xs ml-2`}>
-                            {leave.status}
-                          </Badge>
-                        </div>
-                      </div>
-                    ))}
-                </div>
-              ) : (
-                <p className="text-center py-4 text-gray-500">Tidak ada data cuti ditemukan</p>
-              )}
-            </CardContent>
-          </Card>
-        )}
-
-        {/* Footer info untuk mobile */}
-        <div className="text-center text-xs text-gray-500 py-4 space-y-2">
-          <p>Driver View - Read Only</p>
-          <p>Data diperbarui secara real-time</p>
-          
-          {/* Developer Info */}
-          <div className="mt-4 pt-3 border-t border-gray-200 dark:border-gray-700">
-            <div className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 rounded-lg p-3 mx-2">
-              <p className="text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
-                💻 Pembuat Sistem
-              </p>
-              <p className="text-xs font-semibold text-blue-700 dark:text-blue-400">
-                Bagus Andyka Firmansyah
-              </p>
-              <p className="text-xs text-gray-600 dark:text-gray-400">
-                HSE Data Evaluator GECL
-              </p>
+            {/* Modern Tab Navigation */}
+            <div className="grid grid-cols-4 gap-2">
+              <Button
+                variant={activeTab === 'info' ? "default" : "outline"}
+                onClick={() => setActiveTab('info')}
+                className={`p-3 rounded-xl font-semibold ${activeTab === 'info' 
+                  ? 'bg-gradient-to-r from-blue-600 to-blue-700 text-white shadow-lg' 
+                  : 'bg-white dark:bg-gray-800 border-2'}`}
+              >
+                <User className="h-4 w-4 mb-1" />
+                <span className="text-xs">Info</span>
+              </Button>
+              <Button
+                variant={activeTab === 'roster' ? "default" : "outline"}
+                onClick={() => setActiveTab('roster')}
+                className={`p-3 rounded-xl font-semibold ${activeTab === 'roster' 
+                  ? 'bg-gradient-to-r from-green-600 to-green-700 text-white shadow-lg' 
+                  : 'bg-white dark:bg-gray-800 border-2'}`}
+              >
+                <Calendar className="h-4 w-4 mb-1" />
+                <span className="text-xs">Roster</span>
+              </Button>
+              <Button
+                variant={activeTab === 'leave' ? "default" : "outline"}
+                onClick={() => setActiveTab('leave')}
+                className={`p-3 rounded-xl font-semibold ${activeTab === 'leave' 
+                  ? 'bg-gradient-to-r from-orange-600 to-orange-700 text-white shadow-lg' 
+                  : 'bg-white dark:bg-gray-800 border-2'}`}
+              >
+                <MapPin className="h-4 w-4 mb-1" />
+                <span className="text-xs">Cuti</span>
+              </Button>
+              <Button
+                variant={activeTab === 'monitoring' ? "default" : "outline"}
+                onClick={() => setActiveTab('monitoring')}
+                className={`p-3 rounded-xl font-semibold ${activeTab === 'monitoring' 
+                  ? 'bg-gradient-to-r from-purple-600 to-purple-700 text-white shadow-lg' 
+                  : 'bg-white dark:bg-gray-800 border-2'}`}
+              >
+                <Bell className="h-4 w-4 mb-1" />
+                <span className="text-xs">Monitor</span>
+              </Button>
             </div>
-          </div>
-        </div>
+
+            {/* Tab Content */}
+            {activeTab === 'roster' && (
+              <Card className="shadow-xl border-0 bg-white/90 dark:bg-gray-800/90 backdrop-blur-lg">
+                <CardHeader className="bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 rounded-t-lg">
+                  <CardTitle className="flex items-center gap-3 text-xl font-bold text-gray-800 dark:text-white">
+                    <div className="p-2 bg-green-500 rounded-full">
+                      <Calendar className="h-5 w-5 text-white" />
+                    </div>
+                    Jadwal Roster Kerja
+                  </CardTitle>
+                  <CardDescription className="text-green-600 dark:text-green-300 font-medium">
+                    Daftar jadwal kerja untuk {searchEmployee.name}
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="p-6">
+                  {rosterLoading ? (
+                    <div className="text-center py-8">
+                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-green-500 mx-auto"></div>
+                      <p className="text-sm text-gray-500 mt-2">Memuat data roster...</p>
+                    </div>
+                  ) : employeeRoster.length > 0 ? (
+                    <div className="space-y-4">
+                      {employeeRoster
+                        .sort((a: RosterSchedule, b: RosterSchedule) => 
+                          new Date(b.date).getTime() - new Date(a.date).getTime()
+                        )
+                        .slice(0, 10)
+                        .map((roster: RosterSchedule) => (
+                          <div key={roster.id} className="border-2 border-gray-100 dark:border-gray-700 rounded-xl p-4 bg-gradient-to-r from-gray-50 to-gray-100 dark:from-gray-800 dark:to-gray-700">
+                            <div className="flex justify-between items-start mb-3">
+                              <div>
+                                <p className="font-bold text-lg text-gray-800 dark:text-white">
+                                  {format(new Date(roster.date), "dd MMM yyyy")}
+                                </p>
+                                <div className="flex gap-2 mt-2">
+                                  <Badge className={getShiftBadgeColor(roster.shift) + " px-3 py-1 rounded-full font-semibold"}>
+                                    {roster.shift}
+                                  </Badge>
+                                  <Badge className={getStatusBadgeColor(roster.status) + " px-3 py-1 rounded-full font-semibold"}>
+                                    {roster.status}
+                                  </Badge>
+                                </div>
+                              </div>
+                              <div className="text-right">
+                                <div className="flex items-center gap-1 text-gray-600 dark:text-gray-400">
+                                  <Clock className="h-4 w-4" />
+                                  <span className="font-semibold">{roster.startTime} - {roster.endTime}</span>
+                                </div>
+                                {roster.jamTidur && (
+                                  <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+                                    Jam Tidur: {roster.jamTidur}
+                                  </p>
+                                )}
+                                <p className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                                  {roster.fitToWork}
+                                </p>
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                    </div>
+                  ) : (
+                    <div className="text-center py-8">
+                      <Calendar className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                      <p className="text-gray-500">Tidak ada data roster ditemukan</p>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            )}
+
+            {activeTab === 'leave' && (
+              <Card className="shadow-xl border-0 bg-white/90 dark:bg-gray-800/90 backdrop-blur-lg">
+                <CardHeader className="bg-gradient-to-r from-orange-50 to-red-50 dark:from-orange-900/20 dark:to-red-900/20 rounded-t-lg">
+                  <CardTitle className="flex items-center gap-3 text-xl font-bold text-gray-800 dark:text-white">
+                    <div className="p-2 bg-orange-500 rounded-full">
+                      <MapPin className="h-5 w-5 text-white" />
+                    </div>
+                    Riwayat Cuti
+                  </CardTitle>
+                  <CardDescription className="text-orange-600 dark:text-orange-300 font-medium">
+                    Daftar pengajuan cuti untuk {searchEmployee.name}
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="p-6">
+                  {leaveLoading ? (
+                    <div className="text-center py-8">
+                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-500 mx-auto"></div>
+                      <p className="text-sm text-gray-500 mt-2">Memuat data cuti...</p>
+                    </div>
+                  ) : employeeLeaves.length > 0 ? (
+                    <div className="space-y-4">
+                      {employeeLeaves
+                        .sort((a: LeaveRequest, b: LeaveRequest) => 
+                          new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+                        )
+                        .slice(0, 5)
+                        .map((leave: LeaveRequest) => (
+                          <div key={leave.id} className="border-2 border-gray-100 dark:border-gray-700 rounded-xl p-4 bg-gradient-to-r from-gray-50 to-gray-100 dark:from-gray-800 dark:to-gray-700">
+                            <div className="flex justify-between items-start">
+                              <div className="flex-1">
+                                <p className="font-bold text-lg text-gray-800 dark:text-white mb-1">{leave.leaveType}</p>
+                                <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">
+                                  {format(new Date(leave.startDate), "dd MMM yyyy")} - {format(new Date(leave.endDate), "dd MMM yyyy")}
+                                </p>
+                                {leave.reason && (
+                                  <p className="text-sm text-gray-600 dark:text-gray-400">
+                                    <span className="font-medium">Alasan:</span> {leave.reason}
+                                  </p>
+                                )}
+                              </div>
+                              <Badge className={getStatusBadgeColor(leave.status) + " px-3 py-1 rounded-full font-semibold"}>
+                                {leave.status === 'approved' ? 'Disetujui' : 
+                                 leave.status === 'rejected' ? 'Ditolak' : 'Menunggu'}
+                              </Badge>
+                            </div>
+                          </div>
+                        ))}
+                    </div>
+                  ) : (
+                    <div className="text-center py-8">
+                      <MapPin className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                      <p className="text-gray-500">Tidak ada data cuti ditemukan</p>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            )}
+
+            {activeTab === 'monitoring' && (
+              <Card className="shadow-xl border-0 bg-white/90 dark:bg-gray-800/90 backdrop-blur-lg">
+                <CardHeader className="bg-gradient-to-r from-purple-50 to-indigo-50 dark:from-purple-900/20 dark:to-indigo-900/20 rounded-t-lg">
+                  <CardTitle className="flex items-center gap-3 text-xl font-bold text-gray-800 dark:text-white">
+                    <div className="p-2 bg-purple-500 rounded-full">
+                      <Bell className="h-5 w-5 text-white" />
+                    </div>
+                    Leave Monitoring
+                  </CardTitle>
+                  <CardDescription className="text-purple-600 dark:text-purple-300 font-medium">
+                    Monitoring status cuti dan pengingat untuk {searchEmployee.name}
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="p-6 space-y-6">
+                  {/* Monitoring Cards */}
+                  <div className="grid grid-cols-1 gap-4">
+                    {/* Upcoming Leaves Card */}
+                    <div className="p-4 bg-gradient-to-r from-blue-50 to-cyan-50 dark:from-blue-900/20 dark:to-cyan-900/20 rounded-xl border-2 border-blue-200 dark:border-blue-700">
+                      <div className="flex items-center gap-3 mb-3">
+                        <div className="p-2 bg-blue-500 rounded-full">
+                          <Calendar className="h-4 w-4 text-white" />
+                        </div>
+                        <h3 className="font-bold text-blue-800 dark:text-blue-200">Cuti Mendatang</h3>
+                      </div>
+                      {upcomingLeaves.length > 0 ? (
+                        <p className="text-sm text-blue-700 dark:text-blue-300">
+                          {upcomingLeaves.length} cuti terjadwal dalam 30 hari ke depan
+                        </p>
+                      ) : (
+                        <p className="text-sm text-blue-600 dark:text-blue-400">
+                          Tidak ada cuti terjadwal dalam waktu dekat
+                        </p>
+                      )}
+                    </div>
+
+                    {/* Pending Leaves Card */}
+                    <div className="p-4 bg-gradient-to-r from-yellow-50 to-amber-50 dark:from-yellow-900/20 dark:to-amber-900/20 rounded-xl border-2 border-yellow-200 dark:border-yellow-700">
+                      <div className="flex items-center gap-3 mb-3">
+                        <div className="p-2 bg-yellow-500 rounded-full">
+                          <AlertTriangle className="h-4 w-4 text-white" />
+                        </div>
+                        <h3 className="font-bold text-yellow-800 dark:text-yellow-200">Cuti Pending</h3>
+                      </div>
+                      {pendingLeaves.length > 0 ? (
+                        <p className="text-sm text-yellow-700 dark:text-yellow-300">
+                          {pendingLeaves.length} permintaan cuti menunggu persetujuan
+                        </p>
+                      ) : (
+                        <p className="text-sm text-yellow-600 dark:text-yellow-400">
+                          Tidak ada cuti yang menunggu persetujuan
+                        </p>
+                      )}
+                    </div>
+
+                    {/* Leave History Summary */}
+                    <div className="p-4 bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 rounded-xl border-2 border-green-200 dark:border-green-700">
+                      <div className="flex items-center gap-3 mb-3">
+                        <div className="p-2 bg-green-500 rounded-full">
+                          <TrendingUp className="h-4 w-4 text-white" />
+                        </div>
+                        <h3 className="font-bold text-green-800 dark:text-green-200">Status Cuti</h3>
+                      </div>
+                      <div className="grid grid-cols-2 gap-3">
+                        <div className="text-center">
+                          <p className="text-2xl font-bold text-green-700 dark:text-green-300">
+                            {employeeLeaves.filter(l => l.status === 'approved').length}
+                          </p>
+                          <p className="text-xs text-green-600 dark:text-green-400">Disetujui</p>
+                        </div>
+                        <div className="text-center">
+                          <p className="text-2xl font-bold text-red-700 dark:text-red-300">
+                            {employeeLeaves.filter(l => l.status === 'rejected').length}
+                          </p>
+                          <p className="text-xs text-red-600 dark:text-red-400">Ditolak</p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+          </>
+        )}
       </div>
     </div>
   );
