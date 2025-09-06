@@ -756,9 +756,9 @@ export default function SimperMonitoring() {
                 </div>
               )}
             </div>
-          </CardContent>
-        </Card>
-      )}
+          )}
+        </CardContent>
+      </Card>
 
       {/* Critical List Table */}
       {analytics && analytics.criticalList.length > 0 && (
