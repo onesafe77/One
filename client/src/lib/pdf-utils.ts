@@ -56,13 +56,13 @@ export async function generateAttendancePDF(data: ReportData): Promise<void> {
       // Company name next to logo
       doc.setFontSize(12);
       doc.setFont('helvetica', 'bold');
-      doc.text('PT Seksan Esensi Cemerlang Lestari', margin + 35, yPosition + 5);
+      doc.text('PT Goden Energi Cemerlang Lestari', margin + 35, yPosition + 5);
     } catch (error) {
       console.warn('Could not add logo to PDF:', error);
       // Fallback to text only
       doc.setFontSize(12);
       doc.setFont('helvetica', 'bold');
-      doc.text('PT Seksan Esensi Cemerlang Lestari', margin, yPosition);
+      doc.text('PT Goden Energi Cemerlang Lestari', margin, yPosition);
     }
     yPosition += 25;
     

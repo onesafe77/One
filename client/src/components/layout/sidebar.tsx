@@ -54,12 +54,12 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
         isOpen ? "translate-x-0" : "-translate-x-full"
       )}>
         {/* Logo */}
-        <div className="flex items-center justify-center h-16 px-4 bg-primary-600 dark:bg-primary-700">
-          <div className="flex items-center space-x-2">
+        <div className="flex items-center justify-center h-20 px-4 bg-primary-600 dark:bg-primary-700">
+          <div className="flex flex-col items-center space-y-2">
             <div className="w-12 h-12 bg-white rounded-lg overflow-hidden flex items-center justify-center p-1">
               <img 
                 src={companyLogo} 
-                alt="PT Seksan Esensi Cemerlang Lestari" 
+                alt="PT Goden Energi Cemerlang Lestari" 
                 className="w-full h-full object-contain"
                 onError={(e) => {
                   // Fallback to QR icon if image fails to load
@@ -78,7 +78,10 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
                 }}
               />
             </div>
-            <span className="text-xl font-bold text-white">Attendance GECL</span>
+            <div className="text-center">
+              <div className="text-sm font-bold text-white leading-tight">PT Goden Energi</div>
+              <div className="text-sm font-bold text-white leading-tight">Cemerlang Lestari</div>
+            </div>
           </div>
         </div>
         
