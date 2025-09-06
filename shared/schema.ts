@@ -246,6 +246,17 @@ export const meetingAttendance = pgTable("meeting_attendance", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
+// SIMPER Employee Monitoring System
+export const simperMonitoring = pgTable("simper_monitoring", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  employeeName: text("employee_name").notNull(),
+  nik: varchar("nik").notNull().unique(),
+  simperBibExpiredDate: text("simper_bib_expired_date"), // Format: YYYY-MM-DD
+  simperTiaExpiredDate: text("simper_tia_expired_date"), // Format: YYYY-MM-DD  
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
 export const insertMeetingSchema = createInsertSchema(meetings).omit({
   id: true,
   createdAt: true,
@@ -257,10 +268,18 @@ export const insertMeetingAttendanceSchema = createInsertSchema(meetingAttendanc
   createdAt: true,
 });
 
+export const insertSimperMonitoringSchema = createInsertSchema(simperMonitoring).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
 export type Meeting = typeof meetings.$inferSelect;
 export type InsertMeeting = z.infer<typeof insertMeetingSchema>;
 export type MeetingAttendance = typeof meetingAttendance.$inferSelect;
 export type InsertMeetingAttendance = z.infer<typeof insertMeetingAttendanceSchema>;
+export type SimperMonitoring = typeof simperMonitoring.$inferSelect;
+export type InsertSimperMonitoring = z.infer<typeof insertSimperMonitoringSchema>;
 
 // Authentication types
 export type UpsertUser = typeof users.$inferInsert;
