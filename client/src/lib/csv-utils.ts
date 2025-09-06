@@ -7,16 +7,24 @@ export function exportAttendanceToCSV(
   // Only export attendance records that exist (employees who scanned QR code)
   const actualAttendance = attendance.filter(record => record.status === 'present');
   
-  const headers = ['No', 'ID Karyawan', 'Nama', 'Tanggal', 'Jam Masuk', 'Jam Tidur', 'Fit To Work', 'Status'];
+  const headers = ['No', 'ID Karyawan', 'Nama', 'Nomor Lambung', 'Tanggal', 'Jam Masuk', 'Jam Tidur', 'Fit To Work', 'Status'];
   
   const csvData = [
     headers,
     ...actualAttendance.map((record, index) => {
       const employee = employees.find(emp => emp.id === record.employeeId);
+      // Format nomor lambung untuk CSV - menampilkan SPARE + nomor baru jika sudah diupdate
+      const nomorLambung = employee?.nomorLambung === "SPARE" ? "SPARE" : 
+        (employee?.nomorLambung && employee.nomorLambung !== '-' && employee.nomorLambung !== 'null' && 
+         employee.nomorLambung.trim() !== '' && 
+         (employee.nomorLambung.includes('GECL') || employee.nomorLambung.includes('SPARE'))) ? 
+         `SPARE ${employee.nomorLambung}` : (employee?.nomorLambung || '-');
+      
       return [
         (index + 1).toString(),
         record.employeeId,
         employee?.name || 'Unknown',
+        nomorLambung,
         formatDateForCSV(record.date),
         record.time,
         record.jamTidur || '-',
@@ -56,20 +64,30 @@ export function exportLeaveToCSV(
 }
 
 export function exportEmployeesToCSV(employees: Employee[]): void {
-  const headers = ['No', 'ID Karyawan', 'Nama', 'No. WhatsApp', 'Position', 'Department', 'Investor Group', 'Status'];
+  const headers = ['No', 'ID Karyawan', 'Nama', 'No. WhatsApp', 'Position', 'Nomor Lambung', 'Department', 'Investor Group', 'Status'];
   
   const csvData = [
     headers,
-    ...employees.map((employee, index) => [
-      (index + 1).toString(),
-      employee.id,
-      employee.name,
-      employee.phone,
-      employee.position || '-',
-      employee.department || '-',
-      employee.investorGroup || '-',
-      employee.status === 'active' ? 'Aktif' : 'Tidak Aktif'
-    ])
+    ...employees.map((employee, index) => {
+      // Format nomor lambung untuk CSV - menampilkan SPARE + nomor baru jika sudah diupdate
+      const nomorLambung = employee.nomorLambung === "SPARE" ? "SPARE" : 
+        (employee.nomorLambung && employee.nomorLambung !== '-' && employee.nomorLambung !== 'null' && 
+         employee.nomorLambung.trim() !== '' && 
+         (employee.nomorLambung.includes('GECL') || employee.nomorLambung.includes('SPARE'))) ? 
+         `SPARE ${employee.nomorLambung}` : (employee.nomorLambung || '-');
+      
+      return [
+        (index + 1).toString(),
+        employee.id,
+        employee.name,
+        employee.phone,
+        employee.position || '-',
+        nomorLambung,
+        employee.department || '-',
+        employee.investorGroup || '-',
+        employee.status === 'active' ? 'Aktif' : 'Tidak Aktif'
+      ];
+    })
   ];
   
   downloadCSV(csvData, `karyawan_${new Date().toISOString().split('T')[0]}.csv`);
