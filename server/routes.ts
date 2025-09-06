@@ -478,9 +478,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Update nomor lambung jika ada field nomorLambungBaru
       if (req.body.nomorLambungBaru) {
         try {
-          await storage.updateEmployee(validatedData.employeeId, {
+          // Get current employee data to check if they were originally SPARE
+          const currentEmployee = await storage.getEmployee(validatedData.employeeId);
+          const updateData: any = {
             nomorLambung: req.body.nomorLambungBaru
-          });
+          };
+          
+          // If employee currently has nomor lambung "SPARE", mark them as spare origin
+          if (currentEmployee && currentEmployee.nomorLambung === "SPARE") {
+            updateData.isSpareOrigin = true;
+            console.log(`Setting isSpareOrigin=true for employee ${validatedData.employeeId} (originally SPARE)`);
+          }
+          
+          await storage.updateEmployee(validatedData.employeeId, updateData);
           // Clear cache untuk employee yang diupdate
           clearCachedEmployee(validatedData.employeeId);
           console.log(`Updated nomor lambung for employee ${validatedData.employeeId} to: ${req.body.nomorLambungBaru}`);
@@ -2612,6 +2622,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
         success: false, 
         message: "Failed to update employees" 
       });
+    }
+  });
+
+  // Manual fix for SYAHRANI KAI
+  app.post("/api/admin/fix-syahrani", async (req, res) => {
+    try {
+      await storage.updateEmployee("C-005079", { isSpareOrigin: true });
+      res.json({ success: true, message: "SYAHRANI KAI fixed" });
+    } catch (error) {
+      res.status(500).json({ success: false, message: "Failed to fix" });
     }
   });
 
