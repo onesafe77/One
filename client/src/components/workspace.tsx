@@ -10,6 +10,7 @@ import Employees from "@/pages/employees";
 import Roster from "@/pages/roster";
 import Leave from "@/pages/leave";
 import LeaveRosterMonitoring from "@/pages/leave-roster-monitoring";
+import SimperMonitoring from "@/pages/simper-monitoring";
 import Reports from "@/pages/reports";
 import AttendanceDetails from "@/pages/attendance-details";
 import Meetings from "@/pages/meetings";
@@ -27,6 +28,7 @@ const workspaceRoutes = [
   { path: "/roster", component: Roster, title: "Roster Kerja" },
   { path: "/leave", component: Leave, title: "Manajemen Cuti" },
   { path: "/leave-roster-monitoring", component: LeaveRosterMonitoring, title: "Monitoring Roster Cuti" },
+  { path: "/simper-monitoring", component: SimperMonitoring, title: "Monitoring SIMPER Karyawan" },
   { path: "/reports", component: Reports, title: "Laporan" },
   { path: "/attendance-details", component: AttendanceDetails, title: "Dashboard HR " },
   { path: "/meetings", component: Meetings, title: "Meeting Management" },

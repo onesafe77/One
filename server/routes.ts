@@ -2732,8 +2732,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // SIMPER Excel upload configuration
+  const excelUpload = multer({
+    storage: multer.memoryStorage(),
+    fileFilter: function (req, file, cb) {
+      // Only allow Excel files
+      if (file.mimetype === 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' || 
+          file.mimetype === 'application/vnd.ms-excel') {
+        cb(null, true);
+      } else {
+        cb(new Error('Hanya file Excel (.xlsx/.xls) yang diperbolehkan'));
+      }
+    },
+    limits: {
+      fileSize: 10 * 1024 * 1024 // 10MB limit
+    }
+  });
+
   // SIMPER bulk upload Excel
-  app.post("/api/simper-monitoring/upload-excel", upload.single('file'), async (req, res) => {
+  app.post("/api/simper-monitoring/upload-excel", excelUpload.single('file'), async (req, res) => {
     try {
       if (!req.file) {
         return res.status(400).json({ message: "File Excel tidak ditemukan" });
