@@ -2652,9 +2652,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // SIMPER Analytics endpoint - MUST come before :id route!
   app.get("/api/simper-monitoring/analytics", async (req, res) => {
     try {
-      console.log('Analytics endpoint called');
       const allSimperData = await storage.getAllSimperMonitoring();
-      console.log('SIMPER data count:', allSimperData.length);
       
       if (allSimperData.length === 0) {
         return res.status(404).json({ message: "Data SIMPER tidak ditemukan" });
