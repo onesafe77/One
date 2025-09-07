@@ -65,7 +65,7 @@ export default function DriverView() {
     staleTime: 10 * 60 * 1000, // 10 minutes cache - employees data doesn't change often
   });
 
-  // Query untuk roster berdasarkan employee yang dipilih - OPTIMIZED
+  // Query untuk roster berdasarkan employee yang dipilih - LAZY LOADING
   const { data: rosterData, isLoading: rosterLoading } = useQuery({
     queryKey: ["/api/roster", { employeeId: searchEmployee?.id }],
     queryFn: async () => {
@@ -74,18 +74,18 @@ export default function DriverView() {
       if (!response.ok) throw new Error('Failed to fetch roster');
       return response.json();
     },
-    enabled: !!searchEmployee,
+    enabled: !!searchEmployee && activeTab === 'roster', // Only load when roster tab active
     staleTime: 5 * 60 * 1000, // 5 minutes cache
   });
 
-  // Query untuk leave requests berdasarkan employee yang dipilih - OPTIMIZED
+  // Query untuk leave requests berdasarkan employee yang dipilih - LAZY LOADING
   const { data: leaveData, isLoading: leaveLoading } = useQuery({
     queryKey: ["/api/leave"],
-    enabled: !!searchEmployee,
+    enabled: !!searchEmployee && activeTab === 'leave', // Only load when leave tab active
     staleTime: 3 * 60 * 1000, // 3 minutes cache
   });
 
-  // Query untuk SIMPER monitoring berdasarkan employee yang dipilih - OPTIMIZED
+  // Query untuk SIMPER monitoring berdasarkan employee yang dipilih - LAZY LOADING
   const { data: simperData, isLoading: simperLoading } = useQuery({
     queryKey: ["/api/simper-monitoring/nik", searchEmployee?.id],
     queryFn: async () => {
@@ -123,8 +123,8 @@ export default function DriverView() {
         tiaStatus: tiaStatus.status
       };
     },
-    enabled: !!searchEmployee,
-    staleTime: 2 * 60 * 1000, // 2 minutes cache
+    enabled: !!searchEmployee && activeTab === 'simper', // Only load when SIMPER tab active
+    staleTime: 5 * 60 * 1000, // 5 minutes cache
   });
 
   const handleSearch = () => {
