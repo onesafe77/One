@@ -256,17 +256,17 @@ export default function SimperMonitoring() {
 
   // Get monitoring days and status
   const getMonitoringStatus = (expiredDate: string | null) => {
-    if (!expiredDate) return { days: null, status: "Tidak Ada Data", variant: "outline" as const };
+    if (!expiredDate) return { days: null, status: "Tidak Ada Data", variant: "outline" as const, customStyle: "" };
     
     const expired = new Date(expiredDate);
     const today = new Date();
     const diffTime = expired.getTime() - today.getTime();
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
     
-    if (diffDays < 0) return { days: diffDays, status: "Segera Perpanjang", variant: "destructive" as const };
-    if (diffDays < 7) return { days: diffDays, status: "Mendekati Perpanjangan", variant: "default" as const };
-    if (diffDays < 30) return { days: diffDays, status: "Menuju Perpanjangan", variant: "secondary" as const };
-    return { days: diffDays, status: "Aktif", variant: "outline" as const };
+    if (diffDays < 0) return { days: diffDays, status: "Segera Perpanjang", variant: "destructive" as const, customStyle: "bg-red-600 text-white hover:bg-red-700" };
+    if (diffDays < 7) return { days: diffDays, status: "Mendekati Perpanjangan", variant: "secondary" as const, customStyle: "bg-yellow-400 text-black hover:bg-yellow-500" };
+    if (diffDays < 30) return { days: diffDays, status: "Menuju Perpanjangan", variant: "secondary" as const, customStyle: "bg-orange-500 text-white hover:bg-orange-600" };
+    return { days: diffDays, status: "Aktif", variant: "secondary" as const, customStyle: "bg-green-500 text-white hover:bg-green-600" };
   };
 
   // Filter data based on search and status filter
@@ -427,19 +427,19 @@ export default function SimperMonitoring() {
             <CardContent className="space-y-2">
               <div className="flex justify-between">
                 <span className="text-xs text-red-600">Segera Perpanjang:</span>
-                <Badge variant="destructive" className="text-xs">{analytics.bibStats.segera}</Badge>
+                <Badge className="text-xs bg-red-600 text-white hover:bg-red-700">{analytics.bibStats.segera}</Badge>
               </div>
               <div className="flex justify-between">
                 <span className="text-xs text-red-600">Mendekati:</span>
-                <Badge variant="default" className="text-xs bg-yellow-500">{analytics.bibStats.mendekati}</Badge>
+                <Badge className="text-xs bg-yellow-400 text-black hover:bg-yellow-500">{analytics.bibStats.mendekati}</Badge>
               </div>
               <div className="flex justify-between">
                 <span className="text-xs text-red-600">Menuju:</span>
-                <Badge variant="secondary" className="text-xs bg-orange-500">{analytics.bibStats.menuju}</Badge>
+                <Badge className="text-xs bg-orange-500 text-white hover:bg-orange-600">{analytics.bibStats.menuju}</Badge>
               </div>
               <div className="flex justify-between">
                 <span className="text-xs text-red-600">Aktif:</span>
-                <Badge variant="outline" className="text-xs bg-green-500 text-white">{analytics.bibStats.aktif}</Badge>
+                <Badge className="text-xs bg-green-500 text-white hover:bg-green-600">{analytics.bibStats.aktif}</Badge>
               </div>
             </CardContent>
           </Card>
@@ -452,19 +452,19 @@ export default function SimperMonitoring() {
             <CardContent className="space-y-2">
               <div className="flex justify-between">
                 <span className="text-xs text-blue-600">Segera Perpanjang:</span>
-                <Badge variant="destructive" className="text-xs">{analytics.tiaStats.segera}</Badge>
+                <Badge className="text-xs bg-red-600 text-white hover:bg-red-700">{analytics.tiaStats.segera}</Badge>
               </div>
               <div className="flex justify-between">
                 <span className="text-xs text-blue-600">Mendekati:</span>
-                <Badge variant="default" className="text-xs bg-yellow-500">{analytics.tiaStats.mendekati}</Badge>
+                <Badge className="text-xs bg-yellow-400 text-black hover:bg-yellow-500">{analytics.tiaStats.mendekati}</Badge>
               </div>
               <div className="flex justify-between">
                 <span className="text-xs text-blue-600">Menuju:</span>
-                <Badge variant="secondary" className="text-xs bg-orange-500">{analytics.tiaStats.menuju}</Badge>
+                <Badge className="text-xs bg-orange-500 text-white hover:bg-orange-600">{analytics.tiaStats.menuju}</Badge>
               </div>
               <div className="flex justify-between">
                 <span className="text-xs text-blue-600">Aktif:</span>
-                <Badge variant="outline" className="text-xs bg-green-500 text-white">{analytics.tiaStats.aktif}</Badge>
+                <Badge className="text-xs bg-green-500 text-white hover:bg-green-600">{analytics.tiaStats.aktif}</Badge>
               </div>
             </CardContent>
           </Card>
@@ -718,7 +718,7 @@ export default function SimperMonitoring() {
                           {bibStatus.days !== null ? `${bibStatus.days} hari` : "-"}
                         </TableCell>
                         <TableCell>
-                          <Badge variant={bibStatus.variant}>
+                          <Badge className={bibStatus.customStyle || "bg-gray-200 text-gray-800"}>
                             {bibStatus.status}
                           </Badge>
                         </TableCell>
@@ -729,7 +729,7 @@ export default function SimperMonitoring() {
                           {tiaStatus.days !== null ? `${tiaStatus.days} hari` : "-"}
                         </TableCell>
                         <TableCell>
-                          <Badge variant={tiaStatus.variant}>
+                          <Badge className={tiaStatus.customStyle || "bg-gray-200 text-gray-800"}>
                             {tiaStatus.status}
                           </Badge>
                         </TableCell>
