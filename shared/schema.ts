@@ -38,7 +38,11 @@ export const employees = pgTable("employees", {
   qrCode: text("qr_code"), // QR Code data untuk karyawan
   status: text("status").notNull().default("active"),
   createdAt: timestamp("created_at").default(sql`now()`),
-});
+}, (table) => [
+  index("IDX_employees_name").on(table.name),
+  index("IDX_employees_status").on(table.status),
+  index("IDX_employees_department").on(table.department),
+]);
 
 export const attendanceRecords = pgTable("attendance_records", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
@@ -49,7 +53,12 @@ export const attendanceRecords = pgTable("attendance_records", {
   fitToWork: text("fit_to_work"), // Status fit to work
   status: text("status").notNull().default("present"),
   createdAt: timestamp("created_at").default(sql`now()`),
-});
+}, (table) => [
+  index("IDX_attendance_date").on(table.date),
+  index("IDX_attendance_employee").on(table.employeeId),
+  index("IDX_attendance_employee_date").on(table.employeeId, table.date),
+  index("IDX_attendance_status").on(table.status),
+]);
 
 export const rosterSchedules = pgTable("roster_schedules", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
@@ -62,7 +71,13 @@ export const rosterSchedules = pgTable("roster_schedules", {
   fitToWork: text("fit_to_work").notNull().default("Fit To Work"), // Status fit to work
   hariKerja: text("hari_kerja"), // Hari kerja dari Excel upload (contoh: "Senin", "Selasa")
   status: text("status").notNull().default("scheduled"),
-});
+}, (table) => [
+  index("IDX_roster_date").on(table.date),
+  index("IDX_roster_employee").on(table.employeeId),
+  index("IDX_roster_employee_date").on(table.employeeId, table.date),
+  index("IDX_roster_shift").on(table.shift),
+  index("IDX_roster_status").on(table.status),
+]);
 
 export const leaveRequests = pgTable("leave_requests", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
