@@ -261,13 +261,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const deleted = await storage.deleteAllEmployees();
       if (deleted) {
-        res.json({ message: "Semua data karyawan berhasil dihapus" });
+        res.status(200).json({ message: "Semua data karyawan berhasil dihapus", success: true });
       } else {
-        res.status(500).json({ message: "Gagal menghapus data karyawan" });
+        res.status(500).json({ message: "Gagal menghapus data karyawan", success: false });
       }
     } catch (error) {
       console.error("Error deleting all employees:", error);
-      res.status(500).json({ message: "Failed to delete all employees" });
+      res.status(500).json({ message: "Failed to delete all employees", success: false });
     }
   });
 
