@@ -56,6 +56,7 @@ export default function DriverView() {
   const [nik, setNik] = useState("");
   const [searchEmployee, setSearchEmployee] = useState<Employee | null>(null);
   const [suggestions, setSuggestions] = useState<Employee[]>([]);
+  const [activeTab, setActiveTab] = useState<'info' | 'roster' | 'leave' | 'simper'>('info');
 
   // Query untuk mencari employee berdasarkan NIK - OPTIMIZED
   const { data: employees, isLoading: employeesLoading } = useQuery({
@@ -299,266 +300,391 @@ export default function DriverView() {
       </Card>
       )}
 
-      {/* Employee Info */}
+      {/* Unified Employee Information Card */}
       {searchEmployee && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <User className="h-5 w-5" />
-              Informasi Karyawan
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <Card className="shadow-xl border-0 bg-gradient-to-br from-white to-gray-50 dark:from-gray-800 dark:to-gray-900">
+          <CardHeader className="bg-gradient-to-r from-[#E53935] to-red-600 text-white rounded-t-lg">
+            <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-gray-600 dark:text-gray-400">NIK</p>
-                <p className="font-semibold" data-testid="text-employee-nik">{searchEmployee.id}</p>
+                <CardTitle className="text-2xl font-bold flex items-center gap-3">
+                  <User className="h-7 w-7" />
+                  {searchEmployee.name}
+                </CardTitle>
+                <CardDescription className="text-red-100 text-lg">
+                  NIK: {searchEmployee.id} | {searchEmployee.position}
+                </CardDescription>
               </div>
-              <div>
-                <p className="text-sm text-gray-600 dark:text-gray-400">Nama</p>
-                <p className="font-semibold" data-testid="text-employee-name">{searchEmployee.name}</p>
-              </div>
-              <div>
-                <p className="text-sm text-gray-600 dark:text-gray-400">Posisi</p>
-                <p className="font-semibold">{searchEmployee.position}</p>
-              </div>
-              <div>
-                <p className="text-sm text-gray-600 dark:text-gray-400">Department</p>
-                <p className="font-semibold">{searchEmployee.department}</p>
-              </div>
-              <div>
-                <p className="text-sm text-gray-600 dark:text-gray-400">Investor Group</p>
-                <p className="font-semibold">{searchEmployee.investorGroup}</p>
+              <div className="text-right">
+                <p className="text-red-100 text-sm">{searchEmployee.department}</p>
+                <p className="text-red-200 text-xs">{searchEmployee.investorGroup}</p>
               </div>
             </div>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Roster Data */}
-      {searchEmployee && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Calendar className="h-5 w-5" />
-              Jadwal Roster Kerja
-            </CardTitle>
-            <CardDescription>
-              Daftar jadwal kerja untuk {searchEmployee.name}
-            </CardDescription>
           </CardHeader>
-          <CardContent>
-            {rosterLoading ? (
-              <p>Memuat data roster...</p>
-            ) : employeeRoster.length > 0 ? (
-              <div className="space-y-3">
-                {employeeRoster
-                  .sort((a: RosterSchedule, b: RosterSchedule) => 
-                    new Date(b.date).getTime() - new Date(a.date).getTime()
-                  )
-                  .slice(0, 10)
-                  .map((roster: RosterSchedule) => (
-                    <div key={roster.id} className="border rounded-lg p-4 space-y-2" data-testid={`roster-item-${roster.id}`}>
-                      <div className="flex justify-between items-start">
-                        <div className="space-y-1">
-                          <p className="font-semibold">
-                            {format(new Date(roster.date), "dd MMM yyyy")}
-                          </p>
-                          <div className="flex gap-2 items-center">
-                            <Badge className={getShiftBadgeColor(roster.shift)}>
-                              {roster.shift}
-                            </Badge>
-                            <Badge variant="outline" className={getStatusBadgeColor(roster.status)}>
-                              {roster.status}
-                            </Badge>
-                          </div>
-                        </div>
-                        <div className="text-right text-sm">
-                          <div className="flex items-center gap-1">
-                            <Clock className="h-3 w-3" />
-                            <span>{roster.startTime} - {roster.endTime}</span>
-                          </div>
-                          {roster.jamTidur && (
-                            <p className="text-gray-600 dark:text-gray-400 mt-1">
-                              Jam Tidur: {roster.jamTidur}
-                            </p>
-                          )}
-                          <p className="text-gray-600 dark:text-gray-400">
-                            {roster.fitToWork}
-                          </p>
-                        </div>
+
+          {/* Tab Navigation */}
+          <div className="border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
+            <div className="flex space-x-0">
+              <Button
+                variant={activeTab === 'info' ? "default" : "ghost"}
+                onClick={() => setActiveTab('info')}
+                className={`flex-1 rounded-none border-0 h-14 text-base font-semibold transition-all duration-200 ${
+                  activeTab === 'info'
+                    ? 'bg-[#E53935] text-white shadow-lg'
+                    : 'bg-transparent text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700'
+                }`}
+              >
+                <User className="h-5 w-5 mr-2" />
+                Info Karyawan
+              </Button>
+              <Button
+                variant={activeTab === 'roster' ? "default" : "ghost"}
+                onClick={() => setActiveTab('roster')}
+                className={`flex-1 rounded-none border-0 h-14 text-base font-semibold transition-all duration-200 ${
+                  activeTab === 'roster'
+                    ? 'bg-[#E53935] text-white shadow-lg'
+                    : 'bg-transparent text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700'
+                }`}
+              >
+                <Calendar className="h-5 w-5 mr-2" />
+                Roster Kerja
+              </Button>
+              <Button
+                variant={activeTab === 'leave' ? "default" : "ghost"}
+                onClick={() => setActiveTab('leave')}
+                className={`flex-1 rounded-none border-0 h-14 text-base font-semibold transition-all duration-200 ${
+                  activeTab === 'leave'
+                    ? 'bg-[#E53935] text-white shadow-lg'
+                    : 'bg-transparent text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700'
+                }`}
+              >
+                <MapPin className="h-5 w-5 mr-2" />
+                Data Cuti
+              </Button>
+              <Button
+                variant={activeTab === 'simper' ? "default" : "ghost"}
+                onClick={() => setActiveTab('simper')}
+                className={`flex-1 rounded-none border-0 h-14 text-base font-semibold transition-all duration-200 ${
+                  activeTab === 'simper'
+                    ? 'bg-[#E53935] text-white shadow-lg'
+                    : 'bg-transparent text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700'
+                }`}
+              >
+                <Shield className="h-5 w-5 mr-2" />
+                SIMPER
+              </Button>
+            </div>
+          </div>
+
+          {/* Tab Content */}
+          <CardContent className="p-8 bg-gradient-to-br from-gray-50 to-white dark:from-gray-800 dark:to-gray-900 min-h-[500px]">
+            {/* Employee Info Tab */}
+            {activeTab === 'info' && (
+              <div className="space-y-8">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-lg border border-gray-100 dark:border-gray-700">
+                    <div className="flex items-center mb-3">
+                      <div className="w-2 h-8 bg-[#E53935] rounded-full mr-3"></div>
+                      <h3 className="text-lg font-bold text-gray-800 dark:text-white">Identitas</h3>
+                    </div>
+                    <div className="space-y-3">
+                      <div>
+                        <p className="text-sm text-gray-500 dark:text-gray-400">NIK</p>
+                        <p className="font-bold text-xl text-gray-800 dark:text-white" data-testid="text-employee-nik">{searchEmployee.id}</p>
+                      </div>
+                      <div>
+                        <p className="text-sm text-gray-500 dark:text-gray-400">Nama Lengkap</p>
+                        <p className="font-bold text-xl text-gray-800 dark:text-white" data-testid="text-employee-name">{searchEmployee.name}</p>
                       </div>
                     </div>
-                  ))}
-              </div>
-            ) : (
-              <p className="text-gray-500">Tidak ada data roster ditemukan</p>
-            )}
-          </CardContent>
-        </Card>
-      )}
+                  </div>
 
-      {/* Leave Data */}
-      {searchEmployee && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <MapPin className="h-5 w-5" />
-              Riwayat Cuti
-            </CardTitle>
-            <CardDescription>
-              Daftar pengajuan cuti untuk {searchEmployee.name}
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            {leaveLoading ? (
-              <p>Memuat data cuti...</p>
-            ) : employeeLeaves.length > 0 ? (
-              <div className="space-y-3">
-                {employeeLeaves
-                  .sort((a: LeaveRequest, b: LeaveRequest) => 
-                    new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-                  )
-                  .slice(0, 5)
-                  .map((leave: LeaveRequest) => (
-                    <div key={leave.id} className="border rounded-lg p-4 space-y-2" data-testid={`leave-item-${leave.id}`}>
-                      <div className="flex justify-between items-start">
-                        <div className="space-y-1">
-                          <p className="font-semibold">{leave.leaveType}</p>
-                          <p className="text-sm text-gray-600 dark:text-gray-400">
-                            {format(new Date(leave.startDate), "dd MMM yyyy")} - {format(new Date(leave.endDate), "dd MMM yyyy")}
-                          </p>
-                          {leave.reason && (
-                            <p className="text-sm text-gray-600 dark:text-gray-400">
-                              Alasan: {leave.reason}
-                            </p>
-                          )}
-                        </div>
-                        <Badge className={getStatusBadgeColor(leave.status)}>
-                          {leave.status}
-                        </Badge>
+                  <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-lg border border-gray-100 dark:border-gray-700">
+                    <div className="flex items-center mb-3">
+                      <div className="w-2 h-8 bg-blue-500 rounded-full mr-3"></div>
+                      <h3 className="text-lg font-bold text-gray-800 dark:text-white">Jabatan</h3>
+                    </div>
+                    <div className="space-y-3">
+                      <div>
+                        <p className="text-sm text-gray-500 dark:text-gray-400">Posisi</p>
+                        <p className="font-bold text-xl text-gray-800 dark:text-white">{searchEmployee.position}</p>
+                      </div>
+                      <div>
+                        <p className="text-sm text-gray-500 dark:text-gray-400">Department</p>
+                        <p className="font-bold text-xl text-gray-800 dark:text-white">{searchEmployee.department}</p>
                       </div>
                     </div>
-                  ))}
-              </div>
-            ) : (
-              <p className="text-gray-500">Tidak ada data cuti ditemukan</p>
-            )}
-          </CardContent>
-        </Card>
-      )}
+                  </div>
 
-      {/* SIMPER Monitoring Data */}
-      {searchEmployee && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Shield className="h-5 w-5 text-[#E53935]" />
-              Data SIMPER Monitoring
-            </CardTitle>
-            <CardDescription>
-              Status SIMPER BIB dan TIA untuk {searchEmployee.name}
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            {simperLoading ? (
-              <div className="flex items-center justify-center py-8">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#E53935]"></div>
+                  <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-lg border border-gray-100 dark:border-gray-700">
+                    <div className="flex items-center mb-3">
+                      <div className="w-2 h-8 bg-green-500 rounded-full mr-3"></div>
+                      <h3 className="text-lg font-bold text-gray-800 dark:text-white">Grup</h3>
+                    </div>
+                    <div className="space-y-3">
+                      <div>
+                        <p className="text-sm text-gray-500 dark:text-gray-400">Investor Group</p>
+                        <p className="font-bold text-xl text-gray-800 dark:text-white">{searchEmployee.investorGroup}</p>
+                      </div>
+                      <div>
+                        <p className="text-sm text-gray-500 dark:text-gray-400">Telepon</p>
+                        <p className="font-bold text-xl text-gray-800 dark:text-white">{searchEmployee.phone || '-'}</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
               </div>
-            ) : simperData ? (
+            )}
+
+            {/* Roster Tab */}
+            {activeTab === 'roster' && (
               <div className="space-y-6">
-                {/* Employee Info */}
-                <div className="bg-gray-50 p-4 rounded-lg">
-                  <h3 className="font-semibold text-gray-700 mb-2">Informasi Karyawan</h3>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-                    <div>
-                      <span className="text-gray-600">Nama:</span>
-                      <span className="ml-2 font-medium">{simperData.employeeName}</span>
-                    </div>
-                    <div>
-                      <span className="text-gray-600">NIK:</span>
-                      <span className="ml-2 font-medium">{simperData.nik}</span>
-                    </div>
-                  </div>
+                <div className="flex items-center justify-between mb-6">
+                  <h3 className="text-2xl font-bold text-gray-800 dark:text-white flex items-center">
+                    <Calendar className="h-7 w-7 mr-3 text-[#E53935]" />
+                    Jadwal Roster Kerja
+                  </h3>
+                  <Badge className="bg-blue-100 text-blue-800 px-4 py-2">
+                    {employeeRoster.length} Jadwal Ditemukan
+                  </Badge>
                 </div>
 
-                {/* SIMPER Status */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  {/* SIMPER BIB */}
-                  <div className="border border-gray-200 rounded-lg p-4">
-                    <h4 className="font-semibold text-gray-700 mb-3 flex items-center">
-                      <Shield className="w-4 h-4 mr-2 text-blue-600" />
-                      SIMPER BIB
-                    </h4>
-                    <div className="space-y-2">
-                      <div className="flex justify-between">
-                        <span className="text-gray-600">Tanggal Expired:</span>
-                        <span className="font-medium">
-                          {formatDateDD_MM_YYYY(simperData.simperBibExpiredDate)}
-                        </span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-gray-600">Monitoring Days:</span>
-                        <span className="font-medium">
-                          {simperData.bibMonitoringDays !== null ? simperData.bibMonitoringDays : '-'} hari
-                        </span>
-                      </div>
-                      <div className="flex justify-between items-center">
-                        <span className="text-gray-600">Status:</span>
-                        <Badge className={getSimperStatusColor(simperData.bibStatus || 'Tidak Ada Data')}>
-                          {simperData.bibStatus || 'Tidak Ada Data'}
-                        </Badge>
-                      </div>
-                    </div>
+                {rosterLoading ? (
+                  <div className="flex flex-col items-center justify-center py-16">
+                    <div className="animate-spin rounded-full h-12 w-12 border-b-4 border-[#E53935] mb-4"></div>
+                    <p className="text-gray-600 dark:text-gray-300 font-semibold">Memuat data roster...</p>
                   </div>
-
-                  {/* SIMPER TIA */}
-                  <div className="border border-gray-200 rounded-lg p-4">
-                    <h4 className="font-semibold text-gray-700 mb-3 flex items-center">
-                      <Shield className="w-4 h-4 mr-2 text-green-600" />
-                      SIMPER TIA
-                    </h4>
-                    <div className="space-y-2">
-                      <div className="flex justify-between">
-                        <span className="text-gray-600">Tanggal Expired:</span>
-                        <span className="font-medium">
-                          {formatDateDD_MM_YYYY(simperData.simperTiaExpiredDate)}
-                        </span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-gray-600">Monitoring Days:</span>
-                        <span className="font-medium">
-                          {simperData.tiaMonitoringDays !== null ? simperData.tiaMonitoringDays : '-'} hari
-                        </span>
-                      </div>
-                      <div className="flex justify-between items-center">
-                        <span className="text-gray-600">Status:</span>
-                        <Badge className={getSimperStatusColor(simperData.tiaStatus || 'Tidak Ada Data')}>
-                          {simperData.tiaStatus || 'Tidak Ada Data'}
-                        </Badge>
-                      </div>
-                    </div>
+                ) : employeeRoster.length > 0 ? (
+                  <div className="grid gap-4">
+                    {employeeRoster
+                      .sort((a: RosterSchedule, b: RosterSchedule) => 
+                        new Date(b.date).getTime() - new Date(a.date).getTime()
+                      )
+                      .slice(0, 10)
+                      .map((roster: RosterSchedule) => (
+                        <div key={roster.id} className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-lg border border-gray-100 dark:border-gray-700 hover:shadow-xl transition-all duration-200" data-testid={`roster-item-${roster.id}`}>
+                          <div className="flex justify-between items-start">
+                            <div className="space-y-3">
+                              <div className="flex items-center gap-3">
+                                <div className="w-3 h-8 bg-[#E53935] rounded-full"></div>
+                                <p className="text-2xl font-bold text-gray-800 dark:text-white">
+                                  {format(new Date(roster.date), "dd MMM yyyy")}
+                                </p>
+                              </div>
+                              <div className="flex gap-3">
+                                <Badge className={getShiftBadgeColor(roster.shift) + " px-4 py-2 text-sm font-bold"}>
+                                  {roster.shift}
+                                </Badge>
+                                <Badge variant="outline" className={getStatusBadgeColor(roster.status) + " px-4 py-2 text-sm font-bold"}>
+                                  {roster.status}
+                                </Badge>
+                              </div>
+                            </div>
+                            <div className="text-right space-y-2">
+                              <div className="flex items-center gap-2 text-lg font-semibold text-gray-800 dark:text-white">
+                                <Clock className="h-5 w-5 text-[#E53935]" />
+                                <span>{roster.startTime} - {roster.endTime}</span>
+                              </div>
+                              {roster.jamTidur && (
+                                <p className="text-gray-600 dark:text-gray-400 font-medium">
+                                  Jam Tidur: {roster.jamTidur}
+                                </p>
+                              )}
+                              <p className="text-gray-600 dark:text-gray-400 font-medium">
+                                {roster.fitToWork}
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
                   </div>
-                </div>
-
-                {/* Alert untuk status kritis */}
-                {(simperData.bibStatus === 'Segera Perpanjang' || simperData.tiaStatus === 'Segera Perpanjang' ||
-                  simperData.bibStatus === 'Mendekati Perpanjangan' || simperData.tiaStatus === 'Mendekati Perpanjangan') && (
-                  <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-                    <div className="flex items-center">
-                      <AlertTriangle className="w-5 h-5 text-red-600 mr-2" />
-                      <span className="font-semibold text-red-800">Peringatan SIMPER</span>
-                    </div>
-                    <p className="text-red-700 mt-1 text-sm">
-                      Ada SIMPER yang akan expired dalam waktu dekat. Segera lakukan perpanjangan.
-                    </p>
+                ) : (
+                  <div className="text-center py-16">
+                    <Calendar className="h-20 w-20 text-gray-300 mx-auto mb-4" />
+                    <p className="text-xl text-gray-500 font-semibold">Tidak ada data roster ditemukan</p>
+                    <p className="text-gray-400 mt-2">Belum ada jadwal kerja yang terdaftar untuk karyawan ini</p>
                   </div>
                 )}
               </div>
-            ) : (
-              <div className="text-center py-8">
-                <Shield className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-                <p className="text-gray-500">Data SIMPER tidak ditemukan untuk karyawan ini</p>
+            )}
+
+            {/* Leave Tab */}
+            {activeTab === 'leave' && (
+              <div className="space-y-6">
+                <div className="flex items-center justify-between mb-6">
+                  <h3 className="text-2xl font-bold text-gray-800 dark:text-white flex items-center">
+                    <MapPin className="h-7 w-7 mr-3 text-[#E53935]" />
+                    Riwayat Cuti
+                  </h3>
+                  <Badge className="bg-green-100 text-green-800 px-4 py-2">
+                    {employeeLeaves.length} Pengajuan Cuti
+                  </Badge>
+                </div>
+
+                {leaveLoading ? (
+                  <div className="flex flex-col items-center justify-center py-16">
+                    <div className="animate-spin rounded-full h-12 w-12 border-b-4 border-[#E53935] mb-4"></div>
+                    <p className="text-gray-600 dark:text-gray-300 font-semibold">Memuat data cuti...</p>
+                  </div>
+                ) : employeeLeaves.length > 0 ? (
+                  <div className="grid gap-4">
+                    {employeeLeaves
+                      .sort((a: LeaveRequest, b: LeaveRequest) => 
+                        new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+                      )
+                      .slice(0, 5)
+                      .map((leave: LeaveRequest) => (
+                        <div key={leave.id} className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-lg border border-gray-100 dark:border-gray-700 hover:shadow-xl transition-all duration-200" data-testid={`leave-item-${leave.id}`}>
+                          <div className="flex justify-between items-start">
+                            <div className="space-y-3">
+                              <div className="flex items-center gap-3">
+                                <div className="w-3 h-8 bg-orange-500 rounded-full"></div>
+                                <p className="text-2xl font-bold text-gray-800 dark:text-white">{leave.leaveType}</p>
+                              </div>
+                              <div className="space-y-2">
+                                <p className="text-lg font-semibold text-gray-600 dark:text-gray-400">
+                                  {format(new Date(leave.startDate), "dd MMM yyyy")} - {format(new Date(leave.endDate), "dd MMM yyyy")}
+                                </p>
+                                {leave.reason && (
+                                  <p className="text-gray-600 dark:text-gray-400 bg-gray-50 dark:bg-gray-700 p-3 rounded-lg">
+                                    <span className="font-semibold">Alasan:</span> {leave.reason}
+                                  </p>
+                                )}
+                              </div>
+                            </div>
+                            <Badge className={getStatusBadgeColor(leave.status) + " px-4 py-2 text-sm font-bold"}>
+                              {leave.status}
+                            </Badge>
+                          </div>
+                        </div>
+                      ))}
+                  </div>
+                ) : (
+                  <div className="text-center py-16">
+                    <MapPin className="h-20 w-20 text-gray-300 mx-auto mb-4" />
+                    <p className="text-xl text-gray-500 font-semibold">Tidak ada data cuti ditemukan</p>
+                    <p className="text-gray-400 mt-2">Belum ada pengajuan cuti yang terdaftar untuk karyawan ini</p>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* SIMPER Tab */}
+            {activeTab === 'simper' && (
+              <div className="space-y-6">
+                <div className="flex items-center justify-between mb-6">
+                  <h3 className="text-2xl font-bold text-gray-800 dark:text-white flex items-center">
+                    <Shield className="h-7 w-7 mr-3 text-[#E53935]" />
+                    Data SIMPER Monitoring
+                  </h3>
+                </div>
+
+                {simperLoading ? (
+                  <div className="flex flex-col items-center justify-center py-16">
+                    <div className="animate-spin rounded-full h-12 w-12 border-b-4 border-[#E53935] mb-4"></div>
+                    <p className="text-gray-600 dark:text-gray-300 font-semibold">Memuat data SIMPER...</p>
+                  </div>
+                ) : simperData ? (
+                  <div className="space-y-8">
+                    {/* Employee Info */}
+                    <div className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 p-6 rounded-xl border border-blue-200 dark:border-blue-700">
+                      <h4 className="text-xl font-bold text-gray-800 dark:text-white mb-4 flex items-center">
+                        <User className="h-6 w-6 mr-3 text-blue-600" />
+                        Informasi Karyawan
+                      </h4>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                          <span className="text-gray-600 dark:text-gray-300 text-lg">Nama:</span>
+                          <span className="ml-3 font-bold text-xl text-gray-800 dark:text-white">{simperData.employeeName}</span>
+                        </div>
+                        <div>
+                          <span className="text-gray-600 dark:text-gray-300 text-lg">NIK:</span>
+                          <span className="ml-3 font-bold text-xl text-gray-800 dark:text-white">{simperData.nik}</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* SIMPER Status Cards */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                      {/* SIMPER BIB */}
+                      <div className="bg-white dark:bg-gray-800 border-2 border-blue-200 dark:border-blue-700 rounded-xl p-6 shadow-lg">
+                        <h4 className="text-xl font-bold text-gray-800 dark:text-white mb-6 flex items-center">
+                          <div className="w-3 h-8 bg-blue-500 rounded-full mr-3"></div>
+                          <Shield className="w-6 h-6 mr-3 text-blue-600" />
+                          SIMPER BIB
+                        </h4>
+                        <div className="space-y-4">
+                          <div className="flex justify-between items-center p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                            <span className="text-gray-600 dark:text-gray-300 font-medium">Tanggal Expired:</span>
+                            <span className="font-bold text-lg text-gray-800 dark:text-white">
+                              {formatDateDD_MM_YYYY(simperData.simperBibExpiredDate)}
+                            </span>
+                          </div>
+                          <div className="flex justify-between items-center p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                            <span className="text-gray-600 dark:text-gray-300 font-medium">Monitoring Days:</span>
+                            <span className="font-bold text-lg text-gray-800 dark:text-white">
+                              {simperData.bibMonitoringDays !== null ? `${simperData.bibMonitoringDays} hari` : '-'}
+                            </span>
+                          </div>
+                          <div className="flex justify-between items-center p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                            <span className="text-gray-600 dark:text-gray-300 font-medium">Status:</span>
+                            <Badge className={getSimperStatusColor(simperData.bibStatus || 'Tidak Ada Data') + ' px-4 py-2 text-sm font-bold'}>
+                              {simperData.bibStatus || 'Tidak Ada Data'}
+                            </Badge>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* SIMPER TIA */}
+                      <div className="bg-white dark:bg-gray-800 border-2 border-green-200 dark:border-green-700 rounded-xl p-6 shadow-lg">
+                        <h4 className="text-xl font-bold text-gray-800 dark:text-white mb-6 flex items-center">
+                          <div className="w-3 h-8 bg-green-500 rounded-full mr-3"></div>
+                          <Shield className="w-6 h-6 mr-3 text-green-600" />
+                          SIMPER TIA
+                        </h4>
+                        <div className="space-y-4">
+                          <div className="flex justify-between items-center p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                            <span className="text-gray-600 dark:text-gray-300 font-medium">Tanggal Expired:</span>
+                            <span className="font-bold text-lg text-gray-800 dark:text-white">
+                              {formatDateDD_MM_YYYY(simperData.simperTiaExpiredDate)}
+                            </span>
+                          </div>
+                          <div className="flex justify-between items-center p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                            <span className="text-gray-600 dark:text-gray-300 font-medium">Monitoring Days:</span>
+                            <span className="font-bold text-lg text-gray-800 dark:text-white">
+                              {simperData.tiaMonitoringDays !== null ? `${simperData.tiaMonitoringDays} hari` : '-'}
+                            </span>
+                          </div>
+                          <div className="flex justify-between items-center p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                            <span className="text-gray-600 dark:text-gray-300 font-medium">Status:</span>
+                            <Badge className={getSimperStatusColor(simperData.tiaStatus || 'Tidak Ada Data') + ' px-4 py-2 text-sm font-bold'}>
+                              {simperData.tiaStatus || 'Tidak Ada Data'}
+                            </Badge>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Alert untuk status kritis */}
+                    {(simperData.bibStatus === 'Segera Perpanjang' || simperData.tiaStatus === 'Segera Perpanjang' ||
+                      simperData.bibStatus === 'Mendekati Perpanjangan' || simperData.tiaStatus === 'Mendekati Perpanjangan') && (
+                      <div className="bg-gradient-to-r from-red-50 to-rose-50 dark:from-red-900/20 dark:to-rose-900/20 border-2 border-red-200 dark:border-red-700 rounded-xl p-6">
+                        <div className="flex items-center mb-3">
+                          <AlertTriangle className="w-7 h-7 text-red-600 mr-3" />
+                          <span className="text-xl font-bold text-red-800 dark:text-red-200">Peringatan SIMPER</span>
+                        </div>
+                        <p className="text-red-700 dark:text-red-300 text-lg leading-relaxed">
+                          Ada SIMPER yang akan expired dalam waktu dekat. Segera lakukan perpanjangan untuk menghindari masalah operasional.
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <div className="text-center py-16">
+                    <Shield className="h-20 w-20 text-gray-300 mx-auto mb-4" />
+                    <p className="text-xl text-gray-500 font-semibold">Data SIMPER tidak ditemukan</p>
+                    <p className="text-gray-400 mt-2">Karyawan ini belum terdaftar dalam sistem monitoring SIMPER</p>
+                  </div>
+                )}
               </div>
             )}
           </CardContent>
