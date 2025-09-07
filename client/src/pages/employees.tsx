@@ -385,7 +385,7 @@ export default function Employees() {
         // Skip header row
         const rows = jsonData.slice(1) as any[][];
         const employeeData: InsertEmployee[] = rows
-          .filter(row => row.length >= 6 && row[0] && row[1]) // Check required fields
+          .filter(row => row.length >= 6 && row[0] && row[1]) // Check required fields (keeping minimum 6 for backward compatibility)
           .map(row => ({
             id: row[0]?.toString() || "",
             name: row[1]?.toString() || "",
@@ -393,6 +393,7 @@ export default function Employees() {
             department: row[3]?.toString() || "",
             investorGroup: row[4]?.toString() || "",
             phone: row[5]?.toString() || "",
+            profileImageUrl: row[6]?.toString() || "", // URL Foto dari kolom ke-7
             status: "active",
           }));
 
@@ -419,9 +420,9 @@ export default function Employees() {
 
   const downloadTemplate = () => {
     const templateData = [
-      ["NIK", "Nama", "Posisi", "Departemen", "Investor Group", "No. WhatsApp"],
-      ["C-00001", "John Doe", "Manager", "IT", "Group A", "+628123456789"],
-      ["C-00002", "Jane Smith", "Staff", "HR", "Group B", "+628123456790"],
+      ["NIK", "Nama", "Posisi", "Departemen", "Investor Group", "No. WhatsApp", "URL Foto"],
+      ["C-00001", "John Doe", "Manager", "IT", "Group A", "+628123456789", "https://drive.google.com/file/d/ABC123/view?usp=sharing"],
+      ["C-00002", "Jane Smith", "Staff", "HR", "Group B", "+628123456790", "https://drive.google.com/file/d/XYZ789/view?usp=sharing"],
     ];
 
     const worksheet = XLSX.utils.aoa_to_sheet(templateData);
@@ -860,7 +861,7 @@ export default function Employees() {
               </DialogHeader>
               <div className="space-y-4">
                 <p className="text-sm text-gray-600 dark:text-gray-300">
-                  Upload file Excel dengan format: NIK, Nama, Posisi, Departemen, Investor Group, No. WhatsApp
+                  Upload file Excel dengan format: NIK, Nama, Posisi, Departemen, Investor Group, No. WhatsApp, URL Foto
                 </p>
                 <input
                   ref={fileInputRef}

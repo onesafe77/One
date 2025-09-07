@@ -257,7 +257,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Delete all employees
-  app.delete("/api/employees", async (req, res) => {
+  app.delete("/api/employees/delete-all", async (req, res) => {
     try {
       const deleted = await storage.deleteAllEmployees();
       if (deleted) {
