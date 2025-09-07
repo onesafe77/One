@@ -13,7 +13,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { insertEmployeeSchema } from "@shared/schema";
 import type { Employee, InsertEmployee } from "@shared/schema";
-import { Plus, Search, Edit, Trash2, Upload, AlertCircle, Download, Eye, QrCode } from "lucide-react";
+import { Plus, Search, Edit, Trash2, Upload, AlertCircle, Download, Eye, QrCode, Image, ExternalLink, Trash } from "lucide-react";
 import { z } from "zod";
 import * as XLSX from "xlsx";
 import { useAutoSave } from "@/hooks/useAutoSave";
@@ -21,11 +21,68 @@ import { AutoSaveIndicator } from "@/components/AutoSaveIndicator";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import QRCode from "qrcode";
 
+// Helper function to convert Google Drive URL to direct image URL
+const convertGoogleDriveUrl = (url: string): string => {
+  if (!url) return url;
+  
+  // Check if it's a Google Drive sharing URL
+  const driveRegex = /https:\/\/drive\.google\.com\/file\/d\/([a-zA-Z0-9-_]+)\/view/;
+  const match = url.match(driveRegex);
+  
+  if (match) {
+    const fileId = match[1];
+    return `https://drive.google.com/uc?export=view&id=${fileId}`;
+  }
+  
+  // Return original URL if it's not Google Drive or already direct
+  return url;
+};
+
+// Component untuk preview foto profil
+function ProfileImagePreview({ imageUrl }: { imageUrl: string }) {
+  const [isLoading, setIsLoading] = useState(true);
+  const [hasError, setHasError] = useState(false);
+  
+  if (!imageUrl) return null;
+  
+  const directImageUrl = convertGoogleDriveUrl(imageUrl);
+  
+  return (
+    <div className="mt-2">
+      <p className="text-sm text-gray-600 mb-2">Preview Foto:</p>
+      <div className="relative w-32 h-32 border-2 border-gray-200 rounded-lg overflow-hidden bg-gray-50">
+        {isLoading && (
+          <div className="absolute inset-0 flex items-center justify-center">
+            <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-500"></div>
+          </div>
+        )}
+        {hasError ? (
+          <div className="absolute inset-0 flex items-center justify-center text-gray-400">
+            <Image className="h-8 w-8" />
+          </div>
+        ) : (
+          <img
+            src={directImageUrl}
+            alt="Preview foto profil"
+            className="w-full h-full object-cover"
+            onLoad={() => setIsLoading(false)}
+            onError={() => {
+              setIsLoading(false);
+              setHasError(true);
+            }}
+          />
+        )}
+      </div>
+    </div>
+  );
+}
+
 const formSchema = insertEmployeeSchema.extend({
   id: z.string().optional(), // NIK akan digenerate otomatis
   position: z.string().optional(),
   department: z.string().optional(),
   investorGroup: z.string().optional(),
+  profileImageUrl: z.string().optional(), // URL foto profil dari Google Drive atau lainnya
 });
 
 // Component untuk menampilkan QR Code di kolom
@@ -123,6 +180,7 @@ export default function Employees() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingEmployee, setEditingEmployee] = useState<Employee | null>(null);
   const [isUploadDialogOpen, setIsUploadDialogOpen] = useState(false);
+  const [isDeleteAllDialogOpen, setIsDeleteAllDialogOpen] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
 
@@ -139,6 +197,7 @@ export default function Employees() {
       department: "",
       investorGroup: "",
       phone: "",
+      profileImageUrl: "",
       status: "active",
     },
   });
@@ -213,6 +272,26 @@ export default function Employees() {
     },
   });
 
+  const deleteAllMutation = useMutation<void, Error, void>({
+    mutationFn: () => apiRequest("/api/employees/delete-all", "DELETE"),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/employees"] });
+      setIsDeleteAllDialogOpen(false);
+      toast({
+        title: "Berhasil",
+        description: "Semua data karyawan berhasil dihapus",
+      });
+    },
+    onError: (error: Error) => {
+      setIsDeleteAllDialogOpen(false);
+      toast({
+        title: "Error",
+        description: error.message || "Gagal menghapus semua data karyawan",
+        variant: "destructive",
+      });
+    },
+  });
+
   const filteredEmployees = employees.filter((employee) => {
     const matchesSearch = employee.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          employee.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -243,6 +322,7 @@ export default function Employees() {
       department: employee.department || "",
       investorGroup: employee.investorGroup || "",
       phone: employee.phone,
+      profileImageUrl: employee.profileImageUrl || "",
       status: employee.status,
     });
     setIsDialogOpen(true);
@@ -263,6 +343,7 @@ export default function Employees() {
       department: "",
       investorGroup: "",
       phone: "",
+      profileImageUrl: "",
       status: "active",
     });
     setIsDialogOpen(true);
@@ -512,6 +593,33 @@ export default function Employees() {
 
                   <FormField
                     control={form.control}
+                    name="profileImageUrl"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="flex items-center gap-2">
+                          <Image className="h-4 w-4" />
+                          URL Foto Profil
+                        </FormLabel>
+                        <FormControl>
+                          <div className="space-y-2">
+                            <Input 
+                              placeholder="https://drive.google.com/file/d/ABC123/view?usp=sharing" 
+                              {...field} 
+                              data-testid="employee-photo-url-input"
+                            />
+                            <p className="text-xs text-gray-500">
+                              Paste URL Google Drive dengan permission "Anyone with the link can view"
+                            </p>
+                            <ProfileImagePreview imageUrl={field.value || ""} />
+                          </div>
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
                     name="status"
                     render={({ field }) => (
                       <FormItem>
@@ -668,19 +776,85 @@ export default function Employees() {
           </table>
         </div>
         
-        {/* Pagination Info and Upload Excel Button */}
+        {/* Pagination Info and Action Buttons */}
         <div className="flex items-center justify-between mt-6">
           <p className="text-sm text-gray-500 dark:text-gray-400">
             Menampilkan {filteredEmployees.length} dari {employees.length} karyawan
           </p>
-          <Dialog open={isUploadDialogOpen} onOpenChange={setIsUploadDialogOpen}>
-            <DialogTrigger asChild>
-              <Button variant="outline" className="ml-auto" data-testid="upload-excel-button">
-                <Upload className="w-4 h-4 mr-2" />
-                Upload Excel
-              </Button>
-            </DialogTrigger>
-            <DialogContent>
+          <div className="flex gap-2">
+            <Dialog open={isDeleteAllDialogOpen} onOpenChange={setIsDeleteAllDialogOpen}>
+              <DialogTrigger asChild>
+                <Button 
+                  variant="outline" 
+                  className="text-red-600 hover:text-red-700 border-red-200 hover:border-red-300" 
+                  data-testid="delete-all-button"
+                  disabled={employees.length === 0}
+                >
+                  <Trash className="w-4 h-4 mr-2" />
+                  Hapus Semua
+                </Button>
+              </DialogTrigger>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle className="flex items-center gap-2 text-red-600">
+                    <AlertCircle className="w-5 h-5" />
+                    Konfirmasi Hapus Semua Data
+                  </DialogTitle>
+                </DialogHeader>
+                <div className="space-y-4">
+                  <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+                    <p className="text-sm text-red-800 font-medium mb-2">
+                      ⚠️ PERINGATAN: Tindakan ini tidak dapat dibatalkan!
+                    </p>
+                    <p className="text-sm text-red-700">
+                      Anda akan menghapus <strong>SEMUA {employees.length} data karyawan</strong> dari database. 
+                      Semua data termasuk roster, absensi, dan riwayat akan ikut terhapus.
+                    </p>
+                  </div>
+                  <p className="text-sm text-gray-600">
+                    Fitur ini berguna untuk mengupload data fresh dari Excel. 
+                    Pastikan Anda sudah membackup data penting sebelum melanjutkan.
+                  </p>
+                  <div className="flex gap-2 pt-4">
+                    <Button 
+                      variant="outline" 
+                      onClick={() => setIsDeleteAllDialogOpen(false)}
+                      className="flex-1"
+                      data-testid="cancel-delete-all"
+                    >
+                      Batal
+                    </Button>
+                    <Button 
+                      onClick={() => deleteAllMutation.mutate()}
+                      disabled={deleteAllMutation.isPending}
+                      className="flex-1 bg-red-600 hover:bg-red-700 text-white"
+                      data-testid="confirm-delete-all"
+                    >
+                      {deleteAllMutation.isPending ? (
+                        <>
+                          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                          Menghapus...
+                        </>
+                      ) : (
+                        <>
+                          <Trash className="w-4 h-4 mr-2" />
+                          Ya, Hapus Semua
+                        </>
+                      )}
+                    </Button>
+                  </div>
+                </div>
+              </DialogContent>
+            </Dialog>
+            
+            <Dialog open={isUploadDialogOpen} onOpenChange={setIsUploadDialogOpen}>
+              <DialogTrigger asChild>
+                <Button variant="outline" data-testid="upload-excel-button">
+                  <Upload className="w-4 h-4 mr-2" />
+                  Upload Excel
+                </Button>
+              </DialogTrigger>
+              <DialogContent>
               <DialogHeader>
                 <DialogTitle>Upload Data Karyawan dari Excel</DialogTitle>
               </DialogHeader>
@@ -714,6 +888,7 @@ export default function Employees() {
               </div>
             </DialogContent>
           </Dialog>
+          </div>
         </div>
       </CardContent>
     </Card>
