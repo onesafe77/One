@@ -244,8 +244,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Delete all employees (place before :id route to avoid conflicts)
+  app.delete("/api/employees/delete-all", async (req, res) => {
+    try {
+      console.log("DELETE /api/employees/delete-all called");
+      const deleted = await storage.deleteAllEmployees();
+      console.log("Delete all result:", deleted);
+      if (deleted) {
+        console.log("Sending success response");
+        res.status(200).json({ message: "Semua data karyawan berhasil dihapus", success: true });
+      } else {
+        console.log("Delete failed");
+        res.status(500).json({ message: "Gagal menghapus data karyawan", success: false });
+      }
+    } catch (error) {
+      console.error("Error deleting all employees:", error);
+      res.status(500).json({ message: "Failed to delete all employees", success: false });
+    }
+  });
+
   app.delete("/api/employees/:id", async (req, res) => {
     try {
+      console.log("DELETE /api/employees/:id called with id:", req.params.id);
       const deleted = await storage.deleteEmployee(req.params.id);
       if (!deleted) {
         return res.status(404).json({ message: "Karyawan tidak ditemukan" });
@@ -253,21 +273,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(204).send();
     } catch (error) {
       res.status(500).json({ message: "Failed to delete employee" });
-    }
-  });
-
-  // Delete all employees
-  app.delete("/api/employees/delete-all", async (req, res) => {
-    try {
-      const deleted = await storage.deleteAllEmployees();
-      if (deleted) {
-        res.status(200).json({ message: "Semua data karyawan berhasil dihapus", success: true });
-      } else {
-        res.status(500).json({ message: "Gagal menghapus data karyawan", success: false });
-      }
-    } catch (error) {
-      console.error("Error deleting all employees:", error);
-      res.status(500).json({ message: "Failed to delete all employees", success: false });
     }
   });
 
