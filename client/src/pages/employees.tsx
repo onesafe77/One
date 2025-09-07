@@ -13,7 +13,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { insertEmployeeSchema } from "@shared/schema";
 import type { Employee, InsertEmployee } from "@shared/schema";
-import { Plus, Search, Edit, Trash2, Upload, AlertCircle, Download, Eye, QrCode, Image, ExternalLink, Trash } from "lucide-react";
+import { Plus, Search, Edit, Trash2, Upload, AlertCircle, Download, Eye, QrCode, ExternalLink, Trash } from "lucide-react";
 import { z } from "zod";
 import * as XLSX from "xlsx";
 import { useAutoSave } from "@/hooks/useAutoSave";
@@ -21,134 +21,12 @@ import { AutoSaveIndicator } from "@/components/AutoSaveIndicator";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import QRCode from "qrcode";
 
-// Helper function to convert Google Drive URL to direct image URL
-const convertGoogleDriveUrl = (url: string): string => {
-  if (!url) return url;
-  
-  // Handle different Google Drive URL formats
-  let fileId = null;
-  
-  // Format 1: https://drive.google.com/file/d/FILE_ID/view (with or without params)
-  const driveRegex1 = /https:\/\/drive\.google\.com\/file\/d\/([a-zA-Z0-9-_]+)\/view/;
-  const match1 = url.match(driveRegex1);
-  
-  // Format 2: https://drive.google.com/file/d/FILE_ID (without /view)
-  const driveRegex2 = /https:\/\/drive\.google\.com\/file\/d\/([a-zA-Z0-9-_]+)(?:[/?]|$)/;
-  const match2 = url.match(driveRegex2);
-  
-  // Format 3: https://drive.google.com/file/d/FILE_ID?usp=sharing
-  const driveRegex3 = /https:\/\/drive\.google\.com\/file\/d\/([a-zA-Z0-9-_]+)\?/;
-  const match3 = url.match(driveRegex3);
-  
-  // Extract file ID from any of the formats
-  if (match1) {
-    fileId = match1[1];
-  } else if (match2) {
-    fileId = match2[1];
-  } else if (match3) {
-    fileId = match3[1];
-  }
-  
-  if (fileId) {
-    console.log('Converting Google Drive URL:', url, 'to file ID:', fileId);
-    return `https://drive.google.com/uc?export=view&id=${fileId}`;
-  }
-  
-  console.log('URL is not Google Drive format, using as-is:', url);
-  // Return original URL if it's not Google Drive or already direct
-  return url;
-};
-
-// Component untuk preview foto profil
-function ProfileImagePreview({ imageUrl }: { imageUrl: string }) {
-  const [isLoading, setIsLoading] = useState(true);
-  const [hasError, setHasError] = useState(false);
-  
-  if (!imageUrl) return null;
-  
-  const directImageUrl = convertGoogleDriveUrl(imageUrl);
-  
-  return (
-    <div className="mt-2">
-      <p className="text-sm text-gray-600 mb-2">Preview Foto:</p>
-      <div className="relative w-32 h-32 border-2 border-gray-200 rounded-lg overflow-hidden bg-gray-50">
-        {isLoading && (
-          <div className="absolute inset-0 flex items-center justify-center">
-            <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-500"></div>
-          </div>
-        )}
-        {hasError ? (
-          <div className="absolute inset-0 flex items-center justify-center text-gray-400">
-            <Image className="h-8 w-8" />
-          </div>
-        ) : (
-          <img
-            src={directImageUrl}
-            alt="Preview foto profil"
-            className="w-full h-full object-cover"
-            onLoad={() => setIsLoading(false)}
-            onError={() => {
-              setIsLoading(false);
-              setHasError(true);
-            }}
-          />
-        )}
-      </div>
-    </div>
-  );
-}
-
-// Component untuk menampilkan foto profil di tabel
-function TableProfileImage({ imageUrl, employeeName }: { imageUrl: string | null; employeeName: string }) {
-  const [hasError, setHasError] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
-  
-  if (!imageUrl) {
-    return (
-      <div className="flex items-center justify-center w-10 h-10 bg-gray-100 rounded-full">
-        <Image className="w-5 h-5 text-gray-400" />
-      </div>
-    );
-  }
-  
-  const directImageUrl = convertGoogleDriveUrl(imageUrl);
-  
-  return (
-    <div className="flex items-center justify-center">
-      {hasError ? (
-        <div className="flex items-center justify-center w-10 h-10 bg-gray-100 rounded-full">
-          <Image className="w-5 h-5 text-gray-400" />
-        </div>
-      ) : (
-        <div className="relative w-10 h-10">
-          {isLoading && (
-            <div className="absolute inset-0 flex items-center justify-center w-10 h-10 bg-gray-100 rounded-full">
-              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-500"></div>
-            </div>
-          )}
-          <img
-            src={directImageUrl}
-            alt={`Foto ${employeeName}`}
-            className="w-10 h-10 object-cover rounded-full border-2 border-gray-200"
-            onLoad={() => setIsLoading(false)}
-            onError={() => {
-              setIsLoading(false);
-              setHasError(true);
-            }}
-            style={{ display: isLoading ? 'none' : 'block' }}
-          />
-        </div>
-      )}
-    </div>
-  );
-}
 
 const formSchema = insertEmployeeSchema.extend({
   id: z.string().optional(), // NIK akan digenerate otomatis
   position: z.string().optional(),
   department: z.string().optional(),
   investorGroup: z.string().optional(),
-  profileImageUrl: z.string().optional(), // URL foto profil dari Google Drive atau lainnya
 });
 
 // Component untuk menampilkan QR Code di kolom
@@ -263,7 +141,6 @@ export default function Employees() {
       department: "",
       investorGroup: "",
       phone: "",
-      profileImageUrl: "",
       status: "active",
     },
   });
@@ -388,7 +265,6 @@ export default function Employees() {
       department: employee.department || "",
       investorGroup: employee.investorGroup || "",
       phone: employee.phone,
-      profileImageUrl: employee.profileImageUrl || "",
       status: employee.status,
     });
     setIsDialogOpen(true);
@@ -409,7 +285,6 @@ export default function Employees() {
       department: "",
       investorGroup: "",
       phone: "",
-      profileImageUrl: "",
       status: "active",
     });
     setIsDialogOpen(true);
@@ -451,7 +326,7 @@ export default function Employees() {
         // Skip header row
         const rows = jsonData.slice(1) as any[][];
         const employeeData: InsertEmployee[] = rows
-          .filter(row => row.length >= 6 && row[0] && row[1]) // Check required fields (keeping minimum 6 for backward compatibility)
+          .filter(row => row.length >= 6 && row[0] && row[1]) // Check required fields
           .map(row => ({
             id: row[0]?.toString() || "",
             name: row[1]?.toString() || "",
@@ -459,7 +334,6 @@ export default function Employees() {
             department: row[3]?.toString() || "",
             investorGroup: row[4]?.toString() || "",
             phone: row[5]?.toString() || "",
-            profileImageUrl: row[6]?.toString() || "", // URL Foto dari kolom ke-7
             status: "active",
           }));
 
@@ -486,9 +360,9 @@ export default function Employees() {
 
   const downloadTemplate = () => {
     const templateData = [
-      ["NIK", "Nama", "Posisi", "Departemen", "Investor Group", "No. WhatsApp", "URL Foto"],
-      ["C-00001", "John Doe", "Manager", "IT", "Group A", "+628123456789", "https://drive.google.com/file/d/ABC123/view?usp=sharing"],
-      ["C-00002", "Jane Smith", "Staff", "HR", "Group B", "+628123456790", "https://drive.google.com/file/d/XYZ789/view?usp=sharing"],
+      ["NIK", "Nama", "Posisi", "Departemen", "Investor Group", "No. WhatsApp"],
+      ["C-00001", "John Doe", "Manager", "IT", "Group A", "+628123456789"],
+      ["C-00002", "Jane Smith", "Staff", "HR", "Group B", "+628123456790"],
     ];
 
     const worksheet = XLSX.utils.aoa_to_sheet(templateData);
@@ -660,39 +534,6 @@ export default function Employees() {
 
                   <FormField
                     control={form.control}
-                    name="profileImageUrl"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel className="flex items-center gap-2">
-                          <Image className="h-4 w-4" />
-                          URL Foto Profil
-                        </FormLabel>
-                        <FormControl>
-                          <div className="space-y-2">
-                            <Input 
-                              placeholder="https://drive.google.com/file/d/ABC123/view?usp=sharing" 
-                              {...field} 
-                              data-testid="employee-photo-url-input"
-                            />
-                            <div className="text-xs text-gray-500 space-y-1">
-                              <p>Paste URL Google Drive dengan permission "Anyone with the link can view"</p>
-                              <p className="font-medium">Format yang didukung:</p>
-                              <ul className="ml-4 list-disc space-y-1">
-                                <li>https://drive.google.com/file/d/FILE_ID/view?usp=sharing</li>
-                                <li>https://drive.google.com/file/d/FILE_ID/view</li>
-                                <li>https://drive.google.com/file/d/FILE_ID</li>
-                              </ul>
-                            </div>
-                            <ProfileImagePreview imageUrl={field.value || ""} />
-                          </div>
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <FormField
-                    control={form.control}
                     name="status"
                     render={({ field }) => (
                       <FormItem>
@@ -773,7 +614,6 @@ export default function Employees() {
               <tr className="border-b border-gray-200 dark:border-gray-700">
                 <th className="text-left py-3 px-4 font-medium text-gray-900 dark:text-white">NIK</th>
                 <th className="text-left py-3 px-4 font-medium text-gray-900 dark:text-white">Nama</th>
-                <th className="text-center py-3 px-4 font-medium text-gray-900 dark:text-white">Foto</th>
                 <th className="text-left py-3 px-4 font-medium text-gray-900 dark:text-white">Position</th>
                 <th className="text-left py-3 px-4 font-medium text-gray-900 dark:text-white">Department</th>
                 <th className="text-left py-3 px-4 font-medium text-gray-900 dark:text-white">Investor Group</th>
@@ -786,13 +626,13 @@ export default function Employees() {
             <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
               {isLoading ? (
                 <tr>
-                  <td colSpan={10} className="py-8 text-center text-gray-500 dark:text-gray-400">
+                  <td colSpan={9} className="py-8 text-center text-gray-500 dark:text-gray-400">
                     Loading...
                   </td>
                 </tr>
               ) : filteredEmployees.length === 0 ? (
                 <tr>
-                  <td colSpan={10} className="py-8 text-center text-gray-500 dark:text-gray-400">
+                  <td colSpan={9} className="py-8 text-center text-gray-500 dark:text-gray-400">
                     Tidak ada data karyawan
                   </td>
                 </tr>
@@ -801,12 +641,6 @@ export default function Employees() {
                   <tr key={employee.id} data-testid={`employee-row-${employee.id}`}>
                     <td className="py-3 px-4 text-sm text-gray-900 dark:text-white">{employee.id}</td>
                     <td className="py-3 px-4 text-sm text-gray-900 dark:text-white">{employee.name}</td>
-                    <td className="py-3 px-4">
-                      <TableProfileImage 
-                        imageUrl={employee.profileImageUrl || null} 
-                        employeeName={employee.name} 
-                      />
-                    </td>
                     <td className="py-3 px-4 text-sm text-gray-900 dark:text-white">{employee.position || "-"}</td>
                     <td className="py-3 px-4 text-sm text-gray-900 dark:text-white">{employee.department || "-"}</td>
                     <td className="py-3 px-4 text-sm text-gray-900 dark:text-white">{employee.investorGroup || "-"}</td>
@@ -940,7 +774,7 @@ export default function Employees() {
               </DialogHeader>
               <div className="space-y-4">
                 <p className="text-sm text-gray-600 dark:text-gray-300">
-                  Upload file Excel dengan format: NIK, Nama, Posisi, Departemen, Investor Group, No. WhatsApp, URL Foto
+                  Upload file Excel dengan format: NIK, Nama, Posisi, Departemen, Investor Group, No. WhatsApp
                 </p>
                 <input
                   ref={fileInputRef}
