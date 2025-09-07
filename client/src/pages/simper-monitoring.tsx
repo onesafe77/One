@@ -507,6 +507,100 @@ export default function SimperMonitoring() {
         </Card>
       )}
 
+      {/* Information SIMPER Section */}
+      <Card className="rounded-2xl shadow-lg bg-gradient-to-br from-gray-50 to-gray-100">
+        <CardHeader>
+          <CardTitle className="text-xl font-bold text-[#E53935] flex items-center">
+            <AlertCircle className="w-6 h-6 mr-2" />
+            Information SIMPER
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {/* System Information */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="space-y-3">
+              <h3 className="font-semibold text-gray-700 border-b border-gray-300 pb-1">Informasi Sistem</h3>
+              <div className="text-sm space-y-2">
+                <div className="flex justify-between">
+                  <span className="text-gray-600">Total Data SIMPER:</span>
+                  <span className="font-medium">{analytics?.totalKaryawan || filteredData.length} karyawan</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-600">Terakhir Update:</span>
+                  <span className="font-medium">{currentTime.toLocaleDateString('id-ID')}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-600">Status Sistem:</span>
+                  <span className="font-medium text-green-600">Online & Aktif</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-600">Data BIB Aktif:</span>
+                  <span className="font-medium">{analytics?.bibStats.aktif || 0} karyawan</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-600">Data TIA Aktif:</span>
+                  <span className="font-medium">{analytics?.tiaStats.aktif || 0} karyawan</span>
+                </div>
+              </div>
+            </div>
+            
+            <div className="space-y-3">
+              <h3 className="font-semibold text-gray-700 border-b border-gray-300 pb-1">Status Monitoring</h3>
+              <div className="text-sm space-y-2">
+                <div className="flex justify-between">
+                  <span className="text-gray-600">SIMPER Segera Expired:</span>
+                  <span className="font-medium text-red-600">{(analytics?.bibStats.segera || 0) + (analytics?.tiaStats.segera || 0)} karyawan</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-600">SIMPER Mendekati Expired:</span>
+                  <span className="font-medium text-yellow-600">{(analytics?.bibStats.mendekati || 0) + (analytics?.tiaStats.mendekati || 0)} karyawan</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-600">SIMPER Menuju Expired:</span>
+                  <span className="font-medium text-orange-600">{(analytics?.bibStats.menuju || 0) + (analytics?.tiaStats.menuju || 0)} karyawan</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-600">Refresh Interval:</span>
+                  <span className="font-medium">30 detik otomatis</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-600">Format Tanggal:</span>
+                  <span className="font-medium">dd-mm-yyyy</span>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          {/* Creator Information */}
+          <div className="mt-6 pt-4 border-t border-gray-300">
+            <div className="bg-white p-4 rounded-lg shadow-sm">
+              <h3 className="font-semibold text-gray-700 mb-2 flex items-center">
+                <Users className="w-4 h-4 mr-2" />
+                Informasi Pembuat
+              </h3>
+              <div className="text-sm space-y-1">
+                <div className="flex items-center">
+                  <span className="text-gray-600 w-20">Dibuat oleh:</span>
+                  <span className="font-medium text-[#E53935]">Bagus Andyka Firmansyah</span>
+                </div>
+                <div className="flex items-center">
+                  <span className="text-gray-600 w-20">Jabatan:</span>
+                  <span className="font-medium">HSE Data Evaluator</span>
+                </div>
+                <div className="flex items-center">
+                  <span className="text-gray-600 w-20">Perusahaan:</span>
+                  <span className="font-medium">PT. GECL</span>
+                </div>
+                <div className="flex items-center">
+                  <span className="text-gray-600 w-20">Sistem:</span>
+                  <span className="font-medium">Monitoring SIMPER Karyawan v1.0</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
       {/* Control Panel */}
       <Card className="rounded-2xl shadow-lg">
         <CardHeader>
