@@ -1,10 +1,10 @@
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Search, User, Calendar, Clock, MapPin, Shield, AlertTriangle } from "lucide-react";
+import { Search, User, Calendar, Clock, MapPin, Shield, AlertTriangle, Loader2 } from "lucide-react";
 import { format } from "date-fns";
 
 interface Employee {
@@ -54,9 +54,11 @@ interface SimperMonitoring {
 
 export default function DriverView() {
   const [nik, setNik] = useState("");
+  const [debouncedNik, setDebouncedNik] = useState("");
   const [searchEmployee, setSearchEmployee] = useState<Employee | null>(null);
   const [suggestions, setSuggestions] = useState<Employee[]>([]);
   const [activeTab, setActiveTab] = useState<'roster' | 'leave' | 'simper'>('roster');
+  const [isSearching, setIsSearching] = useState(false);
 
   // Query untuk mencari employee berdasarkan NIK - OPTIMIZED
   const { data: employees, isLoading: employeesLoading } = useQuery({
@@ -127,11 +129,31 @@ export default function DriverView() {
     staleTime: 5 * 60 * 1000, // 5 minutes cache
   });
 
-  const handleSearch = () => {
-    if (!nik.trim()) return;
+  // Debounced search effect
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedNik(nik);
+    }, 300); // 300ms debounce
+
+    return () => clearTimeout(timer);
+  }, [nik]);
+
+  // Auto search when debounced value changes
+  useEffect(() => {
+    if (debouncedNik.trim() && employees) {
+      handleSearch();
+    } else {
+      setSuggestions([]);
+      setSearchEmployee(null);
+    }
+  }, [debouncedNik, employees]);
+
+  const handleSearch = useCallback(() => {
+    if (!debouncedNik.trim()) return;
     
+    setIsSearching(true);
     const employeeList = employees as Employee[] || [];
-    const searchTerm = nik.trim().toLowerCase();
+    const searchTerm = debouncedNik.trim().toLowerCase();
     
     const employee = employeeList.find((emp: Employee) => {
       // Cari berdasarkan NIK (exact match)
@@ -140,15 +162,27 @@ export default function DriverView() {
       // Cari berdasarkan nama (partial match)
       if (emp.name.toLowerCase().includes(searchTerm)) return true;
       
-      
       // Cari berdasarkan posisi jika ada
       if (emp.position && emp.position.toLowerCase().includes(searchTerm)) return true;
       
       return false;
     });
     
+    // Generate suggestions for partial matches
+    if (!employee && searchTerm.length > 2) {
+      const matchedEmployees = employeeList.filter((emp: Employee) => {
+        return emp.name.toLowerCase().includes(searchTerm) ||
+               emp.id.toLowerCase().includes(searchTerm) ||
+               (emp.position && emp.position.toLowerCase().includes(searchTerm));
+      }).slice(0, 5);
+      setSuggestions(matchedEmployees);
+    } else {
+      setSuggestions([]);
+    }
+    
     setSearchEmployee(employee || null);
-  };
+    setIsSearching(false);
+  }, [debouncedNik, employees]);
 
   const employeeRoster = (rosterData as RosterSchedule[]) || [];
 
@@ -233,61 +267,43 @@ export default function DriverView() {
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="flex gap-2">
-            <div className="relative">
+          <div className="relative">
+            <div className="flex gap-2">
               <Input
                 placeholder="Masukkan NIK, nama, atau posisi karyawan..."
                 value={nik}
-                onChange={(e) => {
-                  const value = e.target.value;
-                  setNik(value);
-                  
-                  // Show suggestions saat user mengetik
-                  if (value.trim().length > 2) {
-                    const employeeList = employees as Employee[] || [];
-                    const searchTerm = value.trim().toLowerCase();
-                    
-                    const matchedEmployees = employeeList.filter((emp: Employee) => {
-                      return emp.name.toLowerCase().includes(searchTerm) ||
-                             emp.id.toLowerCase().includes(searchTerm) ||
-                             (emp.position && emp.position.toLowerCase().includes(searchTerm));
-                    }).slice(0, 5);
-                    
-                    setSuggestions(matchedEmployees);
-                  } else {
-                    setSuggestions([]);
-                  }
-                }}
-                onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
+                onChange={(e) => setNik(e.target.value)}
                 data-testid="input-nik-search"
+                className="flex-1"
               />
-              
-              {/* Suggestions dropdown */}
-              {suggestions.length > 0 && (
-                <div className="absolute top-full left-0 right-0 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-md shadow-lg z-10 mt-1">
-                  {suggestions.map((emp) => (
-                    <div
-                      key={emp.id}
-                      className="px-3 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer border-b border-gray-100 dark:border-gray-700 last:border-b-0"
-                      onClick={() => {
-                        setNik(emp.name);
-                        setSearchEmployee(emp);
-                        setSuggestions([]);
-                      }}
-                    >
-                      <div className="font-medium">{emp.name}</div>
-                      <div className="text-sm text-gray-600 dark:text-gray-400">
-                        NIK: {emp.id} | {emp.position} | {emp.department}
-                      </div>
-                    </div>
-                  ))}
+              {isSearching && (
+                <div className="flex items-center px-3">
+                  <Loader2 className="h-4 w-4 animate-spin text-gray-500" />
                 </div>
               )}
             </div>
-            <Button onClick={handleSearch} data-testid="button-search-employee">
-              <Search className="h-4 w-4 mr-2" />
-              Cari
-            </Button>
+            
+            {/* Suggestions dropdown */}
+            {suggestions.length > 0 && (
+              <div className="absolute top-full left-0 right-0 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-md shadow-lg z-10 mt-1">
+                {suggestions.map((emp) => (
+                  <div
+                    key={emp.id}
+                    className="px-3 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer border-b border-gray-100 dark:border-gray-700 last:border-b-0"
+                    onClick={() => {
+                      setNik(emp.name);
+                      setSearchEmployee(emp);
+                      setSuggestions([]);
+                    }}
+                  >
+                    <div className="font-medium">{emp.name}</div>
+                    <div className="text-sm text-gray-600 dark:text-gray-400">
+                      NIK: {emp.id} | {emp.position} | {emp.department}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
           
           {nik && !searchEmployee && (
