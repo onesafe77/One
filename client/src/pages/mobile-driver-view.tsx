@@ -71,7 +71,7 @@ export default function MobileDriverView() {
   const [nik, setNik] = useState("");
   const [searchEmployee, setSearchEmployee] = useState<Employee | null>(null);
   const [suggestions, setSuggestions] = useState<Employee[]>([]);
-  const [activeTab, setActiveTab] = useState<'info' | 'roster' | 'leave' | 'monitoring' | 'simper'>('info');
+  const [activeTab, setActiveTab] = useState<'roster' | 'leave' | 'monitoring' | 'simper'>('roster');
 
   // Query untuk mencari employee berdasarkan NIK - OPTIMIZED
   const { data: employees, isLoading: employeesLoading } = useQuery({
@@ -411,17 +411,7 @@ export default function MobileDriverView() {
             </Card>
 
             {/* Modern Tab Navigation */}
-            <div className="grid grid-cols-5 gap-1">
-              <Button
-                variant={activeTab === 'info' ? "default" : "outline"}
-                onClick={() => setActiveTab('info')}
-                className={`p-3 rounded-xl font-semibold ${activeTab === 'info' 
-                  ? 'bg-gradient-to-r from-blue-600 to-blue-700 text-white shadow-lg' 
-                  : 'bg-white dark:bg-gray-800 border-2'}`}
-              >
-                <User className="h-4 w-4 mb-1" />
-                <span className="text-xs">Info</span>
-              </Button>
+            <div className="grid grid-cols-4 gap-1">
               <Button
                 variant={activeTab === 'roster' ? "default" : "outline"}
                 onClick={() => setActiveTab('roster')}
