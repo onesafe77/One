@@ -25,15 +25,36 @@ import QRCode from "qrcode";
 const convertGoogleDriveUrl = (url: string): string => {
   if (!url) return url;
   
-  // Check if it's a Google Drive sharing URL
-  const driveRegex = /https:\/\/drive\.google\.com\/file\/d\/([a-zA-Z0-9-_]+)\/view/;
-  const match = url.match(driveRegex);
+  // Handle different Google Drive URL formats
+  let fileId = null;
   
-  if (match) {
-    const fileId = match[1];
+  // Format 1: https://drive.google.com/file/d/FILE_ID/view (with or without params)
+  const driveRegex1 = /https:\/\/drive\.google\.com\/file\/d\/([a-zA-Z0-9-_]+)\/view/;
+  const match1 = url.match(driveRegex1);
+  
+  // Format 2: https://drive.google.com/file/d/FILE_ID (without /view)
+  const driveRegex2 = /https:\/\/drive\.google\.com\/file\/d\/([a-zA-Z0-9-_]+)(?:[/?]|$)/;
+  const match2 = url.match(driveRegex2);
+  
+  // Format 3: https://drive.google.com/file/d/FILE_ID?usp=sharing
+  const driveRegex3 = /https:\/\/drive\.google\.com\/file\/d\/([a-zA-Z0-9-_]+)\?/;
+  const match3 = url.match(driveRegex3);
+  
+  // Extract file ID from any of the formats
+  if (match1) {
+    fileId = match1[1];
+  } else if (match2) {
+    fileId = match2[1];
+  } else if (match3) {
+    fileId = match3[1];
+  }
+  
+  if (fileId) {
+    console.log('Converting Google Drive URL:', url, 'to file ID:', fileId);
     return `https://drive.google.com/uc?export=view&id=${fileId}`;
   }
   
+  console.log('URL is not Google Drive format, using as-is:', url);
   // Return original URL if it's not Google Drive or already direct
   return url;
 };
@@ -80,6 +101,7 @@ function ProfileImagePreview({ imageUrl }: { imageUrl: string }) {
 // Component untuk menampilkan foto profil di tabel
 function TableProfileImage({ imageUrl, employeeName }: { imageUrl: string | null; employeeName: string }) {
   const [hasError, setHasError] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   
   if (!imageUrl) {
     return (
@@ -98,12 +120,24 @@ function TableProfileImage({ imageUrl, employeeName }: { imageUrl: string | null
           <Image className="w-5 h-5 text-gray-400" />
         </div>
       ) : (
-        <img
-          src={directImageUrl}
-          alt={`Foto ${employeeName}`}
-          className="w-10 h-10 object-cover rounded-full border-2 border-gray-200"
-          onError={() => setHasError(true)}
-        />
+        <div className="relative w-10 h-10">
+          {isLoading && (
+            <div className="absolute inset-0 flex items-center justify-center w-10 h-10 bg-gray-100 rounded-full">
+              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-500"></div>
+            </div>
+          )}
+          <img
+            src={directImageUrl}
+            alt={`Foto ${employeeName}`}
+            className="w-10 h-10 object-cover rounded-full border-2 border-gray-200"
+            onLoad={() => setIsLoading(false)}
+            onError={() => {
+              setIsLoading(false);
+              setHasError(true);
+            }}
+            style={{ display: isLoading ? 'none' : 'block' }}
+          />
+        </div>
       )}
     </div>
   );
@@ -640,9 +674,15 @@ export default function Employees() {
                               {...field} 
                               data-testid="employee-photo-url-input"
                             />
-                            <p className="text-xs text-gray-500">
-                              Paste URL Google Drive dengan permission "Anyone with the link can view"
-                            </p>
+                            <div className="text-xs text-gray-500 space-y-1">
+                              <p>Paste URL Google Drive dengan permission "Anyone with the link can view"</p>
+                              <p className="font-medium">Format yang didukung:</p>
+                              <ul className="ml-4 list-disc space-y-1">
+                                <li>https://drive.google.com/file/d/FILE_ID/view?usp=sharing</li>
+                                <li>https://drive.google.com/file/d/FILE_ID/view</li>
+                                <li>https://drive.google.com/file/d/FILE_ID</li>
+                              </ul>
+                            </div>
                             <ProfileImagePreview imageUrl={field.value || ""} />
                           </div>
                         </FormControl>
