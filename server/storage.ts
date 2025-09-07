@@ -694,34 +694,8 @@ export class DrizzleStorage implements IStorage {
   }
 
   async deleteAllEmployees(): Promise<boolean> {
-    try {
-      // Delete in proper order to respect foreign key constraints
-      // 1. Delete QR tokens first (references employees)
-      await this.db.delete(qrTokens);
-      
-      // 2. Delete attendance records (references employees)
-      await this.db.delete(attendanceRecords);
-      
-      // 3. Delete roster schedules (references employees)
-      await this.db.delete(rosterSchedules);
-      
-      // 4. Delete leave requests (references employees)  
-      await this.db.delete(leaveRequests);
-      
-      // 5. Delete leave roster monitoring (references employees)
-      await this.db.delete(leaveRosterMonitoring);
-      
-      // 6. Delete simper monitoring (references employees)
-      await this.db.delete(simperMonitoring);
-      
-      // 7. Finally delete employees
-      await this.db.delete(employees);
-      
-      return true;
-    } catch (error) {
-      console.error("Error in deleteAllEmployees:", error);
-      throw error;
-    }
+    await this.db.delete(employees);
+    return true;
   }
 
   // Attendance methods
