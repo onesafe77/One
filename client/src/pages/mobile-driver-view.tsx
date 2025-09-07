@@ -1,10 +1,10 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Search, User, Calendar, Clock, MapPin, ChevronDown, ChevronUp, Bell, AlertTriangle, TrendingUp, Activity, CheckCircle, XCircle, Shield } from "lucide-react";
+import { Search, User, Calendar, Clock, MapPin, ChevronDown, ChevronUp, Bell, AlertTriangle, TrendingUp, Activity, CheckCircle, XCircle, Shield, Loader2 } from "lucide-react";
 import { format } from "date-fns";
 
 interface Employee {
@@ -69,9 +69,11 @@ interface SimperMonitoring {
 
 export default function MobileDriverView() {
   const [nik, setNik] = useState("");
+  const [debouncedNik, setDebouncedNik] = useState("");
   const [searchEmployee, setSearchEmployee] = useState<Employee | null>(null);
   const [suggestions, setSuggestions] = useState<Employee[]>([]);
   const [activeTab, setActiveTab] = useState<'roster' | 'leave' | 'monitoring' | 'simper'>('roster');
+  const [isSearching, setIsSearching] = useState(false);
 
   // Query untuk mencari employee berdasarkan NIK - OPTIMIZED
   const { data: employees, isLoading: employeesLoading } = useQuery({
@@ -173,9 +175,29 @@ export default function MobileDriverView() {
     staleTime: 5 * 60 * 1000, // 5 minutes cache
   });
 
-  const handleSearchWithNik = (nikValue: string) => {
+  // Debounced search effect
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedNik(nik);
+    }, 300); // 300ms debounce
+
+    return () => clearTimeout(timer);
+  }, [nik]);
+
+  // Auto search when debounced value changes
+  useEffect(() => {
+    if (debouncedNik.trim() && employees) {
+      handleSearchWithNik(debouncedNik);
+    } else {
+      setSuggestions([]);
+      setSearchEmployee(null);
+    }
+  }, [debouncedNik, employees]);
+
+  const handleSearchWithNik = useCallback((nikValue: string) => {
     if (!nikValue.trim()) return;
     
+    setIsSearching(true);
     console.log('🔍 Mobile Driver View: Searching for NIK:', nikValue);
     const employeeList = employees as Employee[] || [];
     console.log('👥 Available employees:', employeeList.length);
@@ -188,6 +210,18 @@ export default function MobileDriverView() {
       return false;
     });
     
+    // Generate suggestions for partial matches
+    if (!employee && searchTerm.length > 2) {
+      const matchedEmployees = employeeList.filter((emp: Employee) => {
+        return emp.name.toLowerCase().includes(searchTerm) ||
+               emp.id.toLowerCase().includes(searchTerm) ||
+               (emp.position && emp.position.toLowerCase().includes(searchTerm));
+      }).slice(0, 3); // Limit untuk mobile
+      setSuggestions(matchedEmployees);
+    } else {
+      setSuggestions([]);
+    }
+    
     if (employee) {
       console.log('✅ Employee found:', employee.name, employee.id);
     } else {
@@ -195,8 +229,8 @@ export default function MobileDriverView() {
     }
     
     setSearchEmployee(employee || null);
-    setSuggestions([]);
-  };
+    setIsSearching(false);
+  }, [employees]);
 
   // Auto-focus untuk mobile - OPTIMIZED
   useEffect(() => {
@@ -214,7 +248,7 @@ export default function MobileDriverView() {
       // Auto set to roster tab for quick access
       setActiveTab('roster');
     }
-  }, [employees]); // Depend on employees so it runs when data is loaded
+  }, [employees, handleSearchWithNik]); // Depend on employees so it runs when data is loaded
 
   const handleSearch = () => {
     handleSearchWithNik(nik);
@@ -308,32 +342,20 @@ export default function MobileDriverView() {
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="relative">
-              <Input
-                placeholder="Ketik NIK atau nama karyawan..."
-                value={nik}
-                onChange={(e) => {
-                  const value = e.target.value;
-                  setNik(value);
-                  
-                  if (value.trim().length > 2) {
-                    const employeeList = employees as Employee[] || [];
-                    const searchTerm = value.trim().toLowerCase();
-                    
-                    const matchedEmployees = employeeList.filter((emp: Employee) => {
-                      return emp.name.toLowerCase().includes(searchTerm) ||
-                             emp.id.toLowerCase().includes(searchTerm) ||
-                             (emp.position && emp.position.toLowerCase().includes(searchTerm));
-                    }).slice(0, 3); // Limit untuk mobile
-                    
-                    setSuggestions(matchedEmployees);
-                  } else {
-                    setSuggestions([]);
-                  }
-                }}
-                onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
-                className="text-base border-2 focus:border-red-500 rounded-xl py-3 px-4"
-                data-testid="input-mobile-nik-search"
-              />
+              <div className="flex gap-2">
+                <Input
+                  placeholder="Ketik NIK atau nama karyawan..."
+                  value={nik}
+                  onChange={(e) => setNik(e.target.value)}
+                  className="text-base border-2 focus:border-red-500 rounded-xl py-3 px-4 flex-1"
+                  data-testid="input-mobile-nik-search"
+                />
+                {isSearching && (
+                  <div className="flex items-center px-3">
+                    <Loader2 className="h-5 w-5 animate-spin text-red-500" />
+                  </div>
+                )}
+              </div>
               
               {/* Mobile Suggestions */}
               {suggestions.length > 0 && (
@@ -357,15 +379,6 @@ export default function MobileDriverView() {
                 </div>
               )}
             </div>
-            
-            <Button 
-              onClick={handleSearch} 
-              className="w-full bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 text-white font-semibold py-3 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300"
-              data-testid="button-mobile-search"
-            >
-              <Search className="h-5 w-5 mr-2" />
-              Cari Data Karyawan
-            </Button>
             
             {nik && !searchEmployee && (
               <div className="text-red-500 text-sm text-center p-3 bg-red-50 dark:bg-red-900/20 rounded-xl">
