@@ -77,6 +77,38 @@ function ProfileImagePreview({ imageUrl }: { imageUrl: string }) {
   );
 }
 
+// Component untuk menampilkan foto profil di tabel
+function TableProfileImage({ imageUrl, employeeName }: { imageUrl: string | null; employeeName: string }) {
+  const [hasError, setHasError] = useState(false);
+  
+  if (!imageUrl) {
+    return (
+      <div className="flex items-center justify-center w-10 h-10 bg-gray-100 rounded-full">
+        <Image className="w-5 h-5 text-gray-400" />
+      </div>
+    );
+  }
+  
+  const directImageUrl = convertGoogleDriveUrl(imageUrl);
+  
+  return (
+    <div className="flex items-center justify-center">
+      {hasError ? (
+        <div className="flex items-center justify-center w-10 h-10 bg-gray-100 rounded-full">
+          <Image className="w-5 h-5 text-gray-400" />
+        </div>
+      ) : (
+        <img
+          src={directImageUrl}
+          alt={`Foto ${employeeName}`}
+          className="w-10 h-10 object-cover rounded-full border-2 border-gray-200"
+          onError={() => setHasError(true)}
+        />
+      )}
+    </div>
+  );
+}
+
 const formSchema = insertEmployeeSchema.extend({
   id: z.string().optional(), // NIK akan digenerate otomatis
   position: z.string().optional(),
@@ -701,6 +733,7 @@ export default function Employees() {
               <tr className="border-b border-gray-200 dark:border-gray-700">
                 <th className="text-left py-3 px-4 font-medium text-gray-900 dark:text-white">NIK</th>
                 <th className="text-left py-3 px-4 font-medium text-gray-900 dark:text-white">Nama</th>
+                <th className="text-center py-3 px-4 font-medium text-gray-900 dark:text-white">Foto</th>
                 <th className="text-left py-3 px-4 font-medium text-gray-900 dark:text-white">Position</th>
                 <th className="text-left py-3 px-4 font-medium text-gray-900 dark:text-white">Department</th>
                 <th className="text-left py-3 px-4 font-medium text-gray-900 dark:text-white">Investor Group</th>
@@ -713,13 +746,13 @@ export default function Employees() {
             <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
               {isLoading ? (
                 <tr>
-                  <td colSpan={9} className="py-8 text-center text-gray-500 dark:text-gray-400">
+                  <td colSpan={10} className="py-8 text-center text-gray-500 dark:text-gray-400">
                     Loading...
                   </td>
                 </tr>
               ) : filteredEmployees.length === 0 ? (
                 <tr>
-                  <td colSpan={9} className="py-8 text-center text-gray-500 dark:text-gray-400">
+                  <td colSpan={10} className="py-8 text-center text-gray-500 dark:text-gray-400">
                     Tidak ada data karyawan
                   </td>
                 </tr>
@@ -728,6 +761,12 @@ export default function Employees() {
                   <tr key={employee.id} data-testid={`employee-row-${employee.id}`}>
                     <td className="py-3 px-4 text-sm text-gray-900 dark:text-white">{employee.id}</td>
                     <td className="py-3 px-4 text-sm text-gray-900 dark:text-white">{employee.name}</td>
+                    <td className="py-3 px-4">
+                      <TableProfileImage 
+                        imageUrl={employee.profileImageUrl || null} 
+                        employeeName={employee.name} 
+                      />
+                    </td>
                     <td className="py-3 px-4 text-sm text-gray-900 dark:text-white">{employee.position || "-"}</td>
                     <td className="py-3 px-4 text-sm text-gray-900 dark:text-white">{employee.department || "-"}</td>
                     <td className="py-3 px-4 text-sm text-gray-900 dark:text-white">{employee.investorGroup || "-"}</td>
