@@ -4,7 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Search, User, Calendar, Clock, MapPin } from "lucide-react";
+import { Search, User, Calendar, Clock, MapPin, Shield, AlertTriangle } from "lucide-react";
 import { format } from "date-fns";
 
 interface Employee {
@@ -40,6 +40,18 @@ interface LeaveRequest {
   createdAt: string;
 }
 
+interface SimperMonitoring {
+  id: string;
+  employeeName: string;
+  nik: string;
+  simperBibExpiredDate: string | null;
+  simperTiaExpiredDate: string | null;
+  bibMonitoringDays?: number | null;
+  tiaMonitoringDays?: number | null;
+  bibStatus?: string;
+  tiaStatus?: string;
+}
+
 export default function DriverView() {
   const [nik, setNik] = useState("");
   const [searchEmployee, setSearchEmployee] = useState<Employee | null>(null);
@@ -66,6 +78,47 @@ export default function DriverView() {
   // Query untuk leave requests berdasarkan employee yang dipilih
   const { data: leaveData, isLoading: leaveLoading } = useQuery({
     queryKey: ["/api/leave"],
+    enabled: !!searchEmployee,
+  });
+
+  // Query untuk SIMPER monitoring berdasarkan employee yang dipilih
+  const { data: simperData, isLoading: simperLoading } = useQuery({
+    queryKey: ["/api/simper-monitoring/nik", searchEmployee?.id],
+    queryFn: async () => {
+      if (!searchEmployee?.id) return null;
+      const response = await fetch(`/api/simper-monitoring/nik/${searchEmployee.id}`);
+      if (!response.ok) {
+        if (response.status === 404) return null;
+        throw new Error('Failed to fetch SIMPER data');
+      }
+      const data = await response.json();
+      
+      // Calculate monitoring days and status
+      const today = new Date();
+      const processSIMPER = (expiredDate: string | null) => {
+        if (!expiredDate) return { days: null, status: 'Tidak Ada Data' };
+        
+        const expired = new Date(expiredDate);
+        const diffTime = expired.getTime() - today.getTime();
+        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+        
+        if (diffDays < 0) return { days: diffDays, status: 'Segera Perpanjang' };
+        if (diffDays < 7) return { days: diffDays, status: 'Mendekati Perpanjangan' };
+        if (diffDays < 30) return { days: diffDays, status: 'Menuju Perpanjangan' };
+        return { days: diffDays, status: 'Aktif' };
+      };
+
+      const bibStatus = processSIMPER(data.simperBibExpiredDate);
+      const tiaStatus = processSIMPER(data.simperTiaExpiredDate);
+
+      return {
+        ...data,
+        bibMonitoringDays: bibStatus.days,
+        bibStatus: bibStatus.status,
+        tiaMonitoringDays: tiaStatus.days,
+        tiaStatus: tiaStatus.status
+      };
+    },
     enabled: !!searchEmployee,
   });
 
@@ -112,6 +165,30 @@ export default function DriverView() {
       case "rejected": return "bg-red-500";
       default: return "bg-gray-500";
     }
+  };
+
+  const getSimperStatusColor = (status: string) => {
+    switch (status) {
+      case 'Segera Perpanjang':
+        return 'bg-red-100 text-red-800';
+      case 'Mendekati Perpanjangan':
+        return 'bg-yellow-100 text-yellow-800';
+      case 'Menuju Perpanjangan':
+        return 'bg-orange-100 text-orange-800';
+      case 'Aktif':
+        return 'bg-green-100 text-green-800';
+      default:
+        return 'bg-gray-100 text-gray-800';
+    }
+  };
+
+  const formatDateDD_MM_YYYY = (dateString: string | null) => {
+    if (!dateString) return '-';
+    const date = new Date(dateString);
+    const day = date.getDate().toString().padStart(2, '0');
+    const month = (date.getMonth() + 1).toString().padStart(2, '0');
+    const year = date.getFullYear();
+    return `${day}-${month}-${year}`;
   };
 
   return (
@@ -347,6 +424,123 @@ export default function DriverView() {
               </div>
             ) : (
               <p className="text-gray-500">Tidak ada data cuti ditemukan</p>
+            )}
+          </CardContent>
+        </Card>
+      )}
+
+      {/* SIMPER Monitoring Data */}
+      {searchEmployee && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Shield className="h-5 w-5 text-[#E53935]" />
+              Data SIMPER Monitoring
+            </CardTitle>
+            <CardDescription>
+              Status SIMPER BIB dan TIA untuk {searchEmployee.name}
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            {simperLoading ? (
+              <div className="flex items-center justify-center py-8">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#E53935]"></div>
+              </div>
+            ) : simperData ? (
+              <div className="space-y-6">
+                {/* Employee Info */}
+                <div className="bg-gray-50 p-4 rounded-lg">
+                  <h3 className="font-semibold text-gray-700 mb-2">Informasi Karyawan</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                    <div>
+                      <span className="text-gray-600">Nama:</span>
+                      <span className="ml-2 font-medium">{simperData.employeeName}</span>
+                    </div>
+                    <div>
+                      <span className="text-gray-600">NIK:</span>
+                      <span className="ml-2 font-medium">{simperData.nik}</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* SIMPER Status */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {/* SIMPER BIB */}
+                  <div className="border border-gray-200 rounded-lg p-4">
+                    <h4 className="font-semibold text-gray-700 mb-3 flex items-center">
+                      <Shield className="w-4 h-4 mr-2 text-blue-600" />
+                      SIMPER BIB
+                    </h4>
+                    <div className="space-y-2">
+                      <div className="flex justify-between">
+                        <span className="text-gray-600">Tanggal Expired:</span>
+                        <span className="font-medium">
+                          {formatDateDD_MM_YYYY(simperData.simperBibExpiredDate)}
+                        </span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-gray-600">Monitoring Days:</span>
+                        <span className="font-medium">
+                          {simperData.bibMonitoringDays !== null ? simperData.bibMonitoringDays : '-'} hari
+                        </span>
+                      </div>
+                      <div className="flex justify-between items-center">
+                        <span className="text-gray-600">Status:</span>
+                        <Badge className={getSimperStatusColor(simperData.bibStatus || 'Tidak Ada Data')}>
+                          {simperData.bibStatus || 'Tidak Ada Data'}
+                        </Badge>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* SIMPER TIA */}
+                  <div className="border border-gray-200 rounded-lg p-4">
+                    <h4 className="font-semibold text-gray-700 mb-3 flex items-center">
+                      <Shield className="w-4 h-4 mr-2 text-green-600" />
+                      SIMPER TIA
+                    </h4>
+                    <div className="space-y-2">
+                      <div className="flex justify-between">
+                        <span className="text-gray-600">Tanggal Expired:</span>
+                        <span className="font-medium">
+                          {formatDateDD_MM_YYYY(simperData.simperTiaExpiredDate)}
+                        </span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-gray-600">Monitoring Days:</span>
+                        <span className="font-medium">
+                          {simperData.tiaMonitoringDays !== null ? simperData.tiaMonitoringDays : '-'} hari
+                        </span>
+                      </div>
+                      <div className="flex justify-between items-center">
+                        <span className="text-gray-600">Status:</span>
+                        <Badge className={getSimperStatusColor(simperData.tiaStatus || 'Tidak Ada Data')}>
+                          {simperData.tiaStatus || 'Tidak Ada Data'}
+                        </Badge>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Alert untuk status kritis */}
+                {(simperData.bibStatus === 'Segera Perpanjang' || simperData.tiaStatus === 'Segera Perpanjang' ||
+                  simperData.bibStatus === 'Mendekati Perpanjangan' || simperData.tiaStatus === 'Mendekati Perpanjangan') && (
+                  <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+                    <div className="flex items-center">
+                      <AlertTriangle className="w-5 h-5 text-red-600 mr-2" />
+                      <span className="font-semibold text-red-800">Peringatan SIMPER</span>
+                    </div>
+                    <p className="text-red-700 mt-1 text-sm">
+                      Ada SIMPER yang akan expired dalam waktu dekat. Segera lakukan perpanjangan.
+                    </p>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <div className="text-center py-8">
+                <Shield className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+                <p className="text-gray-500">Data SIMPER tidak ditemukan untuk karyawan ini</p>
+              </div>
             )}
           </CardContent>
         </Card>
