@@ -1,0 +1,73 @@
+untuk Monitoring SIMPER Karyawan (BIB & TIA) dengan desain profesional. Gunakan warna utama merah (#E53935) dipadukan dengan putih dan abu-abu soft (#F5F5F5).
+
+Bagian Atas
+
+Judul besar "Monitoring SIMPER Karyawan" dengan font modern bold warna merah tua.
+
+Di pojok kanan atas tampilkan tanggal & waktu real-time.
+
+Fitur Utama Tabel Monitoring
+
+Upload Excel → tombol upload untuk mengimpor data SIMPER (Nama, NIK, Tanggal SIMPER BIB Mati, Tanggal SIMPER TIA Mati).
+
+Edit Data → tombol edit (ikon pensil) per baris untuk mengubah data karyawan.
+
+Hapus Data → tombol hapus (ikon trash) per baris dengan konfirmasi.
+
+Hapus Semua Data → tombol besar merah di atas tabel, konfirmasi sebelum reset.
+
+Pencarian Nama/NIK → search bar di atas tabel untuk filter data real-time.
+
+Filter Status → dropdown untuk menampilkan SIMPER berdasarkan status (Aktif, Mendekati, Segera, Expired).
+
+Struktur Tabel Monitoring
+
+Kolom tabel:
+
+Nama Karyawan
+
+NIK
+
+Tanggal SIMPER BIB Mati
+
+Monitoring Hari BIB = (Tanggal SIMPER BIB Mati – Today)
+
+Status SIMPER BIB (otomatis sesuai kriteria)
+
+Tanggal SIMPER TIA Mati
+
+Monitoring Hari TIA = (Tanggal SIMPER TIA Mati – Today)
+
+Status SIMPER TIA (otomatis sesuai kriteria)
+
+Aksi (Edit/Hapus)
+
+Aturan Status SIMPER
+
+Jika Monitoring Hari < 0 → Segera melakukan perpanjangan (badge merah, teks putih).
+
+Jika Monitoring Hari < 7 → Mendekati masa perpanjangan (badge kuning, teks hitam).
+
+Jika Monitoring Hari < 30 → Menuju masa perpanjangan (badge orange, teks putih).
+
+Jika Monitoring Hari ≥ 30 → Belum memasuki masa perpanjangan (badge hijau, teks putih).
+
+Dashboard Evaluasi
+
+Card Statistik: tampilkan total karyawan, jumlah SIMPER BIB & TIA per status (Segera, Mendekati, Menuju, Aktif).
+
+Bar Chart: menampilkan jumlah karyawan per kategori status (dibedakan antara BIB & TIA).
+
+Daftar Kritis: tabel mini berisi 10 SIMPER dengan expired paling dekat (baik BIB maupun TIA).
+
+Desain
+
+Tabel & card menggunakan style rounded-2xl, shadow lembut, background putih.
+
+Font sans-serif modern (misalnya Poppins atau Inter).
+
+Tombol dengan animasi hover dan icon (upload, edit, trash).
+
+Row tabel diberi hover highlight abu-abu soft.
+
+Animasi transisi smooth saat buka modal edit, upload data, atau filter.
