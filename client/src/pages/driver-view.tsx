@@ -57,13 +57,14 @@ export default function DriverView() {
   const [searchEmployee, setSearchEmployee] = useState<Employee | null>(null);
   const [suggestions, setSuggestions] = useState<Employee[]>([]);
 
-  // Query untuk mencari employee berdasarkan NIK
-  const { data: employees } = useQuery({
+  // Query untuk mencari employee berdasarkan NIK - OPTIMIZED
+  const { data: employees, isLoading: employeesLoading } = useQuery({
     queryKey: ["/api/employees"],
     enabled: true,
+    staleTime: 10 * 60 * 1000, // 10 minutes cache - employees data doesn't change often
   });
 
-  // Query untuk roster berdasarkan employee yang dipilih
+  // Query untuk roster berdasarkan employee yang dipilih - OPTIMIZED
   const { data: rosterData, isLoading: rosterLoading } = useQuery({
     queryKey: ["/api/roster", { employeeId: searchEmployee?.id }],
     queryFn: async () => {
@@ -73,15 +74,17 @@ export default function DriverView() {
       return response.json();
     },
     enabled: !!searchEmployee,
+    staleTime: 5 * 60 * 1000, // 5 minutes cache
   });
 
-  // Query untuk leave requests berdasarkan employee yang dipilih
+  // Query untuk leave requests berdasarkan employee yang dipilih - OPTIMIZED
   const { data: leaveData, isLoading: leaveLoading } = useQuery({
     queryKey: ["/api/leave"],
     enabled: !!searchEmployee,
+    staleTime: 3 * 60 * 1000, // 3 minutes cache
   });
 
-  // Query untuk SIMPER monitoring berdasarkan employee yang dipilih
+  // Query untuk SIMPER monitoring berdasarkan employee yang dipilih - OPTIMIZED
   const { data: simperData, isLoading: simperLoading } = useQuery({
     queryKey: ["/api/simper-monitoring/nik", searchEmployee?.id],
     queryFn: async () => {
@@ -120,6 +123,7 @@ export default function DriverView() {
       };
     },
     enabled: !!searchEmployee,
+    staleTime: 2 * 60 * 1000, // 2 minutes cache
   });
 
   const handleSearch = () => {
@@ -202,8 +206,22 @@ export default function DriverView() {
         </p>
       </div>
 
+      {/* Loading State untuk employees */}
+      {employeesLoading && (
+        <Card className="shadow-lg">
+          <CardContent className="p-8">
+            <div className="flex flex-col items-center space-y-4">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-4 border-[#E53935]"></div>
+              <p className="text-gray-600 dark:text-gray-300 font-semibold">Loading employee data...</p>
+              <p className="text-gray-400 text-sm">Memuat data karyawan dari server...</p>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Search Section */}
-      <Card>
+      {!employeesLoading && (
+        <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Search className="h-5 w-5" />
@@ -279,6 +297,7 @@ export default function DriverView() {
           )}
         </CardContent>
       </Card>
+      )}
 
       {/* Employee Info */}
       {searchEmployee && (
