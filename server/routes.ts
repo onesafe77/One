@@ -121,9 +121,16 @@ function isValidShiftTime(currentTime: string, scheduledShift: string): boolean 
   return false;
 }
 
-// Simple cache for frequently accessed employee data (5 minute TTL)
+// AGGRESSIVE CACHING STRATEGY for Performance Optimization
 const employeeCache = new Map<string, { data: any; timestamp: number }>();
-const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
+const allEmployeesCache = new Map<string, { data: any; timestamp: number }>();
+const rosterCache = new Map<string, { data: any; timestamp: number }>();
+const leaveMonitoringCache = new Map<string, { data: any; timestamp: number }>();
+
+const CACHE_TTL = 5 * 60 * 1000; // 5 minutes for employee data
+const ALL_EMPLOYEES_TTL = 10 * 60 * 1000; // 10 minutes for all employees (changes less frequently)
+const ROSTER_TTL = 3 * 60 * 1000; // 3 minutes for roster data
+const LEAVE_MONITORING_TTL = 5 * 60 * 1000; // 5 minutes for leave monitoring
 
 function getCachedEmployee(employeeId: string) {
   const cached = employeeCache.get(employeeId);
@@ -141,14 +148,77 @@ function clearCachedEmployee(employeeId: string) {
   employeeCache.delete(employeeId);
 }
 
+// Cache for all employees (used frequently in roster enrichment)
+function getCachedAllEmployees() {
+  const cached = allEmployeesCache.get('all');
+  if (cached && Date.now() - cached.timestamp < ALL_EMPLOYEES_TTL) {
+    console.log('📦 Using cached all employees data');
+    return cached.data;
+  }
+  return null;
+}
+
+function setCachedAllEmployees(data: any) {
+  allEmployeesCache.set('all', { data, timestamp: Date.now() });
+  console.log(`📦 Cached ${data.length} employees for ${ALL_EMPLOYEES_TTL/1000}s`);
+}
+
+// Cache for roster data by date
+function getCachedRoster(date: string) {
+  const cached = rosterCache.get(date);
+  if (cached && Date.now() - cached.timestamp < ROSTER_TTL) {
+    console.log(`📦 Using cached roster data for ${date}`);
+    return cached.data;
+  }
+  return null;
+}
+
+function setCachedRoster(date: string, data: any) {
+  rosterCache.set(date, { data, timestamp: Date.now() });
+  console.log(`📦 Cached ${data.length} roster entries for ${date}`);
+}
+
+// Cache for leave monitoring data
+function getCachedLeaveMonitoring() {
+  const cached = leaveMonitoringCache.get('all');
+  if (cached && Date.now() - cached.timestamp < LEAVE_MONITORING_TTL) {
+    console.log('📦 Using cached leave monitoring data');
+    return cached.data;
+  }
+  return null;
+}
+
+function setCachedLeaveMonitoring(data: any) {
+  leaveMonitoringCache.set('all', { data, timestamp: Date.now() });
+  console.log(`📦 Cached ${data.length} leave monitoring records`);
+}
+
+// Clear all caches (useful for data updates)
+function clearAllCaches() {
+  employeeCache.clear();
+  allEmployeesCache.clear();
+  rosterCache.clear();
+  leaveMonitoringCache.clear();
+  console.log('🧹 All caches cleared');
+}
+
 export async function registerRoutes(app: Express): Promise<Server> {
 
-  // Employee routes
+  // Employee routes - OPTIMIZED WITH CACHING
   app.get("/api/employees", async (req, res) => {
     try {
-      const employees = await storage.getAllEmployees();
+      // Check cache first for massive performance improvement
+      let employees = getCachedAllEmployees();
+      
+      if (!employees) {
+        console.log('🔄 Fetching all employees from database...');
+        employees = await storage.getAllEmployees();
+        setCachedAllEmployees(employees);
+      }
+      
       res.json(employees);
     } catch (error) {
+      console.error('❌ Error fetching employees:', error);
       res.status(500).json({ message: "Failed to fetch employees" });
     }
   });
@@ -168,6 +238,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/employees", async (req, res) => {
     try {
       const validatedData = insertEmployeeSchema.parse(req.body);
+      
+      // Clear employee caches since we're adding new data
+      clearAllCaches();
       
       // Generate QR Code token for the employee
       const secretKey = process.env.QR_SECRET_KEY || 'AttendanceQR2024';
@@ -511,7 +584,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Roster routes
+  // Roster routes - OPTIMIZED FOR PERFORMANCE
   app.get("/api/roster", async (req, res) => {
     try {
       const date = req.query.date as string;
@@ -522,9 +595,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const employeeRoster = await storage.getRosterByEmployee(employeeId);
         const leaveMonitoring = await storage.getAllLeaveRosterMonitoring();
         
+        // OPTIMIZED: Create Map for O(1) lookup instead of O(n) find
+        const leaveMonitoringMap = new Map(
+          leaveMonitoring.map(leave => [leave.nik, leave])
+        );
+        
         // Enrich roster dengan data leave monitoring (hari kerja)
         const enrichedRoster = employeeRoster.map(schedule => {
-          const leaveRecord = leaveMonitoring.find(leave => leave.nik === schedule.employeeId);
+          const leaveRecord = leaveMonitoringMap.get(schedule.employeeId);
           
           return {
             ...schedule,
@@ -540,16 +618,65 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Date parameter is required" });
       }
       
-      const roster = await storage.getRosterByDate(date);
-      const attendance = await storage.getAllAttendance(date);
-      const leaveMonitoring = await storage.getAllLeaveRosterMonitoring();
-      const allEmployees = await storage.getAllEmployees(); // Add employee data
+      console.time("📊 Roster API Performance");
+      console.log(`🔄 Fetching roster data for date: ${date}`);
       
-      // Enrich roster dengan data employee, attendance, dan leave monitoring
+      // OPTIMIZED: Use cached data when available + parallel fetch
+      const cachedRoster = getCachedRoster(date);
+      const cachedEmployees = getCachedAllEmployees();
+      const cachedLeaveMonitoring = getCachedLeaveMonitoring();
+      
+      const promises = [];
+      
+      // Only fetch what's not in cache
+      if (cachedRoster) {
+        promises.push(Promise.resolve(cachedRoster));
+      } else {
+        promises.push(storage.getRosterByDate(date));
+      }
+      
+      // Always fetch attendance (changes frequently)
+      promises.push(storage.getAllAttendance(date));
+      
+      if (cachedLeaveMonitoring) {
+        promises.push(Promise.resolve(cachedLeaveMonitoring));
+      } else {
+        promises.push(storage.getAllLeaveRosterMonitoring());
+      }
+      
+      if (cachedEmployees) {
+        promises.push(Promise.resolve(cachedEmployees));
+      } else {
+        promises.push(storage.getAllEmployees());
+      }
+      
+      const [roster, attendance, leaveMonitoring, allEmployees] = await Promise.all(promises);
+      
+      // Cache the data we just fetched
+      if (!cachedRoster) setCachedRoster(date, roster);
+      if (!cachedLeaveMonitoring) setCachedLeaveMonitoring(leaveMonitoring);
+      if (!cachedEmployees) setCachedAllEmployees(allEmployees);
+      
+      console.log(`📋 Fetched ${roster.length} roster entries, ${attendance.length} attendance records`);
+      
+      // OPTIMIZED: Create Maps for O(1) lookups instead of O(n) finds
+      const attendanceMap = new Map(
+        attendance.map(att => [att.employeeId, att])
+      );
+      const leaveMonitoringMap = new Map(
+        leaveMonitoring.map(leave => [leave.nik, leave])
+      );
+      const employeesMap = new Map(
+        allEmployees.map(emp => [emp.id, emp])
+      );
+      
+      console.log("🚀 Starting roster enrichment with Map lookups");
+      
+      // OPTIMIZED: O(1) map lookups instead of O(n) find operations
       const enrichedRoster = roster.map(schedule => {
-        const attendanceRecord = attendance.find(att => att.employeeId === schedule.employeeId);
-        const leaveRecord = leaveMonitoring.find(leave => leave.nik === schedule.employeeId);
-        const employee = allEmployees.find(emp => emp.id === schedule.employeeId); // Join employee
+        const attendanceRecord = attendanceMap.get(schedule.employeeId);
+        const leaveRecord = leaveMonitoringMap.get(schedule.employeeId);
+        const employee = employeesMap.get(schedule.employeeId);
         
         return {
           ...schedule,
@@ -563,8 +690,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         };
       });
       
+      console.timeEnd("📊 Roster API Performance");
+      console.log(`✅ Roster enrichment completed: ${enrichedRoster.length} entries`);
+      
       res.json(enrichedRoster);
     } catch (error) {
+      console.error("❌ Roster API Error:", error);
       res.status(500).json({ message: "Failed to fetch roster" });
     }
   });
@@ -581,6 +712,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/roster", async (req, res) => {
     try {
       const validatedData = insertRosterSchema.parse(req.body);
+      
+      // Clear roster cache since we're adding new data
+      rosterCache.clear();
       
       // Check if employee exists
       const employee = await storage.getEmployee(validatedData.employeeId);
