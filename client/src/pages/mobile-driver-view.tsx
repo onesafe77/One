@@ -4,7 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Search, User, Calendar, Clock, MapPin, ChevronDown, ChevronUp, Bell, AlertTriangle, TrendingUp, Activity, CheckCircle, XCircle } from "lucide-react";
+import { Search, User, Calendar, Clock, MapPin, ChevronDown, ChevronUp, Bell, AlertTriangle, TrendingUp, Activity, CheckCircle, XCircle, Shield } from "lucide-react";
 import { format } from "date-fns";
 
 interface Employee {
@@ -55,11 +55,23 @@ interface LeaveRosterMonitoring {
   nextLeaveDate: string;
 }
 
+interface SimperMonitoring {
+  id: string;
+  employeeName: string;
+  nik: string;
+  simperBibExpiredDate: string | null;
+  simperTiaExpiredDate: string | null;
+  bibMonitoringDays?: number | null;
+  tiaMonitoringDays?: number | null;
+  bibStatus?: string;
+  tiaStatus?: string;
+}
+
 export default function MobileDriverView() {
   const [nik, setNik] = useState("");
   const [searchEmployee, setSearchEmployee] = useState<Employee | null>(null);
   const [suggestions, setSuggestions] = useState<Employee[]>([]);
-  const [activeTab, setActiveTab] = useState<'info' | 'roster' | 'leave' | 'monitoring'>('info');
+  const [activeTab, setActiveTab] = useState<'info' | 'roster' | 'leave' | 'monitoring' | 'simper'>('info');
 
   // Query untuk mencari employee berdasarkan NIK - OPTIMIZED
   const { data: employees, isLoading: employeesLoading } = useQuery({
@@ -118,6 +130,48 @@ export default function MobileDriverView() {
   const employeeMonitoring = (leaveRosterMonitoring as LeaveRosterMonitoring[]).find(
     (item: LeaveRosterMonitoring) => item.nik === searchEmployee?.id
   ) || null;
+
+  // Query untuk SIMPER monitoring berdasarkan employee yang dipilih - LAZY LOADING
+  const { data: simperData, isLoading: simperLoading } = useQuery({
+    queryKey: ["/api/simper-monitoring/nik", searchEmployee?.id],
+    queryFn: async () => {
+      if (!searchEmployee?.id) return null;
+      const response = await fetch(`/api/simper-monitoring/nik/${searchEmployee.id}`);
+      if (!response.ok) {
+        if (response.status === 404) return null;
+        throw new Error('Failed to fetch SIMPER data');
+      }
+      const data = await response.json();
+      
+      // Calculate monitoring days and status
+      const today = new Date();
+      const processSIMPER = (expiredDate: string | null) => {
+        if (!expiredDate) return { days: null, status: 'Tidak Ada Data' };
+        
+        const expired = new Date(expiredDate);
+        const diffTime = expired.getTime() - today.getTime();
+        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+        
+        if (diffDays < 0) return { days: diffDays, status: 'Segera Perpanjang' };
+        if (diffDays < 7) return { days: diffDays, status: 'Mendekati Perpanjangan' };
+        if (diffDays < 30) return { days: diffDays, status: 'Menuju Perpanjangan' };
+        return { days: diffDays, status: 'Aktif' };
+      };
+
+      const bibStatus = processSIMPER(data.simperBibExpiredDate);
+      const tiaStatus = processSIMPER(data.simperTiaExpiredDate);
+
+      return {
+        ...data,
+        bibMonitoringDays: bibStatus.days,
+        bibStatus: bibStatus.status,
+        tiaMonitoringDays: tiaStatus.days,
+        tiaStatus: tiaStatus.status
+      };
+    },
+    enabled: !!searchEmployee && activeTab === 'simper', // Only load when SIMPER tab active
+    staleTime: 5 * 60 * 1000, // 5 minutes cache
+  });
 
   const handleSearchWithNik = (nikValue: string) => {
     if (!nikValue.trim()) return;
@@ -185,6 +239,30 @@ export default function MobileDriverView() {
       case "rejected": return "bg-red-500 text-white";
       default: return "bg-gray-500 text-white";
     }
+  };
+
+  const getSimperStatusColor = (status: string) => {
+    switch (status) {
+      case 'Segera Perpanjang':
+        return 'bg-red-100 text-red-800';
+      case 'Mendekati Perpanjangan':
+        return 'bg-yellow-100 text-yellow-800';
+      case 'Menuju Perpanjangan':
+        return 'bg-orange-100 text-orange-800';
+      case 'Aktif':
+        return 'bg-green-100 text-green-800';
+      default:
+        return 'bg-gray-100 text-gray-800';
+    }
+  };
+
+  const formatDateDD_MM_YYYY = (dateString: string | null) => {
+    if (!dateString) return '-';
+    const date = new Date(dateString);
+    const day = date.getDate().toString().padStart(2, '0');
+    const month = (date.getMonth() + 1).toString().padStart(2, '0');
+    const year = date.getFullYear();
+    return `${day}-${month}-${year}`;
   };
 
   return (
@@ -333,7 +411,7 @@ export default function MobileDriverView() {
             </Card>
 
             {/* Modern Tab Navigation */}
-            <div className="grid grid-cols-4 gap-2">
+            <div className="grid grid-cols-5 gap-1">
               <Button
                 variant={activeTab === 'info' ? "default" : "outline"}
                 onClick={() => setActiveTab('info')}
@@ -373,6 +451,16 @@ export default function MobileDriverView() {
               >
                 <Bell className="h-4 w-4 mb-1" />
                 <span className="text-xs">Monitor</span>
+              </Button>
+              <Button
+                variant={activeTab === 'simper' ? "default" : "outline"}
+                onClick={() => setActiveTab('simper')}
+                className={`p-3 rounded-xl font-semibold ${activeTab === 'simper' 
+                  ? 'bg-gradient-to-r from-red-600 to-red-700 text-white shadow-lg' 
+                  : 'bg-white dark:bg-gray-800 border-2'}`}
+              >
+                <Shield className="h-4 w-4 mb-1" />
+                <span className="text-xs">SIMPER</span>
               </Button>
             </div>
 
@@ -664,6 +752,131 @@ export default function MobileDriverView() {
                       </p>
                       <p className="text-gray-500 dark:text-gray-400 text-sm">
                         Employee {searchEmployee.name} belum terdaftar dalam sistem monitoring cuti
+                      </p>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            )}
+
+            {activeTab === 'simper' && (
+              <Card className="shadow-xl border-0 bg-white/90 dark:bg-gray-800/90 backdrop-blur-lg">
+                <CardHeader className="bg-gradient-to-r from-red-50 to-pink-50 dark:from-red-900/20 dark:to-pink-900/20 rounded-t-lg">
+                  <CardTitle className="flex items-center gap-3 text-xl font-bold text-gray-800 dark:text-white">
+                    <div className="p-2 bg-red-500 rounded-full">
+                      <Shield className="h-5 w-5 text-white" />
+                    </div>
+                    Data SIMPER Monitoring
+                  </CardTitle>
+                  <CardDescription className="text-red-600 dark:text-red-300 font-medium">
+                    Status SIMPER BIB dan TIA untuk {searchEmployee.name}
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="p-6">
+                  {simperLoading ? (
+                    <div className="text-center py-12">
+                      <div className="animate-spin rounded-full h-10 w-10 border-b-4 border-red-500 mx-auto"></div>
+                      <p className="text-gray-600 dark:text-gray-300 font-semibold mt-4">Loading SIMPER data...</p>
+                      <p className="text-gray-400 text-sm mt-2">Mengambil data SIMPER terbaru...</p>
+                    </div>
+                  ) : simperData ? (
+                    <div className="space-y-6">
+                      {/* Employee Info */}
+                      <div className="bg-gradient-to-r from-gray-50 to-gray-100 dark:from-gray-800 dark:to-gray-700 p-4 rounded-xl">
+                        <h3 className="font-bold text-gray-700 dark:text-gray-200 mb-3">Informasi Karyawan</h3>
+                        <div className="grid grid-cols-1 gap-3 text-sm">
+                          <div className="flex justify-between">
+                            <span className="text-gray-600 dark:text-gray-400">Nama:</span>
+                            <span className="font-semibold text-gray-800 dark:text-white">{simperData.employeeName}</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="text-gray-600 dark:text-gray-400">NIK:</span>
+                            <span className="font-semibold text-gray-800 dark:text-white">{simperData.nik}</span>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* SIMPER Status Cards */}
+                      <div className="space-y-4">
+                        {/* SIMPER BIB */}
+                        <div className="border-2 border-blue-100 dark:border-blue-800 rounded-xl p-4 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20">
+                          <h4 className="font-bold text-gray-700 dark:text-gray-200 mb-3 flex items-center">
+                            <Shield className="w-5 h-5 mr-2 text-blue-600" />
+                            SIMPER BIB
+                          </h4>
+                          <div className="space-y-3">
+                            <div className="flex justify-between items-center">
+                              <span className="text-gray-600 dark:text-gray-400 text-sm">Tanggal Expired:</span>
+                              <span className="font-semibold text-gray-800 dark:text-white">
+                                {formatDateDD_MM_YYYY(simperData.simperBibExpiredDate)}
+                              </span>
+                            </div>
+                            <div className="flex justify-between items-center">
+                              <span className="text-gray-600 dark:text-gray-400 text-sm">Monitoring Days:</span>
+                              <span className="font-semibold text-gray-800 dark:text-white">
+                                {simperData.bibMonitoringDays !== null ? `${simperData.bibMonitoringDays} hari` : '-'}
+                              </span>
+                            </div>
+                            <div className="flex justify-between items-center">
+                              <span className="text-gray-600 dark:text-gray-400 text-sm">Status:</span>
+                              <Badge className={getSimperStatusColor(simperData.bibStatus || 'Tidak Ada Data') + ' px-3 py-1 rounded-full font-semibold'}>
+                                {simperData.bibStatus || 'Tidak Ada Data'}
+                              </Badge>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* SIMPER TIA */}
+                        <div className="border-2 border-green-100 dark:border-green-800 rounded-xl p-4 bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20">
+                          <h4 className="font-bold text-gray-700 dark:text-gray-200 mb-3 flex items-center">
+                            <Shield className="w-5 h-5 mr-2 text-green-600" />
+                            SIMPER TIA
+                          </h4>
+                          <div className="space-y-3">
+                            <div className="flex justify-between items-center">
+                              <span className="text-gray-600 dark:text-gray-400 text-sm">Tanggal Expired:</span>
+                              <span className="font-semibold text-gray-800 dark:text-white">
+                                {formatDateDD_MM_YYYY(simperData.simperTiaExpiredDate)}
+                              </span>
+                            </div>
+                            <div className="flex justify-between items-center">
+                              <span className="text-gray-600 dark:text-gray-400 text-sm">Monitoring Days:</span>
+                              <span className="font-semibold text-gray-800 dark:text-white">
+                                {simperData.tiaMonitoringDays !== null ? `${simperData.tiaMonitoringDays} hari` : '-'}
+                              </span>
+                            </div>
+                            <div className="flex justify-between items-center">
+                              <span className="text-gray-600 dark:text-gray-400 text-sm">Status:</span>
+                              <Badge className={getSimperStatusColor(simperData.tiaStatus || 'Tidak Ada Data') + ' px-3 py-1 rounded-full font-semibold'}>
+                                {simperData.tiaStatus || 'Tidak Ada Data'}
+                              </Badge>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Alert untuk status kritis */}
+                      {(simperData.bibStatus === 'Segera Perpanjang' || simperData.tiaStatus === 'Segera Perpanjang' ||
+                        simperData.bibStatus === 'Mendekati Perpanjangan' || simperData.tiaStatus === 'Mendekati Perpanjangan') && (
+                        <div className="bg-red-50 dark:bg-red-900/20 border-2 border-red-200 dark:border-red-700 rounded-xl p-4">
+                          <div className="flex items-center mb-2">
+                            <AlertTriangle className="w-5 h-5 text-red-600 mr-2" />
+                            <span className="font-bold text-red-800 dark:text-red-200">Peringatan SIMPER</span>
+                          </div>
+                          <p className="text-red-700 dark:text-red-300 text-sm">
+                            Ada SIMPER yang akan expired dalam waktu dekat. Segera lakukan perpanjangan.
+                          </p>
+                        </div>
+                      )}
+                    </div>
+                  ) : (
+                    <div className="text-center py-12">
+                      <Shield className="h-16 w-16 text-gray-400 mx-auto mb-4" />
+                      <p className="text-gray-600 dark:text-gray-300 font-semibold text-lg mb-2">
+                        Data SIMPER Tidak Ditemukan
+                      </p>
+                      <p className="text-gray-500 dark:text-gray-400 text-sm">
+                        Karyawan {searchEmployee.name} belum terdaftar dalam sistem monitoring SIMPER
                       </p>
                     </div>
                   )}
