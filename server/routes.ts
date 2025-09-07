@@ -2649,6 +2649,89 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // SIMPER Analytics endpoint - MUST come before :id route!
+  app.get("/api/simper-monitoring/analytics", async (req, res) => {
+    try {
+      console.log('Analytics endpoint called');
+      const allSimperData = await storage.getAllSimperMonitoring();
+      console.log('SIMPER data count:', allSimperData.length);
+      
+      if (allSimperData.length === 0) {
+        return res.status(404).json({ message: "Data SIMPER tidak ditemukan" });
+      }
+      
+      const today = new Date();
+      
+      // Calculate monitoring days and status for each SIMPER record
+      const processedData = allSimperData.map(simper => {
+        const processBIB = (expiredDate: string | null) => {
+          if (!expiredDate) return { days: null, status: 'Tidak Ada Data' };
+          
+          const expired = new Date(expiredDate);
+          const diffTime = expired.getTime() - today.getTime();
+          const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+          
+          if (diffDays < 0) return { days: diffDays, status: 'Segera Perpanjang' };
+          if (diffDays < 7) return { days: diffDays, status: 'Mendekati Perpanjangan' };
+          if (diffDays < 30) return { days: diffDays, status: 'Menuju Perpanjangan' };
+          return { days: diffDays, status: 'Aktif' };
+        };
+
+        const bibStatus = processBIB(simper.simperBibExpiredDate);
+        const tiaStatus = processBIB(simper.simperTiaExpiredDate);
+
+        return {
+          ...simper,
+          bibMonitoringDays: bibStatus.days,
+          bibStatus: bibStatus.status,
+          tiaMonitoringDays: tiaStatus.days,
+          tiaStatus: tiaStatus.status
+        };
+      });
+
+      // Calculate statistics
+      const totalKaryawan = processedData.length;
+      
+      const bibStats = {
+        segera: processedData.filter(s => s.bibStatus === 'Segera Perpanjang').length,
+        mendekati: processedData.filter(s => s.bibStatus === 'Mendekati Perpanjangan').length,
+        menuju: processedData.filter(s => s.bibStatus === 'Menuju Perpanjangan').length,
+        aktif: processedData.filter(s => s.bibStatus === 'Aktif').length
+      };
+
+      const tiaStats = {
+        segera: processedData.filter(s => s.tiaStatus === 'Segera Perpanjang').length,
+        mendekati: processedData.filter(s => s.tiaStatus === 'Mendekati Perpanjangan').length,
+        menuju: processedData.filter(s => s.tiaStatus === 'Menuju Perpanjangan').length,
+        aktif: processedData.filter(s => s.tiaStatus === 'Aktif').length
+      };
+
+      // Get critical list (expired or expiring soon)
+      const criticalList = processedData
+        .filter(s => 
+          (s.bibMonitoringDays !== null && s.bibMonitoringDays < 30) ||
+          (s.tiaMonitoringDays !== null && s.tiaMonitoringDays < 30)
+        )
+        .sort((a, b) => {
+          const aMinDays = Math.min(a.bibMonitoringDays || 999, a.tiaMonitoringDays || 999);
+          const bMinDays = Math.min(b.bibMonitoringDays || 999, b.tiaMonitoringDays || 999);
+          return aMinDays - bMinDays;
+        })
+        .slice(0, 10);
+
+      res.json({
+        totalKaryawan,
+        bibStats,
+        tiaStats,
+        criticalList,
+        processedData
+      });
+    } catch (error) {
+      console.error('Error fetching SIMPER analytics:', error);
+      res.status(500).json({ message: "Failed to fetch SIMPER analytics" });
+    }
+  });
+
   app.get("/api/simper-monitoring/:id", async (req, res) => {
     try {
       const simper = await storage.getSimperMonitoring(req.params.id);
@@ -2787,81 +2870,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // SIMPER Analytics endpoint
-  app.get("/api/simper-monitoring/analytics", async (req, res) => {
-    try {
-      const allSimperData = await storage.getAllSimperMonitoring();
-      const today = new Date();
-      
-      // Calculate monitoring days and status for each SIMPER record
-      const processedData = allSimperData.map(simper => {
-        const processBIB = (expiredDate: string | null) => {
-          if (!expiredDate) return { days: null, status: 'Tidak Ada Data' };
-          
-          const expired = new Date(expiredDate);
-          const diffTime = expired.getTime() - today.getTime();
-          const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-          
-          if (diffDays < 0) return { days: diffDays, status: 'Segera Perpanjang' };
-          if (diffDays < 7) return { days: diffDays, status: 'Mendekati Perpanjangan' };
-          if (diffDays < 30) return { days: diffDays, status: 'Menuju Perpanjangan' };
-          return { days: diffDays, status: 'Aktif' };
-        };
-
-        const bibStatus = processBIB(simper.simperBibExpiredDate);
-        const tiaStatus = processBIB(simper.simperTiaExpiredDate);
-
-        return {
-          ...simper,
-          bibMonitoringDays: bibStatus.days,
-          bibStatus: bibStatus.status,
-          tiaMonitoringDays: tiaStatus.days,
-          tiaStatus: tiaStatus.status
-        };
-      });
-
-      // Calculate statistics
-      const totalKaryawan = processedData.length;
-      
-      const bibStats = {
-        segera: processedData.filter(s => s.bibStatus === 'Segera Perpanjang').length,
-        mendekati: processedData.filter(s => s.bibStatus === 'Mendekati Perpanjangan').length,
-        menuju: processedData.filter(s => s.bibStatus === 'Menuju Perpanjangan').length,
-        aktif: processedData.filter(s => s.bibStatus === 'Aktif').length
-      };
-
-      const tiaStats = {
-        segera: processedData.filter(s => s.tiaStatus === 'Segera Perpanjang').length,
-        mendekati: processedData.filter(s => s.tiaStatus === 'Mendekati Perpanjangan').length,
-        menuju: processedData.filter(s => s.tiaStatus === 'Menuju Perpanjangan').length,
-        aktif: processedData.filter(s => s.tiaStatus === 'Aktif').length
-      };
-
-      // Get critical list (expired or expiring soon)
-      const criticalList = processedData
-        .filter(s => 
-          (s.bibMonitoringDays !== null && s.bibMonitoringDays < 30) ||
-          (s.tiaMonitoringDays !== null && s.tiaMonitoringDays < 30)
-        )
-        .sort((a, b) => {
-          const aMinDays = Math.min(a.bibMonitoringDays || 999, a.tiaMonitoringDays || 999);
-          const bMinDays = Math.min(b.bibMonitoringDays || 999, b.tiaMonitoringDays || 999);
-          return aMinDays - bMinDays;
-        })
-        .slice(0, 10);
-
-      res.json({
-        totalKaryawan,
-        bibStats,
-        tiaStats,
-        criticalList,
-        processedData
-      });
-    } catch (error) {
-      console.error('Error fetching SIMPER analytics:', error);
-      res.status(500).json({ message: "Failed to fetch SIMPER analytics" });
-    }
-  });
 
   const httpServer = createServer(app);
   return httpServer;
