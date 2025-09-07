@@ -56,7 +56,7 @@ export default function DriverView() {
   const [nik, setNik] = useState("");
   const [searchEmployee, setSearchEmployee] = useState<Employee | null>(null);
   const [suggestions, setSuggestions] = useState<Employee[]>([]);
-  const [activeTab, setActiveTab] = useState<'info' | 'roster' | 'leave' | 'simper'>('info');
+  const [activeTab, setActiveTab] = useState<'roster' | 'leave' | 'simper'>('roster');
 
   // Query untuk mencari employee berdasarkan NIK - OPTIMIZED
   const { data: employees, isLoading: employeesLoading } = useQuery({
@@ -325,18 +325,6 @@ export default function DriverView() {
           <div className="border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
             <div className="flex space-x-0">
               <Button
-                variant={activeTab === 'info' ? "default" : "ghost"}
-                onClick={() => setActiveTab('info')}
-                className={`flex-1 rounded-none border-0 h-14 text-base font-semibold transition-all duration-200 ${
-                  activeTab === 'info'
-                    ? 'bg-[#E53935] text-white shadow-lg'
-                    : 'bg-transparent text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700'
-                }`}
-              >
-                <User className="h-5 w-5 mr-2" />
-                Info Karyawan
-              </Button>
-              <Button
                 variant={activeTab === 'roster' ? "default" : "ghost"}
                 onClick={() => setActiveTab('roster')}
                 className={`flex-1 rounded-none border-0 h-14 text-base font-semibold transition-all duration-200 ${
@@ -377,64 +365,6 @@ export default function DriverView() {
 
           {/* Tab Content */}
           <CardContent className="p-8 bg-gradient-to-br from-gray-50 to-white dark:from-gray-800 dark:to-gray-900 min-h-[500px]">
-            {/* Employee Info Tab */}
-            {activeTab === 'info' && (
-              <div className="space-y-8">
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-lg border border-gray-100 dark:border-gray-700">
-                    <div className="flex items-center mb-3">
-                      <div className="w-2 h-8 bg-[#E53935] rounded-full mr-3"></div>
-                      <h3 className="text-lg font-bold text-gray-800 dark:text-white">Identitas</h3>
-                    </div>
-                    <div className="space-y-3">
-                      <div>
-                        <p className="text-sm text-gray-500 dark:text-gray-400">NIK</p>
-                        <p className="font-bold text-xl text-gray-800 dark:text-white" data-testid="text-employee-nik">{searchEmployee.id}</p>
-                      </div>
-                      <div>
-                        <p className="text-sm text-gray-500 dark:text-gray-400">Nama Lengkap</p>
-                        <p className="font-bold text-xl text-gray-800 dark:text-white" data-testid="text-employee-name">{searchEmployee.name}</p>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-lg border border-gray-100 dark:border-gray-700">
-                    <div className="flex items-center mb-3">
-                      <div className="w-2 h-8 bg-blue-500 rounded-full mr-3"></div>
-                      <h3 className="text-lg font-bold text-gray-800 dark:text-white">Jabatan</h3>
-                    </div>
-                    <div className="space-y-3">
-                      <div>
-                        <p className="text-sm text-gray-500 dark:text-gray-400">Posisi</p>
-                        <p className="font-bold text-xl text-gray-800 dark:text-white">{searchEmployee.position}</p>
-                      </div>
-                      <div>
-                        <p className="text-sm text-gray-500 dark:text-gray-400">Department</p>
-                        <p className="font-bold text-xl text-gray-800 dark:text-white">{searchEmployee.department}</p>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-lg border border-gray-100 dark:border-gray-700">
-                    <div className="flex items-center mb-3">
-                      <div className="w-2 h-8 bg-green-500 rounded-full mr-3"></div>
-                      <h3 className="text-lg font-bold text-gray-800 dark:text-white">Grup</h3>
-                    </div>
-                    <div className="space-y-3">
-                      <div>
-                        <p className="text-sm text-gray-500 dark:text-gray-400">Investor Group</p>
-                        <p className="font-bold text-xl text-gray-800 dark:text-white">{searchEmployee.investorGroup}</p>
-                      </div>
-                      <div>
-                        <p className="text-sm text-gray-500 dark:text-gray-400">Telepon</p>
-                        <p className="font-bold text-xl text-gray-800 dark:text-white">{searchEmployee.phone || '-'}</p>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            )}
-
             {/* Roster Tab */}
             {activeTab === 'roster' && (
               <div className="space-y-6">
