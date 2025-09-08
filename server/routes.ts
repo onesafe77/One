@@ -565,12 +565,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
           }
           
           await storage.updateEmployee(validatedData.employeeId, updateData);
-          // Clear cache untuk employee yang diupdate
-          clearCachedEmployee(validatedData.employeeId);
-          console.log(`Updated nomor lambung for employee ${validatedData.employeeId} to: ${req.body.nomorLambungBaru}`);
           
-          // Force refresh roster cache so it shows updated nomor lambung immediately
-          console.log(`Forcing roster cache refresh after nomor lambung update for ${validatedData.employeeId}`);
+          // CRITICAL: Clear ALL employee caches since roster uses getAllEmployees
+          clearCachedEmployee(validatedData.employeeId);
+          allEmployeesCache.clear(); // Clear the all employees cache
+          rosterCache.clear(); // Clear roster cache to force refresh
+          
+          console.log(`Updated nomor lambung for employee ${validatedData.employeeId} to: ${req.body.nomorLambungBaru}`);
+          console.log(`🧹 Cleared all employee and roster caches to show updated nomor lambung`);
         } catch (updateError) {
           console.error('Error updating employee nomor lambung:', updateError);
           // Continue with attendance creation even if update fails
