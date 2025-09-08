@@ -396,10 +396,24 @@ function generateShiftSection(
   doc.setFontSize(8); // Readable font size for data
   
   // Process ALL scheduled employees (both attended and not attended)
+  console.log(`🔧 Starting to render ${scheduledEmployees.length} scheduled employees for ${shiftName}`);
+  
   scheduledEmployees.forEach((rosterRecord, rowIndex) => {
+    console.log(`🔧 Row ${rowIndex}: Processing employee ${rosterRecord.employeeId}`);
+    
     // Find attendance record for this employee (if exists)
     const attendanceRecord = data.attendance.find(att => att.employeeId === rosterRecord.employeeId);
     const employee = data.employees.find(emp => emp.id === rosterRecord.employeeId);
+    
+    console.log(`🔧 Row ${rowIndex}: attendance found: ${!!attendanceRecord}, employee found: ${!!employee}`);
+    if (employee) {
+      console.log(`🔧 Row ${rowIndex}: Employee name: ${employee.name}`);
+    } else {
+      console.log(`🔧 Row ${rowIndex}: ❌ EMPLOYEE NOT FOUND for ${rosterRecord.employeeId} - SKIPPING ROW`);
+      console.log(`🔧 Available employees sample:`, data.employees.slice(0, 3).map(e => ({id: e.id, name: e.name})));
+      return;
+    }
+    
     if (!employee) return;
     
     // Get work days from roster data
