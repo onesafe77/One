@@ -263,17 +263,37 @@ function generateShiftSection(
     const [hours, minutes] = att.time.split(':').map(Number);
     const totalMinutes = hours * 60 + minutes;
     
-    // SHIFT 1: 05:00-15:30 (300-930 minutes)  
-    // SHIFT 2: 16:00-20:00 (960-1200 minutes)
-    const attendanceShift = (totalMinutes >= 960 && totalMinutes <= 1200) ? 'SHIFT 2' : 'SHIFT 1';
+    // FIXED: Updated time ranges to match real shift windows
+    // SHIFT 1: 06:00-16:00 (360-960 minutes) - sesuai dengan backend validation  
+    // SHIFT 2: 18:00-06:00 (1080+ atau <=360 minutes) - sesuai dengan backend validation
+    let attendanceShift;
+    if (totalMinutes >= 1080 || totalMinutes <= 360) {
+      attendanceShift = 'SHIFT 2';
+    } else if (totalMinutes >= 360 && totalMinutes <= 960) {
+      attendanceShift = 'SHIFT 1';
+    } else {
+      attendanceShift = 'SHIFT 1'; // Default untuk edge cases
+    }
+    
+    console.log(`🔍 Attendance ${att.employeeId} at ${att.time} (${totalMinutes}min) → ${attendanceShift}, checking for ${shiftName}`);
     
     // Only include if this attendance belongs to the current shift being processed (case insensitive)
     return attendanceShift.toUpperCase() === shiftName.toUpperCase();
   });
   
   // Add all attendance records as roster entries for this shift
+  console.log(`📋 Processing ${attendanceForThisShift.length} attendance records for ${shiftName}`);
+  
   attendanceForThisShift.forEach(att => {
     const employee = data.employees.find(emp => emp.id === att.employeeId);
+    
+    console.log(`👤 Processing attendance for ${att.employeeId}, employee found: ${!!employee}`);
+    if (employee) {
+      console.log(`✅ Employee found: ${employee.name} (${employee.id})`);
+    } else {
+      console.log(`❌ Employee NOT found in data.employees for ${att.employeeId}`);
+      console.log(`Available employees sample:`, data.employees.slice(0, 3).map(e => ({id: e.id, name: e.name})));
+    }
     
     if (employee) {
       // Check if employee already exists in scheduledEmployees
@@ -281,6 +301,7 @@ function generateShiftSection(
       
       if (existingIndex >= 0) {
         // Update existing roster entry with attendance data
+        console.log(`🔄 Updating existing roster entry for ${employee.name}`);
         scheduledEmployees[existingIndex] = {
           ...scheduledEmployees[existingIndex],
           jamTidur: att.jamTidur || '',
@@ -289,6 +310,7 @@ function generateShiftSection(
       } else {
         // Add new roster entry for attendance - get hariKerja from any roster for this employee
         const anyRosterRecord = data.roster?.find(r => r.employeeId === att.employeeId);
+        console.log(`➕ Adding new roster entry for ${employee.name}`);
         
         scheduledEmployees.push({
           id: `temp-${att.employeeId}`,
@@ -304,6 +326,8 @@ function generateShiftSection(
           employee: employee
         } as any);
       }
+    } else {
+      console.log(`⚠️ SKIPPING attendance for ${att.employeeId} - employee not found in employees list`);
     }
   });
   
