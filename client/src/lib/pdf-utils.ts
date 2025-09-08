@@ -445,6 +445,8 @@ function generateShiftSection(
       doc.rect(margin, yPosition, finalTableWidth, rowHeight, 'F');
     }
     
+    console.log(`🔧 Row ${rowIndex}: Rendering data:`, rowData);
+    
     // Draw row data with proper alignment
     let currentX = margin;
     rowData.forEach((cellData, columnIndex) => {
@@ -466,6 +468,7 @@ function generateShiftSection(
     doc.setLineWidth(0.3);
     doc.line(margin, yPosition + rowHeight, margin + finalTableWidth, yPosition + rowHeight);
     
+    console.log(`🔧 Row ${rowIndex}: Successfully rendered at yPosition ${yPosition}`);
     yPosition += rowHeight;
     
     // Check if we need a new page with proper margins
@@ -538,6 +541,8 @@ function generateShiftSection(
   }).length;
   const scheduledCount = scheduledEmployees.length;
   const absentCount = scheduledCount - attendedCount;
+  
+  console.log(`📊 Summary for ${shiftName}: ${scheduledCount} scheduled, ${attendedCount} attended, ${absentCount} absent`);
   
   const summaryText = `Ringkasan ${shiftName}: Dijadwalkan: ${scheduledCount} | Hadir: ${attendedCount} | Tidak Hadir: ${absentCount}`;
   doc.text(summaryText, margin, yPosition);
