@@ -43,8 +43,8 @@ export async function generateAttendancePDF(data: ReportData): Promise<void> {
     const doc = new jsPDF('landscape'); // Use landscape orientation for more columns
     const pageWidth = doc.internal.pageSize.width;
     const pageHeight = doc.internal.pageSize.height;
-    const margin = 12; // Margin tipis 1.2cm
-    const bottomMargin = 12; // Bottom margin 1.2cm
+    const margin = 20; // Professional margin 2cm
+    const bottomMargin = 30; // Space for footer with page numbers
     
     let yPosition = 20;
     
@@ -202,20 +202,8 @@ export async function generateAttendancePDF(data: ReportData): Promise<void> {
     const footerHeight = 60; // Space needed for summary + footer
     const availableSpace = pageHeight - yPosition - footerHeight;
     
-    // Skip overall summary - individual shift summaries are already shown after each table
-    
-    // Footer - tanggal & jam pembuatan laporan di kanan bawah halaman
-    const now = new Date();
-    const day = now.getDate().toString().padStart(2, '0');
-    const month = (now.getMonth() + 1).toString().padStart(2, '0');
-    const year = now.getFullYear();
-    const hours = now.getHours().toString().padStart(2, '0');
-    const minutes = now.getMinutes().toString().padStart(2, '0');
-    const footerText = `Laporan dibuat pada: ${day}-${month}-${year} ${hours}:${minutes}`;
-    const footerY = pageHeight - 15; // Margin 1.2cm from bottom
-    doc.setFontSize(8);
-    doc.setFont('helvetica', 'normal');
-    doc.text(footerText, pageWidth - margin - 10, footerY, { align: 'right' }); // Right aligned at bottom right
+    // Professional footer dengan page numbers dan timestamp
+    addProfessionalFooter(doc, pageWidth, pageHeight, margin, doc.internal.getNumberOfPages());
     
     // Download
     const filename = `Laporan_Absensi_${data.startDate.replace(/-/g, '')}.pdf`;
@@ -234,7 +222,7 @@ function generateShiftSection(
   margin: number, 
   pageWidth: number
 ): number {
-  const bottomMargin = 12; // Define bottomMargin within function scope
+  const bottomMargin = 30; // Space for professional footer
   let yPosition = startY;
   
   // Shift title - subjudul tebal
@@ -362,8 +350,9 @@ function generateShiftSection(
   doc.setFontSize(10); // Professional 10pt font size for content
   
   // CRITICAL: Check if we need a new page BEFORE starting to render any rows
-  const estimatedTableHeight = (scheduledEmployees.length + 1) * rowHeight + 20; // +1 for header, +20 for padding
+  const estimatedTableHeight = (scheduledEmployees.length + 1) * rowHeight + 20;
   if (yPosition + estimatedTableHeight > doc.internal.pageSize.height - bottomMargin) {
+    addProfessionalFooter(doc, doc.internal.pageSize.width, doc.internal.pageSize.height, margin, doc.internal.getNumberOfPages());
     doc.addPage();
     
     // Add company logo to new page
@@ -521,4 +510,80 @@ function formatDateForPDF(dateString: string): string {
   const month = (date.getMonth() + 1).toString().padStart(2, '0');
   const year = date.getFullYear();
   return `${day}-${month}-${year}`; // dd-mm-yyyy format as requested
+}
+
+// Professional footer dengan page numbers seperti ReportLab example
+function addProfessionalFooter(doc: jsPDF, pageWidth: number, pageHeight: number, margin: number, pageNumber: number): void {
+  const now = new Date();
+  const day = now.getDate().toString().padStart(2, '0');
+  const month = (now.getMonth() + 1).toString().padStart(2, '0');
+  const year = now.getFullYear();
+  const hours = now.getHours().toString().padStart(2, '0');
+  const minutes = now.getMinutes().toString().padStart(2, '0');
+  
+  const footerY = pageHeight - 15;
+  doc.setFontSize(8);
+  doc.setFont('helvetica', 'normal');
+  
+  // Page number di tengah (seperti ReportLab example)
+  doc.text(`Halaman ${pageNumber}`, pageWidth / 2, footerY, { align: 'center' });
+  
+  // Timestamp di kanan bawah
+  const timestampText = `Laporan dicetak: ${day}-${month}-${year} ${hours}:${minutes}`;
+  doc.text(timestampText, pageWidth - margin, footerY, { align: 'right' });
+}
+
+// Professional header untuk halaman baru
+function addProfessionalHeader(doc: jsPDF, margin: number, shiftName: string): number {
+  let yPosition = margin;
+  
+  // Add company logo
+  try {
+    doc.addImage(companyLogo, 'PNG', margin, yPosition, 30, 15);
+  } catch (error) {
+    console.warn('Could not add logo to new page:', error);
+  }
+  
+  yPosition += 25;
+  
+  // Shift title
+  doc.setFontSize(11);
+  doc.setFont('helvetica', 'bold');
+  doc.text(shiftName.toUpperCase(), margin, yPosition);
+  yPosition += 10;
+  
+  return yPosition;
+}
+
+// Redraw table header untuk halaman baru
+function redrawTableHeader(doc: jsPDF, headers: string[], columnWidths: number[], finalTableWidth: number, margin: number, yPosition: number, headerHeight: number): number {
+  // Header background abu-abu muda
+  doc.setFillColor(240, 240, 240);
+  doc.rect(margin, yPosition, finalTableWidth, headerHeight, 'F');
+  
+  // Table border
+  doc.setLineWidth(0.2);
+  doc.rect(margin, yPosition, finalTableWidth, headerHeight);
+  
+  // Vertical lines
+  let currentX = margin;
+  headers.forEach((header, index) => {
+    if (index > 0) {
+      doc.line(currentX, yPosition, currentX, yPosition + headerHeight);
+    }
+    
+    // Header text
+    const textWidth = doc.getTextWidth(header);
+    const centerX = currentX + (columnWidths[index] - textWidth) / 2;
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(10);
+    doc.text(header, centerX, yPosition + 9);
+    
+    currentX += columnWidths[index];
+  });
+  
+  // Right border
+  doc.line(currentX, yPosition, currentX, yPosition + headerHeight);
+  
+  return yPosition + headerHeight;
 }
