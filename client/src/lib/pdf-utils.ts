@@ -485,11 +485,8 @@ function generateShiftSection(
       attendanceStatus
     ];
     
-    // Subtle alternating row background for better readability
-    if (rowIndex % 2 === 1) {
-      doc.setFillColor(248, 248, 248);
-      doc.rect(margin, yPosition, finalTableWidth, rowHeight, 'F');
-    }
+    // No alternating background for consistent row appearance
+    // All rows will have the same visual height
     
     // Draw row data with proper alignment
     let currentX = margin;
@@ -514,9 +511,9 @@ function generateShiftSection(
       currentX += columnWidths[columnIndex];
     });
     
-    // Subtle horizontal line after each row for better separation
-    doc.setLineWidth(0.3);
-    doc.setDrawColor(180, 180, 180); // Slightly darker gray for better visibility
+    // Clean horizontal line after each row
+    doc.setLineWidth(0.2);
+    doc.setDrawColor(200, 200, 200); // Very subtle gray line
     doc.line(margin, yPosition + rowHeight, margin + finalTableWidth, yPosition + rowHeight);
     doc.setDrawColor(0, 0, 0); // Reset to black
     
