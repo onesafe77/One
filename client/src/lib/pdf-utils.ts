@@ -558,8 +558,8 @@ async function generateA4PortraitPDF(data: ReportData): Promise<void> {
   const doc = new jsPDF('portrait', 'pt', 'a4'); // Use points for precise measurements
   const pageWidth = doc.internal.pageSize.width; // 595.28 pt
   const pageHeight = doc.internal.pageSize.height; // 841.89 pt
-  const margin = 56.7; // 2cm margins sesuai spesifikasi user (2cm = 56.7pt)
-  const bottomMargin = 70; // Space untuk footer yang lebih besar
+  const margin = 35; // 1.2cm margins untuk konten lebih lebar (35pt ≈ 1.2cm)
+  const bottomMargin = 60; // Space untuk footer
   
   let yPosition = margin;
   let pageNumber = 1;
@@ -578,10 +578,10 @@ async function generateA4PortraitPDF(data: ReportData): Promise<void> {
   doc.line(margin, yPosition, pageWidth - margin, yPosition);
   yPosition += 25;
   
-  // Bagian Informasi & Tanda Tangan (dua kolom: 60% dan 40%)
-  const leftColumnWidth = (pageWidth - 2 * margin) * 0.6; // 60% lebar
-  const rightColumnWidth = (pageWidth - 2 * margin) * 0.4; // 40% lebar
-  const rightColumnX = margin + leftColumnWidth + 20; // 20pt spacing between columns
+  // Bagian Informasi & Tanda Tangan (dua kolom: 65% dan 35% untuk pemanfaatan ruang lebih baik)
+  const leftColumnWidth = (pageWidth - 2 * margin) * 0.65; // 65% lebar untuk info
+  const rightColumnWidth = (pageWidth - 2 * margin) * 0.35; // 35% lebar untuk signature
+  const rightColumnX = margin + leftColumnWidth + 15; // 15pt spacing between columns
   
   // Kolom kiri - Informasi
   const leftX = margin + 10;
@@ -667,14 +667,14 @@ async function generateA4PortraitTable(
   let yPosition = startY;
   let pageNumber = initialPageNumber;
   
-  // Proporsi kolom sesuai spesifikasi user: total 100%
+  // Proporsi kolom dioptimalkan untuk lebar yang lebih besar: total 100%
   const tableWidth = pageWidth - 2 * margin;
-  const columnProportions = [0.25, 0.12, 0.06, 0.08, 0.10, 0.12, 0.06, 0.10, 0.11]; // Total = 1.00
+  const columnProportions = [0.22, 0.13, 0.06, 0.09, 0.12, 0.14, 0.07, 0.09, 0.08]; // Total = 1.00
   const columnWidths = columnProportions.map(prop => tableWidth * prop);
   
   const headers = ['Nama', 'NIK', 'Shift', 'Hari Kerja', 'Jam Masuk', 'Nomor Lambung', 'Jam Tidur', 'Fit To Work', 'Status'];
-  const rowHeight = 25;
-  const headerHeight = 30;
+  const rowHeight = 28; // Sedikit lebih tinggi untuk readability
+  const headerHeight = 32; // Proporsi header yang lebih baik
   
   // Function untuk draw header tabel (hanya sekali per halaman)
   const drawTableHeader = (yPos: number) => {
@@ -686,9 +686,9 @@ async function generateA4PortraitTable(
     doc.setLineWidth(0.5);
     doc.rect(margin, yPos, tableWidth, headerHeight);
     
-    // Header text bold
+    // Header text bold dengan ukuran font sedikit lebih besar
     doc.setFont('helvetica', 'bold');
-    doc.setFontSize(9);
+    doc.setFontSize(10);
     doc.setTextColor(0, 0, 0);
     
     let currentX = margin;
@@ -755,9 +755,9 @@ async function generateA4PortraitTable(
     // Draw table header
     yPosition = drawTableHeader(yPosition);
     
-    // Table content
+    // Table content dengan font sedikit lebih besar untuk readability
     doc.setFont('helvetica', 'normal');
-    doc.setFontSize(8);
+    doc.setFontSize(9);
     
     shiftEmployees.forEach((employee, rowIndex) => {
       // Check jika perlu halaman baru
@@ -811,13 +811,13 @@ async function generateA4PortraitTable(
           doc.line(currentX, yPosition, currentX, yPosition + rowHeight);
         }
         
-        // Text alignment: Nama rata kiri, sisanya rata tengah
+        // Text alignment: Nama rata kiri dengan padding lebih besar, sisanya rata tengah
         if (columnIndex === 0) { // Nama kolom
-          doc.text(cellData, currentX + 5, yPosition + rowHeight / 2 + 3);
-        } else { // Sisanya rata tengah
+          doc.text(cellData, currentX + 8, yPosition + rowHeight / 2 + 4);
+        } else { // Sisanya rata tengah dengan padding vertikal yang lebih baik
           const textWidth = doc.getTextWidth(cellData);
           const centerX = currentX + (columnWidths[columnIndex] - textWidth) / 2;
-          doc.text(cellData, centerX, yPosition + rowHeight / 2 + 3);
+          doc.text(cellData, centerX, yPosition + rowHeight / 2 + 4);
         }
         
         currentX += columnWidths[columnIndex];
