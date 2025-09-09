@@ -255,27 +255,17 @@ function generateShiftSection(
   // Get scheduled employees for this shift first (from roster)
   const scheduledEmployees = data.roster?.filter(r => r.shift === shiftName && r.date === data.startDate) || [];
   
-  console.log(`📅 Looking for roster with shift: ${shiftName}, date: ${data.startDate}`);
-  console.log(`📋 Found ${scheduledEmployees.length} scheduled employees from roster`);
-  console.log(`📋 Sample scheduled employees:`, scheduledEmployees.slice(0, 3).map(s => ({
-    id: s.employeeId, 
-    shift: s.shift, 
-    date: s.date,
-    name: s.employee?.name || 'NO NAME'
-  })));
+  // Remove debug logging for cleaner output
   
-  // CRITICAL FIX: Include ALL attendance records for ANY shift when generating this section
-  // This ensures ALL employees who checked in appear in the report
+  // Include ALL attendance records for this shift section
   let attendanceForThisShift;
   
   if (shiftName.toUpperCase() === 'SHIFT 1') {
     // For Shift 1 section: Include ALL attendance records
     attendanceForThisShift = data.attendance.filter(att => att.date === data.startDate);
-    console.log(`🔍 SHIFT 1 Section: Including ALL ${attendanceForThisShift.length} attendance records`);
   } else {
-    // For Shift 2 section: Don't duplicate, only include if no Shift 1 was generated
+    // For Shift 2 section: Don't duplicate
     attendanceForThisShift = [];
-    console.log(`🔍 SHIFT 2 Section: Skipping to avoid duplication`);
   }
   
   // Add all attendance records as roster entries for this shift
@@ -324,15 +314,15 @@ function generateShiftSection(
         } as any);
       }
     } else {
-      console.log(`⚠️ SKIPPING attendance for ${att.employeeId} - employee not found in employees list`);
+      // Skip if employee not found
     }
   });
   
-  // Table headers with proportional widths
-  doc.setFontSize(9); // Header font size
+  // Table headers with optimized proportional widths for better alignment
+  doc.setFontSize(9);
   doc.setFont('helvetica', 'bold');
   const headers = ['Nama', 'NIK', 'Shift', 'Hari Kerja', 'Jam Masuk', 'Nomor Lambung', 'Jam Tidur', 'Fit To Work', 'Status'];
-  const columnWidths = [100, 60, 45, 45, 70, 70, 50, 55, 55]; // Proportional widths
+  const columnWidths = [95, 58, 42, 48, 65, 85, 48, 68, 50]; // Optimized widths for better spacing
   
   // Calculate table dimensions and check if it fits
   const tableWidth = columnWidths.reduce((sum, width) => sum + width, 0);
@@ -362,16 +352,14 @@ function generateShiftSection(
   // We will show ALL scheduled employees for this shift (both attended and not attended)
   const totalScheduledEmployees = scheduledEmployees.length;
   
-  console.log(`📏 Table dimensions: ${totalScheduledEmployees} rows, table height: ${(totalScheduledEmployees + 1) * rowHeight + 2}`);
-  console.log(`📏 Available space: yPosition=${yPosition}, pageHeight=${doc.internal.pageSize.height}, bottomMargin=${bottomMargin}`);
-
   // Main table border - based on ALL scheduled employees, not just attended ones
   doc.setLineWidth(0.5);
   doc.rect(margin, yPosition - 2, finalTableWidth, (totalScheduledEmployees + 1) * rowHeight + 2);
   
-  // Vertical grid lines for entire table
+  // Vertical grid lines for entire table - cleaner appearance
   let currentX = margin;
   for (let i = 0; i <= headers.length; i++) {
+    doc.setLineWidth(0.5);
     doc.line(currentX, yPosition - 2, currentX, yPosition - 2 + (totalScheduledEmployees + 1) * rowHeight + 2);
     if (i < headers.length) {
       currentX += columnWidths[i];
@@ -398,7 +386,6 @@ function generateShiftSection(
   // CRITICAL: Check if we need a new page BEFORE starting to render any rows
   const estimatedTableHeight = (scheduledEmployees.length + 1) * rowHeight + 20; // +1 for header, +20 for padding
   if (yPosition + estimatedTableHeight > doc.internal.pageSize.height - bottomMargin) {
-    console.log(`📄 Table too big for current page, moving to new page. Current yPosition: ${yPosition}, estimated height: ${estimatedTableHeight}`);
     doc.addPage();
     
     // Add company logo to new page
@@ -453,27 +440,13 @@ function generateShiftSection(
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(8);
     
-    console.log(`📄 New page prepared, starting fresh at yPosition ${yPosition}`);
   }
 
   // Process ALL scheduled employees (both attended and not attended)
-  console.log(`🔧 Starting to render ${scheduledEmployees.length} scheduled employees for ${shiftName}`);
-  
   scheduledEmployees.forEach((rosterRecord, rowIndex) => {
-    console.log(`🔧 Row ${rowIndex}: Processing employee ${rosterRecord.employeeId}`);
-    
     // Find attendance record for this employee (if exists)
     const attendanceRecord = data.attendance.find(att => att.employeeId === rosterRecord.employeeId);
     const employee = data.employees.find(emp => emp.id === rosterRecord.employeeId);
-    
-    console.log(`🔧 Row ${rowIndex}: attendance found: ${!!attendanceRecord}, employee found: ${!!employee}`);
-    if (employee) {
-      console.log(`🔧 Row ${rowIndex}: Employee name: ${employee.name}`);
-    } else {
-      console.log(`🔧 Row ${rowIndex}: ❌ EMPLOYEE NOT FOUND for ${rosterRecord.employeeId} - SKIPPING ROW`);
-      console.log(`🔧 Available employees sample:`, data.employees.slice(0, 3).map(e => ({id: e.id, name: e.name})));
-      return;
-    }
     
     if (!employee) return;
     
@@ -500,13 +473,11 @@ function generateShiftSection(
       attendanceStatus
     ];
     
-    // Alternating row background
+    // Alternating row background for better readability
     if (rowIndex % 2 === 1) {
-      doc.setFillColor(248, 248, 248);
+      doc.setFillColor(250, 250, 250);
       doc.rect(margin, yPosition, finalTableWidth, rowHeight, 'F');
     }
-    
-    console.log(`🔧 Row ${rowIndex}: Rendering data:`, rowData);
     
     // Draw row data with proper alignment
     let currentX = margin;
@@ -525,24 +496,23 @@ function generateShiftSection(
       currentX += columnWidths[columnIndex];
     });
     
-    // Thin horizontal line after each row
-    doc.setLineWidth(0.3);
+    // Clean horizontal line after each row
+    doc.setLineWidth(0.2);
+    doc.setDrawColor(200, 200, 200); // Light gray lines
     doc.line(margin, yPosition + rowHeight, margin + finalTableWidth, yPosition + rowHeight);
+    doc.setDrawColor(0, 0, 0); // Reset to black
     
-    console.log(`🔧 Row ${rowIndex}: Successfully rendered at yPosition ${yPosition}`);
     yPosition += rowHeight;
-    console.log(`🔧 Row ${rowIndex}: yPosition after increment: ${yPosition}`);
-    
-    // No need for page break check here - we handled it before the loop
   });
   
-  // Horizontal line below table
-  doc.setLineWidth(0.3);
-  doc.line(margin, yPosition + 3, pageWidth - margin, yPosition + 3);
-  yPosition += 10;
+  // Clean bottom border for table
+  doc.setLineWidth(1.0);
+  doc.setDrawColor(0, 0, 0);
+  doc.line(margin, yPosition + 3, margin + finalTableWidth, yPosition + 3);
+  yPosition += 15;
   
-  // Add shift summary
-  doc.setFontSize(9);
+  // Professional shift summary
+  doc.setFontSize(10);
   doc.setFont('helvetica', 'bold');
   
   const attendedCount = scheduledEmployees.filter(scheduleRecord => {
@@ -550,8 +520,6 @@ function generateShiftSection(
   }).length;
   const scheduledCount = scheduledEmployees.length;
   const absentCount = scheduledCount - attendedCount;
-  
-  console.log(`📊 Summary for ${shiftName}: ${scheduledCount} scheduled, ${attendedCount} attended, ${absentCount} absent`);
   
   const summaryText = `Ringkasan ${shiftName}: Dijadwalkan: ${scheduledCount} | Hadir: ${attendedCount} | Tidak Hadir: ${absentCount}`;
   doc.text(summaryText, margin, yPosition);
