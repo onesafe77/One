@@ -558,25 +558,34 @@ async function generateA4PortraitPDF(data: ReportData): Promise<void> {
   const doc = new jsPDF('portrait', 'pt', 'a4'); // Use points for precise measurements
   const pageWidth = doc.internal.pageSize.width; // 595.28 pt
   const pageHeight = doc.internal.pageSize.height; // 841.89 pt
-  const margin = 35; // 1.2cm margins untuk konten lebih lebar (35pt ≈ 1.2cm)
+  const margin = 42; // 1.5cm margins untuk proporsi yang lebih baik (42pt ≈ 1.5cm)
   const bottomMargin = 60; // Space untuk footer
   
   let yPosition = margin;
   let pageNumber = 1;
   
-  // Judul Laporan - Teks besar, bold, rata tengah
+  // Kotak header professional dengan border
+  const headerBoxHeight = 140;
+  doc.setLineWidth(0.8);
+  doc.setDrawColor(100, 100, 100);
+  doc.rect(margin, yPosition, pageWidth - 2 * margin, headerBoxHeight);
+  
+  yPosition += 15; // Padding dalam kotak header
+  
+  // Judul Laporan - Teks besar, bold, rata tengah dengan styling lebih baik
   doc.setFont('helvetica', 'bold');
-  doc.setFontSize(16); // Lebih besar untuk judul utama
+  doc.setFontSize(15); // Sedikit dikurangi agar pas dalam kotak
   const title = 'FORMULIR PEMANTAUAN PERIODE KERJA KONTRAKTOR HAULING';
   const titleWidth = doc.getTextWidth(title);
   const titleX = (pageWidth - titleWidth) / 2;
-  doc.text(title, titleX, yPosition + 20);
-  yPosition += 35;
+  doc.text(title, titleX, yPosition + 18);
+  yPosition += 30;
   
-  // Garis tipis horizontal di bawah judul
-  doc.setLineWidth(0.5);
-  doc.line(margin, yPosition, pageWidth - margin, yPosition);
-  yPosition += 25;
+  // Garis tipis horizontal di bawah judul (dalam kotak)
+  doc.setLineWidth(0.3);
+  doc.setDrawColor(150, 150, 150);
+  doc.line(margin + 10, yPosition, pageWidth - margin - 10, yPosition);
+  yPosition += 20;
   
   // Bagian Informasi & Tanda Tangan (dua kolom: 65% dan 35% untuk pemanfaatan ruang lebih baik)
   const leftColumnWidth = (pageWidth - 2 * margin) * 0.65; // 65% lebar untuk info
@@ -633,9 +642,14 @@ async function generateA4PortraitPDF(data: ReportData): Promise<void> {
     doc.text(nameText, nameX, signLineY + 15);
   }
   
-  yPosition = Math.max(leftY, signBoxY + signBoxHeight) + 20;
+  yPosition = Math.max(leftY, signBoxY + signBoxHeight) + 10;
   
-  // Tanggal laporan rata tengah
+  // Pastikan kita di luar kotak header
+  if (yPosition < margin + headerBoxHeight + 10) {
+    yPosition = margin + headerBoxHeight + 15;
+  }
+  
+  // Tanggal laporan rata tengah dengan styling yang lebih baik
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(11);
   const reportDate = `Tanggal: ${formatDateForPDF(data.startDate)}`;
@@ -667,14 +681,14 @@ async function generateA4PortraitTable(
   let yPosition = startY;
   let pageNumber = initialPageNumber;
   
-  // Proporsi kolom dioptimalkan untuk lebar yang lebih besar: total 100%
+  // Proporsi kolom disesuaikan dengan margin 1.5cm: total 100%
   const tableWidth = pageWidth - 2 * margin;
-  const columnProportions = [0.22, 0.13, 0.06, 0.09, 0.12, 0.14, 0.07, 0.09, 0.08]; // Total = 1.00
+  const columnProportions = [0.20, 0.12, 0.06, 0.09, 0.12, 0.13, 0.07, 0.11, 0.10]; // Total = 1.00
   const columnWidths = columnProportions.map(prop => tableWidth * prop);
   
   const headers = ['Nama', 'NIK', 'Shift', 'Hari Kerja', 'Jam Masuk', 'Nomor Lambung', 'Jam Tidur', 'Fit To Work', 'Status'];
-  const rowHeight = 28; // Sedikit lebih tinggi untuk readability
-  const headerHeight = 32; // Proporsi header yang lebih baik
+  const rowHeight = 26; // Optimized untuk margin baru
+  const headerHeight = 30; // Proportional header height
   
   // Function untuk draw header tabel (hanya sekali per halaman)
   const drawTableHeader = (yPos: number) => {
