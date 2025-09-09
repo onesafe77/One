@@ -558,7 +558,7 @@ async function generateA4PortraitPDF(data: ReportData): Promise<void> {
   const doc = new jsPDF('portrait', 'pt', 'a4'); // Use points for precise measurements
   const pageWidth = doc.internal.pageSize.width; // 595.28 pt
   const pageHeight = doc.internal.pageSize.height; // 841.89 pt
-  const margin = 42; // 1.5cm margins untuk proporsi yang lebih baik (42pt ≈ 1.5cm)
+  const margin = 28; // 1cm margin minimal untuk memaksimalkan area konten (28pt = 1cm)
   const bottomMargin = 60; // Space untuk footer
   
   let yPosition = margin;
@@ -681,9 +681,9 @@ async function generateA4PortraitTable(
   let yPosition = startY;
   let pageNumber = initialPageNumber;
   
-  // Proporsi kolom disesuaikan dengan margin 1.5cm: total 100%
+  // Proporsi kolom untuk area konten maksimal: total 100%
   const tableWidth = pageWidth - 2 * margin;
-  const columnProportions = [0.20, 0.12, 0.06, 0.09, 0.12, 0.13, 0.07, 0.11, 0.10]; // Total = 1.00
+  const columnProportions = [0.18, 0.12, 0.06, 0.08, 0.12, 0.16, 0.07, 0.13, 0.08]; // Total = 1.00
   const columnWidths = columnProportions.map(prop => tableWidth * prop);
   
   const headers = ['Nama', 'NIK', 'Shift', 'Hari Kerja', 'Jam Masuk', 'Nomor Lambung', 'Jam Tidur', 'Fit To Work', 'Status'];
