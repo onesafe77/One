@@ -26,6 +26,7 @@ export interface ReportData {
   reportType: 'attendance' | 'summary' | 'leave';
   shiftFilter?: string;
   reportInfo?: ReportInfo;
+  orientation?: 'landscape' | 'portrait'; // Professional orientation option
 }
 
 // Helper function to convert file to base64
@@ -40,7 +41,9 @@ function fileToBase64(file: File): Promise<string> {
 
 export async function generateAttendancePDF(data: ReportData): Promise<void> {
   try {
-    const doc = new jsPDF('landscape'); // Landscape untuk tabel yang lebar
+    // Professional orientation handling (default landscape, optional A4 portrait)
+    const orientation = data.orientation || 'landscape';
+    const doc = new jsPDF(orientation as any); 
     const pageWidth = doc.internal.pageSize.width;
     const pageHeight = doc.internal.pageSize.height;
     const margin = 25; // Professional margin sesuai ReportLab standard (25pt)

@@ -158,8 +158,8 @@ export default function Reports() {
           return record.date >= startDate && record.date <= endDate;
         });
 
-        // Validate required report information for PDF
-        if (format === "pdf") {
+        // Validate required report information for PDF (both landscape and portrait)
+        if (format === "pdf" || format === "pdf-portrait") {
           const requiredFields = [];
           if (!reportInfo.namaPengawas.trim()) requiredFields.push("Nama Pengawas");
           if (!reportInfo.waktu.trim()) requiredFields.push("Waktu");
@@ -185,12 +185,14 @@ export default function Reports() {
             endDate,
             reportType: "attendance",
             shiftFilter,
-            reportInfo
+            reportInfo,
+            orientation: format === "pdf-portrait" ? "portrait" : "landscape" // Professional orientation
           });
           
+          const orientationText = format === "pdf-portrait" ? "A4 Portrait" : "Landscape";
           toast({
             title: "Berhasil",
-            description: "Laporan PDF berhasil diunduh",
+            description: `Laporan PDF ${orientationText} berhasil diunduh`,
           });
         } else {
           exportAttendanceToCSV(filteredAttendance, freshEmployees); // Use fresh employee data
@@ -429,13 +431,19 @@ export default function Reports() {
           
           <div>
             <Label className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-              Format
+              Format & Orientasi
             </Label>
             <RadioGroup value={format} onValueChange={setFormat} className="space-y-2">
               <div className="flex items-center space-x-2">
                 <RadioGroupItem value="pdf" id="format-pdf" data-testid="format-pdf" />
                 <Label htmlFor="format-pdf" className="text-sm text-gray-700 dark:text-gray-300">
-                  PDF
+                  PDF Landscape (ReportLab Style)
+                </Label>
+              </div>
+              <div className="flex items-center space-x-2">
+                <RadioGroupItem value="pdf-portrait" id="format-pdf-portrait" data-testid="format-pdf-portrait" />
+                <Label htmlFor="format-pdf-portrait" className="text-sm text-gray-700 dark:text-gray-300">
+                  PDF A4 Portrait (Professional)
                 </Label>
               </div>
               <div className="flex items-center space-x-2">
