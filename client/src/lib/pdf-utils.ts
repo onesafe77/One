@@ -259,7 +259,7 @@ function generateShiftSection(
     }
     
     // If no roster entry, determine by attendance time (fallback)
-    const attendanceHour = parseInt(att.attendanceTime?.split(':')[0] || '0');
+    const attendanceHour = parseInt(att.time?.split(':')[0] || '0');
     if (shiftName.toUpperCase() === 'SHIFT 1') {
       return attendanceHour >= 5 && attendanceHour < 18;
     } else {
