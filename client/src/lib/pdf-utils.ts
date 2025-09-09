@@ -361,6 +361,9 @@ function generateShiftSection(
   
   // We will show ALL scheduled employees for this shift (both attended and not attended)
   const totalScheduledEmployees = scheduledEmployees.length;
+  
+  console.log(`📏 Table dimensions: ${totalScheduledEmployees} rows, table height: ${(totalScheduledEmployees + 1) * rowHeight + 2}`);
+  console.log(`📏 Available space: yPosition=${yPosition}, pageHeight=${doc.internal.pageSize.height}, bottomMargin=${bottomMargin}`);
 
   // Main table border - based on ALL scheduled employees, not just attended ones
   doc.setLineWidth(0.5);
@@ -467,9 +470,11 @@ function generateShiftSection(
     
     console.log(`🔧 Row ${rowIndex}: Successfully rendered at yPosition ${yPosition}`);
     yPosition += rowHeight;
+    console.log(`🔧 Row ${rowIndex}: yPosition after increment: ${yPosition}`);
     
-    // Check if we need a new page with proper margins
-    if (yPosition > doc.internal.pageSize.height - bottomMargin - 20) {
+    // Check if we need a new page with proper margins - BEFORE rendering the row
+    if (yPosition + rowHeight > doc.internal.pageSize.height - bottomMargin - 20) {
+      console.log(`📄 Page break needed at yPosition ${yPosition}, adding new page`);
       doc.addPage();
       
       // Add company logo to new page
@@ -483,6 +488,7 @@ function generateShiftSection(
       }
       
       yPosition = margin + 35;
+      console.log(`📄 New page started, yPosition reset to ${yPosition}`);
       
       // Repeat table header on new page
       doc.setFontSize(9);
@@ -521,6 +527,7 @@ function generateShiftSection(
       yPosition += headerHeight;
       doc.setFont('helvetica', 'normal');
       doc.setFontSize(8);
+      console.log(`📄 Header repeated on new page, continuing at yPosition ${yPosition}`);
     }
   });
   
