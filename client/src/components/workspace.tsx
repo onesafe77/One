@@ -12,7 +12,6 @@ import Leave from "@/pages/leave";
 import LeaveRosterMonitoring from "@/pages/leave-roster-monitoring";
 import SimperMonitoring from "@/pages/simper-monitoring";
 import Reports from "@/pages/reports";
-import AttendanceDetails from "@/pages/attendance-details";
 import Meetings from "@/pages/meetings";
 import MeetingScanner from "@/pages/meeting-scanner";
 import DriverView from "@/pages/driver-view";
@@ -30,7 +29,6 @@ const workspaceRoutes = [
   { path: "/leave-roster-monitoring", component: LeaveRosterMonitoring, title: "Monitoring Roster Cuti" },
   { path: "/simper-monitoring", component: SimperMonitoring, title: "Monitoring SIMPER Karyawan" },
   { path: "/reports", component: Reports, title: "Laporan" },
-  { path: "/attendance-details", component: AttendanceDetails, title: "Dashboard HR " },
   { path: "/meetings", component: Meetings, title: "Meeting Management" },
   { path: "/meeting-scanner", component: MeetingScanner, title: "Scan QR Meeting" },
   { path: "/driver-view", component: DriverView, title: "Driver View - Data Karyawan" },
