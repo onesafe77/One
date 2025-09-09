@@ -135,7 +135,7 @@ export default function Landing() {
             </Badge>
             
             <h1 className="text-5xl font-bold text-white mb-6 leading-tight drop-shadow-lg">
-              Sistem Manajemen
+              Selamat datang di
               <span className="text-primary-400 block">OneTalent GECL</span>
             </h1>
             
