@@ -341,8 +341,8 @@ function generateShiftSection(
   const rowHeight = 12; // Compact but readable row height
   const headerHeight = 14; // Proportional header height
   
-  // Strong horizontal line above table header
-  doc.setLineWidth(1.0);
+  // Clean horizontal line above table header
+  doc.setLineWidth(0.3);
   doc.line(margin, yPosition - 3, margin + finalTableWidth, yPosition - 3);
   
   // Header background with proper height
@@ -353,13 +353,13 @@ function generateShiftSection(
   const totalScheduledEmployees = scheduledEmployees.length;
   
   // Main table border - based on ALL scheduled employees, not just attended ones
-  doc.setLineWidth(0.5);
+  doc.setLineWidth(0.3);
   doc.rect(margin, yPosition - 2, finalTableWidth, (totalScheduledEmployees + 1) * rowHeight + 2);
   
   // Vertical grid lines for entire table - cleaner appearance
   let currentX = margin;
   for (let i = 0; i <= headers.length; i++) {
-    doc.setLineWidth(0.5);
+    doc.setLineWidth(0.3);
     doc.line(currentX, yPosition - 2, currentX, yPosition - 2 + (totalScheduledEmployees + 1) * rowHeight + 2);
     if (i < headers.length) {
       currentX += columnWidths[i];
@@ -381,8 +381,8 @@ function generateShiftSection(
     currentX += columnWidths[index];
   });
   
-  // Strong horizontal line after header
-  doc.setLineWidth(1.0);
+  // Clean horizontal line after header
+  doc.setLineWidth(0.3);
   doc.line(margin, yPosition - 2 + headerHeight, margin + finalTableWidth, yPosition - 2 + headerHeight);
   
   yPosition += headerHeight;
@@ -414,7 +414,7 @@ function generateShiftSection(
     yPosition += 15;
     
     // Redraw table header
-    doc.setLineWidth(1.0);
+    doc.setLineWidth(0.3);
     doc.line(margin, yPosition - 3, margin + finalTableWidth, yPosition - 3);
     
     doc.setFillColor(220, 220, 220);
@@ -445,7 +445,7 @@ function generateShiftSection(
       currentX += columnWidths[index];
     });
     
-    doc.setLineWidth(1.0);
+    doc.setLineWidth(0.3);
     doc.line(margin, yPosition - 2 + headerHeight, margin + finalTableWidth, yPosition - 2 + headerHeight);
     
     yPosition += headerHeight;
@@ -521,7 +521,7 @@ function generateShiftSection(
   });
   
   // Clean bottom border for table
-  doc.setLineWidth(1.0);
+  doc.setLineWidth(0.3);
   doc.setDrawColor(0, 0, 0);
   doc.line(margin, yPosition + 3, margin + finalTableWidth, yPosition + 3);
   yPosition += 15;
