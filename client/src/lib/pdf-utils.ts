@@ -355,63 +355,14 @@ function generateShiftSection(
     addProfessionalFooter(doc, doc.internal.pageSize.width, doc.internal.pageSize.height, margin, doc.internal.getNumberOfPages());
     doc.addPage();
     
-    // Add company logo to new page
-    try {
-      doc.addImage(companyLogo, 'PNG', margin, 15, 30, 15);
-      doc.setFontSize(10);
-      doc.setFont('helvetica', 'bold');
-      // Company name removed
-    } catch (error) {
-      console.warn('Could not add logo to new page:', error);
-    }
+    // Professional header for new page
+    yPosition = addProfessionalHeader(doc, margin, shiftName);
     
-    // Reset position and redraw shift title and table header
-    yPosition = margin + 35;
+    // Redraw table header with professional styling
+    yPosition = redrawTableHeader(doc, headers, columnWidths, finalTableWidth, margin, yPosition, headerHeight);
     
-    // Shift Title
-    doc.setFontSize(11);
-    doc.setFont('helvetica', 'bold');
-    doc.text(shiftName.toUpperCase(), margin, yPosition);
-    yPosition += 15;
-    
-    // Redraw table header
-    doc.setLineWidth(0.3);
-    doc.line(margin, yPosition - 3, margin + finalTableWidth, yPosition - 3);
-    
-    doc.setFillColor(220, 220, 220);
-    doc.rect(margin, yPosition - 2, finalTableWidth, headerHeight, 'F');
-    
-    // Vertical grid lines
-    let currentX = margin;
-    for (let i = 0; i <= headers.length; i++) {
-      doc.line(currentX, yPosition - 2, currentX, yPosition - 2 + (scheduledEmployees.length + 1) * rowHeight + 2);
-      if (i < headers.length) {
-        currentX += columnWidths[i];
-      }
-    }
-    
-    // Header text - consistent alignment with first page
-    doc.setFontSize(9);
-    currentX = margin;
-    headers.forEach((header, index) => {
-      if (index === 0 || index === 1 || index === 5) {
-        // Left-aligned headers for Name, NIK, and Nomor Lambung
-        doc.text(header, currentX + 4, yPosition + 8.5);
-      } else {
-        // Center-aligned headers for other columns
-        const textWidth = doc.getTextWidth(header);
-        const centerX = currentX + (columnWidths[index] - textWidth) / 2;
-        doc.text(header, centerX, yPosition + 8.5);
-      }
-      currentX += columnWidths[index];
-    });
-    
-    doc.setLineWidth(0.3);
-    doc.line(margin, yPosition - 2 + headerHeight, margin + finalTableWidth, yPosition - 2 + headerHeight);
-    
-    yPosition += headerHeight;
     doc.setFont('helvetica', 'normal');
-    doc.setFontSize(8); // Match main table font size
+    doc.setFontSize(10); // Professional font size
     
   }
 
