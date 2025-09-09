@@ -338,8 +338,8 @@ function generateShiftSection(
   }
   
   const finalTableWidth = columnWidths.reduce((sum, width) => sum + width, 0);
-  const rowHeight = 10;
-  const headerHeight = 12;
+  const rowHeight = 14; // Increased for better readability
+  const headerHeight = 16; // Increased header height
   
   // Strong horizontal line above table header
   doc.setLineWidth(1.0);
@@ -366,12 +366,12 @@ function generateShiftSection(
     }
   }
   
-  // Header text - center aligned and bold
+  // Header text - center aligned and bold with better vertical spacing
   currentX = margin;
   headers.forEach((header, index) => {
     const textWidth = doc.getTextWidth(header);
     const centerX = currentX + (columnWidths[index] - textWidth) / 2;
-    doc.text(header, centerX, yPosition + 6);
+    doc.text(header, centerX, yPosition + 10); // Better vertical centering
     currentX += columnWidths[index];
   });
   
@@ -381,7 +381,7 @@ function generateShiftSection(
   
   yPosition += headerHeight;
   doc.setFont('helvetica', 'normal');
-  doc.setFontSize(8); // Readable font size for data
+  doc.setFontSize(9); // Slightly larger font for better readability
   
   // CRITICAL: Check if we need a new page BEFORE starting to render any rows
   const estimatedTableHeight = (scheduledEmployees.length + 1) * rowHeight + 20; // +1 for header, +20 for padding
@@ -423,13 +423,13 @@ function generateShiftSection(
       }
     }
     
-    // Header text
+    // Header text - consistent with first page
     doc.setFontSize(9);
     currentX = margin;
     headers.forEach((header, index) => {
       const textWidth = doc.getTextWidth(header);
       const centerX = currentX + (columnWidths[index] - textWidth) / 2;
-      doc.text(header, centerX, yPosition + 6);
+      doc.text(header, centerX, yPosition + 10); // Match first page spacing
       currentX += columnWidths[index];
     });
     
@@ -438,7 +438,7 @@ function generateShiftSection(
     
     yPosition += headerHeight;
     doc.setFont('helvetica', 'normal');
-    doc.setFontSize(8);
+    doc.setFontSize(9); // Match main table font size
     
   }
 
@@ -473,9 +473,9 @@ function generateShiftSection(
       attendanceStatus
     ];
     
-    // Alternating row background for better readability
+    // Subtle alternating row background for better readability
     if (rowIndex % 2 === 1) {
-      doc.setFillColor(250, 250, 250);
+      doc.setFillColor(248, 248, 248);
       doc.rect(margin, yPosition, finalTableWidth, rowHeight, 'F');
     }
     
@@ -485,13 +485,13 @@ function generateShiftSection(
       const cellText = String(cellData);
       
       if (columnIndex === 0) {
-        // Name (0) column - left aligned
-        doc.text(cellText, currentX + 3, yPosition + 6);
+        // Name (0) column - left aligned with better padding
+        doc.text(cellText, currentX + 4, yPosition + 9);
       } else {
-        // Other columns - center aligned
+        // Other columns - center aligned with better vertical positioning
         const textWidth = doc.getTextWidth(cellText);
         const centerX = currentX + (columnWidths[columnIndex] - textWidth) / 2;
-        doc.text(cellText, Math.max(currentX + 2, centerX), yPosition + 6);
+        doc.text(cellText, Math.max(currentX + 3, centerX), yPosition + 9);
       }
       currentX += columnWidths[columnIndex];
     });
