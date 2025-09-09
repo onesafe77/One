@@ -41,9 +41,17 @@ function fileToBase64(file: File): Promise<string> {
 
 export async function generateAttendancePDF(data: ReportData): Promise<void> {
   try {
-    // Professional orientation handling (default landscape, optional A4 portrait)
+    // Professional orientation handling dengan layout yang berbeda
     const orientation = data.orientation || 'landscape';
-    const doc = new jsPDF(orientation as any); 
+    
+    if (orientation === 'portrait') {
+      // Gunakan layout khusus A4 portrait sesuai spesifikasi user
+      await generateA4PortraitPDF(data);
+      return;
+    }
+    
+    // Untuk landscape, gunakan layout yang sudah ada
+    const doc = new jsPDF('landscape'); 
     const pageWidth = doc.internal.pageSize.width;
     const pageHeight = doc.internal.pageSize.height;
     const margin = 25; // Professional margin sesuai ReportLab standard (25pt)
@@ -543,4 +551,349 @@ function redrawTableHeader(doc: jsPDF, headers: string[], columnWidths: number[]
   doc.line(currentX, yPosition, currentX, yPosition + headerHeight);
   
   return yPosition + headerHeight;
+}
+
+// Function khusus untuk A4 Portrait dengan layout yang diminta user
+async function generateA4PortraitPDF(data: ReportData): Promise<void> {
+  const doc = new jsPDF('portrait', 'pt', 'a4'); // Use points for precise measurements
+  const pageWidth = doc.internal.pageSize.width; // 595.28 pt
+  const pageHeight = doc.internal.pageSize.height; // 841.89 pt
+  const margin = 40; // 40pt margins untuk A4 portrait
+  const bottomMargin = 60; // Space untuk footer
+  
+  let yPosition = margin;
+  let pageNumber = 1;
+  
+  // Judul Laporan - Teks besar, bold, rata tengah
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(16); // Lebih besar untuk judul utama
+  const title = 'FORMULIR PEMANTAUAN PERIODE KERJA KONTRAKTOR HAULING';
+  const titleWidth = doc.getTextWidth(title);
+  const titleX = (pageWidth - titleWidth) / 2;
+  doc.text(title, titleX, yPosition + 20);
+  yPosition += 35;
+  
+  // Garis tipis horizontal di bawah judul
+  doc.setLineWidth(0.5);
+  doc.line(margin, yPosition, pageWidth - margin, yPosition);
+  yPosition += 25;
+  
+  // Bagian Informasi & Tanda Tangan (dua kolom: 60% dan 40%)
+  const leftColumnWidth = (pageWidth - 2 * margin) * 0.6; // 60% lebar
+  const rightColumnWidth = (pageWidth - 2 * margin) * 0.4; // 40% lebar
+  const rightColumnX = margin + leftColumnWidth + 20; // 20pt spacing between columns
+  
+  // Kolom kiri - Informasi
+  const leftX = margin + 10;
+  let leftY = yPosition;
+  
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(11);
+  
+  const infoFields = [
+    `Perusahaan : ${data.reportInfo?.perusahaan || ''}`,
+    `Nama Pengawas : ${data.reportInfo?.namaPengawas || ''}`,
+    `Hari/Tanggal/Waktu : ${data.reportInfo?.hari || ''}, ${formatDateForPDF(data.startDate)} / ${data.reportInfo?.waktu || ''}`,
+    `Shift : ${data.reportInfo?.shift || ''}`,
+    `Tempat : ${data.reportInfo?.tempat || ''}`
+  ];
+  
+  infoFields.forEach(field => {
+    doc.text(field, leftX, leftY);
+    leftY += 18;
+  });
+  
+  // Kolom kanan - Kotak tanda tangan dengan border tipis
+  const signBoxHeight = 80;
+  const signBoxY = yPosition;
+  
+  // Draw border kotak tanda tangan
+  doc.setLineWidth(0.5);
+  doc.rect(rightColumnX, signBoxY - 10, rightColumnWidth - 20, signBoxHeight);
+  
+  // Judul "Diperiksa Oleh," rata tengah atas
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(10);
+  const checkText = 'Diperiksa Oleh,';
+  const checkTextWidth = doc.getTextWidth(checkText);
+  const checkTextX = rightColumnX + (rightColumnWidth - 20 - checkTextWidth) / 2;
+  doc.text(checkText, checkTextX, signBoxY + 5);
+  
+  // Garis tanda tangan rata tengah di bagian bawah kotak
+  const signLineY = signBoxY + signBoxHeight - 25;
+  const signLineX1 = rightColumnX + 15;
+  const signLineX2 = rightColumnX + rightColumnWidth - 35;
+  doc.line(signLineX1, signLineY, signLineX2, signLineY);
+  
+  // Nama pemeriksa tepat di bawah garis, posisi center
+  const nameText = data.reportInfo?.diperiksaOleh || '';
+  if (nameText) {
+    const nameWidth = doc.getTextWidth(nameText);
+    const nameX = rightColumnX + (rightColumnWidth - 20 - nameWidth) / 2;
+    doc.text(nameText, nameX, signLineY + 15);
+  }
+  
+  yPosition = Math.max(leftY, signBoxY + signBoxHeight) + 20;
+  
+  // Tanggal laporan rata tengah
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(11);
+  const reportDate = `Tanggal: ${formatDateForPDF(data.startDate)}`;
+  const dateWidth = doc.getTextWidth(reportDate);
+  const dateX = (pageWidth - dateWidth) / 2;
+  doc.text(reportDate, dateX, yPosition);
+  yPosition += 25;
+  
+  // Generate tabel dengan proporsi kolom yang tepat
+  await generateA4PortraitTable(doc, data, yPosition, margin, pageWidth, pageHeight, bottomMargin, pageNumber);
+  
+  // Save PDF
+  const fileName = `laporan-attendance-${formatDateForPDF(data.startDate)}-A4.pdf`;
+  doc.save(fileName);
+}
+
+// Function untuk generate tabel khusus A4 Portrait
+async function generateA4PortraitTable(
+  doc: jsPDF, 
+  data: ReportData, 
+  startY: number, 
+  margin: number, 
+  pageWidth: number, 
+  pageHeight: number, 
+  bottomMargin: number,
+  initialPageNumber: number
+): Promise<void> {
+  
+  let yPosition = startY;
+  let pageNumber = initialPageNumber;
+  
+  // Proporsi kolom sesuai spesifikasi: total 100%
+  const tableWidth = pageWidth - 2 * margin;
+  const columnProportions = [0.20, 0.12, 0.08, 0.10, 0.12, 0.12, 0.08, 0.10, 0.08]; // Total = 1.00
+  const columnWidths = columnProportions.map(prop => tableWidth * prop);
+  
+  const headers = ['Nama', 'NIK', 'Shift', 'Hari Kerja', 'Jam Masuk', 'Nomor Lambung', 'Jam Tidur', 'Fit To Work', 'Status'];
+  const rowHeight = 25;
+  const headerHeight = 30;
+  
+  // Function untuk draw header tabel (hanya sekali per halaman)
+  const drawTableHeader = (yPos: number) => {
+    // Background abu-abu muda untuk header
+    doc.setFillColor(220, 220, 220);
+    doc.rect(margin, yPos, tableWidth, headerHeight, 'F');
+    
+    // Border header
+    doc.setLineWidth(0.5);
+    doc.rect(margin, yPos, tableWidth, headerHeight);
+    
+    // Header text bold
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(9);
+    doc.setTextColor(0, 0, 0);
+    
+    let currentX = margin;
+    headers.forEach((header, index) => {
+      // Vertical lines between columns
+      if (index > 0) {
+        doc.line(currentX, yPos, currentX, yPos + headerHeight);
+      }
+      
+      // Header text centered
+      const textWidth = doc.getTextWidth(header);
+      const centerX = currentX + (columnWidths[index] - textWidth) / 2;
+      doc.text(header, centerX, yPos + headerHeight / 2 + 3);
+      
+      currentX += columnWidths[index];
+    });
+    
+    return yPos + headerHeight;
+  };
+  
+  // Function untuk add footer dengan page numbering
+  const addA4Footer = (pageNum: number) => {
+    const footerY = pageHeight - 30;
+    doc.setFontSize(8);
+    doc.setFont('helvetica', 'normal');
+    
+    // Page number rata kanan
+    const pageText = `Halaman ${pageNum}`;
+    const pageTextWidth = doc.getTextWidth(pageText);
+    doc.text(pageText, pageWidth - margin - pageTextWidth, footerY);
+    
+    // Timestamp
+    const now = new Date();
+    const timestamp = `Dicetak: ${formatDateForPDF(now.toISOString().split('T')[0])} ${now.toTimeString().split(' ')[0].substring(0,5)}`;
+    doc.text(timestamp, margin, footerY);
+  };
+  
+  // Generate shift sections
+  const shifts = data.shiftFilter === 'all' ? ['Shift 1', 'Shift 2'] : [data.shiftFilter || 'Shift 1'];
+  
+  for (const shift of shifts) {
+    const shiftEmployees = getShiftEmployees(data, shift);
+    
+    if (shiftEmployees.length === 0) continue;
+    
+    // Check space untuk shift title + minimal 3 rows
+    const neededSpace = 40 + headerHeight + (3 * rowHeight);
+    if (yPosition + neededSpace > pageHeight - bottomMargin) {
+      addA4Footer(pageNumber);
+      doc.addPage();
+      pageNumber++;
+      yPosition = margin + 30; // Reset position pada halaman baru
+    }
+    
+    // Shift title
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(12);
+    const shiftTitle = shift.toUpperCase();
+    const shiftTitleWidth = doc.getTextWidth(shiftTitle);
+    const shiftTitleX = (pageWidth - shiftTitleWidth) / 2;
+    doc.text(shiftTitle, shiftTitleX, yPosition);
+    yPosition += 25;
+    
+    // Draw table header
+    yPosition = drawTableHeader(yPosition);
+    
+    // Table content
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(8);
+    
+    shiftEmployees.forEach((employee, rowIndex) => {
+      // Check jika perlu halaman baru
+      if (yPosition + rowHeight > pageHeight - bottomMargin) {
+        addA4Footer(pageNumber);
+        doc.addPage();
+        pageNumber++;
+        yPosition = margin + 30;
+        yPosition = drawTableHeader(yPosition); // Redraw header di halaman baru
+      }
+      
+      // Alternating row background
+      if (rowIndex % 2 === 1) {
+        doc.setFillColor(248, 248, 248);
+        doc.rect(margin, yPosition, tableWidth, rowHeight, 'F');
+      }
+      
+      // Row border
+      doc.setLineWidth(0.3);
+      doc.rect(margin, yPosition, tableWidth, rowHeight);
+      
+      // Row data
+      const attendance = data.attendance.find(a => a.employeeId === employee.id);
+      const attendanceStatus = attendance ? '✅ Hadir' : '❌ Tidak Hadir';
+      const jamTidur = attendance?.jamTidur || '-';
+      const fitToWork = attendance?.fitToWork || '-';
+      const jamMasuk = attendance?.time || '-';
+      
+      const rowData = [
+        employee.name,
+        employee.id,
+        shift === 'Shift 1' ? '1' : '2',
+        employee.workDays?.toString() || '-',
+        jamMasuk,
+        employee.nomorLambung || '-',
+        jamTidur,
+        fitToWork,
+        attendanceStatus
+      ];
+      
+      let currentX = margin;
+      rowData.forEach((cellData, columnIndex) => {
+        // Vertical lines
+        if (columnIndex > 0) {
+          doc.line(currentX, yPosition, currentX, yPosition + rowHeight);
+        }
+        
+        // Text alignment: Nama rata kiri, sisanya rata tengah
+        if (columnIndex === 0) { // Nama kolom
+          doc.text(cellData, currentX + 5, yPosition + rowHeight / 2 + 3);
+        } else { // Sisanya rata tengah
+          const textWidth = doc.getTextWidth(cellData);
+          const centerX = currentX + (columnWidths[columnIndex] - textWidth) / 2;
+          doc.text(cellData, centerX, yPosition + rowHeight / 2 + 3);
+        }
+        
+        currentX += columnWidths[columnIndex];
+      });
+      
+      yPosition += rowHeight;
+    });
+    
+    yPosition += 20; // Space between shifts
+  }
+  
+  // Add footer ke halaman terakhir
+  addA4Footer(pageNumber);
+}
+
+// Helper function untuk get shift employees
+function getShiftEmployees(data: ReportData, shift: string): any[] {
+  // Get scheduled employees for this shift first (from roster)
+  const scheduledEmployees = data.roster?.filter(r => r.shift === shift && r.date === data.startDate) || [];
+  
+  // For SHIFT 1: show all attendance, For SHIFT 2: show only if there's actual Shift 2 roster data
+  let attendanceForThisShift: typeof data.attendance;
+  
+  if (shift.toUpperCase() === 'SHIFT 1') {
+    // For Shift 1 section: Include ALL attendance records for this date
+    attendanceForThisShift = data.attendance.filter(att => att.date === data.startDate);
+  } else {
+    // For Shift 2 section: Only show if employee is actually scheduled for Shift 2
+    attendanceForThisShift = data.attendance.filter(att => {
+      if (att.date !== data.startDate) return false;
+      const employeeRoster = data.roster?.find(r => r.employeeId === att.employeeId && r.date === data.startDate && r.shift === 'Shift 2');
+      return !!employeeRoster;
+    });
+  }
+  
+  // Add all attendance records as roster entries for this shift
+  attendanceForThisShift.forEach(att => {
+    const employee = data.employees.find(emp => emp.id === att.employeeId);
+    
+    if (employee) {
+      // Check if employee already exists in scheduledEmployees
+      const existingIndex = scheduledEmployees.findIndex(emp => emp.employeeId === att.employeeId);
+      
+      if (existingIndex >= 0) {
+        // Update existing roster entry with attendance data
+        scheduledEmployees[existingIndex] = {
+          ...scheduledEmployees[existingIndex],
+          jamTidur: att.jamTidur || '',
+          fitToWork: att.fitToWork || 'Fit To Work'
+        };
+      } else {
+        // Add new roster entry for attendance - get hariKerja from any roster for this employee
+        const anyRosterRecord = data.roster?.find(r => r.employeeId === att.employeeId);
+        
+        scheduledEmployees.push({
+          id: `temp-${att.employeeId}`,
+          employeeId: att.employeeId,
+          date: data.startDate,
+          shift: shift,
+          startTime: shift === 'Shift 1' ? '06:00' : '18:00',
+          endTime: shift === 'Shift 1' ? '18:00' : '06:00',
+          jamTidur: att.jamTidur || '',
+          fitToWork: att.fitToWork || 'Fit To Work',
+          hariKerja: anyRosterRecord?.hariKerja || '',
+          status: 'scheduled' as const,
+          employee: employee,
+          hasAttended: true,
+          attendanceTime: att.time,
+          actualJamTidur: att.jamTidur || '',
+          actualFitToWork: att.fitToWork || 'Fit To Work',
+          attendanceStatus: 'present' as const,
+          workDays: anyRosterRecord?.workDays || parseInt(anyRosterRecord?.hariKerja || '0', 10)
+        });
+      }
+    }
+  });
+  
+  // Convert to simple employee objects with enhanced data
+  return scheduledEmployees.map(roster => ({
+    id: roster.employeeId,
+    name: roster.employee?.name || 'Unknown',
+    nomorLambung: roster.employee?.nomorLambung || '-',
+    workDays: roster.workDays || parseInt(roster.hariKerja || '0', 10)
+  }));
 }
