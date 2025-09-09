@@ -864,14 +864,23 @@ async function generateA4PortraitTable(
           doc.line(currentX, yPosition, currentX, yPosition + rowHeight);
         }
         
-        // Text alignment: Nama rata kiri dengan padding lebih besar, sisanya rata tengah
-        if (columnIndex === 0) { // Nama kolom
-          doc.text(cellData, currentX + 8, yPosition + rowHeight / 2 + 4);
-        } else { // Sisanya rata tengah dengan padding vertikal yang lebih baik
-          const textWidth = doc.getTextWidth(cellData);
-          const centerX = currentX + (columnWidths[columnIndex] - textWidth) / 2;
-          doc.text(cellData, centerX, yPosition + rowHeight / 2 + 4);
-        }
+        // Text dengan wrapping untuk kolom yang mungkin panjang
+        const cellWidth = columnWidths[columnIndex] - 6; // 3pt padding kiri-kanan
+        const lines = splitTextToFitWidth(doc, cellData, cellWidth);
+        
+        const lineHeight = 10;
+        const totalTextHeight = lines.length * lineHeight;
+        const startY = yPosition + (rowHeight - totalTextHeight) / 2 + lineHeight;
+        
+        lines.forEach((line, lineIndex) => {
+          if (columnIndex === 0) { // Nama kolom - rata kiri
+            doc.text(line, currentX + 8, startY + lineIndex * lineHeight);
+          } else { // Sisanya rata tengah
+            const textWidth = doc.getTextWidth(line);
+            const centerX = currentX + (columnWidths[columnIndex] - textWidth) / 2;
+            doc.text(line, centerX, startY + lineIndex * lineHeight);
+          }
+        });
         
         currentX += columnWidths[columnIndex];
       });
