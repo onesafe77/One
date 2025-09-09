@@ -1,0 +1,174 @@
+from reportlab.lib import colors
+from reportlab.lib.pagesizes import A4
+from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+from reportlab.platypus import (
+    SimpleDocTemplate, Table, TableStyle,
+    Paragraph, Spacer, PageBreak
+)
+from reportlab.pdfgen import canvas
+from reportlab.lib.units import cm
+import datetime
+
+# Nama file PDF
+file_name = "laporan_full_A4_footer.pdf"
+
+# ---------------- Custom Footer ---------------- #
+def add_page_number(canvas, doc):
+    page_num = canvas.getPageNumber()
+    text = f"Halaman {page_num} | Dicetak: {datetime.datetime.now().strftime('%d-%m-%Y %H:%M')}"
+    canvas.setFont("Helvetica", 8)
+    canvas.drawRightString(A4[0] - 2*cm, 1*cm, text)
+
+# ---------------- Setup dokumen ---------------- #
+doc = SimpleDocTemplate(
+    file_name,
+    pagesize=A4,
+    rightMargin=25,
+    leftMargin=25,
+    topMargin=25,
+    bottomMargin=30
+)
+
+# Styles
+styles = getSampleStyleSheet()
+title_style = ParagraphStyle(
+    'TitleStyle',
+    parent=styles['Heading1'],
+    fontName='Helvetica-Bold',
+    fontSize=14,
+    alignment=1,
+    spaceAfter=14
+)
+sub_style = ParagraphStyle(
+    'SubStyle',
+    parent=styles['Normal'],
+    fontName='Helvetica',
+    fontSize=10,
+    spaceAfter=6
+)
+table_header_style = ParagraphStyle(
+    'TableHeader',
+    parent=styles['Normal'],
+    fontName='Helvetica-Bold',
+    fontSize=9,
+    alignment=1
+)
+table_cell_style = ParagraphStyle(
+    'TableCell',
+    parent=styles['Normal'],
+    fontName='Helvetica',
+    fontSize=8,
+    alignment=1
+)
+table_cell_left = ParagraphStyle(
+    'TableCellLeft',
+    parent=styles['Normal'],
+    fontName='Helvetica',
+    fontSize=8,
+    alignment=0
+)
+
+# ---------------- Header form ---------------- #
+form_header = [
+    Paragraph("<b>FORMULIR PEMANTAUAN PERIODE KERJA KONTRAKTOR HAULING</b>", title_style),
+    Spacer(1, 6)
+]
+
+# Informasi pengawas + tanda tangan
+info_data = [
+    [
+        Paragraph("Perusahaan : sadasda", sub_style),
+        ""
+    ],
+    [
+        Paragraph("Nama Pengawas : sadasda", sub_style),
+        Paragraph("Diperiksa Oleh,", sub_style)
+    ],
+    [
+        Paragraph("Hari/Tanggal/Waktu : Selasa, 9/9/2025 / 17:00", sub_style),
+        ""
+    ],
+    [
+        Paragraph("Shift : Shift 1", sub_style),
+        ""
+    ],
+    [
+        Paragraph("Tempat : sadasdas", sub_style),
+        Paragraph("<br/><br/><br/>________________________<br/>sadasdas", sub_style)
+    ]
+]
+
+info_table = Table(info_data, colWidths=[250, 200])
+info_table.setStyle(TableStyle([
+    ('BOX', (0,0), (-1,-1), 0.8, colors.black),
+    ('VALIGN', (0,0), (-1,-1), 'TOP'),
+]))
+
+# ---------------- Data tabel SHIFT ---------------- #
+data_rows = [
+    ["I KADE ASTRAWAN", "C-08762", "1", "26", "10:41:58", "GECL 9004", "6", "Fit To Work", "Hadir"],
+    ["MISRADI", "C-05078", "1", "2", "10:42:18", "SPARE GECL 9006", "6", "Fit To Work", "Hadir"],
+    ["ZAILANI", "C-21723", "1", "28", "10:42:39", "SPARE GECL 9051", "5", "Fit To Work", "Hadir"],
+    ["SUDIRO", "C-028937", "1", "52", "15:50:19", "GECL 9068", "7", "Unfit To Work", "Hadir"],
+]
+
+# Header tabel
+table_header = [
+    Paragraph("Nama", table_header_style),
+    Paragraph("NIK", table_header_style),
+    Paragraph("Shift", table_header_style),
+    Paragraph("Hari Kerja", table_header_style),
+    Paragraph("Jam Masuk", table_header_style),
+    Paragraph("Nomor Lambung", table_header_style),
+    Paragraph("Jam Tidur", table_header_style),
+    Paragraph("Fit To Work", table_header_style),
+    Paragraph("Status", table_header_style),
+]
+
+# Gabungkan header + data
+table_data = [table_header]
+for row in data_rows:
+    formatted_row = [
+        Paragraph(row[0], table_cell_left),
+        Paragraph(row[1], table_cell_style),
+        Paragraph(row[2], table_cell_style),
+        Paragraph(row[3], table_cell_style),
+        Paragraph(row[4], table_cell_style),
+        Paragraph(row[5], table_cell_left),
+        Paragraph(row[6], table_cell_style),
+        Paragraph(row[7], table_cell_style),
+        Paragraph(row[8], table_cell_style),
+    ]
+    table_data.append(formatted_row)
+
+# Buat tabel utama
+main_table = Table(table_data, colWidths=[95, 65, 35, 55, 55, 90, 50, 70, 60])
+main_table.setStyle(TableStyle([
+    ('BACKGROUND', (0, 0), (-1, 0), colors.grey),
+    ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
+    ('ALIGN', (1, 1), (-1, -1), 'CENTER'),
+    ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
+    ('INNERGRID', (0, 0), (-1, -1), 0.25, colors.black),
+    ('BOX', (0, 0), (-1, -1), 0.5, colors.black),
+    ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+    ('FONTSIZE', (0, 0), (-1, -1), 8),
+]))
+
+# Shading baris genap
+for i in range(1, len(table_data)):
+    if i % 2 == 0:
+        main_table.setStyle(TableStyle([('BACKGROUND', (0, i), (-1, i), colors.whitesmoke)]))
+
+# ---------------- Susun semua elemen ---------------- #
+elements = []
+elements += form_header
+elements.append(info_table)
+elements.append(Spacer(1, 10))
+elements.append(Paragraph("Tanggal: 09-09-2025", sub_style))
+elements.append(Paragraph("SHIFT 1", title_style))
+elements.append(main_table)
+
+# Build PDF dengan footer
+doc.build(elements, onFirstPage=add_page_number, onLaterPages=add_page_number)
+
+print(f"PDF berhasil dibuat: {file_name}")

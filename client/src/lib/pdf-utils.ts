@@ -40,11 +40,11 @@ function fileToBase64(file: File): Promise<string> {
 
 export async function generateAttendancePDF(data: ReportData): Promise<void> {
   try {
-    const doc = new jsPDF('landscape'); // Use landscape orientation for more columns
+    const doc = new jsPDF('landscape'); // Landscape untuk tabel yang lebar
     const pageWidth = doc.internal.pageSize.width;
     const pageHeight = doc.internal.pageSize.height;
-    const margin = 20; // Professional margin 2cm
-    const bottomMargin = 30; // Space for footer with page numbers
+    const margin = 25; // Professional margin sesuai ReportLab standard (25pt)
+    const bottomMargin = 35; // Extra space untuk custom footer professional
     
     let yPosition = 20;
     
@@ -78,14 +78,15 @@ export async function generateAttendancePDF(data: ReportData): Promise<void> {
     doc.line(margin, yPosition, pageWidth - margin, yPosition);
     yPosition += 20;
     
-    // Form Information in a more structured layout
+    // Professional form information layout (ReportLab style)
     if (data.reportInfo) {
-      doc.setFontSize(10);
+      doc.setFontSize(10); // 10pt sub-header as per ReportLab standard
       doc.setFont('helvetica', 'normal');
       
-      // Draw a border around the information section
+      // Information box dengan styling professional
       const infoBoxY = yPosition;
-      const infoBoxHeight = 75; // Reduced height for compact layout
+      const infoBoxHeight = 80; // Enhanced height untuk layout yang lebih baik
+      doc.setLineWidth(0.8); // Border thickness sesuai ReportLab
       doc.rect(margin, infoBoxY, pageWidth - 2 * margin, infoBoxHeight);
       
       // Left column information
@@ -94,9 +95,9 @@ export async function generateAttendancePDF(data: ReportData): Promise<void> {
       const labelWidth = 60; // Increased for better alignment
       let leftY = yPosition + 15;
       
-      // Left column with properly aligned layout
+      // Left column dengan font hierarchy professional
       doc.setFont('helvetica', 'normal');
-      doc.setFontSize(9);
+      doc.setFontSize(8); // 8pt untuk content detail sesuai ReportLab standard
       
       doc.text('Perusahaan', leftX, leftY);
       doc.text(':', leftX + labelWidth, leftY);
@@ -139,9 +140,9 @@ export async function generateAttendancePDF(data: ReportData): Promise<void> {
       
       doc.rect(sigBoxX, sigBoxY, sigBoxWidth, sigBoxHeight);
       
-      // Center-aligned signature content
+      // Professional signature content styling
       doc.setFont('helvetica', 'normal');
-      doc.setFontSize(9);
+      doc.setFontSize(8); // Consistent 8pt untuk content
       const signatureText = 'Diperiksa Oleh,';
       const signatureTextWidth = doc.getTextWidth(signatureText);
       doc.text(signatureText, sigBoxX + (sigBoxWidth - signatureTextWidth) / 2, sigBoxY + 10);
@@ -159,23 +160,22 @@ export async function generateAttendancePDF(data: ReportData): Promise<void> {
       // Signature line
       doc.line(sigBoxX + 15, sigBoxY + 42, sigBoxX + 85, sigBoxY + 42);
       
-      // Name - center aligned
-      doc.setFontSize(8);
+      // Name dengan consistent font size
+      doc.setFontSize(8); // Consistent 8pt
       const nameText = data.reportInfo.diperiksaOleh || 'Syahrani';
       const nameWidth = doc.getTextWidth(nameText);
       doc.text(nameText, sigBoxX + (sigBoxWidth - nameWidth) / 2, sigBoxY + 50);
-      doc.setFontSize(10);
       
       yPosition = infoBoxY + infoBoxHeight + 10; // Reduced spacing
     }
     
-    // Date
-    doc.setFontSize(12);
+    // Professional date styling
+    doc.setFontSize(10); // 10pt untuk sub-header sesuai ReportLab
     const reportDate = data.startDate === data.endDate 
       ? `Tanggal: ${formatDateForPDF(data.startDate)}`
       : `Periode: ${formatDateForPDF(data.startDate)} - ${formatDateForPDF(data.endDate)}`;
     doc.text(reportDate, pageWidth / 2, yPosition, { align: 'center' });
-    yPosition += 15; // Reduced spacing
+    yPosition += 12; // Professional spacing
     
     // Generate shift sections based on filter
     if (data.shiftFilter === 'all' || data.shiftFilter === 'Shift 1') {
@@ -294,11 +294,11 @@ function generateShiftSection(
     return yPosition;
   }
   
-  // Table headers with professional font hierarchy (following ReportLab standards)
-  doc.setFontSize(10); // 10pt for headers as per ReportLab example
+  // Professional table headers (ReportLab hierarchy: 9pt headers, 8pt content)
+  doc.setFontSize(9); // 9pt untuk table headers sesuai ReportLab standard
   doc.setFont('helvetica', 'bold');
   const headers = ['Nama', 'NIK', 'Shift', 'Hari Kerja', 'Jam Masuk', 'Nomor Lambung', 'Jam Tidur', 'Fit To Work', 'Status'];
-  const baseColumnWidths = [85, 55, 30, 45, 50, 85, 40, 60, 45]; // Enhanced proportions based on ReportLab
+  const baseColumnWidths = [90, 60, 32, 48, 52, 88, 42, 65, 48]; // Enhanced proportions based on ReportLab A4
   
   // Auto-fit table to page width
   const availableWidth = pageWidth - (2 * margin);
@@ -349,7 +349,7 @@ function generateShiftSection(
   
   yPosition += headerHeight;
   doc.setFont('helvetica', 'normal');
-  doc.setFontSize(9); // 9pt font for content as per ReportLab professional standard
+  doc.setFontSize(8); // 8pt font untuk content sesuai ReportLab professional standard
   
   // CRITICAL: Check if we need a new page BEFORE starting to render any rows
   const estimatedTableHeight = (scheduledEmployees.length + 1) * rowHeight + 20;
@@ -399,9 +399,9 @@ function generateShiftSection(
       attendanceStatus
     ];
     
-    // Alternating row backgrounds (following ReportLab professional standard)
-    if (rowIndex % 2 === 1) { // Even rows (0-indexed, so 1,3,5... are visually "even")
-      doc.setFillColor(245, 245, 245); // Light whitesmoke background for alternating rows
+    // Professional alternating row colors (ReportLab whitesmoke standard)
+    if (rowIndex % 2 === 1) { // Alternating rows dengan professional styling
+      doc.setFillColor(245, 245, 245); // Whitesmoke sesuai ReportLab example
       doc.rect(margin, yPosition, finalTableWidth, rowHeight, 'F');
     }
     
@@ -462,7 +462,7 @@ function formatDateForPDF(dateString: string): string {
   return `${day}-${month}-${year}`; // dd-mm-yyyy format as requested
 }
 
-// Professional footer dengan page numbers seperti ReportLab example  
+// Enhanced professional footer dengan styling seperti ReportLab custom footer
 function addProfessionalFooter(doc: jsPDF, pageWidth: number, pageHeight: number, margin: number, pageNumber?: number): void {
   const now = new Date();
   const day = now.getDate().toString().padStart(2, '0');
@@ -471,18 +471,18 @@ function addProfessionalFooter(doc: jsPDF, pageWidth: number, pageHeight: number
   const hours = now.getHours().toString().padStart(2, '0');
   const minutes = now.getMinutes().toString().padStart(2, '0');
   
-  const footerY = pageHeight - 15;
-  doc.setFontSize(8);
+  // Footer positioning sesuai ReportLab (1cm from bottom)
+  const footerY = pageHeight - 10; // Lebih dekat ke bottom edge
+  doc.setFontSize(8); // 8pt untuk footer text
   doc.setFont('helvetica', 'normal');
   
-  // Page number di tengah (seperti ReportLab example)
-  if (pageNumber) {
-    doc.text(`Halaman ${pageNumber}`, pageWidth / 2, footerY, { align: 'center' });
-  }
+  // Combined text seperti ReportLab: "Halaman X | Dicetak: date time"
+  const pageText = pageNumber ? `Halaman ${pageNumber}` : '';
+  const timestampText = `Dicetak: ${day}-${month}-${year} ${hours}:${minutes}`;
+  const fullFooterText = pageNumber ? `${pageText} | ${timestampText}` : timestampText;
   
-  // Timestamp di kanan bawah
-  const timestampText = `Laporan dicetak: ${day}-${month}-${year} ${hours}:${minutes}`;
-  doc.text(timestampText, pageWidth - margin, footerY, { align: 'right' });
+  // Right-aligned footer text seperti ReportLab example
+  doc.text(fullFooterText, pageWidth - margin, footerY, { align: 'right' });
 }
 
 // Professional header untuk halaman baru
@@ -524,12 +524,12 @@ function redrawTableHeader(doc: jsPDF, headers: string[], columnWidths: number[]
       doc.line(currentX, yPosition, currentX, yPosition + headerHeight);
     }
     
-    // Header text with white color for contrast (ReportLab style)
+    // Professional header text dengan consistent font sizing
     const textWidth = doc.getTextWidth(header);
     const centerX = currentX + (columnWidths[index] - textWidth) / 2;
     doc.setFont('helvetica', 'bold');
-    doc.setFontSize(10);
-    doc.setTextColor(255, 255, 255); // White text
+    doc.setFontSize(9); // 9pt untuk table headers sesuai ReportLab
+    doc.setTextColor(255, 255, 255); // White text pada grey background
     doc.text(header, centerX, yPosition + 9);
     doc.setTextColor(0, 0, 0); // Reset to black
     
