@@ -56,13 +56,13 @@ export async function generateAttendancePDF(data: ReportData): Promise<void> {
       // Company name next to logo
       doc.setFontSize(12);
       doc.setFont('helvetica', 'bold');
-      doc.text('PT Goden Energi Cemerlang Lestari', margin + 35, yPosition + 5);
+      // Company name removed
     } catch (error) {
       console.warn('Could not add logo to PDF:', error);
       // Fallback to text only
       doc.setFontSize(12);
       doc.setFont('helvetica', 'bold');
-      doc.text('PT Goden Energi Cemerlang Lestari', margin, yPosition);
+      // Company name removed
     }
     yPosition += 25;
     
@@ -100,7 +100,7 @@ export async function generateAttendancePDF(data: ReportData): Promise<void> {
       
       doc.text('Perusahaan', leftX, leftY);
       doc.text(':', leftX + labelWidth, leftY);
-      doc.text('PT Goden Energi Cemerlang Lestari', leftX + labelWidth + 5, leftY);
+      // Company name removed
       leftY += 10;
       
       doc.text('Nama Pengawas', leftX, leftY);
@@ -399,7 +399,7 @@ function generateShiftSection(
       doc.addImage(companyLogo, 'PNG', margin, 15, 30, 15);
       doc.setFontSize(10);
       doc.setFont('helvetica', 'bold');
-      doc.text('PT Goden Energi Cemerlang Lestari', margin + 35, 25);
+      // Company name removed
     } catch (error) {
       console.warn('Could not add logo to new page:', error);
     }
