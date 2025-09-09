@@ -66,8 +66,8 @@ export async function generateAttendancePDF(data: ReportData): Promise<void> {
     }
     yPosition += 25;
     
-    // Main Title
-    doc.setFontSize(14);
+    // Main Title (following ReportLab 14pt font standard)
+    doc.setFontSize(14); // Professional 14pt title as per ReportLab example
     doc.setFont('helvetica', 'bold');
     const title = 'FORMULIR PEMANTAUAN PERIODE KERJA KONTRAKTOR HAULING';
     doc.text(title, pageWidth / 2, yPosition, { align: 'center' });
@@ -203,7 +203,7 @@ export async function generateAttendancePDF(data: ReportData): Promise<void> {
     const availableSpace = pageHeight - yPosition - footerHeight;
     
     // Professional footer dengan page numbers dan timestamp
-    addProfessionalFooter(doc, pageWidth, pageHeight, margin, doc.internal.getNumberOfPages());
+    addProfessionalFooter(doc, pageWidth, pageHeight, margin, 1); // Single page for main report
     
     // Download
     const filename = `Laporan_Absensi_${data.startDate.replace(/-/g, '')}.pdf`;
@@ -354,7 +354,7 @@ function generateShiftSection(
   // CRITICAL: Check if we need a new page BEFORE starting to render any rows
   const estimatedTableHeight = (scheduledEmployees.length + 1) * rowHeight + 20;
   if (yPosition + estimatedTableHeight > doc.internal.pageSize.height - bottomMargin) {
-    addProfessionalFooter(doc, doc.internal.pageSize.width, doc.internal.pageSize.height, margin, doc.internal.getNumberOfPages());
+    addProfessionalFooter(doc, doc.internal.pageSize.width, doc.internal.pageSize.height, margin, 1);
     doc.addPage();
     
     // Professional header for new page
@@ -462,8 +462,8 @@ function formatDateForPDF(dateString: string): string {
   return `${day}-${month}-${year}`; // dd-mm-yyyy format as requested
 }
 
-// Professional footer dengan page numbers seperti ReportLab example
-function addProfessionalFooter(doc: jsPDF, pageWidth: number, pageHeight: number, margin: number, pageNumber: number): void {
+// Professional footer dengan page numbers seperti ReportLab example  
+function addProfessionalFooter(doc: jsPDF, pageWidth: number, pageHeight: number, margin: number, pageNumber?: number): void {
   const now = new Date();
   const day = now.getDate().toString().padStart(2, '0');
   const month = (now.getMonth() + 1).toString().padStart(2, '0');
@@ -476,7 +476,9 @@ function addProfessionalFooter(doc: jsPDF, pageWidth: number, pageHeight: number
   doc.setFont('helvetica', 'normal');
   
   // Page number di tengah (seperti ReportLab example)
-  doc.text(`Halaman ${pageNumber}`, pageWidth / 2, footerY, { align: 'center' });
+  if (pageNumber) {
+    doc.text(`Halaman ${pageNumber}`, pageWidth / 2, footerY, { align: 'center' });
+  }
   
   // Timestamp di kanan bawah
   const timestampText = `Laporan dicetak: ${day}-${month}-${year} ${hours}:${minutes}`;
