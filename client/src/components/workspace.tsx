@@ -55,7 +55,7 @@ export function Workspace() {
     
     const timer = setTimeout(() => {
       setIsLoading(false);
-    }, 2500); // Loading screen akan tampil selama 2.5 detik
+    }, 2000); // Reduced loading time untuk better UX
 
     return () => clearTimeout(timer);
   }, []);
