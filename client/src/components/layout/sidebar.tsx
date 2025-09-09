@@ -79,7 +79,7 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
                 }}
               />
             </div>
-            <span className="text-xl font-bold text-white">Attendance GECL</span>
+            <span className="text-xl font-bold text-white">OneTalanet GECL </span>
           </div>
         </div>
         
