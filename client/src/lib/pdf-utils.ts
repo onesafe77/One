@@ -246,26 +246,20 @@ function generateShiftSection(
   // Get scheduled employees for this shift first (from roster)
   const scheduledEmployees = data.roster?.filter(r => r.shift === shiftName && r.date === data.startDate) || [];
   
-  // Get attendance records for this specific shift only
-  const attendanceForThisShift = data.attendance.filter(att => {
-    if (att.date !== data.startDate) return false;
-    
-    // Find the employee's scheduled shift for this date
-    const employeeRoster = data.roster?.find(r => r.employeeId === att.employeeId && r.date === data.startDate);
-    
-    // If employee has a scheduled shift, match it with current shiftName
-    if (employeeRoster) {
-      return employeeRoster.shift === shiftName;
-    }
-    
-    // If no roster entry, determine by attendance time (fallback)
-    const attendanceHour = parseInt(att.time?.split(':')[0] || '0');
-    if (shiftName.toUpperCase() === 'SHIFT 1') {
-      return attendanceHour >= 5 && attendanceHour < 18;
-    } else {
-      return attendanceHour >= 18 || attendanceHour < 5;
-    }
-  });
+  // For SHIFT 1: show all attendance, For SHIFT 2: show only if there's actual Shift 2 roster data
+  let attendanceForThisShift: typeof data.attendance;
+  
+  if (shiftName.toUpperCase() === 'SHIFT 1') {
+    // For Shift 1 section: Include ALL attendance records for this date
+    attendanceForThisShift = data.attendance.filter(att => att.date === data.startDate);
+  } else {
+    // For Shift 2 section: Only show if employee is actually scheduled for Shift 2
+    attendanceForThisShift = data.attendance.filter(att => {
+      if (att.date !== data.startDate) return false;
+      const employeeRoster = data.roster?.find(r => r.employeeId === att.employeeId && r.date === data.startDate && r.shift === 'Shift 2');
+      return !!employeeRoster;
+    });
+  }
   
   // Add all attendance records as roster entries for this shift
   attendanceForThisShift.forEach(att => {
