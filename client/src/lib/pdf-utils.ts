@@ -255,31 +255,28 @@ function generateShiftSection(
   // Get scheduled employees for this shift first (from roster)
   const scheduledEmployees = data.roster?.filter(r => r.shift === shiftName && r.date === data.startDate) || [];
   
-  // ALWAYS include ALL attendance records for this shift based on scan time
-  const attendanceForThisShift = data.attendance.filter(att => {
-    if (att.date !== data.startDate) return false; // Wrong date
-    
-    // Determine which shift this attendance belongs to based on time
-    const [hours, minutes] = att.time.split(':').map(Number);
-    const totalMinutes = hours * 60 + minutes;
-    
-    // FIXED: Updated time ranges to match real shift windows
-    // SHIFT 1: 06:00-16:00 (360-960 minutes) - sesuai dengan backend validation  
-    // SHIFT 2: 18:00-06:00 (1080+ atau <=360 minutes) - sesuai dengan backend validation
-    let attendanceShift;
-    if (totalMinutes >= 1080 || totalMinutes <= 360) {
-      attendanceShift = 'SHIFT 2';
-    } else if (totalMinutes >= 360 && totalMinutes <= 960) {
-      attendanceShift = 'SHIFT 1';
-    } else {
-      attendanceShift = 'SHIFT 1'; // Default untuk edge cases
-    }
-    
-    console.log(`🔍 Attendance ${att.employeeId} at ${att.time} (${totalMinutes}min) → ${attendanceShift}, checking for ${shiftName}`);
-    
-    // Only include if this attendance belongs to the current shift being processed (case insensitive)
-    return attendanceShift.toUpperCase() === shiftName.toUpperCase();
-  });
+  console.log(`📅 Looking for roster with shift: ${shiftName}, date: ${data.startDate}`);
+  console.log(`📋 Found ${scheduledEmployees.length} scheduled employees from roster`);
+  console.log(`📋 Sample scheduled employees:`, scheduledEmployees.slice(0, 3).map(s => ({
+    id: s.employeeId, 
+    shift: s.shift, 
+    date: s.date,
+    name: s.employee?.name || 'NO NAME'
+  })));
+  
+  // CRITICAL FIX: Include ALL attendance records for ANY shift when generating this section
+  // This ensures ALL employees who checked in appear in the report
+  let attendanceForThisShift;
+  
+  if (shiftName.toUpperCase() === 'SHIFT 1') {
+    // For Shift 1 section: Include ALL attendance records
+    attendanceForThisShift = data.attendance.filter(att => att.date === data.startDate);
+    console.log(`🔍 SHIFT 1 Section: Including ALL ${attendanceForThisShift.length} attendance records`);
+  } else {
+    // For Shift 2 section: Don't duplicate, only include if no Shift 1 was generated
+    attendanceForThisShift = [];
+    console.log(`🔍 SHIFT 2 Section: Skipping to avoid duplication`);
+  }
   
   // Add all attendance records as roster entries for this shift
   console.log(`📋 Processing ${attendanceForThisShift.length} attendance records for ${shiftName}`);
