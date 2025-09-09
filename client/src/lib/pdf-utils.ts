@@ -866,7 +866,7 @@ function getShiftEmployees(data: ReportData, shift: string): any[] {
         // Add new roster entry for attendance - get hariKerja from any roster for this employee
         const anyRosterRecord = data.roster?.find(r => r.employeeId === att.employeeId);
         
-        scheduledEmployees.push({
+        const tempRoster = {
           id: `temp-${att.employeeId}`,
           employeeId: att.employeeId,
           date: data.startDate,
@@ -876,24 +876,28 @@ function getShiftEmployees(data: ReportData, shift: string): any[] {
           jamTidur: att.jamTidur || '',
           fitToWork: att.fitToWork || 'Fit To Work',
           hariKerja: anyRosterRecord?.hariKerja || '',
-          status: 'scheduled' as const,
-          employee: employee,
-          hasAttended: true,
-          attendanceTime: att.time,
-          actualJamTidur: att.jamTidur || '',
-          actualFitToWork: att.fitToWork || 'Fit To Work',
-          attendanceStatus: 'present' as const,
-          workDays: anyRosterRecord?.workDays || parseInt(anyRosterRecord?.hariKerja || '0', 10)
-        });
+          status: 'scheduled'
+        } as any;
+        
+        // Add extra properties for processing
+        (tempRoster as any).employee = employee;
+        (tempRoster as any).workDays = (anyRosterRecord as any)?.workDays || parseInt(anyRosterRecord?.hariKerja || '0', 10);
+        
+        scheduledEmployees.push(tempRoster);
       }
     }
   });
   
   // Convert to simple employee objects with enhanced data
-  return scheduledEmployees.map(roster => ({
-    id: roster.employeeId,
-    name: roster.employee?.name || 'Unknown',
-    nomorLambung: roster.employee?.nomorLambung || '-',
-    workDays: roster.workDays || parseInt(roster.hariKerja || '0', 10)
-  }));
+  return scheduledEmployees.map(roster => {
+    const employee = (roster as any).employee || data.employees.find(e => e.id === roster.employeeId);
+    const workDays = (roster as any).workDays || parseInt(roster.hariKerja || '0', 10);
+    
+    return {
+      id: roster.employeeId,
+      name: employee?.name || 'Unknown',
+      nomorLambung: employee?.nomorLambung || '-',
+      workDays: workDays
+    };
+  });
 }
