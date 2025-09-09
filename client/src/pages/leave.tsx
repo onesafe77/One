@@ -287,6 +287,22 @@ export default function Leave() {
     }
   }, [selectedEmployeeId, employees, form]);
 
+  // Fill form when editing request is selected
+  useEffect(() => {
+    if (editingRequest) {
+      form.reset({
+        employeeId: editingRequest.employeeId,
+        phoneNumber: editingRequest.phoneNumber || "",
+        startDate: editingRequest.startDate,
+        endDate: editingRequest.endDate,
+        leaveType: editingRequest.leaveType,
+        reason: editingRequest.reason,
+        status: editingRequest.status,
+      });
+      setUploadedAttachmentPath(editingRequest.attachmentPath || "");
+    }
+  }, [editingRequest, form]);
+
   const createMutation = useMutation({
     mutationFn: (data: InsertLeaveRequest) => apiRequest("/api/leave", "POST", data),
     onSuccess: () => {
@@ -1913,6 +1929,213 @@ export default function Leave() {
                 {actionType === 'approve' ? 'Setujui' : 'Tolak'}
               </Button>
             </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Leave Request Dialog */}
+      {editingRequest && (
+        <Dialog open={!!editingRequest} onOpenChange={() => setEditingRequest(null)}>
+          <DialogContent className="max-w-2xl">
+            <DialogHeader>
+              <DialogTitle>Edit Pengajuan Cuti</DialogTitle>
+            </DialogHeader>
+            <Form {...form}>
+              <form onSubmit={form.handleSubmit((values) => {
+                const submitData = {
+                  ...values,
+                  employeeName: employees.find(emp => emp.id === values.employeeId)?.name || "",
+                  attachmentPath: uploadedAttachmentPath || editingRequest.attachmentPath,
+                };
+                updateLeaveMutation.mutate({ id: editingRequest.id, request: submitData });
+              })} className="space-y-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <FormField
+                    control={form.control}
+                    name="employeeId"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Karyawan</FormLabel>
+                        <Popover open={openCombobox} onOpenChange={setOpenCombobox}>
+                          <PopoverTrigger asChild>
+                            <FormControl>
+                              <Button
+                                variant="outline"
+                                role="combobox"
+                                aria-expanded={openCombobox}
+                                className="justify-between"
+                              >
+                                {field.value
+                                  ? employees.find((emp) => emp.id === field.value)?.name
+                                  : "Pilih karyawan..."}
+                                <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                              </Button>
+                            </FormControl>
+                          </PopoverTrigger>
+                          <PopoverContent className="p-0">
+                            <Command>
+                              <CommandInput 
+                                placeholder="Cari karyawan..." 
+                                value={employeeSearchValue}
+                                onValueChange={setEmployeeSearchValue}
+                              />
+                              <CommandEmpty>Karyawan tidak ditemukan.</CommandEmpty>
+                              <CommandGroup>
+                                {employees
+                                  .filter(emp => 
+                                    employeeSearchValue === "" || 
+                                    emp.name.toLowerCase().includes(employeeSearchValue.toLowerCase()) ||
+                                    emp.id.toLowerCase().includes(employeeSearchValue.toLowerCase())
+                                  )
+                                  .slice(0, 10)
+                                  .map((emp) => (
+                                  <CommandItem
+                                    key={emp.id}
+                                    value={emp.id}
+                                    onSelect={() => {
+                                      field.onChange(emp.id);
+                                      setOpenCombobox(false);
+                                      setEmployeeSearchValue("");
+                                    }}
+                                  >
+                                    <Check
+                                      className={cn(
+                                        "mr-2 h-4 w-4",
+                                        field.value === emp.id ? "opacity-100" : "opacity-0"
+                                      )}
+                                    />
+                                    <div>
+                                      <div className="font-medium">{emp.name}</div>
+                                      <div className="text-sm text-gray-500">{emp.id}</div>
+                                    </div>
+                                  </CommandItem>
+                                ))}
+                              </CommandGroup>
+                            </Command>
+                          </PopoverContent>
+                        </Popover>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  
+                  <FormField
+                    control={form.control}
+                    name="phoneNumber"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Nomor WhatsApp</FormLabel>
+                        <FormControl>
+                          <Input {...field} placeholder="628xxxxxxxxxx" />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+                
+                <div className="grid grid-cols-2 gap-4">
+                  <FormField
+                    control={form.control}
+                    name="startDate"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Tanggal Mulai</FormLabel>
+                        <FormControl>
+                          <Input type="date" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  
+                  <FormField
+                    control={form.control}
+                    name="endDate"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Tanggal Selesai</FormLabel>
+                        <FormControl>
+                          <Input type="date" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+                
+                <FormField
+                  control={form.control}
+                  name="leaveType"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Jenis Cuti</FormLabel>
+                      <Select onValueChange={field.onChange} value={field.value}>
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Pilih jenis cuti" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="Cuti Tahunan">Cuti Tahunan</SelectItem>
+                          <SelectItem value="Cuti Sakit">Cuti Sakit</SelectItem>
+                          <SelectItem value="Cuti Khusus">Cuti Khusus</SelectItem>
+                          <SelectItem value="Cuti Melahirkan">Cuti Melahirkan</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                
+                <FormField
+                  control={form.control}
+                  name="reason"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Alasan Cuti</FormLabel>
+                      <FormControl>
+                        <Textarea {...field} placeholder="Jelaskan alasan pengajuan cuti..." />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                
+                <div className="flex justify-end space-x-2">
+                  <Button type="button" variant="outline" onClick={() => setEditingRequest(null)}>
+                    Batal
+                  </Button>
+                  <Button type="submit" disabled={updateLeaveMutation.isPending}>
+                    {updateLeaveMutation.isPending ? "Memperbarui..." : "Perbarui"}
+                  </Button>
+                </div>
+              </form>
+            </Form>
+          </DialogContent>
+        </Dialog>
+      )}
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Konfirmasi Hapus</DialogTitle>
+          </DialogHeader>
+          <p className="text-sm text-gray-600 dark:text-gray-400">
+            Apakah Anda yakin ingin menghapus data cuti ini? Tindakan ini tidak dapat dibatalkan.
+          </p>
+          <div className="flex justify-end space-x-2 mt-4">
+            <Button variant="outline" onClick={() => setShowDeleteDialog(false)}>
+              Batal
+            </Button>
+            <Button 
+              variant="destructive" 
+              onClick={() => requestToDelete && deleteLeaveMutation.mutate(requestToDelete)}
+              disabled={deleteLeaveMutation.isPending}
+            >
+              {deleteLeaveMutation.isPending ? "Menghapus..." : "Hapus"}
+            </Button>
           </div>
         </DialogContent>
       </Dialog>
