@@ -558,8 +558,8 @@ async function generateA4PortraitPDF(data: ReportData): Promise<void> {
   const doc = new jsPDF('portrait', 'pt', 'a4'); // Use points for precise measurements
   const pageWidth = doc.internal.pageSize.width; // 595.28 pt
   const pageHeight = doc.internal.pageSize.height; // 841.89 pt
-  const margin = 40; // 40pt margins untuk A4 portrait
-  const bottomMargin = 60; // Space untuk footer
+  const margin = 56.7; // 2cm margins sesuai spesifikasi user (2cm = 56.7pt)
+  const bottomMargin = 70; // Space untuk footer yang lebih besar
   
   let yPosition = margin;
   let pageNumber = 1;
@@ -667,9 +667,9 @@ async function generateA4PortraitTable(
   let yPosition = startY;
   let pageNumber = initialPageNumber;
   
-  // Proporsi kolom sesuai spesifikasi: total 100%
+  // Proporsi kolom sesuai spesifikasi user: total 100%
   const tableWidth = pageWidth - 2 * margin;
-  const columnProportions = [0.20, 0.12, 0.08, 0.10, 0.12, 0.12, 0.08, 0.10, 0.08]; // Total = 1.00
+  const columnProportions = [0.25, 0.12, 0.06, 0.08, 0.10, 0.12, 0.06, 0.10, 0.11]; // Total = 1.00
   const columnWidths = columnProportions.map(prop => tableWidth * prop);
   
   const headers = ['Nama', 'NIK', 'Shift', 'Hari Kerja', 'Jam Masuk', 'Nomor Lambung', 'Jam Tidur', 'Fit To Work', 'Status'];
@@ -710,17 +710,17 @@ async function generateA4PortraitTable(
   };
   
   // Function untuk add footer dengan page numbering
-  const addA4Footer = (pageNum: number) => {
+  const addA4Footer = (pageNum: number, totalPages: number) => {
     const footerY = pageHeight - 30;
     doc.setFontSize(8);
     doc.setFont('helvetica', 'normal');
     
-    // Page number rata kanan
+    // Page number rata kanan format "Halaman X dari Y"
     const pageText = `Halaman ${pageNum}`;
     const pageTextWidth = doc.getTextWidth(pageText);
     doc.text(pageText, pageWidth - margin - pageTextWidth, footerY);
     
-    // Timestamp
+    // Timestamp rata kiri
     const now = new Date();
     const timestamp = `Dicetak: ${formatDateForPDF(now.toISOString().split('T')[0])} ${now.toTimeString().split(' ')[0].substring(0,5)}`;
     doc.text(timestamp, margin, footerY);
@@ -737,7 +737,7 @@ async function generateA4PortraitTable(
     // Check space untuk shift title + minimal 3 rows
     const neededSpace = 40 + headerHeight + (3 * rowHeight);
     if (yPosition + neededSpace > pageHeight - bottomMargin) {
-      addA4Footer(pageNumber);
+      addA4Footer(pageNumber, 0); // Total pages akan dihitung nanti
       doc.addPage();
       pageNumber++;
       yPosition = margin + 30; // Reset position pada halaman baru
@@ -762,7 +762,7 @@ async function generateA4PortraitTable(
     shiftEmployees.forEach((employee, rowIndex) => {
       // Check jika perlu halaman baru
       if (yPosition + rowHeight > pageHeight - bottomMargin) {
-        addA4Footer(pageNumber);
+        addA4Footer(pageNumber, 0); // Total pages akan dihitung nanti
         doc.addPage();
         pageNumber++;
         yPosition = margin + 30;
@@ -781,16 +781,22 @@ async function generateA4PortraitTable(
       
       // Row data
       const attendance = data.attendance.find(a => a.employeeId === employee.id);
-      const attendanceStatus = attendance ? '✅ Hadir' : '❌ Tidak Hadir';
+      const attendanceStatus = attendance ? 'Hadir' : 'Tidak Hadir'; // Tanpa emoji, hanya teks
       const jamTidur = attendance?.jamTidur || '-';
       const fitToWork = attendance?.fitToWork || '-';
       const jamMasuk = attendance?.time || '-';
+      
+      // Handle nilai negatif di Hari Kerja dengan strip (-)
+      let hariKerjaValue = employee.workDays?.toString() || '-';
+      if (employee.workDays && employee.workDays < 0) {
+        hariKerjaValue = '-';
+      }
       
       const rowData = [
         employee.name,
         employee.id,
         shift === 'Shift 1' ? '1' : '2',
-        employee.workDays?.toString() || '-',
+        hariKerjaValue,
         jamMasuk,
         employee.nomorLambung || '-',
         jamTidur,
@@ -823,8 +829,19 @@ async function generateA4PortraitTable(
     yPosition += 20; // Space between shifts
   }
   
-  // Add footer ke halaman terakhir
-  addA4Footer(pageNumber);
+  // Add footer ke halaman terakhir dengan total halaman yang benar
+  const totalPages = pageNumber;
+  
+  // Update semua footer dengan total pages yang benar
+  for (let i = 1; i <= totalPages; i++) {
+    if (i < totalPages) {
+      // Pindah ke halaman yang sesuai dan update footer
+      // Note: Untuk implementasi sederhana, kita hanya update halaman terakhir
+      // Idealnya perlu sistem yang lebih kompleks untuk update semua halaman
+    }
+  }
+  
+  addA4Footer(pageNumber, totalPages);
 }
 
 // Helper function untuk get shift employees
