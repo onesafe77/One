@@ -1,7 +1,8 @@
 import { Switch, Route } from "wouter";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Sidebar } from "@/components/layout/sidebar";
 import { Header } from "@/components/layout/header";
+import { LoadingScreen } from "@/components/ui/loading-screen";
 
 import Dashboard from "@/pages/dashboard";
 import QRGenerator from "@/pages/qr-generator";
@@ -39,6 +40,7 @@ const workspaceRoutes = [
 
 export function Workspace() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
 
   const getCurrentTitle = () => {
     const currentPath = window.location.pathname;
@@ -46,7 +48,23 @@ export function Workspace() {
     return route?.title || "AttendanceQR Workspace";
   };
 
+  // Simulate initial loading when entering workspace
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setIsLoading(false);
+    }, 100);
+
+    return () => clearTimeout(timer);
+  }, []);
+
   return (
+    <>
+      <LoadingScreen 
+        isLoading={isLoading} 
+        onComplete={() => setIsLoading(false)}
+      />
+      
+      {!isLoading && (
     <div className="h-screen flex bg-gray-50 dark:bg-gray-900">
       <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
       
@@ -78,5 +96,7 @@ export function Workspace() {
         </main>
       </div>
     </div>
+      )}
+    </>
   );
 }
