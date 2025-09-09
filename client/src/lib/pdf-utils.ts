@@ -202,42 +202,7 @@ export async function generateAttendancePDF(data: ReportData): Promise<void> {
     const footerHeight = 60; // Space needed for summary + footer
     const availableSpace = pageHeight - yPosition - footerHeight;
     
-    // Summary and notes at bottom - only if there's enough space
-    if (availableSpace > 0) {
-      yPosition += 20;
-      doc.setFontSize(10);
-      doc.setFont('helvetica', 'bold');
-      
-      // Get summary data for the specific shift
-      const targetShift = data.shiftFilter === 'all' ? 'Shift 2' : data.shiftFilter;
-      const shiftScheduled = data.roster?.filter(r => r.shift === targetShift && r.date === data.startDate) || [];
-      const attendanceOnDate = data.attendance.filter(a => a.date === data.startDate);
-      const shiftAttended = shiftScheduled.filter(r => 
-        attendanceOnDate.some(a => a.employeeId === r.employeeId)
-      ).length;
-      const shiftAbsent = shiftScheduled.length - shiftAttended;
-      
-      const summaryText = `Ringkasan ${targetShift}: Dijadwalkan: ${shiftScheduled.length} | Hadir: ${shiftAttended} | Tidak Hadir: ${shiftAbsent}`;
-      doc.text(summaryText, margin, yPosition);
-    } else {
-      // Not enough space, add new page for summary
-      doc.addPage();
-      yPosition = 40;
-      
-      doc.setFontSize(10);
-      doc.setFont('helvetica', 'bold');
-      
-      const targetShift = data.shiftFilter === 'all' ? 'Shift 2' : data.shiftFilter;
-      const shiftScheduled = data.roster?.filter(r => r.shift === targetShift && r.date === data.startDate) || [];
-      const attendanceOnDate = data.attendance.filter(a => a.date === data.startDate);
-      const shiftAttended = shiftScheduled.filter(r => 
-        attendanceOnDate.some(a => a.employeeId === r.employeeId)
-      ).length;
-      const shiftAbsent = shiftScheduled.length - shiftAttended;
-      
-      const summaryText = `Ringkasan ${targetShift}: Dijadwalkan: ${shiftScheduled.length} | Hadir: ${shiftAttended} | Tidak Hadir: ${shiftAbsent}`;
-      doc.text(summaryText, margin, yPosition);
-    }
+    // Skip overall summary - individual shift summaries are already shown after each table
     
     // Footer - tanggal & jam pembuatan laporan di kanan bawah halaman
     const now = new Date();
