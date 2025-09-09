@@ -17,9 +17,9 @@ function Router() {
   const currentPath = window.location.pathname;
   const urlParams = new URLSearchParams(window.location.search);
   
-  // Prioritaskan workspace routes
+  // Prioritaskan workspace routes - selalu render Workspace untuk path yang dimulai dengan /workspace
   if (currentPath.startsWith('/workspace')) {
-    return <Workspace />;
+    return <Workspace key={currentPath} />; // key memastikan component remount saat path berubah
   }
   
   return (
