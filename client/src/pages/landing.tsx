@@ -20,6 +20,7 @@ import {
   TrendingUp
 } from "lucide-react";
 import companyLogo from "@assets/WhatsApp Image 2024-11-30 at 13.08.33_1755505069008.jpeg";
+import backgroundImage from "@assets/image_1757401187693.png";
 
 const features = [
   {
@@ -113,33 +114,45 @@ export default function Landing() {
       </header>
 
       {/* Hero Section */}
-      <section className="py-20 px-4">
-        <div className="container mx-auto text-center">
+      <section 
+        className="relative py-20 px-4 min-h-[80vh] flex items-center"
+        style={{
+          backgroundImage: `url(${backgroundImage})`,
+          backgroundSize: 'cover',
+          backgroundPosition: 'center',
+          backgroundRepeat: 'no-repeat'
+        }}
+      >
+        {/* Background Overlay */}
+        <div className="absolute inset-0 bg-black/50 dark:bg-black/70"></div>
+        
+        {/* Content */}
+        <div className="container mx-auto text-center relative z-10">
           <div className="max-w-4xl mx-auto">
-            <Badge variant="secondary" className="mb-6">
+            <Badge variant="secondary" className="mb-6 bg-white/90 dark:bg-gray-800/90 text-gray-900 dark:text-white">
               <Building2 className="w-4 h-4 mr-2" />
               PT. GECL - Sistem Manajemen Karyawan Terpadu
             </Badge>
             
-            <h1 className="text-5xl font-bold text-gray-900 dark:text-white mb-6 leading-tight">
+            <h1 className="text-5xl font-bold text-white mb-6 leading-tight drop-shadow-lg">
               Sistem Manajemen
-              <span className="text-primary-600 block">OneTalent GECL</span>
+              <span className="text-primary-400 block">OneTalent GECL</span>
             </h1>
             
-            <p className="text-xl text-gray-600 dark:text-gray-300 mb-8 leading-relaxed">
+            <p className="text-xl text-gray-100 mb-8 leading-relaxed drop-shadow-md">
               Platform komprehensif untuk manajemen karyawan dengan QR code attendance, 
               leave management, SIMPER monitoring, dan analytics real-time
             </p>
             
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <Link href="/workspace">
-                <Button size="lg" className="bg-primary-600 hover:bg-primary-700 text-lg px-8 py-3">
+                <Button size="lg" className="bg-primary-600 hover:bg-primary-700 text-lg px-8 py-3 shadow-xl">
                   <Monitor className="mr-2 w-5 h-5" />
                   Akses Workspace
                 </Button>
               </Link>
               <Link href="/workspace/scanner">
-                <Button size="lg" variant="outline" className="text-lg px-8 py-3">
+                <Button size="lg" variant="outline" className="text-lg px-8 py-3 bg-white/10 border-white text-white hover:bg-white hover:text-gray-900 backdrop-blur-sm">
                   <Scan className="mr-2 w-5 h-5" />
                   Quick Scan
                 </Button>
