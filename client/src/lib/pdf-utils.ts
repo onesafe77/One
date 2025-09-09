@@ -166,7 +166,7 @@ export async function generateAttendancePDF(data: ReportData): Promise<void> {
       doc.text(nameText, sigBoxX + (sigBoxWidth - nameWidth) / 2, sigBoxY + 50);
       doc.setFontSize(10);
       
-      yPosition = infoBoxY + infoBoxHeight + 20;
+      yPosition = infoBoxY + infoBoxHeight + 10; // Reduced spacing
     }
     
     // Date
@@ -175,22 +175,23 @@ export async function generateAttendancePDF(data: ReportData): Promise<void> {
       ? `Tanggal: ${formatDateForPDF(data.startDate)}`
       : `Periode: ${formatDateForPDF(data.startDate)} - ${formatDateForPDF(data.endDate)}`;
     doc.text(reportDate, pageWidth / 2, yPosition, { align: 'center' });
-    yPosition += 20;
+    yPosition += 15; // Reduced spacing
     
     // Generate shift sections based on filter
     if (data.shiftFilter === 'all' || data.shiftFilter === 'Shift 1') {
       yPosition = generateShiftSection(doc, data, 'Shift 1', yPosition, margin, pageWidth);
     }
     
-    // Add Shift 2 if needed
-    if (data.shiftFilter === 'all' || data.shiftFilter === 'Shift 2') {
+    // Add Shift 2 if needed - only if there's actually Shift 2 data
+    const shift2Data = data.roster?.filter(r => r.shift === 'Shift 2' && r.date === data.startDate) || [];
+    if ((data.shiftFilter === 'all' || data.shiftFilter === 'Shift 2') && shift2Data.length > 0) {
       // Only add space/page if we already rendered Shift 1
       if (data.shiftFilter === 'all') {
         if (yPosition > pageHeight - 100) {
           doc.addPage();
           yPosition = 30;
         } else {
-          yPosition += 30; // Add space between sections
+          yPosition += 20; // Reduced space between sections
         }
       }
       
@@ -272,24 +273,34 @@ function generateShiftSection(
   let yPosition = startY;
   
   // Shift title - subjudul tebal
-  doc.setFontSize(12);
+  doc.setFontSize(11);
   doc.setFont('helvetica', 'bold');
   doc.text(shiftName.toUpperCase(), margin, yPosition);
-  yPosition += 10; // Reduced spacing for tighter layout
+  yPosition += 8; // Compact spacing
   
   // Get scheduled employees for this shift first (from roster)
   const scheduledEmployees = data.roster?.filter(r => r.shift === shiftName && r.date === data.startDate) || [];
   
-  // Include ALL attendance records for this shift section
-  let attendanceForThisShift: typeof data.attendance;
-  
-  if (shiftName.toUpperCase() === 'SHIFT 1') {
-    // For Shift 1 section: Include ALL attendance records
-    attendanceForThisShift = data.attendance.filter(att => att.date === data.startDate);
-  } else {
-    // For Shift 2 section: Don't duplicate
-    attendanceForThisShift = [];
-  }
+  // Get attendance records for this specific shift only
+  const attendanceForThisShift = data.attendance.filter(att => {
+    if (att.date !== data.startDate) return false;
+    
+    // Find the employee's scheduled shift for this date
+    const employeeRoster = data.roster?.find(r => r.employeeId === att.employeeId && r.date === data.startDate);
+    
+    // If employee has a scheduled shift, match it with current shiftName
+    if (employeeRoster) {
+      return employeeRoster.shift === shiftName;
+    }
+    
+    // If no roster entry, determine by attendance time (fallback)
+    const attendanceHour = parseInt(att.attendanceTime?.split(':')[0] || '0');
+    if (shiftName.toUpperCase() === 'SHIFT 1') {
+      return attendanceHour >= 5 && attendanceHour < 18;
+    } else {
+      return attendanceHour >= 18 || attendanceHour < 5;
+    }
+  });
   
   // Add all attendance records as roster entries for this shift
   attendanceForThisShift.forEach(att => {
@@ -349,8 +360,8 @@ function generateShiftSection(
   
   const columnWidths = baseColumnWidths.map(width => Math.floor(width * scaleFactor));
   const finalTableWidth = columnWidths.reduce((sum, width) => sum + width, 0);
-  const rowHeight = 12; // Konsisten jarak antar baris, tidak terlalu renggang
-  const headerHeight = 14; // Proportional header height
+  const rowHeight = 11; // More compact row height
+  const headerHeight = 13; // Compact header height
   
   // Header background abu-abu muda
   doc.setFillColor(240, 240, 240); // Light gray background
@@ -523,10 +534,10 @@ function generateShiftSection(
   });
   
   // Clean bottom border for table
-  doc.setLineWidth(0.3);
+  doc.setLineWidth(0.2);
   doc.setDrawColor(0, 0, 0);
-  doc.line(margin, yPosition + 3, margin + finalTableWidth, yPosition + 3);
-  yPosition += 15;
+  doc.line(margin, yPosition + 2, margin + finalTableWidth, yPosition + 2);
+  yPosition += 8; // Reduced spacing after table
   
   // Shift summary - teks lebih kecil dari isi tabel
   doc.setFontSize(9); // Smaller than table content (10pt)
@@ -541,7 +552,7 @@ function generateShiftSection(
   const summaryText = `Ringkasan ${shiftName}: Dijadwalkan: ${scheduledCount} | Hadir: ${attendedCount} | Tidak Hadir: ${absentCount}`;
   doc.text(summaryText, margin, yPosition);
   
-  return yPosition + 25;
+  return yPosition + 15; // Reduced spacing after shift section
 }
 
 
