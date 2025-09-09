@@ -1,0 +1,127 @@
+from reportlab.lib import colors
+from reportlab.lib.pagesizes import A4, landscape
+from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer
+
+# Nama file PDF
+file_name = "laporan_shift1.pdf"
+
+# Setup dokumen
+doc = SimpleDocTemplate(
+    file_name,
+    pagesize=landscape(A4),
+    rightMargin=20,
+    leftMargin=20,
+    topMargin=20,
+    bottomMargin=20
+)
+
+# Style teks
+styles = getSampleStyleSheet()
+title_style = ParagraphStyle(
+    'TitleStyle',
+    parent=styles['Heading1'],
+    fontName='Helvetica-Bold',
+    fontSize=14,
+    alignment=1,  # center
+    spaceAfter=12
+)
+table_header_style = ParagraphStyle(
+    'TableHeader',
+    parent=styles['Normal'],
+    fontName='Helvetica-Bold',
+    fontSize=10,
+    alignment=1
+)
+table_cell_style = ParagraphStyle(
+    'TableCell',
+    parent=styles['Normal'],
+    fontName='Helvetica',
+    fontSize=9,
+    alignment=1
+)
+table_cell_left = ParagraphStyle(
+    'TableCellLeft',
+    parent=styles['Normal'],
+    fontName='Helvetica',
+    fontSize=9,
+    alignment=0
+)
+
+# Judul laporan
+judul = [
+    Paragraph("Tanggal: 09-09-2025", title_style),
+    Paragraph("SHIFT 1", title_style),
+    Spacer(1, 12)
+]
+
+# Header tabel
+header = [
+    Paragraph("Nama", table_header_style),
+    Paragraph("NIK", table_header_style),
+    Paragraph("Shift", table_header_style),
+    Paragraph("Hari Kerja", table_header_style),
+    Paragraph("Jam Masuk", table_header_style),
+    Paragraph("Nomor Lambung", table_header_style),
+    Paragraph("Jam Tidur", table_header_style),
+    Paragraph("Fit To Work", table_header_style),
+    Paragraph("Status", table_header_style),
+]
+
+# Data isi tabel
+data_rows = [
+    ["I KADE ASTRAWAN", "C-08762", "1", "26", "10:41:58", "GECL 9004", "6", "Fit To Work", "Hadir"],
+    ["MISRADI", "C-05078", "1", "28", "10:42:18", "SPARE GECL 9006", "6", "Fit To Work", "Hadir"],
+    ["ZAILANI", "C-21723", "1", "26", "10:42:41", "SPARE GECL 9015", "5", "Fit To Work", "Hadir"],
+    ["ANDERYANTO", "C-08217", "1", "26", "15:44:02", "GECL 9081", "5", "Fit To Work", "Hadir"],
+    ["RUSLIANSYAH", "C-02967", "1", "27", "15:44:06", "GECL 9090", "6", "Fit To Work", "Hadir"],
+    ["HADIR", "C-10307", "1", "24", "15:44:21", "GECL 9103", "6", "Fit To Work", "Hadir"],
+    ["HERU SAPUTRA", "C-06441", "1", "25", "15:44:54", "GECL 9109", "6", "Fit To Work", "Hadir"],
+    ["M HARISWAN", "C-09957", "1", "26", "15:45:22", "GECL 9132", "5", "Fit To Work", "Hadir"],
+    ["MAMAN", "C-12853", "1", "27", "15:46:08", "GECL 9133", "6", "Fit To Work", "Hadir"],
+    ["SALEH HUDON", "C-04715", "1", "25", "15:47:22", "GECL 9136", "5", "Fit To Work", "Hadir"],
+    ["SAPTO ADI PRASETYO", "C-01549", "1", "27", "15:47:52", "GECL 9132", "6", "Fit To Work", "Hadir"],
+]
+
+# Gabungkan header + isi tabel
+table_data = [header]
+for i, row in enumerate(data_rows):
+    formatted_row = [
+        Paragraph(row[0], table_cell_left),  # Nama rata kiri
+        Paragraph(row[1], table_cell_style),
+        Paragraph(row[2], table_cell_style),
+        Paragraph(row[3], table_cell_style),
+        Paragraph(row[4], table_cell_style),
+        Paragraph(row[5], table_cell_left),  # Nomor lambung rata kiri
+        Paragraph(row[6], table_cell_style),
+        Paragraph(row[7], table_cell_style),
+        Paragraph(f"✅ {row[8]}", table_cell_style),  # Status dengan icon
+    ]
+    table_data.append(formatted_row)
+
+# Buat tabel
+table = Table(table_data, colWidths=[100, 60, 40, 60, 70, 100, 60, 80, 60])
+
+# Style tabel
+table.setStyle(TableStyle([
+    ('BACKGROUND', (0, 0), (-1, 0), colors.grey),
+    ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
+    ('ALIGN', (1, 1), (-1, -1), 'CENTER'),
+    ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
+    ('INNERGRID', (0, 0), (-1, -1), 0.25, colors.black),
+    ('BOX', (0, 0), (-1, -1), 0.5, colors.black),
+    ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+    ('FONTSIZE', (0, 0), (-1, -1), 9),
+]))
+
+# Shading baris genap
+for i in range(1, len(table_data)):
+    if i % 2 == 0:
+        bg_color = colors.whitesmoke
+        table.setStyle(TableStyle([('BACKGROUND', (0, i), (-1, i), bg_color)]))
+
+# Build PDF
+elements = judul + [table]
+doc.build(elements)
+
+print(f"PDF berhasil dibuat: {file_name}")

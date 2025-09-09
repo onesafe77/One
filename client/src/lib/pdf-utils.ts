@@ -294,11 +294,11 @@ function generateShiftSection(
     return yPosition;
   }
   
-  // Table headers with professional font (Arial equivalent in jsPDF is helvetica)
-  doc.setFontSize(10); // 10pt font size as requested
+  // Table headers with professional font hierarchy (following ReportLab standards)
+  doc.setFontSize(10); // 10pt for headers as per ReportLab example
   doc.setFont('helvetica', 'bold');
   const headers = ['Nama', 'NIK', 'Shift', 'Hari Kerja', 'Jam Masuk', 'Nomor Lambung', 'Jam Tidur', 'Fit To Work', 'Status'];
-  const baseColumnWidths = [80, 50, 30, 40, 45, 75, 35, 55, 40]; // Professional proportions
+  const baseColumnWidths = [85, 55, 30, 45, 50, 85, 40, 60, 45]; // Enhanced proportions based on ReportLab
   
   // Auto-fit table to page width
   const availableWidth = pageWidth - (2 * margin);
@@ -310,8 +310,8 @@ function generateShiftSection(
   const rowHeight = 11; // More compact row height
   const headerHeight = 13; // Compact header height
   
-  // Header background abu-abu muda
-  doc.setFillColor(240, 240, 240); // Light gray background
+  // Professional header background (following ReportLab grey standard)
+  doc.setFillColor(128, 128, 128); // Proper grey background like ReportLab example
   doc.rect(margin, yPosition, finalTableWidth, headerHeight, 'F');
   
   // We will show ALL scheduled employees for this shift (both attended and not attended)
@@ -331,7 +331,8 @@ function generateShiftSection(
     }
   }
   
-  // Header text - center aligned and bold
+  // Header text - center aligned, bold, white text on grey background (ReportLab style)
+  doc.setTextColor(255, 255, 255); // White text for contrast on grey background
   currentX = margin;
   headers.forEach((header, index) => {
     const headerText = header;
@@ -340,6 +341,7 @@ function generateShiftSection(
     doc.text(headerText, centerX, yPosition + 9);
     currentX += columnWidths[index];
   });
+  doc.setTextColor(0, 0, 0); // Reset to black text for content
   
   // Horizontal line after header tipis
   doc.setLineWidth(0.2);
@@ -347,7 +349,7 @@ function generateShiftSection(
   
   yPosition += headerHeight;
   doc.setFont('helvetica', 'normal');
-  doc.setFontSize(10); // Professional 10pt font size for content
+  doc.setFontSize(9); // 9pt font for content as per ReportLab professional standard
   
   // CRITICAL: Check if we need a new page BEFORE starting to render any rows
   const estimatedTableHeight = (scheduledEmployees.length + 1) * rowHeight + 20;
@@ -377,10 +379,10 @@ function generateShiftSection(
     // Get work days from roster data
     const workDaysText = rosterRecord.hariKerja || '-';
     
-    // Prepare row data - show ALL scheduled employees with their attendance status
+    // Prepare row data - show ALL scheduled employees with their attendance status (ReportLab style with icons)
     const jamTidur = attendanceRecord?.jamTidur || '-';
     const fitToWorkStatus = attendanceRecord?.fitToWork || 'Not Fit To Work';
-    const attendanceStatus = attendanceRecord ? 'Hadir' : 'Tidak Hadir';
+    const attendanceStatus = attendanceRecord ? '✅ Hadir' : '❌ Tidak Hadir'; // Icons like ReportLab example
     const attendanceTime = attendanceRecord?.time || '-';
     
     const rowData = [
@@ -397,28 +399,25 @@ function generateShiftSection(
       attendanceStatus
     ];
     
-    // No alternating background for consistent row appearance
-    // All rows will have the same visual height
+    // Alternating row backgrounds (following ReportLab professional standard)
+    if (rowIndex % 2 === 1) { // Even rows (0-indexed, so 1,3,5... are visually "even")
+      doc.setFillColor(245, 245, 245); // Light whitesmoke background for alternating rows
+      doc.rect(margin, yPosition, finalTableWidth, rowHeight, 'F');
+    }
     
     // Draw row data with proper alignment
     let currentX = margin;
     rowData.forEach((cellData, columnIndex) => {
       const cellText = String(cellData);
       
-      if (columnIndex === 0) {
-        // Name column - left aligned with consistent padding
-        doc.text(cellText, currentX + 4, yPosition + 7.5); // Perfect center in 12px row
-      } else if (columnIndex === 1) {
-        // NIK column - left aligned 
-        doc.text(cellText, currentX + 4, yPosition + 7.5);
-      } else if (columnIndex === 5) {
-        // Nomor Lambung column - left aligned for better readability
-        doc.text(cellText, currentX + 4, yPosition + 7.5);
+      if (columnIndex === 0 || columnIndex === 5) {
+        // Name and Nomor Lambung columns - left aligned (ReportLab style)
+        doc.text(cellText, currentX + 3, yPosition + 7.5);
       } else {
-        // Other columns - perfectly center aligned
+        // All other columns - center aligned (ReportLab style)
         const textWidth = doc.getTextWidth(cellText);
         const centerX = currentX + (columnWidths[columnIndex] - textWidth) / 2;
-        doc.text(cellText, centerX, yPosition + 7.5); // Perfect center in 12px row
+        doc.text(cellText, centerX, yPosition + 7.5);
       }
       currentX += columnWidths[columnIndex];
     });
@@ -508,8 +507,8 @@ function addProfessionalHeader(doc: jsPDF, margin: number, shiftName: string): n
 
 // Redraw table header untuk halaman baru
 function redrawTableHeader(doc: jsPDF, headers: string[], columnWidths: number[], finalTableWidth: number, margin: number, yPosition: number, headerHeight: number): number {
-  // Header background abu-abu muda
-  doc.setFillColor(240, 240, 240);
+  // Professional header background (ReportLab grey standard)
+  doc.setFillColor(128, 128, 128);
   doc.rect(margin, yPosition, finalTableWidth, headerHeight, 'F');
   
   // Table border
@@ -523,12 +522,14 @@ function redrawTableHeader(doc: jsPDF, headers: string[], columnWidths: number[]
       doc.line(currentX, yPosition, currentX, yPosition + headerHeight);
     }
     
-    // Header text
+    // Header text with white color for contrast (ReportLab style)
     const textWidth = doc.getTextWidth(header);
     const centerX = currentX + (columnWidths[index] - textWidth) / 2;
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(10);
+    doc.setTextColor(255, 255, 255); // White text
     doc.text(header, centerX, yPosition + 9);
+    doc.setTextColor(0, 0, 0); // Reset to black
     
     currentX += columnWidths[index];
   });
