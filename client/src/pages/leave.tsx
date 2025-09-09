@@ -746,15 +746,26 @@ export default function Leave() {
       statusMatch = request.status === statusFilter;
     }
     
-    // Name search (case insensitive)
-    const nameMatch = searchName === "" || 
-      getEmployeeName(request.employeeId).toLowerCase().includes(searchName.toLowerCase());
+    // Comprehensive search (case insensitive) - search across multiple fields
+    let searchMatch = true;
+    if (searchName !== "") {
+      const searchTerm = searchName.toLowerCase();
+      const employeeName = getEmployeeName(request.employeeId).toLowerCase();
+      const employeeId = request.employeeId.toLowerCase();
+      const leaveType = getLeaveTypeLabel(request.leaveType).toLowerCase();
+      const reason = (request.reason || "").toLowerCase();
+      const startDate = new Date(request.startDate).toLocaleDateString('id-ID');
+      const endDate = new Date(request.endDate).toLocaleDateString('id-ID');
+      
+      searchMatch = employeeName.includes(searchTerm) ||
+                   employeeId.includes(searchTerm) ||
+                   leaveType.includes(searchTerm) ||
+                   reason.includes(searchTerm) ||
+                   startDate.includes(searchTerm) ||
+                   endDate.includes(searchTerm);
+    }
     
-    // NIK search (case insensitive)
-    const nikMatch = searchNIK === "" || 
-      request.employeeId.toLowerCase().includes(searchNIK.toLowerCase());
-    
-    return statusMatch && nameMatch && nikMatch;
+    return statusMatch && searchMatch;
   });
 
   const handleApprove = (id: string) => {
@@ -1675,18 +1686,31 @@ export default function Leave() {
           <CardHeader className="pb-3">
             <div className="flex items-center justify-between">
               <CardTitle className="text-lg">Semua Permohonan Cuti</CardTitle>
-              <Select value={statusFilter} onValueChange={setStatusFilter}>
-                <SelectTrigger className="w-36 h-9" data-testid="leave-status-filter">
-                  <SelectValue placeholder="Semua Status" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">📋 Semua Status</SelectItem>
-                  <SelectItem value="pending">⏳ Menunggu</SelectItem>
-                  <SelectItem value="approved">✅ Disetujui</SelectItem>
-                  <SelectItem value="rejected">❌ Ditolak</SelectItem>
-                  <SelectItem value="monitoring">🔍 Monitoring</SelectItem>
-                </SelectContent>
-              </Select>
+              <div className="flex items-center gap-3">
+                <Input
+                  placeholder="Cari nama karyawan atau NIK..."
+                  value={searchName}
+                  onChange={(e) => {
+                    const value = e.target.value;
+                    setSearchName(value);
+                    setSearchNIK(value); // Use same search for both name and NIK
+                  }}
+                  className="w-64 h-9"
+                  data-testid="leave-search-input-all"
+                />
+                <Select value={statusFilter} onValueChange={setStatusFilter}>
+                  <SelectTrigger className="w-36 h-9" data-testid="leave-status-filter">
+                    <SelectValue placeholder="Semua Status" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">📋 Semua Status</SelectItem>
+                    <SelectItem value="pending">⏳ Menunggu</SelectItem>
+                    <SelectItem value="approved">✅ Disetujui</SelectItem>
+                    <SelectItem value="rejected">❌ Ditolak</SelectItem>
+                    <SelectItem value="monitoring">🔍 Monitoring</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
           </CardHeader>
             
@@ -1713,7 +1737,27 @@ export default function Leave() {
                   <tbody>
                     {/* Data dari Monitoring */}
                     {Array.isArray(pendingFromMonitoring) && pendingFromMonitoring
-                      .filter((request: any) => statusFilter === "all" || statusFilter === "monitoring")
+                      .filter((request: any) => {
+                        // Status filter for monitoring
+                        const statusMatch = statusFilter === "all" || statusFilter === "monitoring";
+                        
+                        // Search filter for monitoring
+                        let searchMatch = true;
+                        if (searchName !== "") {
+                          const searchTerm = searchName.toLowerCase();
+                          const employeeName = (request.employeeName || "").toLowerCase();
+                          const employeeId = (request.employeeId || "").toLowerCase();
+                          const leaveType = (request.leaveType || "").toLowerCase();
+                          const startDate = (request.startDate || "").toLowerCase();
+                          
+                          searchMatch = employeeName.includes(searchTerm) ||
+                                       employeeId.includes(searchTerm) ||
+                                       leaveType.includes(searchTerm) ||
+                                       startDate.includes(searchTerm);
+                        }
+                        
+                        return statusMatch && searchMatch;
+                      })
                       .map((request: any) => (
                       <tr key={`monitoring-${request.id}`} className="border-b border-gray-100 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800">
                         <td className="p-3">
