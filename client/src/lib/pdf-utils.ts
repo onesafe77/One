@@ -558,7 +558,7 @@ async function generateA4PortraitPDF(data: ReportData): Promise<void> {
   const doc = new jsPDF('portrait', 'pt', 'a4'); // Use points for precise measurements
   const pageWidth = doc.internal.pageSize.width; // 595.28 pt
   const pageHeight = doc.internal.pageSize.height; // 841.89 pt
-  const margin = 28; // 1cm margin minimal untuk memaksimalkan area konten (28pt = 1cm)
+  const margin = 15; // 0.5cm margin minimal mendekati batas A4 (15pt ≈ 0.5cm)
   const bottomMargin = 60; // Space untuk footer
   
   let yPosition = margin;
@@ -681,14 +681,14 @@ async function generateA4PortraitTable(
   let yPosition = startY;
   let pageNumber = initialPageNumber;
   
-  // Proporsi kolom untuk area konten maksimal: total 100%
+  // Proporsi kolom untuk area maksimal mendekati batas A4: total 100%
   const tableWidth = pageWidth - 2 * margin;
-  const columnProportions = [0.18, 0.12, 0.06, 0.08, 0.12, 0.16, 0.07, 0.13, 0.08]; // Total = 1.00
+  const columnProportions = [0.17, 0.12, 0.06, 0.08, 0.12, 0.17, 0.07, 0.14, 0.07]; // Total = 1.00
   const columnWidths = columnProportions.map(prop => tableWidth * prop);
   
   const headers = ['Nama', 'NIK', 'Shift', 'Hari Kerja', 'Jam Masuk', 'Nomor Lambung', 'Jam Tidur', 'Fit To Work', 'Status'];
-  const rowHeight = 26; // Optimized untuk margin baru
-  const headerHeight = 30; // Proportional header height
+  const rowHeight = 28; // Row height untuk readability
+  const headerHeight = 32; // Header height untuk wrap text
   
   // Function untuk draw header tabel (hanya sekali per halaman)
   const drawTableHeader = (yPos: number) => {
