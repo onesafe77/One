@@ -20,21 +20,21 @@ import EmployeePersonalData from "@/pages/employee-personal-data";
 import NotFound from "@/pages/not-found";
 
 const workspaceRoutes = [
-  { path: "/", component: Dashboard, title: "Dashboard Karyawan PT.GECL" },
-  { path: "/qr-generator", component: QRGenerator, title: "Generate QR Code" },
-  { path: "/scanner", component: Scanner, title: "Scan QR Code" },
-  { path: "/employees", component: Employees, title: "Data Karyawan" },
-  { path: "/roster", component: Roster, title: "Roster Kerja" },
-  { path: "/leave", component: Leave, title: "Manajemen Cuti" },
-  { path: "/leave-roster-monitoring", component: LeaveRosterMonitoring, title: "Monitoring Roster Cuti" },
-  { path: "/simper-monitoring", component: SimperMonitoring, title: "Monitoring SIMPER Karyawan" },
-  { path: "/reports", component: Reports, title: "Laporan" },
-  { path: "/meetings", component: Meetings, title: "Meeting Management" },
-  { path: "/meeting-scanner", component: MeetingScanner, title: "Scan QR Meeting" },
-  { path: "/driver-view", component: DriverView, title: "Driver View - Data Karyawan" },
-  { path: "/mobile-driver", component: MobileDriverView, title: "Driver Mobile View" },
-  { path: "/employee-personal", component: EmployeePersonalData, title: "Data Pribadi Karyawan" },
-  { path: "/qr-redirect", component: () => <div>Loading...</div>, title: "QR Redirect" },
+  { path: "/workspace", component: Dashboard, title: "Dashboard Karyawan PT.GECL" },
+  { path: "/workspace/dashboard", component: Dashboard, title: "Dashboard Karyawan PT.GECL" },
+  { path: "/workspace/qr-generator", component: QRGenerator, title: "Generate QR Code" },
+  { path: "/workspace/scanner", component: Scanner, title: "Scan QR Code" },
+  { path: "/workspace/employees", component: Employees, title: "Data Karyawan" },
+  { path: "/workspace/roster", component: Roster, title: "Roster Kerja" },
+  { path: "/workspace/leave", component: Leave, title: "Manajemen Cuti" },
+  { path: "/workspace/leave-roster-monitoring", component: LeaveRosterMonitoring, title: "Monitoring Roster Cuti" },
+  { path: "/workspace/simper-monitoring", component: SimperMonitoring, title: "Monitoring SIMPER Karyawan" },
+  { path: "/workspace/reports", component: Reports, title: "Laporan" },
+  { path: "/workspace/meetings", component: Meetings, title: "Meeting Management" },
+  { path: "/workspace/meeting-scanner", component: MeetingScanner, title: "Scan QR Meeting" },
+  { path: "/workspace/driver-view", component: DriverView, title: "Driver View - Data Karyawan" },
+  { path: "/workspace/mobile-driver", component: MobileDriverView, title: "Driver Mobile View" },
+  { path: "/workspace/employee-personal", component: EmployeePersonalData, title: "Data Pribadi Karyawan" },
 ];
 
 export function Workspace() {

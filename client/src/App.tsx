@@ -5,30 +5,32 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { ThemeProvider } from "@/hooks/use-theme";
 
 import { Workspace } from "@/components/workspace";
+import Landing from "@/pages/landing";
 import MobileDriverView from "@/pages/mobile-driver-view";
 import DriverView from "@/pages/driver-view";
 import { Route, Switch } from "wouter";
 
 /**
- * Router component tanpa authentication
+ * Router component dengan landing page dan workspace
  */
 function Router() {
   const currentPath = window.location.pathname;
   const urlParams = new URLSearchParams(window.location.search);
   
-  // Untuk mobile driver dan driver view dengan parameter NIK
-  if ((currentPath === '/mobile-driver' || currentPath === '/driver-view') && urlParams.has('nik')) {
-    return (
-      <Switch>
-        <Route path="/mobile-driver" component={MobileDriverView} />
-        <Route path="/driver-view" component={DriverView} />
-      </Switch>
-    );
-  }
-  
-  // Handle QR redirect
-  if (currentPath === '/qr-redirect') {
-    return (
+  return (
+    <Switch>
+      {/* Landing Page */}
+      <Route path="/" exact component={Landing} />
+      
+      {/* Mobile Driver dan Driver View dengan parameter NIK */}
+      <Route path="/mobile-driver">
+        {() => urlParams.has('nik') ? <MobileDriverView /> : <div>Parameter NIK required</div>}
+      </Route>
+      <Route path="/driver-view">
+        {() => urlParams.has('nik') ? <DriverView /> : <div>Parameter NIK required</div>}
+      </Route>
+      
+      {/* QR Redirect */}
       <Route path="/qr-redirect">
         {() => {
           const qrData = urlParams.get('data') || urlParams.get('qr');
@@ -45,11 +47,11 @@ function Router() {
           return <div>Redirecting...</div>;
         }}
       </Route>
-    );
-  }
-
-  // Default: tampilkan workspace langsung tanpa auth check
-  return <Workspace />;
+      
+      {/* Workspace - semua route yang dimulai dengan /workspace */}
+      <Route path="/workspace/:rest*" nest component={Workspace} />
+    </Switch>
+  );
 }
 
 /**

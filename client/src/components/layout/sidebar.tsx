@@ -18,18 +18,18 @@ import {
 import companyLogo from "@assets/WhatsApp Image 2024-11-30 at 13.08.33_1755505069008.jpeg";
 
 const navigation = [
-  { name: "Dashboard", href: "/", icon: BarChart3 },
-  { name: "Generate QR", href: "/qr-generator", icon: QrCode },
-  { name: "Scan QR", href: "/scanner", icon: Scan },
-  { name: "Karyawan", href: "/employees", icon: Users },
-  { name: "Roster", href: "/roster", icon: Calendar },
-  { name: "Cuti", href: "/leave", icon: ClipboardList },
-  { name: "Monitoring Roster Cuti", href: "/leave-roster-monitoring", icon: Monitor },
-  { name: "Monitoring SIMPER", href: "/simper-monitoring", icon: Shield },
-  { name: "Meeting Management", href: "/meetings", icon: Video },
-  { name: "Scan QR Meeting", href: "/meeting-scanner", icon: Smartphone },
-  { name: "Driver View", href: "/driver-view", icon: User },
-  { name: "Laporan", href: "/reports", icon: FileText },
+  { name: "Dashboard", href: "/workspace", icon: BarChart3 },
+  { name: "Generate QR", href: "/workspace/qr-generator", icon: QrCode },
+  { name: "Scan QR", href: "/workspace/scanner", icon: Scan },
+  { name: "Karyawan", href: "/workspace/employees", icon: Users },
+  { name: "Roster", href: "/workspace/roster", icon: Calendar },
+  { name: "Cuti", href: "/workspace/leave", icon: ClipboardList },
+  { name: "Monitoring Roster Cuti", href: "/workspace/leave-roster-monitoring", icon: Monitor },
+  { name: "Monitoring SIMPER", href: "/workspace/simper-monitoring", icon: Shield },
+  { name: "Meeting Management", href: "/workspace/meetings", icon: Video },
+  { name: "Scan QR Meeting", href: "/workspace/meeting-scanner", icon: Smartphone },
+  { name: "Driver View", href: "/workspace/driver-view", icon: User },
+  { name: "Laporan", href: "/workspace/reports", icon: FileText },
 ];
 
 interface SidebarProps {
