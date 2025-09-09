@@ -322,7 +322,7 @@ function generateShiftSection(
   doc.setFontSize(9);
   doc.setFont('helvetica', 'bold');
   const headers = ['Nama', 'NIK', 'Shift', 'Hari Kerja', 'Jam Masuk', 'Nomor Lambung', 'Jam Tidur', 'Fit To Work', 'Status'];
-  const columnWidths = [95, 58, 42, 48, 65, 85, 48, 68, 50]; // Optimized widths for better spacing
+  const columnWidths = [90, 60, 40, 50, 60, 90, 45, 70, 50]; // More balanced column widths
   
   // Calculate table dimensions and check if it fits
   const tableWidth = columnWidths.reduce((sum, width) => sum + width, 0);
@@ -366,12 +366,18 @@ function generateShiftSection(
     }
   }
   
-  // Header text - center aligned and bold with better vertical spacing
+  // Header text - properly aligned with consistent spacing
   currentX = margin;
   headers.forEach((header, index) => {
-    const textWidth = doc.getTextWidth(header);
-    const centerX = currentX + (columnWidths[index] - textWidth) / 2;
-    doc.text(header, centerX, yPosition + 10); // Better vertical centering
+    if (index === 0 || index === 1 || index === 5) {
+      // Left-aligned headers for Name, NIK, and Nomor Lambung
+      doc.text(header, currentX + 5, yPosition + 10);
+    } else {
+      // Center-aligned headers for other columns
+      const textWidth = doc.getTextWidth(header);
+      const centerX = currentX + (columnWidths[index] - textWidth) / 2;
+      doc.text(header, centerX, yPosition + 10);
+    }
     currentX += columnWidths[index];
   });
   
@@ -423,13 +429,19 @@ function generateShiftSection(
       }
     }
     
-    // Header text - consistent with first page
+    // Header text - consistent alignment with first page
     doc.setFontSize(9);
     currentX = margin;
     headers.forEach((header, index) => {
-      const textWidth = doc.getTextWidth(header);
-      const centerX = currentX + (columnWidths[index] - textWidth) / 2;
-      doc.text(header, centerX, yPosition + 10); // Match first page spacing
+      if (index === 0 || index === 1 || index === 5) {
+        // Left-aligned headers for Name, NIK, and Nomor Lambung
+        doc.text(header, currentX + 5, yPosition + 10);
+      } else {
+        // Center-aligned headers for other columns
+        const textWidth = doc.getTextWidth(header);
+        const centerX = currentX + (columnWidths[index] - textWidth) / 2;
+        doc.text(header, centerX, yPosition + 10);
+      }
       currentX += columnWidths[index];
     });
     
@@ -485,20 +497,26 @@ function generateShiftSection(
       const cellText = String(cellData);
       
       if (columnIndex === 0) {
-        // Name (0) column - left aligned with better padding
-        doc.text(cellText, currentX + 4, yPosition + 9);
+        // Name column - left aligned with consistent padding
+        doc.text(cellText, currentX + 5, yPosition + 9);
+      } else if (columnIndex === 1) {
+        // NIK column - left aligned 
+        doc.text(cellText, currentX + 5, yPosition + 9);
+      } else if (columnIndex === 5) {
+        // Nomor Lambung column - left aligned for better readability
+        doc.text(cellText, currentX + 5, yPosition + 9);
       } else {
-        // Other columns - center aligned with better vertical positioning
+        // Other columns - perfectly center aligned
         const textWidth = doc.getTextWidth(cellText);
         const centerX = currentX + (columnWidths[columnIndex] - textWidth) / 2;
-        doc.text(cellText, Math.max(currentX + 3, centerX), yPosition + 9);
+        doc.text(cellText, centerX, yPosition + 9);
       }
       currentX += columnWidths[columnIndex];
     });
     
-    // Clean horizontal line after each row
-    doc.setLineWidth(0.2);
-    doc.setDrawColor(200, 200, 200); // Light gray lines
+    // Subtle horizontal line after each row for better separation
+    doc.setLineWidth(0.3);
+    doc.setDrawColor(180, 180, 180); // Slightly darker gray for better visibility
     doc.line(margin, yPosition + rowHeight, margin + finalTableWidth, yPosition + rowHeight);
     doc.setDrawColor(0, 0, 0); // Reset to black
     
