@@ -82,6 +82,7 @@ export interface IStorage {
   getLeaveRequests(): Promise<LeaveRequest[]>; // Alias for compatibility
   createLeaveRequest(request: InsertLeaveRequest): Promise<LeaveRequest>;
   updateLeaveRequest(id: string, request: Partial<InsertLeaveRequest>): Promise<LeaveRequest | undefined>;
+  deleteLeaveRequest(id: string): Promise<boolean>;
   
   // QR Token methods
   getQrToken(employeeId: string): Promise<QrToken | undefined>;
@@ -386,6 +387,10 @@ export class MemStorage implements IStorage {
     const updated = { ...existing, ...updateData };
     this.leaveRequests.set(id, updated);
     return updated;
+  }
+
+  async deleteLeaveRequest(id: string): Promise<boolean> {
+    return this.leaveRequests.delete(id);
   }
 
   // QR Token methods
@@ -779,6 +784,11 @@ export class DrizzleStorage implements IStorage {
   async updateLeaveRequest(id: string, updateData: Partial<InsertLeaveRequest>): Promise<LeaveRequest | undefined> {
     const result = await this.db.update(leaveRequests).set(updateData).where(eq(leaveRequests.id, id)).returning();
     return result[0];
+  }
+
+  async deleteLeaveRequest(id: string): Promise<boolean> {
+    const result = await this.db.delete(leaveRequests).where(eq(leaveRequests.id, id)).returning();
+    return result.length > 0;
   }
 
   // QR Token methods
