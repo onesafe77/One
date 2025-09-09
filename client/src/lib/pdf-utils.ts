@@ -473,6 +473,36 @@ function formatDateForPDF(dateString: string): string {
   return `${day}-${month}-${year}`; // dd-mm-yyyy format as requested
 }
 
+// Helper function untuk text wrapping
+function splitTextToFitWidth(doc: jsPDF, text: string, maxWidth: number): string[] {
+  const words = text.split(' ');
+  const lines: string[] = [];
+  let currentLine = '';
+  
+  for (const word of words) {
+    const testLine = currentLine ? currentLine + ' ' + word : word;
+    const testWidth = doc.getTextWidth(testLine);
+    
+    if (testWidth <= maxWidth) {
+      currentLine = testLine;
+    } else {
+      if (currentLine) {
+        lines.push(currentLine);
+        currentLine = word;
+      } else {
+        // Single word terlalu panjang, force break
+        lines.push(word);
+      }
+    }
+  }
+  
+  if (currentLine) {
+    lines.push(currentLine);
+  }
+  
+  return lines.length > 0 ? lines : [text];
+}
+
 // Enhanced professional footer dengan styling seperti ReportLab custom footer
 function addProfessionalFooter(doc: jsPDF, pageWidth: number, pageHeight: number, margin: number, pageNumber?: number): void {
   const now = new Date();
@@ -712,10 +742,19 @@ async function generateA4PortraitTable(
         doc.line(currentX, yPos, currentX, yPos + headerHeight);
       }
       
-      // Header text centered
-      const textWidth = doc.getTextWidth(header);
-      const centerX = currentX + (columnWidths[index] - textWidth) / 2;
-      doc.text(header, centerX, yPos + headerHeight / 2 + 3);
+      // Header text centered dengan wrap untuk text panjang
+      const cellWidth = columnWidths[index] - 6; // 3pt padding kiri-kanan
+      const lines = splitTextToFitWidth(doc, header, cellWidth);
+      
+      const lineHeight = 11;
+      const totalTextHeight = lines.length * lineHeight;
+      const startY = yPos + (headerHeight - totalTextHeight) / 2 + lineHeight;
+      
+      lines.forEach((line, lineIndex) => {
+        const textWidth = doc.getTextWidth(line);
+        const centerX = currentX + (columnWidths[index] - textWidth) / 2;
+        doc.text(line, centerX, startY + lineIndex * lineHeight);
+      });
       
       currentX += columnWidths[index];
     });
