@@ -19,9 +19,6 @@ function Router() {
   
   return (
     <Switch>
-      {/* Landing Page */}
-      <Route path="/" component={Landing} />
-      
       {/* Mobile Driver dan Driver View dengan parameter NIK */}
       <Route path="/mobile-driver">
         {() => urlParams.has('nik') ? <MobileDriverView /> : <div>Parameter NIK required</div>}
@@ -49,7 +46,10 @@ function Router() {
       </Route>
       
       {/* Workspace - semua route yang dimulai dengan /workspace */}
-      <Route path="/workspace/:rest*" component={Workspace} />
+      <Route path="/workspace*" component={Workspace} />
+      
+      {/* Landing Page - last to catch root */}
+      <Route path="/" component={Landing} />
     </Switch>
   );
 }
