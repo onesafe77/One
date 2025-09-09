@@ -61,6 +61,7 @@ export function Workspace() {
             {workspaceRoutes.map((route) => (
               <Route key={route.path} path={route.path} component={route.component} />
             ))}
+            <Route path="/workspace/*" component={Dashboard} />
             <Route component={NotFound} />
           </Switch>
         </main>

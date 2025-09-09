@@ -20,7 +20,7 @@ function Router() {
   return (
     <Switch>
       {/* Landing Page */}
-      <Route path="/" exact component={Landing} />
+      <Route path="/" component={Landing} />
       
       {/* Mobile Driver dan Driver View dengan parameter NIK */}
       <Route path="/mobile-driver">
@@ -49,7 +49,7 @@ function Router() {
       </Route>
       
       {/* Workspace - semua route yang dimulai dengan /workspace */}
-      <Route path="/workspace/:rest*" nest component={Workspace} />
+      <Route path="/workspace/:rest*" component={Workspace} />
     </Switch>
   );
 }
