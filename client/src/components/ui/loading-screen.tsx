@@ -54,119 +54,191 @@ export function LoadingScreen({ isLoading, onComplete, className }: LoadingScree
   return (
     <div
       className={cn(
-        "fixed inset-0 z-50 flex items-center justify-center",
-        "bg-gradient-to-br from-red-50 via-white to-red-50 dark:from-gray-950 dark:via-gray-900 dark:to-gray-950",
-        "transition-opacity duration-300",
-        fadeOut ? "opacity-0" : "opacity-100",
+        "fixed inset-0 z-50 flex items-center justify-center overflow-hidden",
+        "bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900",
+        "transition-all duration-500 ease-in-out",
+        fadeOut ? "opacity-0 scale-105" : "opacity-100 scale-100",
         className
       )}
     >
-      <div className="flex flex-col items-center space-y-8 p-8">
+      {/* Glass morphism container */}
+      <div className="relative backdrop-blur-xl bg-white/10 dark:bg-white/5 border border-white/20 rounded-3xl p-12 shadow-2xl max-w-md w-full mx-4">
         
-        {/* Logo dan Company Name */}
-        <div className="flex flex-col items-center space-y-4">
-          <div className="relative">
-            <div className="w-20 h-20 bg-gradient-to-br from-red-500 to-red-600 rounded-2xl flex items-center justify-center shadow-2xl">
-              <div className="text-white font-bold text-2xl">PT</div>
-              <div className="absolute inset-0 bg-gradient-to-br from-red-400 to-red-500 rounded-2xl animate-pulse opacity-75" />
+        {/* Animated background glow */}
+        <div className="absolute inset-0 bg-gradient-to-r from-red-500/20 via-purple-500/20 to-blue-500/20 rounded-3xl blur-xl animate-pulse" />
+        
+        <div className="relative flex flex-col items-center space-y-10">
+          
+          {/* Logo dengan animasi yang lebih menarik */}
+          <div className="flex flex-col items-center space-y-6">
+            <div className="relative group">
+              {/* Main logo dengan glass effect */}
+              <div className="relative w-24 h-24 rounded-3xl overflow-hidden shadow-2xl transform hover:scale-105 transition-all duration-300">
+                <div className="absolute inset-0 bg-gradient-to-br from-red-400 to-red-600 animate-pulse" />
+                <div className="absolute inset-0 bg-gradient-to-br from-white/30 to-transparent" />
+                <div className="relative w-full h-full flex items-center justify-center">
+                  <span className="text-white font-bold text-3xl tracking-wider drop-shadow-lg">PT</span>
+                </div>
+              </div>
+              
+              {/* Orbiting particles */}
+              <div className="absolute inset-0 animate-spin" style={{ animationDuration: '10s' }}>
+                <div className="absolute -top-1 -right-1 w-2 h-2 bg-yellow-400 rounded-full shadow-lg shadow-yellow-400/50" />
+                <div className="absolute -bottom-1 -left-1 w-2 h-2 bg-blue-400 rounded-full shadow-lg shadow-blue-400/50" />
+              </div>
+              <div className="absolute inset-0 animate-spin" style={{ animationDuration: '15s', animationDirection: 'reverse' }}>
+                <div className="absolute top-1/2 -right-2 w-1 h-1 bg-green-400 rounded-full shadow-lg shadow-green-400/50" />
+                <div className="absolute top-1/2 -left-2 w-1 h-1 bg-pink-400 rounded-full shadow-lg shadow-pink-400/50" />
+              </div>
             </div>
             
-            {/* Floating particles animation */}
-            <div className="absolute -top-2 -right-2 w-3 h-3 bg-red-400 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }} />
-            <div className="absolute -bottom-1 -left-2 w-2 h-2 bg-red-300 rounded-full animate-bounce" style={{ animationDelay: '0.3s' }} />
-            <div className="absolute top-4 -right-4 w-1 h-1 bg-red-200 rounded-full animate-bounce" style={{ animationDelay: '0.5s' }} />
-          </div>
-          
-          <div className="text-center">
-            <h1 className="text-3xl font-bold text-gray-800 dark:text-white mb-1">
-              OneTalent GECL
-            </h1>
-            <p className="text-lg text-gray-600 dark:text-gray-300 font-medium">
-              Employee Attendance System
-            </p>
-          </div>
-        </div>
-
-        {/* Loading Animation */}
-        <div className="flex flex-col items-center space-y-6">
-          
-          {/* Circular Progress */}
-          <div className="relative w-32 h-32">
-            {/* Background circle */}
-            <svg className="w-32 h-32 transform -rotate-90" viewBox="0 0 100 100">
-              <circle
-                cx="50"
-                cy="50"
-                r="45"
-                stroke="currentColor"
-                strokeWidth="8"
-                fill="none"
-                className="text-gray-200 dark:text-gray-700"
-              />
-              <circle
-                cx="50"
-                cy="50"
-                r="45"
-                stroke="currentColor"
-                strokeWidth="8"
-                fill="none"
-                strokeLinecap="round"
-                className="text-red-500 transition-all duration-300 ease-out"
-                strokeDasharray={`${2 * Math.PI * 45}`}
-                strokeDashoffset={`${2 * Math.PI * 45 * (1 - progress / 100)}`}
-              />
-            </svg>
-            
-            {/* Percentage text */}
-            <div className="absolute inset-0 flex items-center justify-center">
-              <span className="text-2xl font-bold text-gray-700 dark:text-white">
-                {Math.round(progress)}%
-              </span>
+            <div className="text-center">
+              <h1 className="text-4xl font-bold bg-gradient-to-r from-white via-gray-100 to-white bg-clip-text text-transparent mb-2 animate-pulse">
+                OneTalent GECL
+              </h1>
+              <p className="text-lg text-gray-300 font-medium tracking-wide">
+                Employee Attendance System
+              </p>
             </div>
           </div>
 
-          {/* Loading dots */}
-          <div className="flex space-x-2">
-            <div className="w-3 h-3 bg-red-500 rounded-full animate-bounce" style={{ animationDelay: '0s' }} />
-            <div className="w-3 h-3 bg-red-500 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }} />
-            <div className="w-3 h-3 bg-red-500 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }} />
+          {/* Enhanced Loading Animation */}
+          <div className="flex flex-col items-center space-y-8">
+            
+            {/* Artistic Progress Circle */}
+            <div className="relative w-36 h-36 group">
+              {/* Outer glow ring */}
+              <div className="absolute inset-0 rounded-full bg-gradient-to-r from-red-500/30 to-purple-500/30 animate-spin" style={{ animationDuration: '3s' }} />
+              
+              {/* Main progress circle */}
+              <div className="relative w-full h-full">
+                <svg className="w-36 h-36 transform -rotate-90" viewBox="0 0 100 100">
+                  {/* Background track */}
+                  <circle
+                    cx="50"
+                    cy="50"
+                    r="42"
+                    stroke="rgba(255,255,255,0.1)"
+                    strokeWidth="6"
+                    fill="none"
+                  />
+                  
+                  {/* Progress arc with gradient */}
+                  <circle
+                    cx="50"
+                    cy="50"
+                    r="42"
+                    stroke="url(#gradient)"
+                    strokeWidth="6"
+                    fill="none"
+                    strokeLinecap="round"
+                    className="transition-all duration-500 ease-out drop-shadow-lg"
+                    strokeDasharray={`${2 * Math.PI * 42}`}
+                    strokeDashoffset={`${2 * Math.PI * 42 * (1 - progress / 100)}`}
+                  />
+                  
+                  {/* Define gradient */}
+                  <defs>
+                    <linearGradient id="gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                      <stop offset="0%" stopColor="#ef4444" />
+                      <stop offset="50%" stopColor="#f97316" />
+                      <stop offset="100%" stopColor="#eab308" />
+                    </linearGradient>
+                  </defs>
+                </svg>
+                
+                {/* Enhanced percentage display */}
+                <div className="absolute inset-0 flex flex-col items-center justify-center">
+                  <span className="text-3xl font-bold text-white drop-shadow-lg">
+                    {Math.round(progress)}%
+                  </span>
+                  <div className="w-8 h-0.5 bg-gradient-to-r from-transparent via-white to-transparent mt-2 animate-pulse" />
+                </div>
+              </div>
+            </div>
+
+            {/* Sophisticated loading dots */}
+            <div className="flex space-x-3">
+              {[0, 1, 2].map((i) => (
+                <div 
+                  key={i}
+                  className="relative"
+                  style={{ animationDelay: `${i * 0.15}s` }}
+                >
+                  <div className="w-3 h-3 rounded-full bg-gradient-to-br from-white to-gray-300 animate-bounce shadow-lg" />
+                  <div className="absolute inset-0 w-3 h-3 rounded-full bg-gradient-to-br from-red-400/60 to-purple-400/60 animate-pulse" />
+                </div>
+              ))}
+            </div>
+
+            {/* Premium loading text */}
+            <div className="text-center space-y-2">
+              <p className="text-xl font-semibold text-white drop-shadow-lg animate-pulse">
+                {progress < 50 ? 'Memuat Workspace...' : progress < 90 ? 'Menyiapkan Dashboard...' : 'Hampir Selesai...'}
+              </p>
+              <p className="text-sm text-gray-300 tracking-wide">
+                {progress < 30 ? 'Menginisialisasi sistem' : 
+                 progress < 60 ? 'Memuat data karyawan' : 
+                 progress < 90 ? 'Menyiapkan interface' : 
+                 'Finalisasi loading'}
+              </p>
+              
+              {/* Loading progress bar */}
+              <div className="w-48 h-1 bg-white/20 rounded-full overflow-hidden mt-4">
+                <div 
+                  className="h-full bg-gradient-to-r from-red-400 to-yellow-400 rounded-full transition-all duration-300 ease-out"
+                  style={{ width: `${progress}%` }}
+                />
+              </div>
+            </div>
           </div>
 
-          {/* Loading text */}
-          <div className="text-center">
-            <p className="text-lg font-medium text-gray-700 dark:text-gray-200 animate-pulse">
-              {progress < 50 ? 'Memuat Workspace...' : progress < 90 ? 'Menyiapkan Dashboard...' : 'Hampir Selesai...'}
-            </p>
-            <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-              {progress < 30 ? 'Menginisialisasi sistem' : 
-               progress < 60 ? 'Memuat data karyawan' : 
-               progress < 90 ? 'Menyiapkan interface' : 
-               'Finalisasi loading'}
-            </p>
+          {/* Elegant bottom decoration */}
+          <div className="flex justify-center items-center space-x-2 mt-6">
+            {Array.from({ length: 7 }).map((_, i) => (
+              <div
+                key={i}
+                className="rounded-full bg-gradient-to-t from-white/40 to-white/80"
+                style={{
+                  width: i === 3 ? '8px' : i === 2 || i === 4 ? '6px' : '4px',
+                  height: i === 3 ? '8px' : i === 2 || i === 4 ? '6px' : '4px',
+                  animation: `pulse 2s infinite ease-in-out`,
+                  animationDelay: `${i * 0.1}s`,
+                }}
+              />
+            ))}
           </div>
-        </div>
-
-        {/* Bottom decorative elements */}
-        <div className="flex space-x-1 mt-8">
-          {Array.from({ length: 5 }).map((_, i) => (
-            <div
-              key={i}
-              className="w-2 h-8 bg-gradient-to-t from-red-200 to-red-400 rounded-full"
-              style={{
-                animation: `pulse 1.5s infinite ease-in-out`,
-                animationDelay: `${i * 0.1}s`,
-              }}
-            />
-          ))}
         </div>
       </div>
 
-      {/* Subtle background pattern */}
-      <div className="absolute inset-0 opacity-5 dark:opacity-10">
-        <div className="absolute top-20 left-20 w-40 h-40 bg-red-300 rounded-full mix-blend-multiply filter blur-xl animate-pulse" />
-        <div className="absolute top-40 right-20 w-40 h-40 bg-red-200 rounded-full mix-blend-multiply filter blur-xl animate-pulse" style={{ animationDelay: '1s' }} />
-        <div className="absolute -bottom-8 left-20 w-40 h-40 bg-red-100 rounded-full mix-blend-multiply filter blur-xl animate-pulse" style={{ animationDelay: '2s' }} />
+      {/* Enhanced background effects */}
+      <div className="absolute inset-0 overflow-hidden">
+        {/* Animated gradient orbs */}
+        <div className="absolute top-1/4 left-1/4 w-64 h-64 bg-gradient-to-r from-red-500/20 to-purple-500/20 rounded-full filter blur-3xl animate-pulse" />
+        <div className="absolute bottom-1/4 right-1/4 w-80 h-80 bg-gradient-to-r from-blue-500/15 to-teal-500/15 rounded-full filter blur-3xl animate-pulse" style={{ animationDelay: '1s' }} />
+        <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-gradient-to-r from-yellow-500/10 to-red-500/10 rounded-full filter blur-3xl animate-pulse" style={{ animationDelay: '2s' }} />
+        
+        {/* Floating particles */}
+        {Array.from({ length: 20 }).map((_, i) => (
+          <div
+            key={i}
+            className="absolute w-1 h-1 bg-white/30 rounded-full"
+            style={{
+              left: `${Math.random() * 100}%`,
+              top: `${Math.random() * 100}%`,
+              animation: `float ${3 + Math.random() * 4}s infinite ease-in-out`,
+              animationDelay: `${Math.random() * 2}s`,
+            }}
+          />
+        ))}
       </div>
+      
+      <style jsx>{`
+        @keyframes float {
+          0%, 100% { transform: translateY(0px); opacity: 0.3; }
+          50% { transform: translateY(-20px); opacity: 0.8; }
+        }
+      `}</style>
     </div>
   );
 }
