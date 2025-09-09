@@ -79,7 +79,7 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
                 }}
               />
             </div>
-            <span className="text-xl font-bold text-white">OneTalent GECL</span>
+            <Link href="/" className="text-xl font-bold text-white hover:text-gray-200 transition-colors">OneTalent GECL</Link>
           </div>
         </div>
         

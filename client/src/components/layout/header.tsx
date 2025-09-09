@@ -1,6 +1,7 @@
-import { Menu, Sun, Moon } from "lucide-react";
+import { Menu, Sun, Moon, Home } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useTheme } from "@/hooks/use-theme";
+import { Link } from "wouter";
 import { useState, useEffect } from "react";
 
 interface HeaderProps {
@@ -66,6 +67,17 @@ export function Header({ title, onMenuClick }: HeaderProps) {
               {formatTime(currentTime)}
             </p>
           </div>
+          
+          <Link href="/">
+            <Button
+              variant="ghost"
+              size="icon"
+              className="bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600"
+              title="Kembali ke Landing Page"
+            >
+              <Home className="w-5 h-5" />
+            </Button>
+          </Link>
           
           <Button
             variant="ghost"
