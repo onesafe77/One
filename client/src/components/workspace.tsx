@@ -61,45 +61,51 @@ export function Workspace() {
   }, []);
 
   return (
-    <>
-      <LoadingScreen 
-        isLoading={isLoading} 
-        onComplete={() => setIsLoading(false)}
-      />
-      
-      {!isLoading && (
-        <div className="h-screen flex bg-gray-50 dark:bg-gray-900">
-          <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
-          
-          <div className="flex-1 flex flex-col overflow-hidden lg:ml-0">
-            <Header 
-              title={getCurrentTitle()} 
-              onMenuClick={() => setSidebarOpen(true)} 
-            />
-            
-            <main className="flex-1 overflow-x-hidden overflow-y-auto bg-gray-50 dark:bg-gray-900 p-6">
-              <Switch>
-                <Route path="/workspace" component={Dashboard} />
-                <Route path="/workspace/dashboard" component={Dashboard} />
-                <Route path="/workspace/qr-generator" component={QRGenerator} />
-                <Route path="/workspace/scanner" component={Scanner} />
-                <Route path="/workspace/employees" component={Employees} />
-                <Route path="/workspace/roster" component={Roster} />
-                <Route path="/workspace/leave" component={Leave} />
-                <Route path="/workspace/leave-roster-monitoring" component={LeaveRosterMonitoring} />
-                <Route path="/workspace/simper-monitoring" component={SimperMonitoring} />
-                <Route path="/workspace/reports" component={Reports} />
-                <Route path="/workspace/meetings" component={Meetings} />
-                <Route path="/workspace/meeting-scanner" component={MeetingScanner} />
-                <Route path="/workspace/driver-view" component={DriverView} />
-                <Route path="/workspace/mobile-driver" component={MobileDriverView} />
-                <Route path="/workspace/employee-personal" component={EmployeePersonalData} />
-                <Route component={Dashboard} />
-              </Switch>
-            </main>
-          </div>
-        </div>
+    <div className="relative">
+      {/* Loading Screen dengan conditional rendering yang lebih aman */}
+      {isLoading && (
+        <LoadingScreen 
+          isLoading={isLoading} 
+          onComplete={() => setIsLoading(false)}
+        />
       )}
-    </>
+      
+      {/* Workspace Content - selalu render tapi invisible saat loading */}
+      <div 
+        className={`h-screen flex bg-gray-50 dark:bg-gray-900 transition-opacity duration-300 ${
+          isLoading ? 'opacity-0 pointer-events-none' : 'opacity-100 pointer-events-auto'
+        }`}
+      >
+        <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
+        
+        <div className="flex-1 flex flex-col overflow-hidden lg:ml-0">
+          <Header 
+            title={getCurrentTitle()} 
+            onMenuClick={() => setSidebarOpen(true)} 
+          />
+          
+          <main className="flex-1 overflow-x-hidden overflow-y-auto bg-gray-50 dark:bg-gray-900 p-6">
+            <Switch>
+              <Route path="/workspace" component={Dashboard} />
+              <Route path="/workspace/dashboard" component={Dashboard} />
+              <Route path="/workspace/qr-generator" component={QRGenerator} />
+              <Route path="/workspace/scanner" component={Scanner} />
+              <Route path="/workspace/employees" component={Employees} />
+              <Route path="/workspace/roster" component={Roster} />
+              <Route path="/workspace/leave" component={Leave} />
+              <Route path="/workspace/leave-roster-monitoring" component={LeaveRosterMonitoring} />
+              <Route path="/workspace/simper-monitoring" component={SimperMonitoring} />
+              <Route path="/workspace/reports" component={Reports} />
+              <Route path="/workspace/meetings" component={Meetings} />
+              <Route path="/workspace/meeting-scanner" component={MeetingScanner} />
+              <Route path="/workspace/driver-view" component={DriverView} />
+              <Route path="/workspace/mobile-driver" component={MobileDriverView} />
+              <Route path="/workspace/employee-personal" component={EmployeePersonalData} />
+              <Route component={Dashboard} />
+            </Switch>
+          </main>
+        </div>
+      </div>
+    </div>
   );
 }

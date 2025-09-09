@@ -35,6 +35,7 @@ export function LoadingScreen({ isLoading, onComplete, className }: LoadingScree
         setTimeout(() => {
           setFadeOut(true);
           setTimeout(() => {
+            setFadeOut(false); // Reset fadeOut state
             onComplete?.();
           }, 500);
         }, 300);
@@ -49,6 +50,7 @@ export function LoadingScreen({ isLoading, onComplete, className }: LoadingScree
     };
   }, [isLoading, onComplete]);
 
+  // Hanya render ketika isLoading true, atau ketika fadeOut sedang berlangsung
   if (!isLoading && !fadeOut) return null;
 
   return (
