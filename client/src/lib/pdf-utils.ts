@@ -43,8 +43,8 @@ export async function generateAttendancePDF(data: ReportData): Promise<void> {
     const doc = new jsPDF('landscape'); // Use landscape orientation for more columns
     const pageWidth = doc.internal.pageSize.width;
     const pageHeight = doc.internal.pageSize.height;
-    const margin = 25; // Top margin 2.5cm
-    const bottomMargin = 20; // Bottom margin 2cm
+    const margin = 12; // Margin tipis 1.2cm
+    const bottomMargin = 12; // Bottom margin 1.2cm
     
     let yPosition = 20;
     
@@ -238,13 +238,13 @@ export async function generateAttendancePDF(data: ReportData): Promise<void> {
       doc.text(summaryText, margin, yPosition);
     }
     
-    // Footer - positioned safely from bottom with more margin
+    // Footer - tanggal & jam pembuatan laporan di kanan bawah halaman
     const now = new Date();
     const footerText = `Laporan dibuat pada: ${now.toLocaleDateString('id-ID')} ${now.toLocaleTimeString('id-ID')}`;
-    const footerY = pageHeight - 30; // Increased margin from bottom to prevent cut-off
-    doc.setFontSize(9);
+    const footerY = pageHeight - 15; // Margin 1.2cm from bottom
+    doc.setFontSize(8);
     doc.setFont('helvetica', 'normal');
-    doc.text(footerText, pageWidth / 2, footerY, { align: 'center' });
+    doc.text(footerText, pageWidth - margin - 10, footerY, { align: 'right' }); // Right aligned at bottom right
     
     // Download
     const filename = `Laporan_Absensi_${data.startDate.replace(/-/g, '')}.pdf`;
@@ -263,24 +263,17 @@ function generateShiftSection(
   margin: number, 
   pageWidth: number
 ): number {
-  const bottomMargin = 20; // Define bottomMargin within function scope
+  const bottomMargin = 12; // Define bottomMargin within function scope
   let yPosition = startY;
   
-  // Horizontal line before table section
-  doc.setLineWidth(0.3);
-  doc.line(margin, yPosition, pageWidth - margin, yPosition);
-  yPosition += 12;
-  
-  // Shift title
+  // Shift title - subjudul tebal
   doc.setFontSize(12);
   doc.setFont('helvetica', 'bold');
   doc.text(shiftName.toUpperCase(), margin, yPosition);
-  yPosition += 15; // Increased padding between shift title and table
+  yPosition += 10; // Reduced spacing for tighter layout
   
   // Get scheduled employees for this shift first (from roster)
   const scheduledEmployees = data.roster?.filter(r => r.shift === shiftName && r.date === data.startDate) || [];
-  
-  // Remove debug logging for cleaner output
   
   // Include ALL attendance records for this shift section
   let attendanceForThisShift;
@@ -294,18 +287,8 @@ function generateShiftSection(
   }
   
   // Add all attendance records as roster entries for this shift
-  console.log(`📋 Processing ${attendanceForThisShift.length} attendance records for ${shiftName}`);
-  
   attendanceForThisShift.forEach(att => {
     const employee = data.employees.find(emp => emp.id === att.employeeId);
-    
-    console.log(`👤 Processing attendance for ${att.employeeId}, employee found: ${!!employee}`);
-    if (employee) {
-      console.log(`✅ Employee found: ${employee.name} (${employee.id})`);
-    } else {
-      console.log(`❌ Employee NOT found in data.employees for ${att.employeeId}`);
-      console.log(`Available employees sample:`, data.employees.slice(0, 3).map(e => ({id: e.id, name: e.name})));
-    }
     
     if (employee) {
       // Check if employee already exists in scheduledEmployees
@@ -313,7 +296,6 @@ function generateShiftSection(
       
       if (existingIndex >= 0) {
         // Update existing roster entry with attendance data
-        console.log(`🔄 Updating existing roster entry for ${employee.name}`);
         scheduledEmployees[existingIndex] = {
           ...scheduledEmployees[existingIndex],
           jamTidur: att.jamTidur || '',
@@ -322,7 +304,6 @@ function generateShiftSection(
       } else {
         // Add new roster entry for attendance - get hariKerja from any roster for this employee
         const anyRosterRecord = data.roster?.find(r => r.employeeId === att.employeeId);
-        console.log(`➕ Adding new roster entry for ${employee.name}`);
         
         scheduledEmployees.push({
           id: `temp-${att.employeeId}`,
@@ -338,81 +319,72 @@ function generateShiftSection(
           employee: employee
         } as any);
       }
-    } else {
-      // Skip if employee not found
     }
   });
   
-  // Table headers with optimized proportional widths for better alignment
-  doc.setFontSize(9);
-  doc.setFont('helvetica', 'bold');
-  const headers = ['Nama', 'NIK', 'Shift', 'Hari Kerja', 'Jam Masuk', 'Nomor Lambung', 'Jam Tidur', 'Fit To Work', 'Status'];
-  const columnWidths = [75, 55, 35, 40, 50, 80, 40, 60, 45]; // Optimized column widths for better fit
-  
-  // Calculate table dimensions and check if it fits
-  const tableWidth = columnWidths.reduce((sum, width) => sum + width, 0);
-  const availableWidth = pageWidth - (2 * margin);
-  let scaleFactor = 1;
-  
-  // Auto-scale if table too wide for page
-  if (tableWidth > availableWidth) {
-    scaleFactor = availableWidth / tableWidth;
-    for (let i = 0; i < columnWidths.length; i++) {
-      columnWidths[i] = Math.floor(columnWidths[i] * scaleFactor);
-    }
+  // Check if there's no data for this shift
+  if (scheduledEmployees.length === 0) {
+    doc.setFontSize(9);
+    doc.setFont('helvetica', 'italic');
+    doc.text('Tidak ada data untuk shift ini', margin + 5, yPosition);
+    yPosition += 20;
+    return yPosition;
   }
   
+  // Table headers with professional font (Arial equivalent in jsPDF is helvetica)
+  doc.setFontSize(10); // 10pt font size as requested
+  doc.setFont('helvetica', 'bold');
+  const headers = ['Nama', 'NIK', 'Shift', 'Hari Kerja', 'Jam Masuk', 'Nomor Lambung', 'Jam Tidur', 'Fit To Work', 'Status'];
+  const baseColumnWidths = [80, 50, 30, 40, 45, 75, 35, 55, 40]; // Professional proportions
+  
+  // Auto-fit table to page width
+  const availableWidth = pageWidth - (2 * margin);
+  const totalBaseWidth = baseColumnWidths.reduce((sum, width) => sum + width, 0);
+  const scaleFactor = availableWidth / totalBaseWidth;
+  
+  const columnWidths = baseColumnWidths.map(width => Math.floor(width * scaleFactor));
   const finalTableWidth = columnWidths.reduce((sum, width) => sum + width, 0);
-  const rowHeight = 14; // Better readable row height
-  const headerHeight = 16; // Proportional header height
+  const rowHeight = 12; // Konsisten jarak antar baris, tidak terlalu renggang
+  const headerHeight = 14; // Proportional header height
   
-  // Clean horizontal line above table header
-  doc.setLineWidth(0.3);
-  doc.line(margin, yPosition - 3, margin + finalTableWidth, yPosition - 3);
-  
-  // Header background with proper height
-  doc.setFillColor(220, 220, 220);
-  doc.rect(margin, yPosition - 2, finalTableWidth, headerHeight, 'F');
+  // Header background abu-abu muda
+  doc.setFillColor(240, 240, 240); // Light gray background
+  doc.rect(margin, yPosition, finalTableWidth, headerHeight, 'F');
   
   // We will show ALL scheduled employees for this shift (both attended and not attended)
   const totalScheduledEmployees = scheduledEmployees.length;
   
-  // Main table border - based on ALL scheduled employees, not just attended ones
-  doc.setLineWidth(0.3);
-  doc.rect(margin, yPosition - 2, finalTableWidth, (totalScheduledEmployees + 1) * rowHeight + 2);
+  // Main table border tipis
+  doc.setLineWidth(0.2); // Thin border
+  doc.rect(margin, yPosition, finalTableWidth, (totalScheduledEmployees + 1) * rowHeight);
   
-  // Vertical grid lines for entire table - cleaner appearance
+  // Vertical grid lines tipis
   let currentX = margin;
   for (let i = 0; i <= headers.length; i++) {
-    doc.setLineWidth(0.3);
-    doc.line(currentX, yPosition - 2, currentX, yPosition - 2 + (totalScheduledEmployees + 1) * rowHeight + 2);
+    doc.setLineWidth(0.2);
+    doc.line(currentX, yPosition, currentX, yPosition + (totalScheduledEmployees + 1) * rowHeight);
     if (i < headers.length) {
       currentX += columnWidths[i];
     }
   }
   
-  // Header text - properly aligned with compact spacing
+  // Header text - center aligned and bold
   currentX = margin;
   headers.forEach((header, index) => {
-    if (index === 0 || index === 1 || index === 5) {
-      // Left-aligned headers for Name, NIK, and Nomor Lambung
-      doc.text(header, currentX + 4, yPosition + 8.5); // Centered in 14px header
-    } else {
-      // Center-aligned headers for other columns
-      const textWidth = doc.getTextWidth(header);
-      const centerX = currentX + (columnWidths[index] - textWidth) / 2;
-      doc.text(header, centerX, yPosition + 8.5); // Centered in 14px header
-    }
+    const headerText = header;
+    const textWidth = doc.getTextWidth(headerText);
+    const centerX = currentX + (columnWidths[index] - textWidth) / 2;
+    doc.text(headerText, centerX, yPosition + 9);
     currentX += columnWidths[index];
   });
   
-  // Clean horizontal line after header
-  doc.setLineWidth(0.3);
-  doc.line(margin, yPosition - 2 + headerHeight, margin + finalTableWidth, yPosition - 2 + headerHeight);
+  // Horizontal line after header tipis
+  doc.setLineWidth(0.2);
+  doc.line(margin, yPosition + headerHeight, margin + finalTableWidth, yPosition + headerHeight);
   
   yPosition += headerHeight;
   doc.setFont('helvetica', 'normal');
-  doc.setFontSize(8); // Optimized font size for compact rows
+  doc.setFontSize(10); // Professional 10pt font size for content
   
   // CRITICAL: Check if we need a new page BEFORE starting to render any rows
   const estimatedTableHeight = (scheduledEmployees.length + 1) * rowHeight + 20; // +1 for header, +20 for padding
@@ -551,9 +523,9 @@ function generateShiftSection(
   doc.line(margin, yPosition + 3, margin + finalTableWidth, yPosition + 3);
   yPosition += 15;
   
-  // Professional shift summary
-  doc.setFontSize(10);
-  doc.setFont('helvetica', 'bold');
+  // Shift summary - teks lebih kecil dari isi tabel
+  doc.setFontSize(9); // Smaller than table content (10pt)
+  doc.setFont('helvetica', 'normal');
   
   const attendedCount = scheduledEmployees.filter(scheduleRecord => {
     return data.attendance.some(attendance => attendance.employeeId === scheduleRecord.employeeId);
