@@ -46,7 +46,9 @@ import {
   Bell,
   Send,
   History,
-  MessageSquare
+  MessageSquare,
+  Edit2,
+  Trash2
 } from "lucide-react";
 import { z } from "zod";
 import * as XLSX from "xlsx";
@@ -216,6 +218,11 @@ export default function Leave() {
   
   // Analytics States
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear().toString());
+  
+  // Edit and Delete States
+  const [editingRequest, setEditingRequest] = useState<LeaveRequest | null>(null);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [requestToDelete, setRequestToDelete] = useState<string | null>(null);
   
   const { toast } = useToast();
 
@@ -390,6 +397,48 @@ export default function Leave() {
         variant: "destructive",
       });
     }
+  });
+
+  // Update leave request mutation
+  const updateLeaveMutation = useMutation({
+    mutationFn: (data: { id: string; request: Partial<InsertLeaveRequest> }) => 
+      apiRequest(`/api/leave/${data.id}`, "PUT", data.request),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/leave"] });
+      setEditingRequest(null);
+      toast({
+        title: "Berhasil",
+        description: "Data cuti berhasil diperbarui",
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "Gagal memperbarui data cuti",
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Delete leave request mutation
+  const deleteLeaveMutation = useMutation({
+    mutationFn: (id: string) => apiRequest(`/api/leave/${id}`, "DELETE"),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/leave"] });
+      setShowDeleteDialog(false);
+      setRequestToDelete(null);
+      toast({
+        title: "Berhasil",
+        description: "Data cuti berhasil dihapus",
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "Gagal menghapus data cuti",
+        variant: "destructive",
+      });
+    },
   });
 
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
@@ -1382,18 +1431,19 @@ export default function Leave() {
                               </Button>
                             </div>
                           ) : (
-                            <Dialog>
-                              <DialogTrigger asChild>
-                                <Button
-                                  size="sm"
-                                  variant="outline"
-                                  className="text-blue-600 hover:text-blue-700 h-7 text-xs"
-                                  data-testid={`detail-leave-${request.id}`}
-                                >
-                                  <Eye className="w-3 h-3 mr-1" />
-                                  Detail
-                                </Button>
-                              </DialogTrigger>
+                            <div className="flex flex-col space-y-1">
+                              <Dialog>
+                                <DialogTrigger asChild>
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    className="text-blue-600 hover:text-blue-700 h-7 text-xs"
+                                    data-testid={`detail-leave-${request.id}`}
+                                  >
+                                    <Eye className="w-3 h-3 mr-1" />
+                                    Detail
+                                  </Button>
+                                </DialogTrigger>
                               <DialogContent className="max-w-md">
                                 <DialogHeader>
                                   <DialogTitle>Detail Pengajuan Cuti</DialogTitle>
@@ -1553,7 +1603,33 @@ export default function Leave() {
                                   )}
                                 </div>
                               </DialogContent>
-                            </Dialog>
+                              </Dialog>
+                              
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => setEditingRequest(request)}
+                                className="text-orange-600 hover:text-orange-700 h-7 text-xs"
+                                data-testid={`edit-leave-${request.id}`}
+                              >
+                                <Edit2 className="w-3 h-3 mr-1" />
+                                Edit
+                              </Button>
+                              
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => {
+                                  setRequestToDelete(request.id);
+                                  setShowDeleteDialog(true);
+                                }}
+                                className="text-red-600 hover:text-red-700 h-7 text-xs"
+                                data-testid={`delete-leave-${request.id}`}
+                              >
+                                <Trash2 className="w-3 h-3 mr-1" />
+                                Hapus
+                              </Button>
+                            </div>
                           )}
                         </td>
                       </tr>

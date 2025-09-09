@@ -993,6 +993,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.delete("/api/leave/:id", async (req, res) => {
+    try {
+      const success = await storage.deleteLeaveRequest(req.params.id);
+      if (!success) {
+        return res.status(404).json({ message: "Leave request not found" });
+      }
+      res.json({ message: "Leave request deleted successfully" });
+    } catch (error) {
+      console.error("Error deleting leave request:", error);
+      res.status(500).json({ message: "Failed to delete leave request" });
+    }
+  });
+
   // Get pending leave requests from monitoring (status "Menunggu Cuti")
   app.get("/api/leave/pending-from-monitoring", async (req, res) => {
     try {
