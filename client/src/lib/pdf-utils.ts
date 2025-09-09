@@ -240,7 +240,12 @@ export async function generateAttendancePDF(data: ReportData): Promise<void> {
     
     // Footer - tanggal & jam pembuatan laporan di kanan bawah halaman
     const now = new Date();
-    const footerText = `Laporan dibuat pada: ${now.toLocaleDateString('id-ID')} ${now.toLocaleTimeString('id-ID')}`;
+    const day = now.getDate().toString().padStart(2, '0');
+    const month = (now.getMonth() + 1).toString().padStart(2, '0');
+    const year = now.getFullYear();
+    const hours = now.getHours().toString().padStart(2, '0');
+    const minutes = now.getMinutes().toString().padStart(2, '0');
+    const footerText = `Laporan dibuat pada: ${day}-${month}-${year} ${hours}:${minutes}`;
     const footerY = pageHeight - 15; // Margin 1.2cm from bottom
     doc.setFontSize(8);
     doc.setFont('helvetica', 'normal');
@@ -276,7 +281,7 @@ function generateShiftSection(
   const scheduledEmployees = data.roster?.filter(r => r.shift === shiftName && r.date === data.startDate) || [];
   
   // Include ALL attendance records for this shift section
-  let attendanceForThisShift;
+  let attendanceForThisShift: typeof data.attendance;
   
   if (shiftName.toUpperCase() === 'SHIFT 1') {
     // For Shift 1 section: Include ALL attendance records
@@ -542,5 +547,8 @@ function generateShiftSection(
 
 function formatDateForPDF(dateString: string): string {
   const date = new Date(dateString + 'T00:00:00');
-  return date.toLocaleDateString('id-ID');
+  const day = date.getDate().toString().padStart(2, '0');
+  const month = (date.getMonth() + 1).toString().padStart(2, '0');
+  const year = date.getFullYear();
+  return `${day}-${month}-${year}`; // dd-mm-yyyy format as requested
 }
