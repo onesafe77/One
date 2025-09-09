@@ -197,8 +197,12 @@ export async function generateAttendancePDF(data: ReportData): Promise<void> {
       yPosition = generateShiftSection(doc, data, 'Shift 2', yPosition, margin, pageWidth);
     }
     
-    // Summary and notes at bottom
-    if (yPosition < pageHeight - 80) {
+    // Ensure enough space for footer and summary (need at least 60px total)
+    const footerHeight = 60; // Space needed for summary + footer
+    const availableSpace = pageHeight - yPosition - footerHeight;
+    
+    // Summary and notes at bottom - only if there's enough space
+    if (availableSpace > 0) {
       yPosition += 20;
       doc.setFontSize(10);
       doc.setFont('helvetica', 'bold');
@@ -214,12 +218,33 @@ export async function generateAttendancePDF(data: ReportData): Promise<void> {
       
       const summaryText = `Ringkasan ${targetShift}: Dijadwalkan: ${shiftScheduled.length} | Hadir: ${shiftAttended} | Tidak Hadir: ${shiftAbsent}`;
       doc.text(summaryText, margin, yPosition);
+    } else {
+      // Not enough space, add new page for summary
+      doc.addPage();
+      yPosition = 40;
+      
+      doc.setFontSize(10);
+      doc.setFont('helvetica', 'bold');
+      
+      const targetShift = data.shiftFilter === 'all' ? 'Shift 2' : data.shiftFilter;
+      const shiftScheduled = data.roster?.filter(r => r.shift === targetShift && r.date === data.startDate) || [];
+      const attendanceOnDate = data.attendance.filter(a => a.date === data.startDate);
+      const shiftAttended = shiftScheduled.filter(r => 
+        attendanceOnDate.some(a => a.employeeId === r.employeeId)
+      ).length;
+      const shiftAbsent = shiftScheduled.length - shiftAttended;
+      
+      const summaryText = `Ringkasan ${targetShift}: Dijadwalkan: ${shiftScheduled.length} | Hadir: ${shiftAttended} | Tidak Hadir: ${shiftAbsent}`;
+      doc.text(summaryText, margin, yPosition);
     }
     
-    // Footer
+    // Footer - positioned safely from bottom with more margin
     const now = new Date();
     const footerText = `Laporan dibuat pada: ${now.toLocaleDateString('id-ID')} ${now.toLocaleTimeString('id-ID')}`;
-    doc.text(footerText, pageWidth / 2, doc.internal.pageSize.height - 15, { align: 'center' });
+    const footerY = pageHeight - 30; // Increased margin from bottom to prevent cut-off
+    doc.setFontSize(9);
+    doc.setFont('helvetica', 'normal');
+    doc.text(footerText, pageWidth / 2, footerY, { align: 'center' });
     
     // Download
     const filename = `Laporan_Absensi_${data.startDate.replace(/-/g, '')}.pdf`;
@@ -322,7 +347,7 @@ function generateShiftSection(
   doc.setFontSize(9);
   doc.setFont('helvetica', 'bold');
   const headers = ['Nama', 'NIK', 'Shift', 'Hari Kerja', 'Jam Masuk', 'Nomor Lambung', 'Jam Tidur', 'Fit To Work', 'Status'];
-  const columnWidths = [90, 60, 40, 50, 60, 90, 45, 70, 50]; // More balanced column widths
+  const columnWidths = [75, 55, 35, 40, 50, 80, 40, 60, 45]; // Optimized column widths for better fit
   
   // Calculate table dimensions and check if it fits
   const tableWidth = columnWidths.reduce((sum, width) => sum + width, 0);
@@ -338,8 +363,8 @@ function generateShiftSection(
   }
   
   const finalTableWidth = columnWidths.reduce((sum, width) => sum + width, 0);
-  const rowHeight = 12; // Compact but readable row height
-  const headerHeight = 14; // Proportional header height
+  const rowHeight = 14; // Better readable row height
+  const headerHeight = 16; // Proportional header height
   
   // Clean horizontal line above table header
   doc.setLineWidth(0.3);
