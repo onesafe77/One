@@ -338,8 +338,8 @@ function generateShiftSection(
   }
   
   const finalTableWidth = columnWidths.reduce((sum, width) => sum + width, 0);
-  const rowHeight = 14; // Increased for better readability
-  const headerHeight = 16; // Increased header height
+  const rowHeight = 12; // Compact but readable row height
+  const headerHeight = 14; // Proportional header height
   
   // Strong horizontal line above table header
   doc.setLineWidth(1.0);
@@ -366,17 +366,17 @@ function generateShiftSection(
     }
   }
   
-  // Header text - properly aligned with consistent spacing
+  // Header text - properly aligned with compact spacing
   currentX = margin;
   headers.forEach((header, index) => {
     if (index === 0 || index === 1 || index === 5) {
       // Left-aligned headers for Name, NIK, and Nomor Lambung
-      doc.text(header, currentX + 5, yPosition + 10);
+      doc.text(header, currentX + 4, yPosition + 8.5); // Centered in 14px header
     } else {
       // Center-aligned headers for other columns
       const textWidth = doc.getTextWidth(header);
       const centerX = currentX + (columnWidths[index] - textWidth) / 2;
-      doc.text(header, centerX, yPosition + 10);
+      doc.text(header, centerX, yPosition + 8.5); // Centered in 14px header
     }
     currentX += columnWidths[index];
   });
@@ -387,7 +387,7 @@ function generateShiftSection(
   
   yPosition += headerHeight;
   doc.setFont('helvetica', 'normal');
-  doc.setFontSize(9); // Slightly larger font for better readability
+  doc.setFontSize(8); // Optimized font size for compact rows
   
   // CRITICAL: Check if we need a new page BEFORE starting to render any rows
   const estimatedTableHeight = (scheduledEmployees.length + 1) * rowHeight + 20; // +1 for header, +20 for padding
@@ -435,12 +435,12 @@ function generateShiftSection(
     headers.forEach((header, index) => {
       if (index === 0 || index === 1 || index === 5) {
         // Left-aligned headers for Name, NIK, and Nomor Lambung
-        doc.text(header, currentX + 5, yPosition + 10);
+        doc.text(header, currentX + 4, yPosition + 8.5);
       } else {
         // Center-aligned headers for other columns
         const textWidth = doc.getTextWidth(header);
         const centerX = currentX + (columnWidths[index] - textWidth) / 2;
-        doc.text(header, centerX, yPosition + 10);
+        doc.text(header, centerX, yPosition + 8.5);
       }
       currentX += columnWidths[index];
     });
@@ -450,7 +450,7 @@ function generateShiftSection(
     
     yPosition += headerHeight;
     doc.setFont('helvetica', 'normal');
-    doc.setFontSize(9); // Match main table font size
+    doc.setFontSize(8); // Match main table font size
     
   }
 
@@ -498,18 +498,18 @@ function generateShiftSection(
       
       if (columnIndex === 0) {
         // Name column - left aligned with consistent padding
-        doc.text(cellText, currentX + 5, yPosition + 9);
+        doc.text(cellText, currentX + 4, yPosition + 7.5); // Perfect center in 12px row
       } else if (columnIndex === 1) {
         // NIK column - left aligned 
-        doc.text(cellText, currentX + 5, yPosition + 9);
+        doc.text(cellText, currentX + 4, yPosition + 7.5);
       } else if (columnIndex === 5) {
         // Nomor Lambung column - left aligned for better readability
-        doc.text(cellText, currentX + 5, yPosition + 9);
+        doc.text(cellText, currentX + 4, yPosition + 7.5);
       } else {
         // Other columns - perfectly center aligned
         const textWidth = doc.getTextWidth(cellText);
         const centerX = currentX + (columnWidths[columnIndex] - textWidth) / 2;
-        doc.text(cellText, centerX, yPosition + 9);
+        doc.text(cellText, centerX, yPosition + 7.5); // Perfect center in 12px row
       }
       currentX += columnWidths[columnIndex];
     });
