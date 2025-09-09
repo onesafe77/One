@@ -48,11 +48,14 @@ export function Workspace() {
     return route?.title || "AttendanceQR Workspace";
   };
 
-  // Simulate initial loading when entering workspace
+  // Show loading screen when entering workspace
   useEffect(() => {
+    // Reset loading state when component mounts (when navigating to workspace)
+    setIsLoading(true);
+    
     const timer = setTimeout(() => {
       setIsLoading(false);
-    }, 100);
+    }, 2500); // Loading screen akan tampil selama 2.5 detik
 
     return () => clearTimeout(timer);
   }, []);

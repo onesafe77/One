@@ -36,9 +36,9 @@ export function LoadingScreen({ isLoading, onComplete, className }: LoadingScree
           setFadeOut(true);
           setTimeout(() => {
             onComplete?.();
-          }, 300);
-        }, 200);
-      }, 1500);
+          }, 500);
+        }, 300);
+      }, 2000);
     };
 
     startLoading();
