@@ -135,10 +135,13 @@ export function LoadingScreen({ isLoading, onComplete, className }: LoadingScree
           {/* Loading text */}
           <div className="text-center">
             <p className="text-lg font-medium text-gray-700 dark:text-gray-200 animate-pulse">
-              Memuat Workspace...
+              {progress < 50 ? 'Memuat Workspace...' : progress < 90 ? 'Menyiapkan Dashboard...' : 'Hampir Selesai...'}
             </p>
             <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-              Menyiapkan sistem kehadiran karyawan
+              {progress < 30 ? 'Menginisialisasi sistem' : 
+               progress < 60 ? 'Memuat data karyawan' : 
+               progress < 90 ? 'Menyiapkan interface' : 
+               'Finalisasi loading'}
             </p>
           </div>
         </div>
