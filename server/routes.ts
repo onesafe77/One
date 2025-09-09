@@ -1356,41 +1356,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Detailed attendance data for dashboard
-  app.get("/api/dashboard/attendance-details", async (req, res) => {
-    try {
-      const date = (req.query.date as string) || new Date().toISOString().split('T')[0];
-      
-      const [attendance, roster, employees] = await Promise.all([
-        storage.getAllAttendance(date),
-        storage.getRosterByDate(date),
-        storage.getAllEmployees()
-      ]);
-
-      // Create detailed attendance list with employee info
-      const attendanceDetails = roster.map(rosterEntry => {
-        const employee = employees.find(emp => emp.id === rosterEntry.employeeId);
-        const attendanceRecord = attendance.find(att => att.employeeId === rosterEntry.employeeId);
-        
-        return {
-          employeeId: rosterEntry.employeeId,
-          employeeName: employee?.name || 'Unknown',
-          position: employee?.position || '-',
-          shift: rosterEntry.shift,
-          scheduledTime: `${rosterEntry.startTime} - ${rosterEntry.endTime}`,
-          actualTime: attendanceRecord?.time || '-',
-          jamTidur: attendanceRecord?.jamTidur || '-',
-          fitToWork: attendanceRecord?.fitToWork || 'Not Set',
-          status: attendanceRecord ? 'present' : 'absent',
-          hasAttended: !!attendanceRecord
-        };
-      });
-
-      res.json(attendanceDetails);
-    } catch (error) {
-      res.status(500).json({ message: "Failed to fetch attendance details" });
-    }
-  });
 
 
 
