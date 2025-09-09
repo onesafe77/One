@@ -20,7 +20,7 @@ import {
   TrendingUp
 } from "lucide-react";
 import companyLogo from "@assets/WhatsApp Image 2024-11-30 at 13.08.33_1755505069008.jpeg";
-import backgroundImage from "@assets/WhatsApp Image 2025-09-09 at 14.57.34 (1)_1757401303707.jpeg";
+import backgroundImage from "@assets/background-landing.jpeg";
 
 const features = [
   {
