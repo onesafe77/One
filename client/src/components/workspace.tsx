@@ -58,11 +58,22 @@ export function Workspace() {
         
         <main className="flex-1 overflow-x-hidden overflow-y-auto bg-gray-50 dark:bg-gray-900 p-6">
           <Switch>
-            {workspaceRoutes.map((route) => (
-              <Route key={route.path} path={route.path} component={route.component} />
-            ))}
-            <Route path="/workspace/*" component={Dashboard} />
-            <Route component={NotFound} />
+            <Route path="/workspace" component={Dashboard} />
+            <Route path="/workspace/dashboard" component={Dashboard} />
+            <Route path="/workspace/qr-generator" component={QRGenerator} />
+            <Route path="/workspace/scanner" component={Scanner} />
+            <Route path="/workspace/employees" component={Employees} />
+            <Route path="/workspace/roster" component={Roster} />
+            <Route path="/workspace/leave" component={Leave} />
+            <Route path="/workspace/leave-roster-monitoring" component={LeaveRosterMonitoring} />
+            <Route path="/workspace/simper-monitoring" component={SimperMonitoring} />
+            <Route path="/workspace/reports" component={Reports} />
+            <Route path="/workspace/meetings" component={Meetings} />
+            <Route path="/workspace/meeting-scanner" component={MeetingScanner} />
+            <Route path="/workspace/driver-view" component={DriverView} />
+            <Route path="/workspace/mobile-driver" component={MobileDriverView} />
+            <Route path="/workspace/employee-personal" component={EmployeePersonalData} />
+            <Route component={Dashboard} />
           </Switch>
         </main>
       </div>

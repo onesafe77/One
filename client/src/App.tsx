@@ -17,6 +17,11 @@ function Router() {
   const currentPath = window.location.pathname;
   const urlParams = new URLSearchParams(window.location.search);
   
+  // Prioritaskan workspace routes
+  if (currentPath.startsWith('/workspace')) {
+    return <Workspace />;
+  }
+  
   return (
     <Switch>
       {/* Mobile Driver dan Driver View dengan parameter NIK */}
@@ -45,10 +50,7 @@ function Router() {
         }}
       </Route>
       
-      {/* Workspace - semua route yang dimulai dengan /workspace */}
-      <Route path="/workspace*" component={Workspace} />
-      
-      {/* Landing Page - last to catch root */}
+      {/* Landing Page */}
       <Route path="/" component={Landing} />
     </Switch>
   );
