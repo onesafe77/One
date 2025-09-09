@@ -395,6 +395,67 @@ function generateShiftSection(
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(8); // Readable font size for data
   
+  // CRITICAL: Check if we need a new page BEFORE starting to render any rows
+  const estimatedTableHeight = (scheduledEmployees.length + 1) * rowHeight + 20; // +1 for header, +20 for padding
+  if (yPosition + estimatedTableHeight > doc.internal.pageSize.height - bottomMargin) {
+    console.log(`📄 Table too big for current page, moving to new page. Current yPosition: ${yPosition}, estimated height: ${estimatedTableHeight}`);
+    doc.addPage();
+    
+    // Add company logo to new page
+    try {
+      doc.addImage(companyLogo, 'PNG', margin, 15, 30, 15);
+      doc.setFontSize(10);
+      doc.setFont('helvetica', 'bold');
+      doc.text('PT Goden Energi Cemerlang Lestari', margin + 35, 25);
+    } catch (error) {
+      console.warn('Could not add logo to new page:', error);
+    }
+    
+    // Reset position and redraw shift title and table header
+    yPosition = margin + 35;
+    
+    // Shift Title
+    doc.setFontSize(11);
+    doc.setFont('helvetica', 'bold');
+    doc.text(shiftName.toUpperCase(), margin, yPosition);
+    yPosition += 15;
+    
+    // Redraw table header
+    doc.setLineWidth(1.0);
+    doc.line(margin, yPosition - 3, margin + finalTableWidth, yPosition - 3);
+    
+    doc.setFillColor(220, 220, 220);
+    doc.rect(margin, yPosition - 2, finalTableWidth, headerHeight, 'F');
+    
+    // Vertical grid lines
+    let currentX = margin;
+    for (let i = 0; i <= headers.length; i++) {
+      doc.line(currentX, yPosition - 2, currentX, yPosition - 2 + (scheduledEmployees.length + 1) * rowHeight + 2);
+      if (i < headers.length) {
+        currentX += columnWidths[i];
+      }
+    }
+    
+    // Header text
+    doc.setFontSize(9);
+    currentX = margin;
+    headers.forEach((header, index) => {
+      const textWidth = doc.getTextWidth(header);
+      const centerX = currentX + (columnWidths[index] - textWidth) / 2;
+      doc.text(header, centerX, yPosition + 6);
+      currentX += columnWidths[index];
+    });
+    
+    doc.setLineWidth(1.0);
+    doc.line(margin, yPosition - 2 + headerHeight, margin + finalTableWidth, yPosition - 2 + headerHeight);
+    
+    yPosition += headerHeight;
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(8);
+    
+    console.log(`📄 New page prepared, starting fresh at yPosition ${yPosition}`);
+  }
+
   // Process ALL scheduled employees (both attended and not attended)
   console.log(`🔧 Starting to render ${scheduledEmployees.length} scheduled employees for ${shiftName}`);
   
@@ -472,63 +533,7 @@ function generateShiftSection(
     yPosition += rowHeight;
     console.log(`🔧 Row ${rowIndex}: yPosition after increment: ${yPosition}`);
     
-    // Check if we need a new page with proper margins - BEFORE rendering the row
-    if (yPosition + rowHeight > doc.internal.pageSize.height - bottomMargin - 20) {
-      console.log(`📄 Page break needed at yPosition ${yPosition}, adding new page`);
-      doc.addPage();
-      
-      // Add company logo to new page
-      try {
-        doc.addImage(companyLogo, 'PNG', margin, 15, 30, 15);
-        doc.setFontSize(10);
-        doc.setFont('helvetica', 'bold');
-        doc.text('PT Goden Energi Cemerlang Lestari', margin + 35, 25);
-      } catch (error) {
-        console.warn('Could not add logo to new page:', error);
-      }
-      
-      yPosition = margin + 35;
-      console.log(`📄 New page started, yPosition reset to ${yPosition}`);
-      
-      // Repeat table header on new page
-      doc.setFontSize(9);
-      doc.setFont('helvetica', 'bold');
-      
-      // Strong horizontal line above repeated header
-      doc.setLineWidth(1.0);
-      doc.line(margin, yPosition - 3, margin + finalTableWidth, yPosition - 3);
-      
-      // Header background
-      doc.setFillColor(220, 220, 220);
-      doc.rect(margin, yPosition - 2, finalTableWidth, headerHeight, 'F');
-      
-      // Vertical grid lines for header
-      let headerX = margin;
-      for (let i = 0; i <= headers.length; i++) {
-        doc.line(headerX, yPosition - 2, headerX, yPosition - 2 + headerHeight);
-        if (i < headers.length) {
-          headerX += columnWidths[i];
-        }
-      }
-      
-      // Header text - center aligned
-      headerX = margin;
-      headers.forEach((header, index) => {
-        const textWidth = doc.getTextWidth(header);
-        const centerX = headerX + (columnWidths[index] - textWidth) / 2;
-        doc.text(header, centerX, yPosition + 6);
-        headerX += columnWidths[index];
-      });
-      
-      // Strong line after header
-      doc.setLineWidth(1.0);
-      doc.line(margin, yPosition - 2 + headerHeight, margin + finalTableWidth, yPosition - 2 + headerHeight);
-      
-      yPosition += headerHeight;
-      doc.setFont('helvetica', 'normal');
-      doc.setFontSize(8);
-      console.log(`📄 Header repeated on new page, continuing at yPosition ${yPosition}`);
-    }
+    // No need for page break check here - we handled it before the loop
   });
   
   // Horizontal line below table
