@@ -669,11 +669,18 @@ async function generateA4PortraitPDF(data: ReportData): Promise<void> {
   const signLineX2 = rightColumnX + rightColumnWidth - 35;
   doc.line(signLineX1, signLineY, signLineX2, signLineY);
   
-  // Nama pemeriksa tepat di bawah garis, posisi center
+  // Nama pemeriksa tepat di bawah garis, dengan styling yang lebih jelas
   const nameText = data.reportInfo?.diperiksaOleh || 'HARI'; // Default value HARI
-  const nameWidth = doc.getTextWidth(nameText);
+  doc.setFont('helvetica', 'bold'); // Bold untuk nama
+  doc.setFontSize(11); // Sedikit lebih besar
+  const nameWithParens = `( ${nameText} )`; // Tambah kurung untuk kejelasan
+  const nameWidth = doc.getTextWidth(nameWithParens);
   const nameX = rightColumnX + (rightColumnWidth - 20 - nameWidth) / 2;
-  doc.text(nameText, nameX, signLineY + 15);
+  doc.text(nameWithParens, nameX, signLineY + 18); // Lebih jauh dari garis
+  
+  // Reset font untuk yang lain
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(11);
   
   yPosition = Math.max(leftY, signBoxY + signBoxHeight) + 10;
   
