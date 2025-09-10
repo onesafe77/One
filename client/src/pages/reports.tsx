@@ -176,6 +176,28 @@ export default function Reports() {
             return;
           }
 
+          // Convert signature file to base64 jika ada
+          let processedReportInfo = { ...reportInfo };
+          if (reportInfo.tandaTangan && reportInfo.tandaTangan instanceof File) {
+            try {
+              const base64 = await new Promise<string>((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = () => {
+                  const result = reader.result as string;
+                  // Remove data URL prefix (data:image/jpeg;base64,)
+                  const base64String = result.split(',')[1];
+                  resolve(`data:image/jpeg;base64,${base64String}`);
+                };
+                reader.onerror = reject;
+                reader.readAsDataURL(reportInfo.tandaTangan!);
+              });
+              processedReportInfo.tandaTangan = base64;
+            } catch (error) {
+              console.error('Error converting signature to base64:', error);
+              // Keep original if conversion fails
+            }
+          }
+
           await generateAttendancePDF({
             employees: freshEmployees, // Use fresh employee data to show updated nomor lambung
             attendance: filteredAttendance,
@@ -185,7 +207,7 @@ export default function Reports() {
             endDate,
             reportType: "attendance",
             shiftFilter,
-            reportInfo,
+            reportInfo: processedReportInfo, // Use processed reportInfo with base64 signature
             orientation: format === "pdf-portrait" ? "portrait" : "landscape" // Professional orientation
           });
           

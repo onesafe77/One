@@ -663,6 +663,35 @@ async function generateA4PortraitPDF(data: ReportData): Promise<void> {
   const checkTextX = rightColumnX + (rightColumnWidth - 20 - checkTextWidth) / 2;
   doc.text(checkText, checkTextX, signBoxY + 5);
   
+  // Area untuk gambar tanda tangan (jika ada)
+  const imageAreaHeight = 60; // 60pt untuk gambar
+  const imageAreaY = signBoxY + 15; // 15pt dari atas kotak
+  
+  // Cek apakah ada file tanda tangan yang di-upload
+  if (data.reportInfo?.tandaTangan && typeof data.reportInfo.tandaTangan === 'string') {
+    try {
+      // Jika tandaTangan adalah base64 string, tampilkan sebagai gambar
+      const imageWidth = Math.min(80, rightColumnWidth - 40); // Max 80pt width
+      const imageHeight = 50; // Fixed height 50pt
+      const imageX = rightColumnX + (rightColumnWidth - 20 - imageWidth) / 2; // Center horizontal
+      
+      // Add image ke PDF
+      doc.addImage(
+        data.reportInfo.tandaTangan, 
+        'JPEG', // Assume JPEG, bisa juga PNG
+        imageX, 
+        imageAreaY, 
+        imageWidth, 
+        imageHeight,
+        undefined,
+        'FAST' // Compression
+      );
+    } catch (error) {
+      console.warn('Error adding signature image:', error);
+      // Fallback ke text jika gambar gagal
+    }
+  }
+  
   // Garis tanda tangan rata tengah di bagian bawah kotak
   const signLineY = signBoxY + signBoxHeight - 25;
   const signLineX1 = rightColumnX + 15;
