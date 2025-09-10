@@ -594,8 +594,8 @@ async function generateA4PortraitPDF(data: ReportData): Promise<void> {
   let yPosition = margin;
   let pageNumber = 1;
   
-  // Kotak header professional dengan border
-  const headerBoxHeight = 140;
+  // Kotak header professional dengan border - diperbesar untuk tampilan lebih lapang
+  const headerBoxHeight = 180;
   doc.setLineWidth(0.8);
   doc.setDrawColor(100, 100, 100);
   doc.rect(margin, yPosition, pageWidth - 2 * margin, headerBoxHeight);
@@ -617,9 +617,9 @@ async function generateA4PortraitPDF(data: ReportData): Promise<void> {
   doc.line(margin + 10, yPosition, pageWidth - margin - 10, yPosition);
   yPosition += 20;
   
-  // Bagian Informasi & Tanda Tangan (dua kolom: 65% dan 35% untuk pemanfaatan ruang lebih baik)
-  const leftColumnWidth = (pageWidth - 2 * margin) * 0.65; // 65% lebar untuk info
-  const rightColumnWidth = (pageWidth - 2 * margin) * 0.35; // 35% lebar untuk signature
+  // Bagian Informasi & Tanda Tangan (rebalanced: 58% dan 42% untuk proporsi lebih baik)
+  const leftColumnWidth = (pageWidth - 2 * margin) * 0.58; // 58% lebar untuk info
+  const rightColumnWidth = (pageWidth - 2 * margin) * 0.42; // 42% lebar untuk signature (diperlebar)
   const rightColumnX = margin + leftColumnWidth + 15; // 15pt spacing between columns
   
   // Kolom kiri - Informasi
@@ -647,8 +647,8 @@ async function generateA4PortraitPDF(data: ReportData): Promise<void> {
     leftY += 18;
   });
   
-  // Kolom kanan - Kotak tanda tangan dengan border tipis
-  const signBoxHeight = 80;
+  // Kolom kanan - Kotak tanda tangan dengan border tipis (diperbesar untuk gambar)
+  const signBoxHeight = 110; // Diperbesar dari 80pt ke 110pt untuk ruang gambar
   const signBoxY = yPosition;
   
   // Draw border kotak tanda tangan
