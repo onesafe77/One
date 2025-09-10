@@ -630,12 +630,17 @@ async function generateA4PortraitPDF(data: ReportData): Promise<void> {
   doc.setFontSize(11);
   
   const infoFields = [
-    `Perusahaan : ${data.reportInfo?.perusahaan || ''}`,
-    `Nama Pengawas : ${data.reportInfo?.namaPengawas || ''}`,
-    `Hari/Tanggal/Waktu : ${data.reportInfo?.hari || ''}, ${formatDateForPDF(data.startDate)} / ${data.reportInfo?.waktu || ''}`,
-    `Shift : ${data.reportInfo?.shift || ''}`,
-    `Tempat : ${data.reportInfo?.tempat || ''}`
+    `Perusahaan : ${data.reportInfo?.perusahaan || 'PT Goden Energi Cemerlang Lestari'}`,
+    `Nama Pengawas : ${data.reportInfo?.namaPengawas || 'BUDI HARTO DAN FADLAN'}`,
+    `Hari/Tanggal/Waktu : ${data.reportInfo?.hari || 'Rabu'}, ${formatDateForPDF(data.startDate)} / ${data.reportInfo?.waktu || '17:00-18:00'}`,
+    `Shift : ${data.reportInfo?.shift || 'Shift 1'}`,
+    `Tempat : ${data.reportInfo?.tempat || 'Titik Kumpul WS GECL'}`
   ];
+  
+  // Tambahkan catatan jika ada
+  if (data.reportInfo?.catatan && data.reportInfo.catatan.trim()) {
+    infoFields.push(`Catatan : ${data.reportInfo.catatan}`);
+  }
   
   infoFields.forEach(field => {
     doc.text(field, leftX, leftY);
@@ -665,12 +670,10 @@ async function generateA4PortraitPDF(data: ReportData): Promise<void> {
   doc.line(signLineX1, signLineY, signLineX2, signLineY);
   
   // Nama pemeriksa tepat di bawah garis, posisi center
-  const nameText = data.reportInfo?.diperiksaOleh || '';
-  if (nameText) {
-    const nameWidth = doc.getTextWidth(nameText);
-    const nameX = rightColumnX + (rightColumnWidth - 20 - nameWidth) / 2;
-    doc.text(nameText, nameX, signLineY + 15);
-  }
+  const nameText = data.reportInfo?.diperiksaOleh || 'HARI'; // Default value HARI
+  const nameWidth = doc.getTextWidth(nameText);
+  const nameX = rightColumnX + (rightColumnWidth - 20 - nameWidth) / 2;
+  doc.text(nameText, nameX, signLineY + 15);
   
   yPosition = Math.max(leftY, signBoxY + signBoxHeight) + 10;
   
