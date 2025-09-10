@@ -31,7 +31,7 @@ export default function Reports() {
     tempat: "",
     diperiksaOleh: "",
     catatan: "",
-    tandaTangan: null as File | null
+    tandaTangan: null as File | string | null
   });
   const { toast } = useToast();
 
@@ -189,7 +189,7 @@ export default function Reports() {
                   resolve(`data:image/jpeg;base64,${base64String}`);
                 };
                 reader.onerror = reject;
-                reader.readAsDataURL(reportInfo.tandaTangan!);
+                reader.readAsDataURL(reportInfo.tandaTangan as File);
               });
               processedReportInfo.tandaTangan = base64;
             } catch (error) {
@@ -445,7 +445,7 @@ export default function Reports() {
               />
               {reportInfo.tandaTangan && (
                 <p className="text-xs text-green-600 dark:text-green-400 mt-1">
-                  File dipilih: {reportInfo.tandaTangan.name}
+                  File dipilih: {typeof reportInfo.tandaTangan === 'string' ? 'Signature uploaded' : reportInfo.tandaTangan.name}
                 </p>
               )}
             </div>

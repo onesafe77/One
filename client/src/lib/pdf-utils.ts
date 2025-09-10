@@ -13,7 +13,7 @@ interface ReportInfo {
   tempat: string;
   diperiksaOleh: string;
   catatan: string;
-  tandaTangan: File | null;
+  tandaTangan: File | string | null;
 }
 
 export interface ReportData {
@@ -161,7 +161,14 @@ export async function generateAttendancePDF(data: ReportData): Promise<void> {
       // Add signature image if provided
       if (data.reportInfo.tandaTangan) {
         try {
-          const base64Data = await fileToBase64(data.reportInfo.tandaTangan);
+          let base64Data: string;
+          if (typeof data.reportInfo.tandaTangan === 'string') {
+            // Already a base64 string
+            base64Data = data.reportInfo.tandaTangan;
+          } else {
+            // Convert File to base64
+            base64Data = await fileToBase64(data.reportInfo.tandaTangan);
+          }
           doc.addImage(base64Data, 'JPEG', sigBoxX + 20, sigBoxY + 15, 60, 25);
         } catch (error) {
           console.warn('Failed to add signature:', error);
