@@ -64,6 +64,7 @@ import {
   Tooltip,
   Legend,
   ArcElement,
+  Filler,
 } from 'chart.js';
 import { Bar, Doughnut } from 'react-chartjs-2';
 
@@ -74,7 +75,8 @@ ChartJS.register(
   Title,
   Tooltip,
   Legend,
-  ArcElement
+  ArcElement,
+  Filler
 );
 
 const formSchema = insertLeaveRequestSchema.omit({ employeeName: true });

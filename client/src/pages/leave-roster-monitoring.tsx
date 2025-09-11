@@ -36,6 +36,7 @@ import {
   Title,
   Tooltip,
   Legend,
+  Filler,
 } from "chart.js";
 import * as XLSX from 'xlsx';
 
@@ -47,7 +48,8 @@ ChartJS.register(
   PointElement,
   Title,
   Tooltip,
-  Legend
+  Legend,
+  Filler
 );
 
 interface LeaveRosterMonitoring {
