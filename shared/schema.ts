@@ -298,6 +298,7 @@ export const insertManualAttendanceSchema = insertMeetingAttendanceSchema.extend
   manualDepartment: z.string().min(1, "Department required"),
 }).omit({
   employeeId: true, // Not needed for manual entry
+  meetingId: true, // Added by backend from route params
 });
 
 export const insertSimperMonitoringSchema = createInsertSchema(simperMonitoring).omit({
