@@ -584,9 +584,9 @@ export default function MeetingScanner() {
                                 </SelectTrigger>
                               </FormControl>
                               <SelectContent>
-                                {investorGroups?.map((group: any) => (
-                                  <SelectItem key={group.id} value={group.name}>
-                                    {group.name}
+                                {investorGroups?.investorGroups?.map((group: string) => (
+                                  <SelectItem key={group} value={group}>
+                                    {group}
                                   </SelectItem>
                                 ))}
                               </SelectContent>
