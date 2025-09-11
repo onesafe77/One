@@ -32,6 +32,19 @@ function Router() {
         {() => urlParams.has('nik') ? <DriverView /> : <div>Parameter NIK required</div>}
       </Route>
       
+      {/* Meeting Scanner Route */}
+      <Route path="/meeting-scanner">
+        {() => {
+          const token = urlParams.get('token');
+          if (token) {
+            window.location.href = `/workspace/meeting-scanner?token=${token}`;
+          } else {
+            window.location.href = `/workspace/meeting-scanner`;
+          }
+          return <div>Redirecting to meeting scanner...</div>;
+        }}
+      </Route>
+      
       {/* QR Redirect */}
       <Route path="/qr-redirect">
         {() => {
@@ -39,14 +52,23 @@ function Router() {
           if (qrData) {
             try {
               const parsedData = JSON.parse(decodeURIComponent(qrData));
+              
+              // Handle meeting QR codes
+              if (parsedData.type === "meeting" && parsedData.token) {
+                window.location.href = `/workspace/meeting-scanner?token=${parsedData.token}`;
+                return <div>Redirecting to meeting scanner...</div>;
+              }
+              
+              // Handle employee attendance QR codes
               if (parsedData.id) {
                 window.location.href = `/mobile-driver?nik=${parsedData.id}`;
+                return <div>Redirecting to attendance...</div>;
               }
             } catch (error) {
               console.error('Invalid QR data:', error);
             }
           }
-          return <div>Redirecting...</div>;
+          return <div>Invalid QR code data</div>;
         }}
       </Route>
       

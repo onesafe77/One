@@ -2601,8 +2601,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Check if this is a meeting QR code
       if (qrData.type === "meeting" && qrData.token) {
-        // Redirect to meeting scanner with the meeting token (correct path without /workspace)
-        return res.redirect(`/meeting-scanner?token=${qrData.token}`);
+        // Redirect to meeting scanner with the meeting token
+        return res.redirect(`/workspace/meeting-scanner?token=${qrData.token}`);
       }
 
       const { id: employeeId, token } = qrData;
