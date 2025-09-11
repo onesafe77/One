@@ -2154,7 +2154,7 @@ export default function Leave() {
                     <FormItem>
                       <FormLabel>Alasan Cuti</FormLabel>
                       <FormControl>
-                        <Textarea {...field} placeholder="Jelaskan alasan pengajuan cuti..." />
+                        <Textarea {...field} value={field.value || ""} placeholder="Jelaskan alasan pengajuan cuti..." />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
