@@ -38,9 +38,14 @@ function QRCodeDisplay({ meeting }: { meeting: Meeting }) {
     const generateQR = async () => {
       if (meeting.qrToken) {
         try {
-          // Generate URL that points directly to scanner with meeting token
-          const scanURL = `${window.location.origin}/meeting-scanner?token=${meeting.qrToken}`;
-          const dataURL = await QRCode.toDataURL(scanURL, {
+          // Generate QR code with URL format that works with native camera scanners
+          const qrData = JSON.stringify({
+            type: "meeting",
+            token: meeting.qrToken
+          });
+          const qrUrl = `${window.location.origin}/qr-redirect?data=${encodeURIComponent(qrData)}`;
+          
+          const dataURL = await QRCode.toDataURL(qrUrl, {
             width: 300,
             margin: 2,
             color: {
@@ -259,11 +264,14 @@ export default function Meetings() {
 
   const generateQRCodeDataURL = async (qrToken: string): Promise<string> => {
     try {
+      // Generate QR code with URL format that works with native camera scanners
       const qrData = JSON.stringify({ 
         type: "meeting",
         token: qrToken 
       });
-      return await QRCode.toDataURL(qrData, {
+      const qrUrl = `${window.location.origin}/qr-redirect?data=${encodeURIComponent(qrData)}`;
+      
+      return await QRCode.toDataURL(qrUrl, {
         width: 300,
         margin: 2,
         color: {

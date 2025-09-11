@@ -127,26 +127,60 @@ export default function MeetingScanner() {
               const code = jsQR(imageData.data, imageData.width, imageData.height);
 
               if (code && code.data) {
+                let qrToken = null;
+                
+                // Try to parse as JSON first
                 try {
                   const qrData = JSON.parse(code.data);
-                  if (qrData.type === "meeting" && qrData.token && employeeId) {
-                    // Stop scanning when QR code is detected
-                    stopCamera();
-                    
-                    // Show loading state
-                    toast({
-                      title: "QR Code Detected",
-                      description: "Memproses absensi meeting...",
-                    });
-                    
-                    attendanceMutation.mutate({
-                      qrToken: qrData.token,
-                      employeeId: employeeId
-                    });
-                    return;
+                  if (qrData.type === "meeting" && qrData.token) {
+                    qrToken = qrData.token;
                   }
                 } catch (parseError) {
-                  // Invalid QR code format, continue scanning
+                  // If JSON parsing fails, try to parse as URL
+                  try {
+                    const url = new URL(code.data);
+                    
+                    // Handle direct meeting scanner URLs
+                    if (url.pathname.includes('/meeting-scanner')) {
+                      qrToken = url.searchParams.get('token');
+                    }
+                    // Handle QR redirect URLs (new format)
+                    else if (url.pathname.includes('/qr-redirect')) {
+                      const data = url.searchParams.get('data');
+                      if (data) {
+                        try {
+                          const decodedData = decodeURIComponent(data);
+                          const redirectQrData = JSON.parse(decodedData);
+                          if (redirectQrData.type === "meeting" && redirectQrData.token) {
+                            qrToken = redirectQrData.token;
+                          }
+                        } catch (nestedParseError) {
+                          console.log('Failed to parse QR redirect data:', nestedParseError);
+                        }
+                      }
+                    }
+                  } catch (urlError) {
+                    // Neither JSON nor URL, continue scanning
+                    console.log('QR code format not recognized:', code.data);
+                  }
+                }
+                
+                // If we found a valid meeting token and have employee ID
+                if (qrToken && employeeId) {
+                  // Stop scanning when QR code is detected
+                  stopCamera();
+                  
+                  // Show loading state
+                  toast({
+                    title: "QR Code Detected",
+                    description: "Memproses absensi meeting...",
+                  });
+                  
+                  attendanceMutation.mutate({
+                    qrToken: qrToken,
+                    employeeId: employeeId
+                  });
+                  return;
                 }
               }
             }

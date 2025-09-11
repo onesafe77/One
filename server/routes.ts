@@ -2550,6 +2550,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/qr-redirect", async (req, res) => {
     try {
       const data = req.query.data as string;
+      
       if (!data) {
         return res.status(400).send(`
           <html>
@@ -2568,8 +2569,61 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // Parse QR data
-      const qrData = JSON.parse(decodeURIComponent(data));
+      let qrData;
+      try {
+        qrData = JSON.parse(decodeURIComponent(data));
+      } catch (parseError) {
+        // If JSON parsing fails, try to parse as URL for backward compatibility
+        try {
+          const url = new URL(decodeURIComponent(data));
+          const token = url.searchParams.get('token');
+          if (url.pathname.includes('/meeting-scanner') && token) {
+            return res.redirect(`/meeting-scanner?token=${token}`);
+          }
+        } catch (urlError) {
+          // Neither JSON nor URL, return error
+          return res.status(400).send(`
+            <html>
+              <head>
+                <title>QR Code Invalid</title>
+                <meta name="viewport" content="width=device-width, initial-scale=1.0">
+              </head>
+              <body>
+                <div style="text-align:center; padding:20px; font-family:Arial;">
+                  <h2>QR Code Invalid</h2>
+                  <p>Format QR code tidak dapat diparse</p>
+                </div>
+              </body>
+            </html>
+          `);
+        }
+      }
+      
+      // Check if this is a meeting QR code
+      if (qrData.type === "meeting" && qrData.token) {
+        // Redirect to meeting scanner with the meeting token (correct path without /workspace)
+        return res.redirect(`/meeting-scanner?token=${qrData.token}`);
+      }
+
       const { id: employeeId, token } = qrData;
+      
+      // Validate required fields for regular attendance QR codes
+      if (!employeeId || !token) {
+        return res.status(400).send(`
+          <html>
+            <head>
+              <title>QR Code Invalid</title>
+              <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            </head>
+            <body>
+              <div style="text-align:center; padding:20px; font-family:Arial;">
+                <h2>QR Code Invalid</h2>
+                <p>QR code tidak memiliki ID atau token yang valid</p>
+              </div>
+            </body>
+          </html>
+        `);
+      }
 
       // Validate employee exists
       const employee = await storage.getEmployee(employeeId);
