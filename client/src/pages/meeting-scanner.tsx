@@ -5,8 +5,15 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
-import { QrCode, Camera, CameraOff, UserCheck, AlertCircle, CheckCircle, User, Calendar, Clock, MapPin } from "lucide-react";
-import { apiRequest } from "@/lib/queryClient";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { QrCode, Camera, CameraOff, UserCheck, AlertCircle, CheckCircle, User, Calendar, Clock, MapPin, FileText } from "lucide-react";
+import { apiRequest, queryClient } from "@/lib/queryClient";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
 import jsQR from "jsqr";
 import type { Meeting } from "@shared/schema";
 
@@ -19,6 +26,24 @@ export default function MeetingScanner() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const { toast } = useToast();
+
+  // Manual attendance form schema
+  const manualAttendanceSchema = z.object({
+    namaKaryawan: z.string().min(1, "Nama karyawan wajib diisi"),
+    position: z.enum(["Investor", "Korlap"], { 
+      required_error: "Position wajib dipilih" 
+    }),
+    department: z.string().min(1, "Department wajib dipilih"),
+  });
+
+  const manualForm = useForm<z.infer<typeof manualAttendanceSchema>>({
+    resolver: zodResolver(manualAttendanceSchema),
+    defaultValues: {
+      namaKaryawan: "",
+      position: undefined,
+      department: "",
+    },
+  });
 
   // Get token from URL parameters
   useEffect(() => {
@@ -34,6 +59,12 @@ export default function MeetingScanner() {
     queryKey: ['/api/meetings/by-token', meetingToken],
     queryFn: () => apiRequest(`/api/meetings/by-token/${meetingToken}`, "GET"),
     enabled: !!meetingToken,
+  });
+
+  // Fetch investor groups for dropdown
+  const { data: investorGroups } = useQuery({
+    queryKey: ['/api/investor-groups'],
+    queryFn: () => apiRequest('/api/investor-groups', 'GET'),
   });
 
   const attendanceMutation = useMutation({
@@ -73,6 +104,43 @@ export default function MeetingScanner() {
       });
     },
   });
+
+  // Manual attendance mutation
+  const manualAttendanceMutation = useMutation({
+    mutationFn: async (data: z.infer<typeof manualAttendanceSchema>) => {
+      if (!meeting?.id) throw new Error("Meeting not found");
+      return await apiRequest(`/api/meetings/${meeting.id}/manual-attendance`, "POST", {
+        attendanceType: "manual_entry",
+        manualName: data.namaKaryawan,
+        manualPosition: data.position,
+        manualDepartment: data.department,
+        scanTime: new Date().toTimeString().split(' ')[0],
+        scanDate: new Date().toISOString().split('T')[0],
+        deviceInfo: navigator.userAgent || 'Manual Entry'
+      });
+    },
+    onSuccess: (data) => {
+      toast({
+        title: "Absensi Manual Berhasil!",
+        description: `${data.manualName} (${data.manualPosition}) telah dicatat sebagai hadir`,
+      });
+      manualForm.reset();
+      // Invalidate queries to refresh data
+      queryClient.invalidateQueries({ queryKey: ['/api/meetings', meeting?.id, 'attendance'] });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Absensi Manual Gagal",
+        description: error.message || "Terjadi kesalahan saat mencatat absensi manual",
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Handle manual form submission
+  const onManualSubmit = (data: z.infer<typeof manualAttendanceSchema>) => {
+    manualAttendanceMutation.mutate(data);
+  };
 
   // Handle form submission for direct attendance
   const handleFormSubmit = () => {
@@ -282,7 +350,7 @@ export default function MeetingScanner() {
           </Card>
         )}
 
-        {/* Form Absensi */}
+        {/* Attendance Tabs */}
         <Card className="mb-6">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
@@ -290,111 +358,269 @@ export default function MeetingScanner() {
               Form Absensi
             </CardTitle>
             <CardDescription>
-              {meetingToken ? "Isi NIK Anda untuk mencatat kehadiran" : "Masukkan NIK karyawan untuk melakukan absensi meeting"}
+              {meetingToken ? "Pilih metode absensi yang Anda inginkan" : "Scan QR code meeting atau isi form manual untuk absensi"}
             </CardDescription>
           </CardHeader>
-          <CardContent className="space-y-4">
-            <div>
-              <Label htmlFor="employeeId">NIK Karyawan</Label>
-              <Input
-                id="employeeId"
-                type="text"
-                placeholder="Masukkan NIK karyawan"
-                value={employeeId}
-                onChange={(e) => setEmployeeId(e.target.value)}
-                disabled={attendanceMutation.isPending}
-                data-testid="input-employee-id"
-                onKeyPress={(e) => {
-                  if (e.key === 'Enter' && meetingToken) {
-                    handleFormSubmit();
-                  }
-                }}
-              />
-            </div>
+          <CardContent>
+            <Tabs defaultValue="qr-scan" className="w-full">
+              <TabsList className="grid w-full grid-cols-2 mb-6">
+                <TabsTrigger value="qr-scan" data-testid="tab-qr-scan">
+                  <QrCode className="w-4 h-4 mr-2" />
+                  Scan QR Code
+                </TabsTrigger>
+                <TabsTrigger value="manual-entry" data-testid="tab-manual-entry" disabled={!meetingToken}>
+                  <FileText className="w-4 h-4 mr-2" />
+                  Entry Manual
+                </TabsTrigger>
+              </TabsList>
 
-            {meetingToken ? (
-              <Button
-                onClick={handleFormSubmit}
-                disabled={attendanceMutation.isPending || !employeeId.trim()}
-                className="w-full bg-green-600 hover:bg-green-700"
-                data-testid="button-submit-attendance"
-              >
-                {attendanceMutation.isPending ? (
-                  <>
-                    <AlertCircle className="w-4 h-4 mr-2 animate-spin" />
-                    Memproses Absensi...
-                  </>
+              {/* QR Code Scan Tab */}
+              <TabsContent value="qr-scan" className="space-y-4">
+                <div>
+                  <Label htmlFor="employeeId">NIK Karyawan</Label>
+                  <Input
+                    id="employeeId"
+                    type="text"
+                    placeholder="Masukkan NIK karyawan"
+                    value={employeeId}
+                    onChange={(e) => setEmployeeId(e.target.value)}
+                    disabled={attendanceMutation.isPending}
+                    data-testid="input-employee-id"
+                    onKeyPress={(e) => {
+                      if (e.key === 'Enter' && meetingToken) {
+                        handleFormSubmit();
+                      }
+                    }}
+                  />
+                </div>
+
+                {meetingToken ? (
+                  <Button
+                    onClick={handleFormSubmit}
+                    disabled={attendanceMutation.isPending || !employeeId.trim()}
+                    className="w-full bg-green-600 hover:bg-green-700"
+                    data-testid="button-submit-attendance"
+                  >
+                    {attendanceMutation.isPending ? (
+                      <>
+                        <AlertCircle className="w-4 h-4 mr-2 animate-spin" />
+                        Memproses Absensi...
+                      </>
+                    ) : (
+                      <>
+                        <CheckCircle className="w-4 h-4 mr-2" />
+                        Absen Sekarang
+                      </>
+                    )}
+                  </Button>
                 ) : (
-                  <>
-                    <CheckCircle className="w-4 h-4 mr-2" />
-                    Absen Sekarang
-                  </>
+                  <Button
+                    onClick={handleStartScan}
+                    disabled={!employeeId.trim() || isScanning || attendanceMutation.isPending}
+                    className="w-full bg-red-600 hover:bg-red-700"
+                    data-testid="button-start-scan"
+                  >
+                    {isScanning ? (
+                      <>
+                        <CameraOff className="w-4 h-4 mr-2" />
+                        Sedang Scanning...
+                      </>
+                    ) : (
+                      <>
+                        <Camera className="w-4 h-4 mr-2" />
+                        Mulai Scan QR Code
+                      </>
+                    )}
+                  </Button>
                 )}
-              </Button>
-            ) : (
-              <Button
-                onClick={handleStartScan}
-                disabled={!employeeId.trim() || isScanning || attendanceMutation.isPending}
-                className="w-full bg-red-600 hover:bg-red-700"
-                data-testid="button-start-scan"
-              >
-                {isScanning ? (
-                  <>
-                    <CameraOff className="w-4 h-4 mr-2" />
-                    Sedang Scanning...
-                  </>
+
+                {/* Camera View */}
+                {isScanning && (
+                  <div className="mt-6 p-4 border rounded-lg bg-gray-50 dark:bg-gray-800">
+                    <div className="text-center mb-4">
+                      <h3 className="text-lg font-semibold flex items-center justify-center gap-2">
+                        <Camera className="w-5 h-5" />
+                        Kamera QR Scanner
+                      </h3>
+                      <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+                        Arahkan kamera ke QR code meeting
+                      </p>
+                    </div>
+                    <div className="relative">
+                      <video
+                        ref={videoRef}
+                        autoPlay
+                        playsInline
+                        className="w-full rounded-lg"
+                        data-testid="video-scanner"
+                      />
+                      <canvas
+                        ref={canvasRef}
+                        className="hidden"
+                      />
+                      
+                      {/* Scanning overlay */}
+                      <div className="absolute inset-0 border-2 border-red-500 rounded-lg pointer-events-none">
+                        <div className="absolute top-4 left-4 w-6 h-6 border-t-4 border-l-4 border-red-500"></div>
+                        <div className="absolute top-4 right-4 w-6 h-6 border-t-4 border-r-4 border-red-500"></div>
+                        <div className="absolute bottom-4 left-4 w-6 h-6 border-b-4 border-l-4 border-red-500"></div>
+                        <div className="absolute bottom-4 right-4 w-6 h-6 border-b-4 border-r-4 border-red-500"></div>
+                      </div>
+                      
+                      <div className="absolute bottom-2 left-2 right-2 bg-black bg-opacity-50 text-white text-xs p-2 rounded text-center">
+                        Memindai QR code meeting...
+                      </div>
+                    </div>
+                    <Button
+                      onClick={stopCamera}
+                      variant="outline"
+                      className="w-full mt-4"
+                      data-testid="button-stop-scan"
+                    >
+                      <CameraOff className="w-4 h-4 mr-2" />
+                      Hentikan Scanner
+                    </Button>
+                  </div>
+                )}
+              </TabsContent>
+
+              {/* Manual Entry Tab */}
+              <TabsContent value="manual-entry" className="space-y-4">
+                {!meetingToken ? (
+                  <div className="text-center p-6 bg-yellow-50 dark:bg-yellow-900/20 rounded-lg">
+                    <AlertCircle className="w-12 h-12 text-yellow-600 mx-auto mb-4" />
+                    <p className="text-yellow-800 dark:text-yellow-200">
+                      Silakan scan QR code meeting terlebih dahulu untuk mengaktifkan entry manual
+                    </p>
+                  </div>
                 ) : (
-                  <>
-                    <Camera className="w-4 h-4 mr-2" />
-                    Mulai Scan QR Code
-                  </>
+                  <Form {...manualForm}>
+                    <form onSubmit={manualForm.handleSubmit(onManualSubmit)} className="space-y-4">
+                      {/* Current Date and Time Display */}
+                      <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg">
+                        <div className="grid grid-cols-2 gap-4 text-sm">
+                          <div>
+                            <span className="font-medium text-blue-800 dark:text-blue-200">Tanggal:</span>
+                            <div className="text-blue-700 dark:text-blue-300">
+                              {new Date().toLocaleDateString('id-ID', {
+                                weekday: 'long',
+                                year: 'numeric',
+                                month: 'long',
+                                day: 'numeric'
+                              })}
+                            </div>
+                          </div>
+                          <div>
+                            <span className="font-medium text-blue-800 dark:text-blue-200">Waktu:</span>
+                            <div className="text-blue-700 dark:text-blue-300">
+                              {new Date().toLocaleTimeString('id-ID', {
+                                hour: '2-digit',
+                                minute: '2-digit'
+                              })}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Nama Karyawan */}
+                      <FormField
+                        control={manualForm.control}
+                        name="namaKaryawan"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Nama Karyawan</FormLabel>
+                            <FormControl>
+                              <Input
+                                placeholder="Masukkan nama lengkap karyawan"
+                                data-testid="input-manual-name"
+                                {...field}
+                              />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+
+                      {/* Position */}
+                      <FormField
+                        control={manualForm.control}
+                        name="position"
+                        render={({ field }) => (
+                          <FormItem className="space-y-3">
+                            <FormLabel>Posisi</FormLabel>
+                            <FormControl>
+                              <RadioGroup
+                                onValueChange={field.onChange}
+                                value={field.value}
+                                className="flex flex-col space-y-2"
+                                data-testid="radio-manual-position"
+                              >
+                                <div className="flex items-center space-x-2">
+                                  <RadioGroupItem value="Investor" id="investor" />
+                                  <Label htmlFor="investor">Investor</Label>
+                                </div>
+                                <div className="flex items-center space-x-2">
+                                  <RadioGroupItem value="Korlap" id="korlap" />
+                                  <Label htmlFor="korlap">Korlap</Label>
+                                </div>
+                              </RadioGroup>
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+
+                      {/* Department */}
+                      <FormField
+                        control={manualForm.control}
+                        name="department"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Department</FormLabel>
+                            <Select onValueChange={field.onChange} value={field.value}>
+                              <FormControl>
+                                <SelectTrigger data-testid="select-manual-department">
+                                  <SelectValue placeholder="Pilih department" />
+                                </SelectTrigger>
+                              </FormControl>
+                              <SelectContent>
+                                {investorGroups?.map((group: any) => (
+                                  <SelectItem key={group.id} value={group.name}>
+                                    {group.name}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+
+                      <Button
+                        type="submit"
+                        disabled={manualAttendanceMutation.isPending}
+                        className="w-full bg-blue-600 hover:bg-blue-700"
+                        data-testid="button-submit-manual"
+                      >
+                        {manualAttendanceMutation.isPending ? (
+                          <>
+                            <AlertCircle className="w-4 h-4 mr-2 animate-spin" />
+                            Memproses Entry Manual...
+                          </>
+                        ) : (
+                          <>
+                            <CheckCircle className="w-4 h-4 mr-2" />
+                            Simpan Absensi Manual
+                          </>
+                        )}
+                      </Button>
+                    </form>
+                  </Form>
                 )}
-              </Button>
-            )}
+              </TabsContent>
+            </Tabs>
           </CardContent>
         </Card>
-
-        {/* Camera View */}
-        {isScanning && (
-          <Card className="mb-6">
-            <CardHeader>
-              <CardTitle className="text-lg flex items-center gap-2">
-                <Camera className="w-5 h-5" />
-                Kamera QR Scanner
-              </CardTitle>
-              <CardDescription>
-                Arahkan kamera ke QR code meeting
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="relative">
-                <video
-                  ref={videoRef}
-                  autoPlay
-                  playsInline
-                  className="w-full rounded-lg"
-                  data-testid="video-scanner"
-                />
-                <canvas
-                  ref={canvasRef}
-                  className="hidden"
-                />
-                
-                {/* Scanning overlay */}
-                <div className="absolute inset-0 border-2 border-red-500 rounded-lg pointer-events-none">
-                  <div className="absolute top-4 left-4 w-6 h-6 border-t-4 border-l-4 border-red-500"></div>
-                  <div className="absolute top-4 right-4 w-6 h-6 border-t-4 border-r-4 border-red-500"></div>
-                  <div className="absolute bottom-4 left-4 w-6 h-6 border-b-4 border-l-4 border-red-500"></div>
-                  <div className="absolute bottom-4 right-4 w-6 h-6 border-b-4 border-r-4 border-red-500"></div>
-                </div>
-                
-                <div className="absolute bottom-2 left-2 right-2 bg-black bg-opacity-50 text-white text-xs p-2 rounded text-center">
-                  Memindai QR code meeting...
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        )}
 
         {/* Scan Result */}
         {lastScanResult && (
@@ -453,35 +679,88 @@ export default function MeetingScanner() {
             <CardTitle className="text-lg">Cara Penggunaan</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="space-y-3 text-sm text-gray-600 dark:text-gray-400">
-              <div className="flex items-start gap-2">
-                <div className="w-6 h-6 bg-red-100 text-red-600 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0 mt-0.5">
-                  1
+            <Tabs defaultValue="qr-instructions" className="w-full">
+              <TabsList className="grid w-full grid-cols-2 mb-4">
+                <TabsTrigger value="qr-instructions" className="text-xs">
+                  <QrCode className="w-3 h-3 mr-1" />
+                  Scan QR
+                </TabsTrigger>
+                <TabsTrigger value="manual-instructions" className="text-xs">
+                  <FileText className="w-3 h-3 mr-1" />
+                  Manual
+                </TabsTrigger>
+              </TabsList>
+
+              <TabsContent value="qr-instructions">
+                <div className="space-y-3 text-sm text-gray-600 dark:text-gray-400">
+                  <div className="flex items-start gap-2">
+                    <div className="w-6 h-6 bg-red-100 text-red-600 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0 mt-0.5">
+                      1
+                    </div>
+                    <div>Masukkan NIK karyawan pada form di atas</div>
+                  </div>
+                  
+                  <div className="flex items-start gap-2">
+                    <div className="w-6 h-6 bg-red-100 text-red-600 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0 mt-0.5">
+                      2
+                    </div>
+                    <div>Tekan tombol "Mulai Scan QR Code" untuk mengaktifkan kamera</div>
+                  </div>
+                  
+                  <div className="flex items-start gap-2">
+                    <div className="w-6 h-6 bg-red-100 text-red-600 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0 mt-0.5">
+                      3
+                    </div>
+                    <div>Arahkan kamera ke QR code meeting yang telah disediakan</div>
+                  </div>
+                  
+                  <div className="flex items-start gap-2">
+                    <div className="w-6 h-6 bg-red-100 text-red-600 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0 mt-0.5">
+                      4
+                    </div>
+                    <div>Tunggu hingga sistem berhasil memindai dan memproses absensi</div>
+                  </div>
                 </div>
-                <div>Masukkan NIK karyawan pada form di atas</div>
-              </div>
-              
-              <div className="flex items-start gap-2">
-                <div className="w-6 h-6 bg-red-100 text-red-600 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0 mt-0.5">
-                  2
+              </TabsContent>
+
+              <TabsContent value="manual-instructions">
+                <div className="space-y-3 text-sm text-gray-600 dark:text-gray-400">
+                  <div className="flex items-start gap-2">
+                    <div className="w-6 h-6 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0 mt-0.5">
+                      1
+                    </div>
+                    <div>Pastikan QR code meeting telah discan terlebih dahulu</div>
+                  </div>
+                  
+                  <div className="flex items-start gap-2">
+                    <div className="w-6 h-6 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0 mt-0.5">
+                      2
+                    </div>
+                    <div>Pilih tab "Entry Manual" untuk mengakses form manual</div>
+                  </div>
+                  
+                  <div className="flex items-start gap-2">
+                    <div className="w-6 h-6 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0 mt-0.5">
+                      3
+                    </div>
+                    <div>Isi nama karyawan, pilih posisi (Investor/Korlap), dan pilih department</div>
+                  </div>
+                  
+                  <div className="flex items-start gap-2">
+                    <div className="w-6 h-6 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0 mt-0.5">
+                      4
+                    </div>
+                    <div>Tekan "Simpan Absensi Manual" untuk mencatat kehadiran</div>
+                  </div>
+                  
+                  <div className="mt-4 p-3 bg-yellow-50 dark:bg-yellow-900/20 rounded-lg">
+                    <p className="text-xs text-yellow-800 dark:text-yellow-200">
+                      <strong>Catatan:</strong> Entry manual hanya dapat digunakan setelah QR code meeting berhasil discan dan untuk peserta yang tidak memiliki NIK terdaftar dalam sistem.
+                    </p>
+                  </div>
                 </div>
-                <div>Tekan tombol "Mulai Scan QR Code" untuk mengaktifkan kamera</div>
-              </div>
-              
-              <div className="flex items-start gap-2">
-                <div className="w-6 h-6 bg-red-100 text-red-600 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0 mt-0.5">
-                  3
-                </div>
-                <div>Arahkan kamera ke QR code meeting yang telah disediakan</div>
-              </div>
-              
-              <div className="flex items-start gap-2">
-                <div className="w-6 h-6 bg-red-100 text-red-600 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0 mt-0.5">
-                  4
-                </div>
-                <div>Tunggu hingga sistem berhasil memindai dan memproses absensi</div>
-              </div>
-            </div>
+              </TabsContent>
+            </Tabs>
           </CardContent>
         </Card>
       </div>
