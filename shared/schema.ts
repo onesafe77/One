@@ -254,10 +254,17 @@ export const meetings = pgTable("meetings", {
 export const meetingAttendance = pgTable("meeting_attendance", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   meetingId: varchar("meeting_id").notNull().references(() => meetings.id, { onDelete: "cascade" }),
-  employeeId: varchar("employee_id").notNull().references(() => employees.id, { onDelete: "cascade" }),
-  scanTime: varchar("scan_time").notNull(), // HH:MM:SS format
+  employeeId: varchar("employee_id").references(() => employees.id, { onDelete: "cascade" }), // Made nullable for manual entries
+  scanTime: varchar("scan_time").notNull(), // HH:MM:SS format  
   scanDate: varchar("scan_date").notNull(), // YYYY-MM-DD format
   deviceInfo: varchar("device_info"), // Browser/device information
+  attendanceType: varchar("attendance_type").notNull().default("qr_scan"), // "qr_scan" | "manual_entry"
+  
+  // Manual entry fields for investor group
+  manualName: varchar("manual_name"), // Nama karyawan for manual entry
+  manualPosition: varchar("manual_position"), // "Investor" | "Korlap"
+  manualDepartment: varchar("manual_department"), // Selected from investorGroup
+  
   createdAt: timestamp("created_at").defaultNow(),
 });
 
@@ -283,6 +290,16 @@ export const insertMeetingAttendanceSchema = createInsertSchema(meetingAttendanc
   createdAt: true,
 });
 
+// Schema for manual attendance entry (investor group)
+export const insertManualAttendanceSchema = insertMeetingAttendanceSchema.extend({
+  attendanceType: z.literal("manual_entry"),
+  manualName: z.string().min(1, "Nama karyawan required"),
+  manualPosition: z.enum(["Investor", "Korlap"], { required_error: "Position required" }),
+  manualDepartment: z.string().min(1, "Department required"),
+}).omit({
+  employeeId: true, // Not needed for manual entry
+});
+
 export const insertSimperMonitoringSchema = createInsertSchema(simperMonitoring).omit({
   id: true,
   createdAt: true,
@@ -293,6 +310,7 @@ export type Meeting = typeof meetings.$inferSelect;
 export type InsertMeeting = z.infer<typeof insertMeetingSchema>;
 export type MeetingAttendance = typeof meetingAttendance.$inferSelect;
 export type InsertMeetingAttendance = z.infer<typeof insertMeetingAttendanceSchema>;
+export type InsertManualAttendance = z.infer<typeof insertManualAttendanceSchema>;
 export type SimperMonitoring = typeof simperMonitoring.$inferSelect;
 export type InsertSimperMonitoring = z.infer<typeof insertSimperMonitoringSchema>;
 
