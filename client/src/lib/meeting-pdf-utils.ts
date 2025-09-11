@@ -216,10 +216,10 @@ export function generateMeetingAttendancePDF(data: MeetingAttendanceData): void 
     if (data.attendance && data.attendance.length > 0) {
       const tableData = data.attendance.map((attendance, index) => [
         (index + 1).toString(), // Simple number format
-        attendance.employee?.id || '-',
-        attendance.employee?.name || 'Unknown',
-        attendance.employee?.position || '-',
-        attendance.employee?.department || '-',
+        attendance.attendanceType === 'manual_entry' ? '-' : (attendance.employee?.id || '-'),
+        attendance.attendanceType === 'manual_entry' ? attendance.manualName : (attendance.employee?.name || 'Unknown'),
+        attendance.attendanceType === 'manual_entry' ? attendance.manualPosition : (attendance.employee?.position || '-'),
+        attendance.attendanceType === 'manual_entry' ? attendance.manualDepartment : (attendance.employee?.department || '-'),
         new Date(attendance.scanDate).toLocaleDateString('id-ID'),
         attendance.scanTime ? `${attendance.scanTime} WITA` : '-' // Single line format
       ]);

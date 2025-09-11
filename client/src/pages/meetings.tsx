@@ -734,10 +734,10 @@ export default function Meetings() {
                 {attendanceData?.attendance?.map((att: any) => (
                   <TableRow key={att.id}>
                     <TableCell className="font-medium">
-                      {att.employee?.name || 'Unknown'}
+                      {att.attendanceType === 'manual_entry' ? att.manualName : (att.employee?.name || 'Unknown')}
                     </TableCell>
-                    <TableCell>{att.employee?.id || '-'}</TableCell>
-                    <TableCell>{att.employee?.department || '-'}</TableCell>
+                    <TableCell>{att.attendanceType === 'manual_entry' ? '-' : (att.employee?.id || '-')}</TableCell>
+                    <TableCell>{att.attendanceType === 'manual_entry' ? att.manualDepartment : (att.employee?.department || '-')}</TableCell>
                     <TableCell className="max-w-[200px]">
                       <div className="text-sm font-medium truncate">
                         {selectedMeeting?.title || '-'}
