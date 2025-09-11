@@ -154,7 +154,13 @@ export class MemStorage implements IStorage {
   private rosterSchedules: Map<string, RosterSchedule>;
   private leaveRequests: Map<string, LeaveRequest>;
   private qrTokens: Map<string, QrToken>;
+  private leaveBalances: Map<string, LeaveBalance>;
+  private leaveHistory: Map<string, LeaveHistory>;
+  private leaveRosterMonitoring: Map<string, LeaveRosterMonitoring>;
+  private leaveReminders: Map<string, LeaveReminder>;
   private simperMonitoring: Map<string, SimperMonitoring>;
+  private meetings: Map<string, Meeting>;
+  private meetingAttendance: Map<string, MeetingAttendance>;
 
   constructor() {
     this.users = new Map();
@@ -163,7 +169,13 @@ export class MemStorage implements IStorage {
     this.rosterSchedules = new Map();
     this.leaveRequests = new Map();
     this.qrTokens = new Map();
+    this.leaveBalances = new Map();
+    this.leaveHistory = new Map();
+    this.leaveRosterMonitoring = new Map();
+    this.leaveReminders = new Map();
     this.simperMonitoring = new Map();
+    this.meetings = new Map();
+    this.meetingAttendance = new Map();
     
     // Initialize with sample data
     this.initializeSampleData();
@@ -325,7 +337,8 @@ export class MemStorage implements IStorage {
     const schedule: RosterSchedule = {
       id: randomUUID(),
       ...insertSchedule,
-      jamTidur: insertSchedule.jamTidur || null,
+      jamTidur: insertSchedule.jamTidur ?? null,
+      hariKerja: insertSchedule.hariKerja ?? null,
       fitToWork: insertSchedule.fitToWork || "Fit To Work",
       status: insertSchedule.status || "scheduled"
     };
@@ -371,8 +384,9 @@ export class MemStorage implements IStorage {
     const request: LeaveRequest = {
       id: randomUUID(),
       ...insertRequest,
-      reason: insertRequest.reason || null, // Ensure reason is string | null, not undefined
-      attachmentPath: insertRequest.attachmentPath || null, // Ensure attachmentPath is string | null, not undefined
+      reason: insertRequest.reason ?? null, // Ensure reason is string | null, not undefined
+      attachmentPath: insertRequest.attachmentPath ?? null, // Ensure attachmentPath is string | null, not undefined
+      actionAttachmentPath: insertRequest.actionAttachmentPath ?? null, // Fix actionAttachmentPath
       status: insertRequest.status || "pending",
       createdAt: new Date()
     };
@@ -522,11 +536,16 @@ export class MemStorage implements IStorage {
     const leaveRosterMonitoring: LeaveRosterMonitoring = {
       id: randomUUID(),
       ...monitoring,
+      nomorLambung: monitoring.nomorLambung ?? null,
+      lastLeaveDate: monitoring.lastLeaveDate ?? null,
+      nextLeaveDate: monitoring.nextLeaveDate ?? null,
+      onSite: monitoring.onSite ?? null,
       status: monitoring.status || "Aktif",
       monitoringDays: monitoring.monitoringDays || 0,
       createdAt: new Date(),
       updatedAt: new Date()
     };
+    this.leaveRosterMonitoring.set(leaveRosterMonitoring.id, leaveRosterMonitoring);
     return leaveRosterMonitoring;
   }
 
@@ -552,12 +571,7 @@ export class MemStorage implements IStorage {
   }
 
   async getSimperMonitoringByNik(nik: string): Promise<SimperMonitoring | undefined> {
-    for (const simper of this.simperMonitoring.values()) {
-      if (simper.nik === nik) {
-        return simper;
-      }
-    }
-    return undefined;
+    return Array.from(this.simperMonitoring.values()).find(simper => simper.nik === nik);
   }
 
   async getAllSimperMonitoring(): Promise<SimperMonitoring[]> {
@@ -568,6 +582,8 @@ export class MemStorage implements IStorage {
     const simper: SimperMonitoring = {
       id: randomUUID(),
       ...simperData,
+      simperBibExpiredDate: simperData.simperBibExpiredDate ?? null,
+      simperTiaExpiredDate: simperData.simperTiaExpiredDate ?? null,
       createdAt: new Date(),
       updatedAt: new Date()
     };
@@ -633,6 +649,87 @@ export class MemStorage implements IStorage {
     }
 
     return { success, errors };
+  }
+
+  // Meeting methods implementation for MemStorage
+  async getMeeting(id: string): Promise<Meeting | undefined> {
+    return this.meetings.get(id);
+  }
+
+  async getAllMeetings(): Promise<Meeting[]> {
+    return Array.from(this.meetings.values());
+  }
+
+  async getMeetingsByDate(date: string): Promise<Meeting[]> {
+    return Array.from(this.meetings.values()).filter(meeting => meeting.date === date);
+  }
+
+  async createMeeting(insertMeeting: InsertMeeting): Promise<Meeting> {
+    // Generate unique QR token for the meeting
+    const qrToken = randomUUID().replace(/-/g, '').substring(0, 12);
+    const meeting: Meeting = {
+      id: randomUUID(),
+      ...insertMeeting,
+      status: insertMeeting.status || "scheduled",
+      description: insertMeeting.description ?? null,
+      qrToken,
+      createdAt: new Date(),
+      updatedAt: new Date()
+    };
+    this.meetings.set(meeting.id, meeting);
+    return meeting;
+  }
+
+  async updateMeeting(id: string, updateData: Partial<InsertMeeting>): Promise<Meeting | undefined> {
+    const existing = this.meetings.get(id);
+    if (!existing) return undefined;
+    
+    const updated = { 
+      ...existing, 
+      ...updateData, 
+      updatedAt: new Date() 
+    };
+    this.meetings.set(id, updated);
+    return updated;
+  }
+
+  async deleteMeeting(id: string): Promise<boolean> {
+    return this.meetings.delete(id);
+  }
+
+  async getMeetingByQrToken(qrToken: string): Promise<Meeting | undefined> {
+    return Array.from(this.meetings.values()).find(meeting => meeting.qrToken === qrToken);
+  }
+
+  // Meeting attendance methods implementation for MemStorage
+  async getMeetingAttendance(meetingId: string): Promise<MeetingAttendance[]> {
+    return Array.from(this.meetingAttendance.values()).filter(attendance => attendance.meetingId === meetingId);
+  }
+
+  async createMeetingAttendance(insertAttendance: InsertMeetingAttendance): Promise<MeetingAttendance> {
+    const attendance: MeetingAttendance = {
+      id: randomUUID(),
+      ...insertAttendance,
+      employeeId: insertAttendance.employeeId ?? null,
+      deviceInfo: insertAttendance.deviceInfo ?? null,
+      attendanceType: insertAttendance.attendanceType || "qr_scan",
+      manualName: insertAttendance.manualName ?? null,
+      manualPosition: insertAttendance.manualPosition ?? null,
+      manualDepartment: insertAttendance.manualDepartment ?? null,
+      createdAt: new Date()
+    };
+    this.meetingAttendance.set(attendance.id, attendance);
+    return attendance;
+  }
+
+  async checkMeetingAttendance(meetingId: string, employeeId: string): Promise<MeetingAttendance | undefined> {
+    return Array.from(this.meetingAttendance.values()).find(attendance => 
+      attendance.meetingId === meetingId && attendance.employeeId === employeeId
+    );
+  }
+
+  async deleteMeetingAttendance(attendanceId: string): Promise<boolean> {
+    return this.meetingAttendance.delete(attendanceId);
   }
 }
 

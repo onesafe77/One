@@ -14,6 +14,7 @@ import {
   insertQrTokenSchema,
   insertMeetingSchema,
   insertMeetingAttendanceSchema,
+  insertManualAttendanceSchema,
   insertSimperMonitoringSchema
 } from "@shared/schema";
 
@@ -2316,6 +2317,88 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error deleting meeting:", error);
       res.status(500).json({ error: "Failed to delete meeting" });
+    }
+  });
+
+  // Manual attendance entry for meetings - for investors and korlap
+  app.post("/api/meetings/:id/manual-attendance", async (req, res) => {
+    try {
+      const { id } = req.params;
+      
+      // Validate request data with manual attendance schema
+      const validatedData = insertManualAttendanceSchema.parse(req.body);
+      
+      // Check if meeting exists
+      const meeting = await storage.getMeeting(id);
+      if (!meeting) {
+        return res.status(404).json({ error: "Meeting not found" });
+      }
+      
+      // Get current time for attendance
+      const now = new Date();
+      const indonesiaTime = new Date(now.getTime() + (8 * 60 * 60 * 1000)); // WITA (+8)
+      const currentDate = indonesiaTime.toISOString().split('T')[0];
+      const currentTime = `${indonesiaTime.getHours().toString().padStart(2, '0')}:${indonesiaTime.getMinutes().toString().padStart(2, '0')}:${indonesiaTime.getSeconds().toString().padStart(2, '0')}`;
+      
+      // Create manual attendance record
+      const attendanceData = {
+        ...validatedData,
+        meetingId: id,
+        scanDate: currentDate,
+        scanTime: currentTime,
+        attendanceType: "manual_entry" as const
+      };
+      
+      const attendance = await storage.createMeetingAttendance(attendanceData);
+      
+      res.status(201).json({
+        message: "Manual attendance recorded successfully",
+        attendance,
+        attendeeInfo: {
+          name: validatedData.manualName,
+          position: validatedData.manualPosition,
+          department: validatedData.manualDepartment,
+          type: "Manual Entry"
+        }
+      });
+    } catch (error) {
+      console.error("Error recording manual attendance:", error);
+      if (error instanceof Error && error.message.includes('duplicate')) {
+        res.status(400).json({ error: "Attendance already recorded for this meeting" });
+      } else {
+        res.status(500).json({ error: "Failed to record manual attendance" });
+      }
+    }
+  });
+
+  // Get unique investor groups from employee data
+  app.get("/api/investor-groups", async (req, res) => {
+    try {
+      // Check cache first for performance
+      let employees = getCachedAllEmployees();
+      
+      if (!employees) {
+        console.log('🔄 Fetching all employees for investor groups...');
+        employees = await storage.getAllEmployees();
+        setCachedAllEmployees(employees);
+      }
+      
+      // Extract unique investor groups, filter out null/undefined/empty values
+      const investorGroups = [...new Set(
+        employees
+          .map(emp => emp.investorGroup)
+          .filter(group => group && group.trim() !== '')
+      )].sort();
+      
+      console.log(`📊 Found ${investorGroups.length} unique investor groups`);
+      
+      res.json({
+        investorGroups,
+        total: investorGroups.length
+      });
+    } catch (error) {
+      console.error("Error fetching investor groups:", error);
+      res.status(500).json({ error: "Failed to fetch investor groups" });
     }
   });
 
