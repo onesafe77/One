@@ -39,6 +39,14 @@ function fileToBase64(file: File): Promise<string> {
   });
 }
 
+// Helper function to properly capitalize names
+function capitalizeNames(text: string): string {
+  if (!text) return text;
+  return text.split(' ').map(word => 
+    word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()
+  ).join(' ');
+}
+
 export async function generateAttendancePDF(data: ReportData): Promise<void> {
   try {
     // Professional orientation handling dengan layout yang berbeda
@@ -94,9 +102,9 @@ export async function generateAttendancePDF(data: ReportData): Promise<void> {
       doc.setFontSize(10); // 10pt sub-header as per ReportLab standard
       doc.setFont('helvetica', 'normal');
       
-      // Information box dengan styling professional
+      // Information box dengan styling professional - adjusted for 10x6cm signature box
       const infoBoxY = yPosition;
-      const infoBoxHeight = 80; // Enhanced height untuk layout yang lebih baik
+      const infoBoxHeight = 75; // Height in mm to accommodate 6cm signature box + padding
       doc.setLineWidth(0.8); // Border thickness sesuai ReportLab
       doc.rect(margin, infoBoxY, pageWidth - 2 * margin, infoBoxHeight);
       
@@ -117,7 +125,10 @@ export async function generateAttendancePDF(data: ReportData): Promise<void> {
       
       doc.text('Nama Pengawas', leftX, leftY);
       doc.text(':', leftX + labelWidth, leftY);
-      doc.text(data.reportInfo.namaPengawas || '-', leftX + labelWidth + 5, leftY);
+      // Use sans-serif font and proper capitalization
+      doc.setFont('helvetica', 'normal'); // Helvetica is sans-serif
+      const supervisorName = capitalizeNames(data.reportInfo.namaPengawas || 'Pengawas');
+      doc.text(supervisorName, leftX + labelWidth + 5, leftY);
       leftY += 10;
       
       doc.text('Hari/Tanggal/Waktu', leftX, leftY);
@@ -136,66 +147,90 @@ export async function generateAttendancePDF(data: ReportData): Promise<void> {
       doc.text(data.reportInfo.tempat || '-', leftX + labelWidth + 5, leftY);
       leftY += 10;
       
-      // Add Catatan if provided with proper width limit to avoid signature box
+      // Add Catatan with proper wrapping and fallback
       if (data.reportInfo?.catatan && data.reportInfo.catatan.trim()) {
         doc.text('Catatan', leftX, leftY);
         doc.text(':', leftX + labelWidth, leftY);
         
-        // Calculate max width to avoid collision with signature box (100 width + extra padding)
-        const sigBoxWidth = 100;
-        const extraPadding = 20; // More conservative padding
-        const maxCatatanWidth = rightX - (leftX + labelWidth + 10) - sigBoxWidth - extraPadding;
-        const catatanText = data.reportInfo.catatan;
+        // Professional signature box is 10x6 cm (100x60 mm) with proper spacing
+        const sigBoxWidth = 100; // 10 cm in mm
+        const maxCatatanWidth = pageWidth - 2 * margin - sigBoxWidth - labelWidth - 15; // Conservative margin in mm
         
-        // Split long text if needed
+        let catatanText = data.reportInfo.catatan;
+        // Check if text appears to be meaningful content
+        const isGibberish = /^([a-zA-Z])\1{4,}/.test(catatanText) || // Repeated chars like "asdasdasd"
+                           catatanText.length > 300 || // Excessively long
+                           !/[aeiouAEIOU]/.test(catatanText.replace(/\s/g, '')); // No vowels (likely keyboard mashing)
+        
+        if (isGibberish) {
+          catatanText = '[Isi catatan di sini]';
+        }
+        
+        // Split text with proper wrapping
         const catatanLines = doc.splitTextToSize(catatanText, maxCatatanWidth);
         doc.text(catatanLines, leftX + labelWidth + 5, leftY);
+      } else {
+        // Add placeholder if no catatan
+        doc.text('Catatan', leftX, leftY);
+        doc.text(':', leftX + labelWidth, leftY);
+        doc.text('[Isi catatan di sini]', leftX + labelWidth + 5, leftY);
       }
       
-      // Right column - Compact signature area
-      const sigBoxX = rightX;
-      const sigBoxY = infoBoxY + 10;
-      const sigBoxWidth = 100;
-      const sigBoxHeight = 55;
+      // Professional signature box - 10x6 cm (100x60 mm) positioned at right
+      const sigBoxWidth = 100; // 10 cm in mm
+      const sigBoxHeight = 60; // 6 cm in mm
+      const sigBoxX = pageWidth - margin - sigBoxWidth; // Right-aligned
+      const sigBoxY = infoBoxY + 5;
       
+      // Draw signature box border
+      doc.setLineWidth(0.8);
       doc.rect(sigBoxX, sigBoxY, sigBoxWidth, sigBoxHeight);
       
-      // Professional signature content styling
+      // Professional signature layout
       doc.setFont('helvetica', 'normal');
-      doc.setFontSize(8); // Consistent 8pt untuk content
+      doc.setFontSize(10);
+      
+      // Top section: "Diperiksa Oleh," centered at top
       const signatureText = 'Diperiksa Oleh,';
       const signatureTextWidth = doc.getTextWidth(signatureText);
-      doc.text(signatureText, sigBoxX + (sigBoxWidth - signatureTextWidth) / 2, sigBoxY + 10);
+      doc.text(signatureText, sigBoxX + (sigBoxWidth - signatureTextWidth) / 2, sigBoxY + 20);
       
-      // Add signature image if provided
+      // Middle section: Space for signature image if provided
       if (data.reportInfo.tandaTangan) {
         try {
           let base64Data: string;
           if (typeof data.reportInfo.tandaTangan === 'string') {
-            // Already a base64 string
             base64Data = data.reportInfo.tandaTangan;
           } else {
-            // Convert File to base64
             base64Data = await fileToBase64(data.reportInfo.tandaTangan);
           }
-          doc.addImage(base64Data, 'JPEG', sigBoxX + 20, sigBoxY + 15, 60, 25);
+          // Detect image type from base64 data
+          const imageType = base64Data.startsWith('data:image/png') ? 'PNG' : 'JPEG';
+          
+          // Center the signature image in the middle section (adjusted for mm units)
+          const imgWidth = 40; // Width in mm
+          const imgHeight = 20; // Height in mm
+          const imgX = sigBoxX + (sigBoxWidth - imgWidth) / 2;
+          const imgY = sigBoxY + 15;
+          doc.addImage(base64Data, imageType, imgX, imgY, imgWidth, imgHeight);
         } catch (error) {
           console.warn('Failed to add signature:', error);
         }
       }
       
-      // Signature line
-      doc.line(sigBoxX + 15, sigBoxY + 42, sigBoxX + 85, sigBoxY + 42);
+      // Horizontal signature line in middle section (adjusted for mm units)
+      const lineY = sigBoxY + 40;
+      const lineMargin = 10; // mm
+      doc.setLineWidth(0.5);
+      doc.line(sigBoxX + lineMargin, lineY, sigBoxX + sigBoxWidth - lineMargin, lineY);
       
-      // Name dengan layout yang lebih rapi dan professional
-      doc.setFontSize(9); // Slightly larger for better readability
-      doc.setFont('helvetica', 'normal');
-      const nameText = data.reportInfo.diperiksaOleh || data.reportInfo.namaPengawas || 'Pengawas';
-      const nameWidth = doc.getTextWidth(nameText);
-      
-      // Center the name in signature box with proper spacing - moved up
+      // Bottom section: Name in parentheses, centered
+      doc.setFontSize(10);
+      const nameText = data.reportInfo.diperiksaOleh || capitalizeNames(data.reportInfo.namaPengawas || 'Pengawas');
+      const nameInParentheses = `(${nameText})`;
+      const nameWidth = doc.getTextWidth(nameInParentheses);
       const nameCenterX = sigBoxX + (sigBoxWidth - nameWidth) / 2;
-      doc.text(nameText, nameCenterX, sigBoxY + 48); // Moved up from 52 to 48 for better positioning
+      doc.text(nameInParentheses, nameCenterX, sigBoxY + sigBoxHeight - 5); // 5mm from bottom
       
       yPosition = infoBoxY + infoBoxHeight + 10; // Reduced spacing
     }
