@@ -201,31 +201,30 @@ export async function generateAttendancePDF(data: ReportData): Promise<void> {
       const sigCenterX = sigBoxX + sigBoxWidth / 2;
       const sigCenterY = sigBoxY + 28; // Adjusted position for better layout
       
-      // Main signature stroke - elegant flowing curve
+      // Compact signature stroke - TERKENDALI dalam bounds kotak 10x6cm
       const mainStroke: [number, number][] = [
-        [sigCenterX - 20, sigCenterY],
-        [sigCenterX - 15, sigCenterY - 3],
-        [sigCenterX - 8, sigCenterY + 1],
-        [sigCenterX, sigCenterY - 2],
-        [sigCenterX + 8, sigCenterY - 1],
-        [sigCenterX + 15, sigCenterY + 2]
+        [sigCenterX - 12, sigCenterY],        // Start point lebih compact
+        [sigCenterX - 6, sigCenterY - 2],     // Control point kecil
+        [sigCenterX, sigCenterY + 1],         // Middle point subtle
+        [sigCenterX + 6, sigCenterY - 1],     // Control point kecil
+        [sigCenterX + 12, sigCenterY]         // End point compact
       ];
       
-      // Draw main elegant stroke
+      // Draw compact signature stroke
       for (let i = 0; i < mainStroke.length - 1; i++) {
         doc.line(mainStroke[i][0], mainStroke[i][1], mainStroke[i + 1][0], mainStroke[i + 1][1]);
       }
       
-      // Complementary flourish - under main signature (consistent 1px thickness)
-      doc.setLineWidth(0.35); // Consistent dengan border dan signature line
+      // Small decorative flourish - SANGAT compact (consistent 1px thickness)
+      doc.setLineWidth(0.35); // Consistent dengan border dan signature line  
       const flourish: [number, number][] = [
-        [sigCenterX - 12, sigCenterY + 4],
-        [sigCenterX - 5, sigCenterY + 6],
-        [sigCenterX + 5, sigCenterY + 4],
-        [sigCenterX + 12, sigCenterY + 6]
+        [sigCenterX - 6, sigCenterY + 2],     // Start point kecil
+        [sigCenterX - 2, sigCenterY + 3],     // Control point minimal
+        [sigCenterX + 2, sigCenterY + 2],     // Control point minimal  
+        [sigCenterX + 6, sigCenterY + 3]      // End point kecil
       ];
       
-      // Draw elegant flourish
+      // Draw compact flourish
       for (let i = 0; i < flourish.length - 1; i++) {
         doc.line(flourish[i][0], flourish[i][1], flourish[i + 1][0], flourish[i + 1][1]);
       }
@@ -777,26 +776,25 @@ async function generateA4PortraitPDF(data: ReportData): Promise<void> {
   doc.setLineWidth(1); // 1pt equivalent untuk portrait
   doc.setDrawColor(0, 0, 0);
   
-  // Main signature stroke
+  // Compact signature stroke - TERKENDALI dalam bounds kotak portrait 10x6cm
   const mainStroke: [number, number][] = [
-    [sigCenterX - 60, sigCenterY],
-    [sigCenterX - 45, sigCenterY - 8],
-    [sigCenterX - 24, sigCenterY + 3],
-    [sigCenterX, sigCenterY - 5],
-    [sigCenterX + 24, sigCenterY - 3],
-    [sigCenterX + 45, sigCenterY + 5]
+    [sigCenterX - 35, sigCenterY],        // Start point lebih compact  
+    [sigCenterX - 18, sigCenterY - 4],    // Control point kecil
+    [sigCenterX, sigCenterY + 2],         // Middle point subtle
+    [sigCenterX + 18, sigCenterY - 2],    // Control point kecil  
+    [sigCenterX + 35, sigCenterY]         // End point compact
   ];
   
   for (let i = 0; i < mainStroke.length - 1; i++) {
     doc.line(mainStroke[i][0], mainStroke[i][1], mainStroke[i + 1][0], mainStroke[i + 1][1]);
   }
   
-  // Complementary flourish
+  // Small decorative flourish - SANGAT compact dalam bounds
   const flourish: [number, number][] = [
-    [sigCenterX - 36, sigCenterY + 12],
-    [sigCenterX - 15, sigCenterY + 18],
-    [sigCenterX + 15, sigCenterY + 12],
-    [sigCenterX + 36, sigCenterY + 18]
+    [sigCenterX - 18, sigCenterY + 6],    // Start point kecil
+    [sigCenterX - 8, sigCenterY + 8],     // Control point minimal
+    [sigCenterX + 8, sigCenterY + 6],     // Control point minimal
+    [sigCenterX + 18, sigCenterY + 8]     // End point kecil
   ];
   
   for (let i = 0; i < flourish.length - 1; i++) {
