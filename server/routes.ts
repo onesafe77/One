@@ -389,6 +389,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
 
+      // Clear employee caches since we've added new data
+      clearAllCaches();
+
       res.json({ 
         message: `Successfully uploaded ${results.length} employees with QR codes`,
         employees: results
