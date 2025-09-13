@@ -355,8 +355,15 @@ function generateShiftSection(
           fitToWork: att.fitToWork || 'Fit To Work'
         };
       } else {
-        // Add new roster entry for attendance - get hariKerja from any roster for this employee
-        const anyRosterRecord = data.roster?.find(r => r.employeeId === att.employeeId);
+        // Add new roster entry for attendance - get hariKerja with smart matching
+        // Priority: same date + same shift > same date + any shift > any date + any shift > recent record
+        const sameDate = data.roster?.find(r => r.employeeId === att.employeeId && r.date === data.startDate);
+        const anyDateSameEmployee = data.roster?.filter(r => r.employeeId === att.employeeId) || [];
+        const mostRecentRecord = anyDateSameEmployee.sort((a, b) => (b.date || '').localeCompare(a.date || ''))[0];
+        
+        const bestRosterRecord = sameDate || mostRecentRecord;
+        
+        console.log(`🔍 Employee ${employee.name}: found roster record with hariKerja="${bestRosterRecord?.hariKerja}" (sameDate=${!!sameDate}, total records=${anyDateSameEmployee.length})`);
         
         scheduledEmployees.push({
           id: `temp-${att.employeeId}`,
@@ -367,7 +374,7 @@ function generateShiftSection(
           endTime: shiftName.toUpperCase() === 'SHIFT 1' ? '15:30' : '20:00',
           jamTidur: att.jamTidur || '',
           fitToWork: att.fitToWork || 'Fit To Work',
-          hariKerja: anyRosterRecord?.hariKerja || '', // Use hariKerja from any roster record for this employee
+          hariKerja: bestRosterRecord?.hariKerja || '', // Use best matching hariKerja
           status: 'present',
           employee: employee
         } as any);
@@ -476,8 +483,6 @@ function generateShiftSection(
       }
     }
     
-    // DEBUG: Log untuk debugging hari kerja
-    console.log(`📅 ${employee.name}: hariKerja raw="${rosterRecord.hariKerja}", processed="${workDaysText}"`);
     
     // Prepare row data - show ALL scheduled employees with their attendance status (ReportLab style with icons)
     const jamTidur = attendanceRecord?.jamTidur || '-';
@@ -1140,8 +1145,12 @@ function getShiftEmployees(data: ReportData, shift: string): any[] {
           fitToWork: att.fitToWork || 'Fit To Work'
         };
       } else {
-        // Add new roster entry for attendance - get hariKerja from any roster for this employee
-        const anyRosterRecord = data.roster?.find(r => r.employeeId === att.employeeId);
+        // Add new roster entry for attendance - get hariKerja with smart matching
+        const sameDate = data.roster?.find(r => r.employeeId === att.employeeId && r.date === data.startDate);
+        const anyDateSameEmployee = data.roster?.filter(r => r.employeeId === att.employeeId) || [];
+        const mostRecentRecord = anyDateSameEmployee.sort((a, b) => (b.date || '').localeCompare(a.date || ''))[0];
+        
+        const bestRosterRecord = sameDate || mostRecentRecord;
         
         const tempRoster = {
           id: `temp-${att.employeeId}`,
@@ -1152,13 +1161,13 @@ function getShiftEmployees(data: ReportData, shift: string): any[] {
           endTime: shift === 'Shift 1' ? '18:00' : '06:00',
           jamTidur: att.jamTidur || '',
           fitToWork: att.fitToWork || 'Fit To Work',
-          hariKerja: anyRosterRecord?.hariKerja || '',
+          hariKerja: bestRosterRecord?.hariKerja || '',
           status: 'scheduled'
         } as any;
         
         // Add extra properties for processing
         (tempRoster as any).employee = employee;
-        (tempRoster as any).workDays = (anyRosterRecord as any)?.workDays || parseInt(anyRosterRecord?.hariKerja || '0', 10);
+        (tempRoster as any).workDays = (bestRosterRecord as any)?.workDays || parseInt(bestRosterRecord?.hariKerja || '0', 10);
         
         scheduledEmployees.push(tempRoster);
       }
