@@ -235,23 +235,25 @@ export async function generateAttendancePDF(data: ReportData): Promise<void> {
         doc.line(flourish[i][0], flourish[i][1], flourish[i + 1][0], flourish[i + 1][1]);
       }
       
-      // Position nama tepat di atas garis signature seperti diminta
+      // Bottom section: Position nama tepat di atas garis horizontal
       doc.setFont('helvetica', 'normal'); // Clean sans-serif
       doc.setFontSize(10); // Professional 10pt size
       doc.setTextColor(0, 0, 0); // Pure black for crisp text
+      
+      // Calculate positions - nama di atas, garis di bawah
+      const lineY = sigBoxY + sigBoxHeight - 10; // Garis horizontal 10mm dari bawah kotak
+      const nameY = lineY - 8; // Nama 8mm di atas garis
+      
       const nameText = data.reportInfo.diperiksaOleh || capitalizeNames(data.reportInfo.namaPengawas || 'Pengawas');
       const nameInParentheses = `(${nameText})`;
       const nameWidth = doc.getTextWidth(nameInParentheses);
       const nameCenterX = sigBoxX + (sigBoxWidth - nameWidth) / 2;
       
-      // Nama tepat di atas garis - positioning yang tepat
-      const nameY = sigBoxY + 40; // Position nama
-      const lineY = nameY + 5; // Garis horizontal 5mm di bawah nama
+      // Draw nama tepat di atas garis
+      doc.text(nameInParentheses, nameCenterX, nameY);
       
-      doc.text(nameInParentheses, nameCenterX, nameY); // Nama di atas
-      
-      // Horizontal signature line tepat di bawah nama (1px thickness)
-      const lineMargin = 10; // mm
+      // Draw horizontal signature line di bawah nama (1px thickness)
+      const lineMargin = 10; // mm from box edges
       doc.setLineWidth(0.35); // 1px equivalent
       doc.setDrawColor(0, 0, 0); // Pure black
       doc.line(sigBoxX + lineMargin, lineY, sigBoxX + sigBoxWidth - lineMargin, lineY);
@@ -742,52 +744,8 @@ async function generateA4PortraitPDF(data: ReportData): Promise<void> {
   const checkTextX = rightColumnX + (rightColumnWidth - 20 - checkTextWidth) / 2;
   doc.text(checkText, checkTextX, signBoxY + 5);
   
-  // Area untuk gambar tanda tangan (jika ada)
-  const imageAreaHeight = 60; // 60pt untuk gambar
-  const imageAreaY = signBoxY + 15; // 15pt dari atas kotak
-  
-  // Cek apakah ada file tanda tangan yang di-upload
-  if (data.reportInfo?.tandaTangan && typeof data.reportInfo.tandaTangan === 'string') {
-    try {
-      // Jika tandaTangan adalah base64 string, tampilkan sebagai gambar
-      const imageWidth = Math.min(80, rightColumnWidth - 40); // Max 80pt width
-      const imageHeight = 50; // Fixed height 50pt
-      const imageX = rightColumnX + (rightColumnWidth - 20 - imageWidth) / 2; // Center horizontal
-      
-      // Add image ke PDF
-      doc.addImage(
-        data.reportInfo.tandaTangan, 
-        'JPEG', // Assume JPEG, bisa juga PNG
-        imageX, 
-        imageAreaY, 
-        imageWidth, 
-        imageHeight,
-        undefined,
-        'FAST' // Compression
-      );
-    } catch (error) {
-      console.warn('Error adding signature image:', error);
-      // Fallback ke text jika gambar gagal
-    }
-  }
-  
-  // Garis tanda tangan rata tengah di bagian bawah kotak
-  const signLineY = signBoxY + signBoxHeight - 25;
-  const signLineX1 = rightColumnX + 15;
-  const signLineX2 = rightColumnX + rightColumnWidth - 35;
-  doc.line(signLineX1, signLineY, signLineX2, signLineY);
-  
-  // Nama pemeriksa tepat di bawah garis, dengan styling yang lebih jelas
-  const nameText = data.reportInfo?.diperiksaOleh || 'HARI'; // Default value HARI
-  doc.setFont('helvetica', 'bold'); // Bold untuk nama
-  doc.setFontSize(11); // Sedikit lebih besar
-  const nameWithParens = `( ${nameText} )`; // Tambah kurung untuk kejelasan
-  const nameWidth = doc.getTextWidth(nameWithParens);
-  const nameX = rightColumnX + (rightColumnWidth - 20 - nameWidth) / 2;
-  doc.text(nameWithParens, nameX, signLineY + 18); // Lebih jauh dari garis
-  
-  // Reset font untuk yang lain
-  doc.setFont('helvetica', 'normal');
+  // CATATAN: Logika tanda tangan lama dihapus - sekarang menggunakan digital signature yang elegan
+  // Area tanda tangan sekarang ditangani oleh kotak profesional di landscape mode
   doc.setFontSize(11);
   
   yPosition = Math.max(leftY, signBoxY + signBoxHeight) + 10;
