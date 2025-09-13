@@ -757,27 +757,71 @@ async function generateA4PortraitPDF(data: ReportData): Promise<void> {
     doc.setFont('helvetica', 'normal');
     doc.setTextColor(0, 0, 0); // Pure black
     
-    // 2. Signature graphics in center - ALWAYS DRAW regardless of data
-    doc.setLineWidth(0.8);
-    doc.setDrawColor(0, 0, 0);
-    
+    // 2. Signature graphics in center - PRIORITIZE uploaded image over vector
     const sigCenterX = rightColumnX + (rightColumnWidth - 20) / 2;
     const sigCenterY = signBoxY + 35;
     
     console.log(`🔥 Drawing signature at: (${sigCenterX}, ${sigCenterY})`);
     
-    // Professional vector signature - simple elegant curves
-    doc.line(sigCenterX - 20, sigCenterY, sigCenterX - 12, sigCenterY - 3);
-    doc.line(sigCenterX - 12, sigCenterY - 3, sigCenterX - 4, sigCenterY + 1);
-    doc.line(sigCenterX - 4, sigCenterY + 1, sigCenterX + 4, sigCenterY - 1);
-    doc.line(sigCenterX + 4, sigCenterY - 1, sigCenterX + 12, sigCenterY + 2);
-    doc.line(sigCenterX + 12, sigCenterY + 2, sigCenterX + 20, sigCenterY);
-    
-    // Elegant flourish
-    doc.setLineWidth(0.6);
-    doc.line(sigCenterX - 15, sigCenterY + 4, sigCenterX - 6, sigCenterY + 6);
-    doc.line(sigCenterX - 6, sigCenterY + 6, sigCenterX + 6, sigCenterY + 4);
-    doc.line(sigCenterX + 6, sigCenterY + 4, sigCenterX + 15, sigCenterY + 6);
+    // Check if there's an uploaded signature image (base64)
+    if (data.reportInfo?.tandaTangan && typeof data.reportInfo.tandaTangan === 'string' && 
+        data.reportInfo.tandaTangan.startsWith('data:image/')) {
+      
+      try {
+        console.log('📸 Using uploaded signature image...');
+        
+        // Calculate signature image dimensions (fit in available space)
+        const maxSignWidth = 80; // Max width in PDF units
+        const maxSignHeight = 30; // Max height in PDF units
+        
+        const signImageX = sigCenterX - maxSignWidth / 2;
+        const signImageY = sigCenterY - maxSignHeight / 2;
+        
+        // Add the uploaded signature image
+        doc.addImage(
+          data.reportInfo.tandaTangan,
+          'JPEG',
+          signImageX,
+          signImageY,
+          maxSignWidth,
+          maxSignHeight
+        );
+        
+        console.log(`✅ Uploaded signature image added at: (${signImageX}, ${signImageY})`);
+        
+      } catch (imageError) {
+        console.error('Error adding uploaded signature image:', imageError);
+        
+        // Fall back to vector signature if image fails
+        doc.setLineWidth(0.8);
+        doc.setDrawColor(0, 0, 0);
+        doc.line(sigCenterX - 20, sigCenterY, sigCenterX - 12, sigCenterY - 3);
+        doc.line(sigCenterX - 12, sigCenterY - 3, sigCenterX - 4, sigCenterY + 1);
+        doc.line(sigCenterX - 4, sigCenterY + 1, sigCenterX + 4, sigCenterY - 1);
+        doc.line(sigCenterX + 4, sigCenterY - 1, sigCenterX + 12, sigCenterY + 2);
+        doc.line(sigCenterX + 12, sigCenterY + 2, sigCenterX + 20, sigCenterY);
+        
+        console.log('⚠️ Using fallback vector signature due to image error');
+      }
+      
+    } else {
+      console.log('📝 No uploaded signature found, using vector signature...');
+      
+      // Fall back to professional vector signature
+      doc.setLineWidth(0.8);
+      doc.setDrawColor(0, 0, 0);
+      doc.line(sigCenterX - 20, sigCenterY, sigCenterX - 12, sigCenterY - 3);
+      doc.line(sigCenterX - 12, sigCenterY - 3, sigCenterX - 4, sigCenterY + 1);
+      doc.line(sigCenterX - 4, sigCenterY + 1, sigCenterX + 4, sigCenterY - 1);
+      doc.line(sigCenterX + 4, sigCenterY - 1, sigCenterX + 12, sigCenterY + 2);
+      doc.line(sigCenterX + 12, sigCenterY + 2, sigCenterX + 20, sigCenterY);
+      
+      // Elegant flourish
+      doc.setLineWidth(0.6);
+      doc.line(sigCenterX - 15, sigCenterY + 4, sigCenterX - 6, sigCenterY + 6);
+      doc.line(sigCenterX - 6, sigCenterY + 6, sigCenterX + 6, sigCenterY + 4);
+      doc.line(sigCenterX + 6, sigCenterY + 4, sigCenterX + 15, sigCenterY + 6);
+    }
     
     // 3. Name text - ALWAYS SHOW with fallback
     doc.setFont('helvetica', 'normal');
