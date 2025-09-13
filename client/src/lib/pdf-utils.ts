@@ -136,11 +136,18 @@ export async function generateAttendancePDF(data: ReportData): Promise<void> {
       doc.text(data.reportInfo.tempat || '-', leftX + labelWidth + 5, leftY);
       leftY += 10;
       
-      // Add Catatan if provided
+      // Add Catatan if provided with proper width limit to avoid signature box
       if (data.reportInfo?.catatan && data.reportInfo.catatan.trim()) {
         doc.text('Catatan', leftX, leftY);
         doc.text(':', leftX + labelWidth, leftY);
-        doc.text(data.reportInfo.catatan, leftX + labelWidth + 5, leftY);
+        
+        // Calculate max width to avoid collision with signature box
+        const maxCatatanWidth = rightX - (leftX + labelWidth + 10); // Leave some padding
+        const catatanText = data.reportInfo.catatan;
+        
+        // Split long text if needed
+        const catatanLines = doc.splitTextToSize(catatanText, maxCatatanWidth);
+        doc.text(catatanLines, leftX + labelWidth + 5, leftY);
       }
       
       // Right column - Compact signature area
@@ -178,11 +185,15 @@ export async function generateAttendancePDF(data: ReportData): Promise<void> {
       // Signature line
       doc.line(sigBoxX + 15, sigBoxY + 42, sigBoxX + 85, sigBoxY + 42);
       
-      // Name dengan consistent font size
-      doc.setFontSize(8); // Consistent 8pt
-      const nameText = data.reportInfo.diperiksaOleh || 'Syahrani';
+      // Name dengan layout yang lebih rapi dan professional
+      doc.setFontSize(9); // Slightly larger for better readability
+      doc.setFont('helvetica', 'normal');
+      const nameText = data.reportInfo.diperiksaOleh || data.reportInfo.namaPengawas || 'Pengawas';
       const nameWidth = doc.getTextWidth(nameText);
-      doc.text(nameText, sigBoxX + (sigBoxWidth - nameWidth) / 2, sigBoxY + 50);
+      
+      // Center the name in signature box with proper spacing
+      const nameCenterX = sigBoxX + (sigBoxWidth - nameWidth) / 2;
+      doc.text(nameText, nameCenterX, sigBoxY + 52); // Moved slightly down for better spacing
       
       yPosition = infoBoxY + infoBoxHeight + 10; // Reduced spacing
     }
