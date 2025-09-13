@@ -197,60 +197,49 @@ export async function generateAttendancePDF(data: ReportData): Promise<void> {
       const signatureTextWidth = doc.getTextWidth(signatureText);
       doc.text(signatureText, sigBoxX + (sigBoxWidth - signatureTextWidth) / 2, sigBoxY + 12);
       
-      // 2. Bagian tengah: Tanda tangan digital rapi 
-      doc.setLineWidth(0.35); // Consistent 1px thickness
-      doc.setDrawColor(0, 0, 0); // Pure black for crisp signature
+      // 2. Bagian tengah: Tanda tangan digital rapi (lebih tebal agar terlihat)
+      doc.setLineWidth(0.8); // Garis lebih tebal agar terlihat jelas
+      doc.setDrawColor(0, 0, 0); // Pure black untuk kontras
       
       const sigCenterX = sigBoxX + sigBoxWidth / 2;
-      const sigCenterY = sigBoxY + 30; // Posisi tengah kotak
+      const sigCenterY = sigBoxY + 28; // Sedikit lebih tinggi dari tengah
       
-      // Main signature stroke - elegant flowing curve
-      const mainStroke: [number, number][] = [
-        [sigCenterX - 20, sigCenterY],
-        [sigCenterX - 15, sigCenterY - 3],
-        [sigCenterX - 8, sigCenterY + 1],
-        [sigCenterX, sigCenterY - 2],
-        [sigCenterX + 8, sigCenterY - 1],
-        [sigCenterX + 15, sigCenterY + 2]
-      ];
+      console.log(`Drawing signature at center: (${sigCenterX}, ${sigCenterY})`);
       
-      // Draw main elegant stroke
-      for (let i = 0; i < mainStroke.length - 1; i++) {
-        doc.line(mainStroke[i][0], mainStroke[i][1], mainStroke[i + 1][0], mainStroke[i + 1][1]);
-      }
+      // Main signature stroke - simple tapi jelas terlihat
+      doc.line(sigCenterX - 25, sigCenterY, sigCenterX - 15, sigCenterY - 4);
+      doc.line(sigCenterX - 15, sigCenterY - 4, sigCenterX - 5, sigCenterY + 2);
+      doc.line(sigCenterX - 5, sigCenterY + 2, sigCenterX + 5, sigCenterY - 1);
+      doc.line(sigCenterX + 5, sigCenterY - 1, sigCenterX + 15, sigCenterY + 3);
+      doc.line(sigCenterX + 15, sigCenterY + 3, sigCenterX + 25, sigCenterY);
       
-      // Complementary flourish - under main signature
-      doc.setLineWidth(0.3);
-      const flourish: [number, number][] = [
-        [sigCenterX - 12, sigCenterY + 4],
-        [sigCenterX - 5, sigCenterY + 6],
-        [sigCenterX + 5, sigCenterY + 4],
-        [sigCenterX + 12, sigCenterY + 6]
-      ];
-      
-      // Draw elegant flourish
-      for (let i = 0; i < flourish.length - 1; i++) {
-        doc.line(flourish[i][0], flourish[i][1], flourish[i + 1][0], flourish[i + 1][1]);
-      }
+      // Flourish bawah
+      doc.setLineWidth(0.6);
+      doc.line(sigCenterX - 18, sigCenterY + 5, sigCenterX - 8, sigCenterY + 8);
+      doc.line(sigCenterX - 8, sigCenterY + 8, sigCenterX + 8, sigCenterY + 5);
+      doc.line(sigCenterX + 8, sigCenterY + 5, sigCenterX + 18, sigCenterY + 8);
       
       // 3. Nama tepat di atas garis horizontal (bagian bawah)
       doc.setFont('helvetica', 'normal');
-      doc.setFontSize(10);
+      doc.setFontSize(11); // Sedikit lebih besar agar terlihat
+      doc.setTextColor(0, 0, 0); // Pastikan warna hitam
       
       const nameText = data.reportInfo.diperiksaOleh || capitalizeNames(data.reportInfo.namaPengawas || 'Pengawas');
       const nameInParentheses = `(${nameText})`;
       const nameWidth = doc.getTextWidth(nameInParentheses);
       const nameCenterX = sigBoxX + (sigBoxWidth - nameWidth) / 2;
       
-      // Position nama tepat di atas garis
-      const nameY = sigBoxY + sigBoxHeight - 15; // 15mm dari bawah kotak
+      // Position nama tepat di atas garis - lebih tinggi agar terlihat
+      const nameY = sigBoxY + sigBoxHeight - 18; // 18mm dari bawah kotak
+      console.log(`Drawing name "${nameInParentheses}" at: (${nameCenterX}, ${nameY})`);
       doc.text(nameInParentheses, nameCenterX, nameY);
       
-      // 4. Garis horizontal di bawah nama
-      const lineY = nameY + 5; // 5mm di bawah nama
+      // 4. Garis horizontal di bawah nama - lebih tebal agar terlihat
+      const lineY = nameY + 6; // 6mm di bawah nama
       const lineMargin = 10; // mm from box edges
-      doc.setLineWidth(0.35); // 1px equivalent
+      doc.setLineWidth(0.8); // Lebih tebal agar terlihat jelas
       doc.setDrawColor(0, 0, 0); // Pure black
+      console.log(`Drawing horizontal line from (${sigBoxX + lineMargin}, ${lineY}) to (${sigBoxX + sigBoxWidth - lineMargin}, ${lineY})`);
       doc.line(sigBoxX + lineMargin, lineY, sigBoxX + sigBoxWidth - lineMargin, lineY);
       
       yPosition = infoBoxY + infoBoxHeight + 10; // Reduced spacing
