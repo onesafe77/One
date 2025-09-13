@@ -197,60 +197,45 @@ export async function generateAttendancePDF(data: ReportData): Promise<void> {
       const signatureTextWidth = doc.getTextWidth(signatureText);
       doc.text(signatureText, sigBoxX + (sigBoxWidth - signatureTextWidth) / 2, sigBoxY + 15);
       
-      // Middle section: Create elegant digital signature
+      // Middle section: Create elegant digital signature (ALWAYS override any uploaded signature)
       // Professional digital signature with elegant handwritten style
-      doc.setLineWidth(0.3); // Thin elegant lines
+      doc.setLineWidth(0.35); // Consistent 1px thickness
       doc.setDrawColor(0, 0, 0); // Pure black for crisp signature
       
       // Create elegant signature curves - handwritten style
       const sigCenterX = sigBoxX + sigBoxWidth / 2;
-      const sigCenterY = sigBoxY + 30;
+      const sigCenterY = sigBoxY + 28; // Adjusted position for better layout
       
-      // Signature stroke 1 - elegant curve
-      const points1: [number, number][] = [
-        [sigCenterX - 25, sigCenterY - 2],
-        [sigCenterX - 20, sigCenterY - 5],
-        [sigCenterX - 10, sigCenterY + 2],
-        [sigCenterX, sigCenterY - 1],
-        [sigCenterX + 8, sigCenterY - 4],
-        [sigCenterX + 15, sigCenterY + 1]
+      // Main signature stroke - elegant flowing curve
+      const mainStroke: [number, number][] = [
+        [sigCenterX - 20, sigCenterY],
+        [sigCenterX - 15, sigCenterY - 3],
+        [sigCenterX - 8, sigCenterY + 1],
+        [sigCenterX, sigCenterY - 2],
+        [sigCenterX + 8, sigCenterY - 1],
+        [sigCenterX + 15, sigCenterY + 2]
       ];
       
-      // Draw first elegant stroke
-      for (let i = 0; i < points1.length - 1; i++) {
-        doc.line(points1[i][0], points1[i][1], points1[i + 1][0], points1[i + 1][1]);
+      // Draw main elegant stroke
+      for (let i = 0; i < mainStroke.length - 1; i++) {
+        doc.line(mainStroke[i][0], mainStroke[i][1], mainStroke[i + 1][0], mainStroke[i + 1][1]);
       }
       
-      // Signature stroke 2 - complementary flourish
-      const points2: [number, number][] = [
-        [sigCenterX - 18, sigCenterY + 3],
-        [sigCenterX - 8, sigCenterY + 6],
-        [sigCenterX + 5, sigCenterY + 3],
-        [sigCenterX + 12, sigCenterY + 5]
+      // Complementary flourish - under main signature
+      doc.setLineWidth(0.3);
+      const flourish: [number, number][] = [
+        [sigCenterX - 12, sigCenterY + 4],
+        [sigCenterX - 5, sigCenterY + 6],
+        [sigCenterX + 5, sigCenterY + 4],
+        [sigCenterX + 12, sigCenterY + 6]
       ];
       
-      // Draw second elegant stroke
-      for (let i = 0; i < points2.length - 1; i++) {
-        doc.line(points2[i][0], points2[i][1], points2[i + 1][0], points2[i + 1][1]);
+      // Draw elegant flourish
+      for (let i = 0; i < flourish.length - 1; i++) {
+        doc.line(flourish[i][0], flourish[i][1], flourish[i + 1][0], flourish[i + 1][1]);
       }
       
-      // Add a small elegant initial or flourish
-      doc.setLineWidth(0.2);
-      const initialX = sigCenterX - 20;
-      const initialY = sigCenterY - 3;
-      // Simple elegant "S" curve for initial
-      doc.line(initialX, initialY, initialX + 3, initialY - 2);
-      doc.line(initialX + 3, initialY - 2, initialX + 6, initialY);
-      doc.line(initialX + 6, initialY, initialX + 9, initialY + 2);
-      
-      // Horizontal signature line in middle section (1px thickness)
-      const lineY = sigBoxY + 45;
-      const lineMargin = 10; // mm
-      doc.setLineWidth(0.35); // 1px equivalent
-      doc.setDrawColor(0, 0, 0); // Pure black
-      doc.line(sigBoxX + lineMargin, lineY, sigBoxX + sigBoxWidth - lineMargin, lineY);
-      
-      // Bottom section: Name in parentheses, centered with professional formatting
+      // Position nama tepat di atas garis signature seperti diminta
       doc.setFont('helvetica', 'normal'); // Clean sans-serif
       doc.setFontSize(10); // Professional 10pt size
       doc.setTextColor(0, 0, 0); // Pure black for crisp text
@@ -258,7 +243,18 @@ export async function generateAttendancePDF(data: ReportData): Promise<void> {
       const nameInParentheses = `(${nameText})`;
       const nameWidth = doc.getTextWidth(nameInParentheses);
       const nameCenterX = sigBoxX + (sigBoxWidth - nameWidth) / 2;
-      doc.text(nameInParentheses, nameCenterX, sigBoxY + sigBoxHeight - 8); // 8mm from bottom for better spacing
+      
+      // Nama tepat di atas garis - positioning yang tepat
+      const nameY = sigBoxY + 40; // Position nama
+      const lineY = nameY + 5; // Garis horizontal 5mm di bawah nama
+      
+      doc.text(nameInParentheses, nameCenterX, nameY); // Nama di atas
+      
+      // Horizontal signature line tepat di bawah nama (1px thickness)
+      const lineMargin = 10; // mm
+      doc.setLineWidth(0.35); // 1px equivalent
+      doc.setDrawColor(0, 0, 0); // Pure black
+      doc.line(sigBoxX + lineMargin, lineY, sigBoxX + sigBoxWidth - lineMargin, lineY);
       
       yPosition = infoBoxY + infoBoxHeight + 10; // Reduced spacing
     }
