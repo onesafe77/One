@@ -141,8 +141,10 @@ export async function generateAttendancePDF(data: ReportData): Promise<void> {
         doc.text('Catatan', leftX, leftY);
         doc.text(':', leftX + labelWidth, leftY);
         
-        // Calculate max width to avoid collision with signature box
-        const maxCatatanWidth = rightX - (leftX + labelWidth + 10); // Leave some padding
+        // Calculate max width to avoid collision with signature box (100 width + extra padding)
+        const sigBoxWidth = 100;
+        const extraPadding = 20; // More conservative padding
+        const maxCatatanWidth = rightX - (leftX + labelWidth + 10) - sigBoxWidth - extraPadding;
         const catatanText = data.reportInfo.catatan;
         
         // Split long text if needed
@@ -191,9 +193,9 @@ export async function generateAttendancePDF(data: ReportData): Promise<void> {
       const nameText = data.reportInfo.diperiksaOleh || data.reportInfo.namaPengawas || 'Pengawas';
       const nameWidth = doc.getTextWidth(nameText);
       
-      // Center the name in signature box with proper spacing
+      // Center the name in signature box with proper spacing - moved up
       const nameCenterX = sigBoxX + (sigBoxWidth - nameWidth) / 2;
-      doc.text(nameText, nameCenterX, sigBoxY + 52); // Moved slightly down for better spacing
+      doc.text(nameText, nameCenterX, sigBoxY + 48); // Moved up from 52 to 48 for better positioning
       
       yPosition = infoBoxY + infoBoxHeight + 10; // Reduced spacing
     }
