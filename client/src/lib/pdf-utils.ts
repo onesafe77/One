@@ -466,8 +466,18 @@ function generateShiftSection(
     
     if (!employee) return;
     
-    // Get work days from roster data
-    const workDaysText = rosterRecord.hariKerja || '-';
+    // Get work days from roster data - handle both string and number types
+    let workDaysText = '-';
+    if (rosterRecord.hariKerja !== null && rosterRecord.hariKerja !== undefined && rosterRecord.hariKerja !== '') {
+      // Convert to string and handle both numeric and string values
+      const hariKerjaStr = String(rosterRecord.hariKerja).trim();
+      if (hariKerjaStr && hariKerjaStr !== '0' && hariKerjaStr !== 'null' && hariKerjaStr !== 'undefined') {
+        workDaysText = hariKerjaStr;
+      }
+    }
+    
+    // DEBUG: Log untuk debugging hari kerja
+    console.log(`📅 ${employee.name}: hariKerja raw="${rosterRecord.hariKerja}", processed="${workDaysText}"`);
     
     // Prepare row data - show ALL scheduled employees with their attendance status (ReportLab style with icons)
     const jamTidur = attendanceRecord?.jamTidur || '-';
