@@ -2896,7 +2896,36 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/simper-monitoring", async (req, res) => {
     try {
       const simperData = await storage.getAllSimperMonitoring();
-      res.json(simperData);
+      
+      // Process and validate dates before sending to frontend
+      const processedData = simperData.map(simper => {
+        const validateAndFormatDate = (dateString: string | null) => {
+          if (!dateString) return null;
+          
+          try {
+            // Try to parse the date
+            const date = new Date(dateString);
+            
+            // Check if it's a valid date
+            if (isNaN(date.getTime())) {
+              return null;
+            }
+            
+            // Return in YYYY-MM-DD format
+            return date.toISOString().split('T')[0];
+          } catch {
+            return null;
+          }
+        };
+
+        return {
+          ...simper,
+          simperBibExpiredDate: validateAndFormatDate(simper.simperBibExpiredDate),
+          simperTiaExpiredDate: validateAndFormatDate(simper.simperTiaExpiredDate)
+        };
+      });
+      
+      res.json(processedData);
     } catch (error) {
       console.error('Error fetching SIMPER data:', error);
       res.status(500).json({ message: "Failed to fetch SIMPER monitoring data" });
@@ -2990,7 +3019,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!simper) {
         return res.status(404).json({ message: "Data SIMPER tidak ditemukan" });
       }
-      res.json(simper);
+      
+      // Validate and format dates
+      const validateAndFormatDate = (dateString: string | null) => {
+        if (!dateString) return null;
+        try {
+          const date = new Date(dateString);
+          if (isNaN(date.getTime())) return null;
+          return date.toISOString().split('T')[0];
+        } catch {
+          return null;
+        }
+      };
+
+      const processedSimper = {
+        ...simper,
+        simperBibExpiredDate: validateAndFormatDate(simper.simperBibExpiredDate),
+        simperTiaExpiredDate: validateAndFormatDate(simper.simperTiaExpiredDate)
+      };
+      
+      res.json(processedSimper);
     } catch (error) {
       console.error('Error fetching SIMPER:', error);
       res.status(500).json({ message: "Failed to fetch SIMPER data" });
@@ -3003,7 +3051,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!simper) {
         return res.status(404).json({ message: "Data SIMPER tidak ditemukan untuk NIK tersebut" });
       }
-      res.json(simper);
+
+      // Validate and format dates
+      const validateAndFormatDate = (dateString: string | null) => {
+        if (!dateString) return null;
+        try {
+          const date = new Date(dateString);
+          if (isNaN(date.getTime())) return null;
+          return date.toISOString().split('T')[0];
+        } catch {
+          return null;
+        }
+      };
+
+      const processedSimper = {
+        ...simper,
+        simperBibExpiredDate: validateAndFormatDate(simper.simperBibExpiredDate),
+        simperTiaExpiredDate: validateAndFormatDate(simper.simperTiaExpiredDate)
+      };
+      
+      res.json(processedSimper);
     } catch (error) {
       console.error('Error fetching SIMPER by NIK:', error);
       res.status(500).json({ message: "Failed to fetch SIMPER data by NIK" });
