@@ -123,13 +123,8 @@ export async function generateAttendancePDF(data: ReportData): Promise<void> {
       // Company name removed
       leftY += 10;
       
-      doc.text('Nama Pengawas', leftX, leftY);
-      doc.text(':', leftX + labelWidth, leftY);
-      // Use sans-serif font and proper capitalization
-      doc.setFont('helvetica', 'normal'); // Helvetica is sans-serif
-      const supervisorName = capitalizeNames(data.reportInfo.namaPengawas || 'Pengawas');
-      doc.text(supervisorName, leftX + labelWidth + 5, leftY);
-      leftY += 10;
+      // Nama Pengawas dihapus - hanya muncul di kotak tanda tangan
+      // (nama sekarang sudah ada dalam kotak tanda tangan dengan format yang tepat)
       
       doc.text('Hari/Tanggal/Waktu', leftX, leftY);
       doc.text(':', leftX + labelWidth, leftY);
@@ -221,8 +216,8 @@ export async function generateAttendancePDF(data: ReportData): Promise<void> {
         doc.line(mainStroke[i][0], mainStroke[i][1], mainStroke[i + 1][0], mainStroke[i + 1][1]);
       }
       
-      // Complementary flourish - under main signature
-      doc.setLineWidth(0.3);
+      // Complementary flourish - under main signature (consistent 1px thickness)
+      doc.setLineWidth(0.35); // Consistent dengan border dan signature line
       const flourish: [number, number][] = [
         [sigCenterX - 12, sigCenterY + 4],
         [sigCenterX - 5, sigCenterY + 6],
@@ -235,26 +230,25 @@ export async function generateAttendancePDF(data: ReportData): Promise<void> {
         doc.line(flourish[i][0], flourish[i][1], flourish[i + 1][0], flourish[i + 1][1]);
       }
       
-      // Position nama tepat di atas garis signature seperti diminta
-      doc.setFont('helvetica', 'normal'); // Clean sans-serif
-      doc.setFontSize(10); // Professional 10pt size
+      // Garis horizontal di BOTTOM area signature seperti diminta
+      const bottomPadding = 8; // mm dari bottom kotak
+      const lineY = sigBoxY + sigBoxHeight - bottomPadding; // Posisi bottom signature area
+      const lineMargin = 10; // mm dari tepi kotak
+      doc.setLineWidth(0.35); // 1px equivalent untuk garis tipis
+      doc.setDrawColor(0, 0, 0); // Pure black
+      doc.line(sigBoxX + lineMargin, lineY, sigBoxX + sigBoxWidth - lineMargin, lineY);
+      
+      // Nama HANYA di dalam kotak, tepat di atas garis bottom
+      doc.setFont('helvetica', 'bold'); // Bold font seperti diminta
+      doc.setFontSize(11); // 11pt untuk keterbacaan yang baik
       doc.setTextColor(0, 0, 0); // Pure black for crisp text
       const nameText = data.reportInfo.diperiksaOleh || capitalizeNames(data.reportInfo.namaPengawas || 'Pengawas');
       const nameInParentheses = `(${nameText})`;
       const nameWidth = doc.getTextWidth(nameInParentheses);
       const nameCenterX = sigBoxX + (sigBoxWidth - nameWidth) / 2;
+      const nameY = lineY - 4; // Nama tepat 4mm di atas garis bottom
       
-      // Nama tepat di atas garis - positioning yang tepat
-      const nameY = sigBoxY + 40; // Position nama
-      const lineY = nameY + 5; // Garis horizontal 5mm di bawah nama
-      
-      doc.text(nameInParentheses, nameCenterX, nameY); // Nama di atas
-      
-      // Horizontal signature line tepat di bawah nama (1px thickness)
-      const lineMargin = 10; // mm
-      doc.setLineWidth(0.35); // 1px equivalent
-      doc.setDrawColor(0, 0, 0); // Pure black
-      doc.line(sigBoxX + lineMargin, lineY, sigBoxX + sigBoxWidth - lineMargin, lineY);
+      doc.text(nameInParentheses, nameCenterX, nameY);
       
       yPosition = infoBoxY + infoBoxHeight + 10; // Reduced spacing
     }
@@ -710,7 +704,7 @@ async function generateA4PortraitPDF(data: ReportData): Promise<void> {
   
   const infoFields = [
     `Perusahaan : ${data.reportInfo?.perusahaan || 'PT Goden Energi Cemerlang Lestari'}`,
-    `Nama Pengawas : ${data.reportInfo?.namaPengawas || 'BUDI HARTO DAN FADLAN'}`,
+    // `Nama Pengawas` dihapus - sudah ada di kotak tanda tangan
     `Hari/Tanggal/Waktu : ${data.reportInfo?.hari || 'Rabu'}, ${formatDateForPDF(data.startDate)} / ${data.reportInfo?.waktu || '17:00-18:00'}`,
     `Shift : ${data.reportInfo?.shift || 'Shift 1'}`,
     `Tempat : ${data.reportInfo?.tempat || 'Titik Kumpul WS GECL'}`
@@ -726,21 +720,25 @@ async function generateA4PortraitPDF(data: ReportData): Promise<void> {
     leftY += 18;
   });
   
-  // Kolom kanan - Kotak tanda tangan dengan border tipis (diperbesar untuk gambar)
-  const signBoxHeight = 110; // Diperbesar dari 80pt ke 110pt untuk ruang gambar
+  // Kolom kanan - Professional signature box EXACT 10x6 cm untuk A4 portrait
+  const signBoxWidth = 283.46; // Exact 10 cm in points (10 cm ÷ 2.54 × 72)
+  const signBoxHeight = 170.08; // Exact 6 cm in points (6 cm ÷ 2.54 × 72)
   const signBoxY = yPosition;
+  const signBoxX = pageWidth - margin - signBoxWidth; // Right-aligned exact
   
-  // Draw border kotak tanda tangan
-  doc.setLineWidth(0.5);
-  doc.rect(rightColumnX, signBoxY - 10, rightColumnWidth - 20, signBoxHeight);
+  // Draw border kotak tanda tangan dengan thickness 1pt (consistent)
+  doc.setLineWidth(1); // Exact 1pt untuk portrait consistency
+  doc.setDrawColor(0, 0, 0); // Pure black
+  doc.rect(signBoxX, signBoxY - 10, signBoxWidth, signBoxHeight);
   
-  // Judul "Diperiksa Oleh," rata tengah atas
+  // Judul "Diperiksa Oleh," rata tengah atas dalam kotak 10x6 cm
   doc.setFont('helvetica', 'normal');
-  doc.setFontSize(10);
+  doc.setFontSize(11); // Consistent dengan landscape
+  doc.setTextColor(0, 0, 0); // Pure black
   const checkText = 'Diperiksa Oleh,';
   const checkTextWidth = doc.getTextWidth(checkText);
-  const checkTextX = rightColumnX + (rightColumnWidth - 20 - checkTextWidth) / 2;
-  doc.text(checkText, checkTextX, signBoxY + 5);
+  const checkTextX = signBoxX + (signBoxWidth - checkTextWidth) / 2;
+  doc.text(checkText, checkTextX, signBoxY + 15);
   
   // Area untuk gambar tanda tangan (jika ada)
   const imageAreaHeight = 60; // 60pt untuk gambar
@@ -771,26 +769,63 @@ async function generateA4PortraitPDF(data: ReportData): Promise<void> {
     }
   }
   
-  // Garis tanda tangan rata tengah di bagian bawah kotak
-  const signLineY = signBoxY + signBoxHeight - 25;
-  const signLineX1 = rightColumnX + 15;
-  const signLineX2 = rightColumnX + rightColumnWidth - 35;
-  doc.line(signLineX1, signLineY, signLineX2, signLineY);
+  // Digital signature area di tengah kotak (consistent dengan landscape)
+  const sigCenterX = signBoxX + signBoxWidth / 2;
+  const sigCenterY = signBoxY + 50; // Center position
   
-  // Nama pemeriksa tepat di bawah garis, dengan styling yang lebih jelas
-  const nameText = data.reportInfo?.diperiksaOleh || 'HARI'; // Default value HARI
+  // Elegant digital signature strokes (consistent dengan landscape)
+  doc.setLineWidth(1); // 1pt equivalent untuk portrait
+  doc.setDrawColor(0, 0, 0);
+  
+  // Main signature stroke
+  const mainStroke: [number, number][] = [
+    [sigCenterX - 60, sigCenterY],
+    [sigCenterX - 45, sigCenterY - 8],
+    [sigCenterX - 24, sigCenterY + 3],
+    [sigCenterX, sigCenterY - 5],
+    [sigCenterX + 24, sigCenterY - 3],
+    [sigCenterX + 45, sigCenterY + 5]
+  ];
+  
+  for (let i = 0; i < mainStroke.length - 1; i++) {
+    doc.line(mainStroke[i][0], mainStroke[i][1], mainStroke[i + 1][0], mainStroke[i + 1][1]);
+  }
+  
+  // Complementary flourish
+  const flourish: [number, number][] = [
+    [sigCenterX - 36, sigCenterY + 12],
+    [sigCenterX - 15, sigCenterY + 18],
+    [sigCenterX + 15, sigCenterY + 12],
+    [sigCenterX + 36, sigCenterY + 18]
+  ];
+  
+  for (let i = 0; i < flourish.length - 1; i++) {
+    doc.line(flourish[i][0], flourish[i][1], flourish[i + 1][0], flourish[i + 1][1]);
+  }
+  
+  // Horizontal signature line di bottom area kotak (exact positioning)
+  const bottomPadding = 22; // ≈8 mm converted to points untuk bottom area
+  const signLineY = signBoxY + signBoxHeight - bottomPadding;
+  const lineMargin = 28; // ≈10 mm converted to points dari tepi kotak
+  doc.setLineWidth(1); // 1pt consistent thickness
+  doc.line(signBoxX + lineMargin, signLineY, signBoxX + signBoxWidth - lineMargin, signLineY);
+  
+  // Nama tepat di atas garis dengan format yang exact consistent
+  const nameText = data.reportInfo?.diperiksaOleh || capitalizeNames(data.reportInfo?.namaPengawas || 'Pengawas'); 
   doc.setFont('helvetica', 'bold'); // Bold untuk nama
-  doc.setFontSize(11); // Sedikit lebih besar
-  const nameWithParens = `( ${nameText} )`; // Tambah kurung untuk kejelasan
-  const nameWidth = doc.getTextWidth(nameWithParens);
-  const nameX = rightColumnX + (rightColumnWidth - 20 - nameWidth) / 2;
-  doc.text(nameWithParens, nameX, signLineY + 18); // Lebih jauh dari garis
+  doc.setFontSize(11); // Consistent size
+  doc.setTextColor(0, 0, 0); // Pure black
+  const nameInParentheses = `(${nameText})`; // Format consistent dengan landscape
+  const nameWidth = doc.getTextWidth(nameInParentheses);
+  const nameX = signBoxX + (signBoxWidth - nameWidth) / 2;
+  const nameY = signLineY - 11; // ≈4 mm di atas garis
+  doc.text(nameInParentheses, nameX, nameY);
   
   // Reset font untuk yang lain
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(11);
   
-  yPosition = Math.max(leftY, signBoxY + signBoxHeight) + 10;
+  yPosition = Math.max(leftY, signBoxY + signBoxHeight) + 15; // Adjusted untuk exact signature box dimensions
   
   // Pastikan kita di luar kotak header
   if (yPosition < margin + headerBoxHeight + 10) {
