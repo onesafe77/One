@@ -3134,6 +3134,55 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Helper function to convert Excel serial date to JavaScript Date
+  const excelSerialDateToJSDate = (serial: any) => {
+    if (!serial) return null;
+    
+    // If it's already a string date, try to parse it
+    if (typeof serial === 'string') {
+      // Try different date formats
+      const dateStr = serial.trim();
+      
+      // Try dd-mm-yyyy format
+      if (/^\d{1,2}-\d{1,2}-\d{4}$/.test(dateStr)) {
+        const [day, month, year] = dateStr.split('-');
+        const date = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
+        if (!isNaN(date.getTime())) {
+          return date.toISOString().split('T')[0];
+        }
+      }
+      
+      // Try dd/mm/yyyy format
+      if (/^\d{1,2}\/\d{1,2}\/\d{4}$/.test(dateStr)) {
+        const [day, month, year] = dateStr.split('/');
+        const date = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
+        if (!isNaN(date.getTime())) {
+          return date.toISOString().split('T')[0];
+        }
+      }
+      
+      // Try parsing as ISO date
+      const isoDate = new Date(dateStr);
+      if (!isNaN(isoDate.getTime())) {
+        return isoDate.toISOString().split('T')[0];
+      }
+    }
+    
+    // If it's a number, treat it as Excel serial date
+    if (typeof serial === 'number' && serial > 0) {
+      // Excel serial date starts from January 1, 1900
+      // Excel incorrectly treats 1900 as a leap year, so we need to adjust
+      const excelEpoch = new Date(1899, 11, 30); // December 30, 1899
+      const jsDate = new Date(excelEpoch.getTime() + (serial * 24 * 60 * 60 * 1000));
+      
+      if (!isNaN(jsDate.getTime())) {
+        return jsDate.toISOString().split('T')[0];
+      }
+    }
+    
+    return null;
+  };
+
   // SIMPER Excel upload configuration
   const excelUpload = multer({
     storage: multer.memoryStorage(),
@@ -3159,16 +3208,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const XLSX = await import('xlsx');
-      const workbook = XLSX.read(req.file.buffer, { type: 'buffer' });
+      const workbook = XLSX.read(req.file.buffer, { type: 'buffer', cellDates: true });
       const sheetName = workbook.SheetNames[0];
       const worksheet = workbook.Sheets[sheetName];
-      const data = XLSX.utils.sheet_to_json(worksheet);
+      const data = XLSX.utils.sheet_to_json(worksheet, { raw: false });
 
       const simperData = data.map((row: any) => ({
         employeeName: row['Nama Karyawan'] || row['Nama'] || row['nama'] || '',
         nik: row['NIK'] || row['nik'] || '',
-        simperBibExpiredDate: row['Tanggal SIMPER BIB Mati'] || row['SIMPER BIB'] || null,
-        simperTiaExpiredDate: row['Tanggal SIMPER TIA Mati'] || row['SIMPER TIA'] || null
+        simperBibExpiredDate: excelSerialDateToJSDate(row['Tanggal SIMPER BIB Mati'] || row['SIMPER BIB']),
+        simperTiaExpiredDate: excelSerialDateToJSDate(row['Tanggal SIMPER TIA Mati'] || row['SIMPER TIA'])
       }));
 
       const result = await storage.bulkUploadSimperData(simperData);
