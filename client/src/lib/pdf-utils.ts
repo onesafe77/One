@@ -742,9 +742,8 @@ async function generateA4PortraitPDF(data: ReportData): Promise<void> {
   const checkTextX = rightColumnX + (rightColumnWidth - 20 - checkTextWidth) / 2;
   doc.text(checkText, checkTextX, signBoxY + 5);
   
-  // CATATAN: Logika tanda tangan lama dihapus - sekarang menggunakan digital signature yang elegan
-  // Area tanda tangan sekarang ditangani oleh kotak profesional di landscape mode
-  doc.setFontSize(11);
+  // TEMPORARILY DISABLED: Portrait signature box code for debugging
+  console.log('Portrait signature box temporarily disabled for debugging');
   
   yPosition = Math.max(leftY, signBoxY + signBoxHeight) + 10;
   
