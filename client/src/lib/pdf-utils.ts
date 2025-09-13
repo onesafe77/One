@@ -49,6 +49,13 @@ function capitalizeNames(text: string): string {
 
 export async function generateAttendancePDF(data: ReportData): Promise<void> {
   try {
+    console.log('🔥 DEBUGGING: Starting PDF generation...', {
+      orientation: data.orientation,
+      defaultOrientation: data.orientation || 'landscape',
+      hasReportInfo: !!data.reportInfo,
+      reportInfo: data.reportInfo
+    });
+    
     // Professional orientation handling dengan layout yang berbeda
     const orientation = data.orientation || 'landscape';
     
@@ -175,6 +182,13 @@ export async function generateAttendancePDF(data: ReportData): Promise<void> {
         doc.text(':', leftX + labelWidth, leftY);
         doc.text('[Isi catatan di sini]', leftX + labelWidth + 5, leftY);
       }
+      
+      console.log('🔥 DEBUGGING: About to create signature box...', {
+        sigBoxWidth: 100,
+        sigBoxHeight: 60,
+        pageWidth,
+        margin
+      });
       
       // Professional signature box - 10x6 cm (100x60 mm) positioned at right
       const sigBoxWidth = 100; // 10 cm in mm
