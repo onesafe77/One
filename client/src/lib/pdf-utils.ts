@@ -187,24 +187,22 @@ export async function generateAttendancePDF(data: ReportData): Promise<void> {
       doc.setDrawColor(0, 0, 0); // Pure black for crisp lines
       doc.rect(sigBoxX, sigBoxY, sigBoxWidth, sigBoxHeight);
       
-      // Professional signature layout with high-resolution formatting
+      // Layout kotak tanda tangan profesional sesuai format yang diminta
       doc.setFont('helvetica', 'normal'); // Clean sans-serif font
-      doc.setFontSize(11); // Slightly larger (10-11pt as requested)
       doc.setTextColor(0, 0, 0); // Pure black for crisp text
       
-      // Top section: "Diperiksa Oleh," centered at top
+      // 1. Bagian atas: "Diperiksa Oleh," rata tengah
+      doc.setFontSize(11);
       const signatureText = 'Diperiksa Oleh,';
       const signatureTextWidth = doc.getTextWidth(signatureText);
-      doc.text(signatureText, sigBoxX + (sigBoxWidth - signatureTextWidth) / 2, sigBoxY + 15);
+      doc.text(signatureText, sigBoxX + (sigBoxWidth - signatureTextWidth) / 2, sigBoxY + 12);
       
-      // Middle section: Create elegant digital signature (ALWAYS override any uploaded signature)
-      // Professional digital signature with elegant handwritten style
+      // 2. Bagian tengah: Tanda tangan digital rapi 
       doc.setLineWidth(0.35); // Consistent 1px thickness
       doc.setDrawColor(0, 0, 0); // Pure black for crisp signature
       
-      // Create elegant signature curves - handwritten style
       const sigCenterX = sigBoxX + sigBoxWidth / 2;
-      const sigCenterY = sigBoxY + 28; // Adjusted position for better layout
+      const sigCenterY = sigBoxY + 30; // Posisi tengah kotak
       
       // Main signature stroke - elegant flowing curve
       const mainStroke: [number, number][] = [
@@ -235,24 +233,21 @@ export async function generateAttendancePDF(data: ReportData): Promise<void> {
         doc.line(flourish[i][0], flourish[i][1], flourish[i + 1][0], flourish[i + 1][1]);
       }
       
-      // Bottom section: Position nama tepat di atas garis horizontal
-      doc.setFont('helvetica', 'normal'); // Clean sans-serif
-      doc.setFontSize(10); // Professional 10pt size
-      doc.setTextColor(0, 0, 0); // Pure black for crisp text
-      
-      // Calculate positions - nama di atas, garis di bawah
-      const lineY = sigBoxY + sigBoxHeight - 10; // Garis horizontal 10mm dari bawah kotak
-      const nameY = lineY - 8; // Nama 8mm di atas garis
+      // 3. Nama tepat di atas garis horizontal (bagian bawah)
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(10);
       
       const nameText = data.reportInfo.diperiksaOleh || capitalizeNames(data.reportInfo.namaPengawas || 'Pengawas');
       const nameInParentheses = `(${nameText})`;
       const nameWidth = doc.getTextWidth(nameInParentheses);
       const nameCenterX = sigBoxX + (sigBoxWidth - nameWidth) / 2;
       
-      // Draw nama tepat di atas garis
+      // Position nama tepat di atas garis
+      const nameY = sigBoxY + sigBoxHeight - 15; // 15mm dari bawah kotak
       doc.text(nameInParentheses, nameCenterX, nameY);
       
-      // Draw horizontal signature line di bawah nama (1px thickness)
+      // 4. Garis horizontal di bawah nama
+      const lineY = nameY + 5; // 5mm di bawah nama
       const lineMargin = 10; // mm from box edges
       doc.setLineWidth(0.35); // 1px equivalent
       doc.setDrawColor(0, 0, 0); // Pure black
