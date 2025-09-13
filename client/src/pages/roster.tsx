@@ -31,6 +31,8 @@ export default function Roster() {
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [editingRoster, setEditingRoster] = useState<RosterSchedule | null>(null);
   const [shiftFilter, setShiftFilter] = useState("all");
+  const [searchName, setSearchName] = useState("");
+  const [searchNIK, setSearchNIK] = useState("");
   const [isDeleteAllDialogOpen, setIsDeleteAllDialogOpen] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [uploadProgress, setUploadProgress] = useState(0);
@@ -552,10 +554,17 @@ export default function Roster() {
   };
 
   const filteredRosterSchedules = rosterSchedules.filter(roster => {
-    if (shiftFilter === "all") return true;
-    if (shiftFilter === "SHIFT 1") return roster.shift === "SHIFT 1";
-    if (shiftFilter === "SHIFT 2") return roster.shift === "SHIFT 2";
-    return roster.shift === shiftFilter;
+    // Filter by shift
+    const shiftMatch = shiftFilter === "all" || roster.shift === shiftFilter;
+    
+    // Filter by NIK (employee ID)
+    const nikMatch = !searchNIK || roster.employeeId.toLowerCase().includes(searchNIK.toLowerCase());
+    
+    // Filter by employee name
+    const employee = roster.employee || employees.find(emp => emp.id === roster.employeeId);
+    const nameMatch = !searchName || (employee?.name || '').toLowerCase().includes(searchName.toLowerCase());
+    
+    return shiftMatch && nikMatch && nameMatch;
   });
 
   const rosterWithAttendance = filteredRosterSchedules.map(roster => ({
@@ -591,13 +600,33 @@ export default function Roster() {
             <CardTitle className="text-2xl font-bold text-gray-900 dark:text-white">Roster Kerja</CardTitle>
           </div>
           
-          <div className="flex items-center space-x-4">
+          <div className="flex items-center space-x-4 flex-wrap gap-2">
             <Input
               type="date"
               value={selectedDate}
               onChange={(e) => setSelectedDate(e.target.value)}
               className="w-40"
               data-testid="roster-date-input"
+            />
+            
+            {/* Search by NIK */}
+            <Input
+              type="text"
+              placeholder="Cari NIK..."
+              value={searchNIK}
+              onChange={(e) => setSearchNIK(e.target.value)}
+              className="w-32"
+              data-testid="search-nik-input"
+            />
+            
+            {/* Search by Name */}
+            <Input
+              type="text"
+              placeholder="Cari Nama..."
+              value={searchName}
+              onChange={(e) => setSearchName(e.target.value)}
+              className="w-40"
+              data-testid="search-name-input"
             />
             
             {/* Shift Filter */}
