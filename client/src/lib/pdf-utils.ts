@@ -742,8 +742,79 @@ async function generateA4PortraitPDF(data: ReportData): Promise<void> {
   const checkTextX = rightColumnX + (rightColumnWidth - 20 - checkTextWidth) / 2;
   doc.text(checkText, checkTextX, signBoxY + 5);
   
-  // TEMPORARILY DISABLED: Portrait signature box code for debugging
-  console.log('Portrait signature box temporarily disabled for debugging');
+  // 🎯 FIXED: Always draw signature components unconditionally (Portrait Mode)
+  console.log('🔥 Drawing portrait signature unconditionally...');
+  
+  try {
+    // Validate all geometric values before proceeding
+    if (!Number.isFinite(rightColumnX) || !Number.isFinite(rightColumnWidth) || !Number.isFinite(signBoxY) || 
+        rightColumnX < 0 || rightColumnWidth <= 20 || signBoxY < 0) {
+      console.warn('Portrait signature skipped: Invalid dimensions', { rightColumnX, rightColumnWidth, signBoxY });
+      return;
+    }
+
+    // Setup clean typography and colors
+    doc.setFont('helvetica', 'normal');
+    doc.setTextColor(0, 0, 0); // Pure black
+    
+    // 2. Signature graphics in center - ALWAYS DRAW regardless of data
+    doc.setLineWidth(0.8);
+    doc.setDrawColor(0, 0, 0);
+    
+    const sigCenterX = rightColumnX + (rightColumnWidth - 20) / 2;
+    const sigCenterY = signBoxY + 35;
+    
+    console.log(`🔥 Drawing signature at: (${sigCenterX}, ${sigCenterY})`);
+    
+    // Professional vector signature - simple elegant curves
+    doc.line(sigCenterX - 20, sigCenterY, sigCenterX - 12, sigCenterY - 3);
+    doc.line(sigCenterX - 12, sigCenterY - 3, sigCenterX - 4, sigCenterY + 1);
+    doc.line(sigCenterX - 4, sigCenterY + 1, sigCenterX + 4, sigCenterY - 1);
+    doc.line(sigCenterX + 4, sigCenterY - 1, sigCenterX + 12, sigCenterY + 2);
+    doc.line(sigCenterX + 12, sigCenterY + 2, sigCenterX + 20, sigCenterY);
+    
+    // Elegant flourish
+    doc.setLineWidth(0.6);
+    doc.line(sigCenterX - 15, sigCenterY + 4, sigCenterX - 6, sigCenterY + 6);
+    doc.line(sigCenterX - 6, sigCenterY + 6, sigCenterX + 6, sigCenterY + 4);
+    doc.line(sigCenterX + 6, sigCenterY + 4, sigCenterX + 15, sigCenterY + 6);
+    
+    // 3. Name text - ALWAYS SHOW with fallback
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(11);
+    
+    // Use provided name or fallback to default
+    const nameText = data.reportInfo?.diperiksaOleh?.trim() || 
+                     data.reportInfo?.namaPengawas?.trim() || 
+                     'Pengawas';
+    const nameInParentheses = `(${nameText})`;
+    const nameWidth = doc.getTextWidth(nameInParentheses);
+    const nameCenterX = rightColumnX + ((rightColumnWidth - 20) - nameWidth) / 2;
+    const nameY = signBoxY + signBoxHeight - 25;
+    
+    console.log(`🔥 Drawing name "${nameInParentheses}" at: (${nameCenterX}, ${nameY})`);
+    doc.text(nameInParentheses, nameCenterX, nameY);
+    
+    // 4. Horizontal line - ALWAYS DRAW
+    const lineY = nameY + 8;
+    const lineMargin = 15;
+    const lineStartX = rightColumnX + lineMargin;
+    const lineEndX = rightColumnX + rightColumnWidth - 20 - lineMargin;
+    
+    doc.setLineWidth(0.8);
+    doc.setDrawColor(0, 0, 0);
+    console.log(`🔥 Drawing line from (${lineStartX}, ${lineY}) to (${lineEndX}, ${lineY})`);
+    doc.line(lineStartX, lineY, lineEndX, lineY);
+    
+    console.log('✅ Portrait signature drawn successfully!');
+    
+  } catch (error) {
+    console.error('Error drawing portrait signature:', error);
+    // Draw fallback simple text
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(10);
+    doc.text('(Tanda Tangan)', rightColumnX + 10, signBoxY + 40);
+  }
   
   yPosition = Math.max(leftY, signBoxY + signBoxHeight) + 10;
   

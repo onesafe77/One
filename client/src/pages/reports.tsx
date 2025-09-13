@@ -13,6 +13,8 @@ import type { Employee, AttendanceRecord, LeaveRequest, RosterSchedule } from "@
 import { Download, FileText, Calendar, Users, TrendingUp, RefreshCw, CheckCircle } from "lucide-react";
 
 export default function Reports() {
+  console.log('🟢 Reports component loading...'); // Debug test
+  
   const [startDate, setStartDate] = useState(new Date().toISOString().split('T')[0]);
   const [endDate, setEndDate] = useState(new Date().toISOString().split('T')[0]);
   const [reportType, setReportType] = useState("attendance");
