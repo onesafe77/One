@@ -3213,14 +3213,60 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const worksheet = workbook.Sheets[sheetName];
       const data = XLSX.utils.sheet_to_json(worksheet, { raw: false });
 
-      const simperData = data.map((row: any) => ({
-        employeeName: row['Nama Karyawan'] || row['Nama'] || row['nama'] || '',
-        nik: row['NIK'] || row['nik'] || '',
-        simperBibExpiredDate: excelSerialDateToJSDate(row['Tanggal SIMPER BIB Mati'] || row['SIMPER BIB']),
-        simperTiaExpiredDate: excelSerialDateToJSDate(row['Tanggal SIMPER TIA Mati'] || row['SIMPER TIA'])
-      }));
+      console.log(`🔄 Processing SIMPER Excel with ${data.length} rows`);
+      console.log('📋 Excel columns found:', Object.keys(data[0] || {}));
+
+      const simperData = data.map((row: any, index: number) => {
+        // Enhanced column mapping with more variations
+        const employeeName = row['Nama Karyawan'] || row['Nama'] || row['nama'] || row['NAMA KARYAWAN'] || row['NAMA'] || '';
+        const nik = row['NIK'] || row['nik'] || row['No. Identitas'] || row['No Identitas'] || '';
+        
+        // Multiple column name variations for SIMPER dates
+        const bibDate = row['Tanggal SIMPER BIB Mati'] || row['SIMPER BIB'] || row['Tanggal BIB'] || 
+                       row['BIB Expired'] || row['BIB Mati'] || row['SIMPER BIB Expired'] || 
+                       row['simper_bib'] || row['bib_date'] || '';
+                       
+        const tiaDate = row['Tanggal SIMPER TIA Mati'] || row['SIMPER TIA'] || row['Tanggal TIA'] || 
+                       row['TIA Expired'] || row['TIA Mati'] || row['SIMPER TIA Expired'] || 
+                       row['simper_tia'] || row['tia_date'] || '';
+
+        const processedBibDate = excelSerialDateToJSDate(bibDate);
+        const processedTiaDate = excelSerialDateToJSDate(tiaDate);
+        
+        // Debug logging for problematic rows
+        if (!employeeName || !nik) {
+          console.log(`⚠️ Row ${index + 1}: Missing required data - Name: "${employeeName}", NIK: "${nik}"`);
+        }
+        
+        if (bibDate && !processedBibDate) {
+          console.log(`⚠️ Row ${index + 1}: Failed to process BIB date "${bibDate}" for ${employeeName}`);
+        }
+        
+        if (tiaDate && !processedTiaDate) {
+          console.log(`⚠️ Row ${index + 1}: Failed to process TIA date "${tiaDate}" for ${employeeName}`);
+        }
+
+        return {
+          employeeName: employeeName.trim(),
+          nik: nik.trim(),
+          simperBibExpiredDate: processedBibDate || undefined,
+          simperTiaExpiredDate: processedTiaDate || undefined
+        };
+      });
+
+      console.log(`📊 Processed data sample:`, simperData.slice(0, 3).map(item => ({
+        name: item.employeeName,
+        nik: item.nik,
+        bibDate: item.simperBibExpiredDate,
+        tiaDate: item.simperTiaExpiredDate
+      })));
 
       const result = await storage.bulkUploadSimperData(simperData);
+      
+      console.log(`✅ SIMPER upload completed: ${result.success} success, ${result.errors.length} errors`);
+      if (result.errors.length > 0) {
+        console.log('❌ Upload errors:', result.errors);
+      }
       
       res.json({
         message: `Upload berhasil: ${result.success} data berhasil diproses`,

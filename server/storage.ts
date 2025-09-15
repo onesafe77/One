@@ -1402,37 +1402,61 @@ export class DrizzleStorage implements IStorage {
     const errors: string[] = [];
     let success = 0;
 
-    for (const item of data) {
+    console.log(`📤 Starting bulk upload of ${data.length} SIMPER records`);
+
+    for (const [index, item] of data.entries()) {
       try {
         if (!item.employeeName || !item.nik) {
-          errors.push(`Data tidak lengkap untuk NIK: ${item.nik || 'kosong'}`);
+          const error = `Data tidak lengkap untuk baris ${index + 1} - Name: "${item.employeeName}", NIK: "${item.nik}"`;
+          errors.push(error);
+          console.log(`❌ ${error}`);
+          continue;
+        }
+
+        // Trim and validate data
+        const cleanName = item.employeeName.trim();
+        const cleanNik = item.nik.trim();
+
+        if (!cleanName || !cleanNik) {
+          const error = `Data kosong setelah trim untuk baris ${index + 1}`;
+          errors.push(error);
+          console.log(`❌ ${error}`);
           continue;
         }
 
         // Check if NIK already exists
-        const existing = await this.getSimperMonitoringByNik(item.nik);
+        const existing = await this.getSimperMonitoringByNik(cleanNik);
+        
+        const simperData = {
+          employeeName: cleanName,
+          simperBibExpiredDate: item.simperBibExpiredDate || null,
+          simperTiaExpiredDate: item.simperTiaExpiredDate || null
+        };
+
         if (existing) {
           // Update existing record
-          await this.updateSimperMonitoring(existing.id, {
-            employeeName: item.employeeName,
-            simperBibExpiredDate: item.simperBibExpiredDate || null,
-            simperTiaExpiredDate: item.simperTiaExpiredDate || null
-          });
+          console.log(`🔄 Updating existing SIMPER for ${cleanName} (${cleanNik})`);
+          await this.updateSimperMonitoring(existing.id, simperData);
         } else {
           // Create new record
+          console.log(`➕ Creating new SIMPER for ${cleanName} (${cleanNik})`);
           await this.createSimperMonitoring({
-            employeeName: item.employeeName,
-            nik: item.nik,
-            simperBibExpiredDate: item.simperBibExpiredDate || null,
-            simperTiaExpiredDate: item.simperTiaExpiredDate || null
+            ...simperData,
+            nik: cleanNik
           });
         }
+        
         success++;
+        console.log(`✅ Processed ${cleanName} (${cleanNik}) - BIB: ${item.simperBibExpiredDate || 'N/A'}, TIA: ${item.simperTiaExpiredDate || 'N/A'}`);
+        
       } catch (error) {
-        errors.push(`Error untuk NIK ${item.nik}: ${error}`);
+        const errorMsg = `Error untuk NIK ${item.nik} (baris ${index + 1}): ${error}`;
+        errors.push(errorMsg);
+        console.error(`❌ ${errorMsg}`);
       }
     }
 
+    console.log(`📊 Bulk upload completed: ${success} success, ${errors.length} errors`);
     return { success, errors };
   }
 }
