@@ -243,8 +243,8 @@ export default function SimperMonitoring() {
   });
 
   // Format date to dd-mm-yyyy
-  const formatDateToDDMMYYYY = (dateString: string | null) => {
-    if (!dateString) return "-";
+  const formatDateToDDMMYYYY = (dateString: string | null | undefined) => {
+    if (!dateString || dateString === null || dateString === undefined || dateString === '') return "-";
     try {
       const date = new Date(dateString);
       const day = String(date.getDate()).padStart(2, '0');
@@ -257,8 +257,10 @@ export default function SimperMonitoring() {
   };
 
   // Get monitoring days and status
-  const getMonitoringStatus = (expiredDate: string | null) => {
-    if (!expiredDate) return { days: null, status: "Tidak Ada Data", variant: "outline" as const, customStyle: "" };
+  const getMonitoringStatus = (expiredDate: string | null | undefined) => {
+    if (!expiredDate || expiredDate === null || expiredDate === undefined || expiredDate === '') {
+      return { days: null, status: "Tidak Ada Data", variant: "outline" as const, customStyle: "" };
+    }
     
     const expired = new Date(expiredDate);
     const today = new Date();
