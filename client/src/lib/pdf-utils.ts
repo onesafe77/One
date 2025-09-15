@@ -321,49 +321,62 @@ function generateShiftSection(
   doc.text(shiftName.toUpperCase(), margin, yPosition);
   yPosition += 8; // Compact spacing
   
-  // FIXED: Ambil SEMUA employee yang dijadwalkan di roster untuk tanggal dan shift ini
-  // Terlepas apakah mereka hadir atau tidak - sesuai permintaan user
-  const scheduledEmployees = data.roster?.filter(r => r.shift === shiftName && r.date === data.startDate) || [];
-  
-  console.log(`📊 ROSTER ${shiftName}: Found ${scheduledEmployees.length} scheduled employees for ${data.startDate}`);
-  
-  // Untuk setiap employee yang dijadwalkan, cek apakah mereka hadir dan update datanya
-  scheduledEmployees.forEach((rosterRecord, index) => {
-    const employee = data.employees.find(emp => emp.id === rosterRecord.employeeId);
-    const attendanceRecord = data.attendance.find(att => att.employeeId === rosterRecord.employeeId && att.date === data.startDate);
-    
-    if (employee) {
-      // Update roster record dengan data attendance jika ada
-      if (attendanceRecord) {
-        scheduledEmployees[index] = {
-          ...rosterRecord,
-          jamTidur: attendanceRecord.jamTidur || '',
-          fitToWork: attendanceRecord.fitToWork || 'Fit To Work',
-          status: 'present',
-          // CRITICAL: Tetap gunakan hariKerja dari roster asli
-          hariKerja: rosterRecord.hariKerja
-        };
-      } else {
-        // Employee tidak hadir, tetap tampilkan dengan status absent
-        scheduledEmployees[index] = {
-          ...rosterRecord,
-          jamTidur: '',
-          fitToWork: 'Fit To Work',
-          status: 'absent',
-          // CRITICAL: Tetap gunakan hariKerja dari roster asli
-          hariKerja: rosterRecord.hariKerja
-        };
-      }
-      
-      // Add employee data to roster record
-      scheduledEmployees[index].employee = employee;
-      
-      // DEBUG untuk employee dengan hari kerja
-      if (rosterRecord.hariKerja) {
-        console.log(`📅 ${employee.name}: tanggal=${data.startDate}, shift=${shiftName}, hariKerja=${rosterRecord.hariKerja}, status=${scheduledEmployees[index].status}`);
-      }
+  // FIXED: Build key-based lookup map untuk menghindari index misalignment
+  // Build roster map by employeeId + date for reliable lookups
+  const rosterMap = new Map();
+  data.roster?.forEach(r => {
+    if (r.date === data.startDate) {
+      const key = `${r.employeeId}|${r.date}`;
+      rosterMap.set(key, r);
     }
   });
+  
+  // Get base roster data for this shift (normalized shift comparison)
+  const baseRosterForShift = data.roster?.filter(r => 
+    r.shift.toUpperCase() === shiftName.toUpperCase() && 
+    r.date === data.startDate
+  ) || [];
+  
+  console.log(`📊 ROSTER ${shiftName}: Found ${baseRosterForShift.length} scheduled employees for ${data.startDate}`);
+  
+  // Build final employee list with reliable key-based roster lookup
+  const scheduledEmployees = baseRosterForShift.map(rosterRecord => {
+    const employee = data.employees.find(emp => emp.id === rosterRecord.employeeId);
+    const attendanceRecord = data.attendance.find(att => 
+      att.employeeId === rosterRecord.employeeId && att.date === data.startDate
+    );
+    
+    if (!employee) {
+      console.warn(`⚠️ Employee not found: ${rosterRecord.employeeId}`);
+      return null;
+    }
+    
+    // Key-based roster lookup untuk memastikan data yang benar
+    const rosterKey = `${rosterRecord.employeeId}|${data.startDate}`;
+    const correctRosterData = rosterMap.get(rosterKey);
+    
+    if (!correctRosterData) {
+      console.warn(`⚠️ No roster data found for ${employee.name} on ${data.startDate}`);
+    }
+    
+    // Use correct roster data with attendance overlay
+    const enrichedRecord = {
+      ...rosterRecord,
+      employee: employee,
+      jamTidur: attendanceRecord?.jamTidur || '',
+      fitToWork: attendanceRecord?.fitToWork || 'Fit To Work',
+      status: attendanceRecord ? 'present' : 'absent',
+      // CRITICAL: Always use roster data hariKerja - no array index confusion
+      hariKerja: correctRosterData?.hariKerja || rosterRecord.hariKerja || ''
+    };
+    
+    // DEBUG untuk verify data WARSITO dan employee lain
+    if (employee.name.includes('WARSITO') || correctRosterData?.hariKerja) {
+      console.log(`📅 ${employee.name}: roster_hariKerja=${correctRosterData?.hariKerja}, final_hariKerja=${enrichedRecord.hariKerja}, status=${enrichedRecord.status}`);
+    }
+    
+    return enrichedRecord;
+  }).filter(Boolean); // Remove null entries
   
   // Check if there's no data for this shift
   if (scheduledEmployees.length === 0) {
@@ -449,41 +462,32 @@ function generateShiftSection(
   }
 
   // Process ALL scheduled employees (both attended and not attended)
-  scheduledEmployees.forEach((rosterRecord, rowIndex) => {
-    // Find attendance record for this employee (if exists)
-    const attendanceRecord = data.attendance.find(att => att.employeeId === rosterRecord.employeeId);
-    const employee = data.employees.find(emp => emp.id === rosterRecord.employeeId);
+  // Use the enriched records with correct key-based roster lookups
+  scheduledEmployees.forEach((enrichedRecord, rowIndex) => {
+    if (!enrichedRecord?.employee) return;
     
-    if (!employee) return;
+    const employee = enrichedRecord.employee;
     
-    // FIXED: Ambil data hari kerja LANGSUNG dari roster database untuk tanggal dan shift ini
-    // Cari data roster yang EXACT match dengan tanggal dan shift yang dilaporkan
-    const exactRosterData = data.roster?.find(r => 
-      r.employeeId === employee.id && 
-      r.date === data.startDate && 
-      r.shift === shiftName
-    );
-    
+    // Use enriched record data which already has correct hariKerja from key-based lookup
     let workDaysText = '-';
-    if (exactRosterData?.hariKerja !== null && exactRosterData?.hariKerja !== undefined && exactRosterData?.hariKerja !== '') {
+    if (enrichedRecord.hariKerja !== null && enrichedRecord.hariKerja !== undefined && enrichedRecord.hariKerja !== '') {
       // Convert to string and handle both numeric and string values
-      const hariKerjaStr = String(exactRosterData.hariKerja).trim();
+      const hariKerjaStr = String(enrichedRecord.hariKerja).trim();
       if (hariKerjaStr && hariKerjaStr !== '0' && hariKerjaStr !== 'null' && hariKerjaStr !== 'undefined') {
         workDaysText = hariKerjaStr;
       }
     }
     
-    // DEBUG untuk semua employee yang memiliki hari kerja
-    if (exactRosterData?.hariKerja) {
-      console.log(`📅 ${employee.name}: tanggal=${data.startDate}, shift=${shiftName}, hariKerja=${exactRosterData.hariKerja} → ${workDaysText}`);
+    // DEBUG untuk verify correct data
+    if (employee.name.includes('WARSITO') || enrichedRecord.hariKerja) {
+      console.log(`🎯 PDF ROW: ${employee.name}, hariKerja="${enrichedRecord.hariKerja}" → "${workDaysText}", status=${enrichedRecord.status}`);
     }
     
-    
-    // Prepare row data - show ALL scheduled employees with their attendance status (ReportLab style with icons)
-    const jamTidur = attendanceRecord?.jamTidur || '-';
-    const fitToWorkStatus = attendanceRecord?.fitToWork || 'Not Fit To Work';
-    const attendanceStatus = attendanceRecord ? '✅ Hadir' : '❌ Tidak Hadir'; // Icons like ReportLab example
-    const attendanceTime = attendanceRecord?.time || '-';
+    // Prepare row data using enriched record data
+    const jamTidur = enrichedRecord.jamTidur || '-';
+    const fitToWorkStatus = enrichedRecord.fitToWork || 'Not Fit To Work';
+    const attendanceStatus = enrichedRecord.status === 'present' ? '✅ Hadir' : '❌ Tidak Hadir';
+    const attendanceTime = enrichedRecord.status === 'present' ? data.attendance.find(att => att.employeeId === employee.id)?.time || '-' : '-';
     
     const rowData = [
       employee.name || '-',
@@ -541,8 +545,8 @@ function generateShiftSection(
   doc.setFontSize(9); // Smaller than table content (10pt)
   doc.setFont('helvetica', 'normal');
   
-  const attendedCount = scheduledEmployees.filter(scheduleRecord => {
-    return data.attendance.some(attendance => attendance.employeeId === scheduleRecord.employeeId);
+  const attendedCount = scheduledEmployees.filter(enrichedRecord => {
+    return enrichedRecord?.status === 'present';
   }).length;
   const scheduledCount = scheduledEmployees.length;
   const absentCount = scheduledCount - attendedCount;
