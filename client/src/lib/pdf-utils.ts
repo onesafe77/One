@@ -324,6 +324,22 @@ function generateShiftSection(
   // Get scheduled employees for this shift first (from roster)
   const scheduledEmployees = data.roster?.filter(r => r.shift === shiftName && r.date === data.startDate) || [];
   
+  // DEBUG: Check for WARSITO in initial roster data
+  const warsitoInRoster = scheduledEmployees.find(emp => {
+    const employee = data.employees.find(e => e.id === emp.employeeId);
+    return employee?.name?.includes('WARSITO');
+  });
+  if (warsitoInRoster) {
+    console.log('🔍 WARSITO FOUND IN INITIAL ROSTER:', {
+      employeeId: warsitoInRoster.employeeId,
+      shift: warsitoInRoster.shift,
+      date: warsitoInRoster.date,
+      hariKerja: warsitoInRoster.hariKerja,
+      hariKerjaType: typeof warsitoInRoster.hariKerja,
+      fullRosterRecord: warsitoInRoster
+    });
+  }
+  
   // For SHIFT 1: show all attendance, For SHIFT 2: show only if there's actual Shift 2 roster data
   let attendanceForThisShift: typeof data.attendance;
   
