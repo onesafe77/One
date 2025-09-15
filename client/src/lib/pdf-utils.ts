@@ -514,25 +514,26 @@ function generateShiftSection(
     
     if (!employee) return;
     
-    // Get work days from roster data - handle both string and number types
+    // FIXED: Ambil data hari kerja LANGSUNG dari roster database untuk tanggal dan shift ini
+    // Cari data roster yang EXACT match dengan tanggal dan shift yang dilaporkan
+    const exactRosterData = data.roster?.find(r => 
+      r.employeeId === employee.id && 
+      r.date === data.startDate && 
+      r.shift === shiftName
+    );
+    
     let workDaysText = '-';
-    if (rosterRecord.hariKerja !== null && rosterRecord.hariKerja !== undefined && rosterRecord.hariKerja !== '') {
+    if (exactRosterData?.hariKerja !== null && exactRosterData?.hariKerja !== undefined && exactRosterData?.hariKerja !== '') {
       // Convert to string and handle both numeric and string values
-      const hariKerjaStr = String(rosterRecord.hariKerja).trim();
+      const hariKerjaStr = String(exactRosterData.hariKerja).trim();
       if (hariKerjaStr && hariKerjaStr !== '0' && hariKerjaStr !== 'null' && hariKerjaStr !== 'undefined') {
         workDaysText = hariKerjaStr;
       }
     }
     
-    // SPECIAL DEBUG untuk WARSITO
-    if (employee?.name?.includes('WARSITO')) {
-      console.log('🔍 WARSITO WORKDAYS PROCESSING:', {
-        employeeName: employee.name,
-        originalHariKerja: rosterRecord.hariKerja,
-        hariKerjaType: typeof rosterRecord.hariKerja,
-        finalWorkDaysText: workDaysText,
-        rosterRecordFull: rosterRecord
-      });
+    // DEBUG untuk semua employee yang memiliki hari kerja
+    if (exactRosterData?.hariKerja) {
+      console.log(`📅 ${employee.name}: tanggal=${data.startDate}, shift=${shiftName}, hariKerja=${exactRosterData.hariKerja} → ${workDaysText}`);
     }
     
     
