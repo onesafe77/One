@@ -3149,7 +3149,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     if (typeof serial === 'string') {
       const dateStr = serial.trim();
       
-      // Try dd-mm-yyyy format
+      // PRIORITAS UTAMA: Format Indonesia dd-mm-yyyy
       if (/^\d{1,2}-\d{1,2}-\d{4}$/.test(dateStr)) {
         const [day, month, year] = dateStr.split('-');
         const date = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
@@ -3158,7 +3158,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
       
-      // Try dd/mm/yyyy format
+      // PRIORITAS KEDUA: Format Indonesia dd/mm/yyyy
       if (/^\d{1,2}\/\d{1,2}\/\d{4}$/.test(dateStr)) {
         const [day, month, year] = dateStr.split('/');
         const date = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
@@ -3167,7 +3167,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
       
-      // Try yyyy-mm-dd format (ISO format)
+      // Format ISO yyyy-mm-dd (untuk compatibility)
       if (/^\d{4}-\d{1,2}-\d{1,2}$/.test(dateStr)) {
         const date = new Date(dateStr);
         if (!isNaN(date.getTime())) {
@@ -3175,7 +3175,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
       
-      // Try parsing as general date
+      // Fallback: general date parsing
       const isoDate = new Date(dateStr);
       if (!isNaN(isoDate.getTime())) {
         return isoDate.toISOString().split('T')[0];
@@ -3251,6 +3251,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       console.log(`🔄 Processing SIMPER Excel with ${data.length} rows`);
       console.log('📋 Excel columns found:', Object.keys(data[0] || {}));
+      console.log('📅 Template Excel Format: dd-mm-yyyy (contoh: 15-12-2025)');
 
       const simperData = data.map((row: any, index: number) => {
         // Enhanced column mapping with more variations
