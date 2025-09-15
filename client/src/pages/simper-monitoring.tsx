@@ -244,9 +244,17 @@ export default function SimperMonitoring() {
 
   // Format date to dd-mm-yyyy
   const formatDateToDDMMYYYY = (dateString: string | null | undefined) => {
-    if (!dateString || dateString === null || dateString === undefined || dateString === '') return "-";
+    if (!dateString || dateString === null || dateString === undefined || dateString === '' || dateString === 'N/A') {
+      return "-";
+    }
+    
     try {
       const date = new Date(dateString);
+      // Check if date is valid
+      if (isNaN(date.getTime())) {
+        return "-";
+      }
+      
       const day = String(date.getDate()).padStart(2, '0');
       const month = String(date.getMonth() + 1).padStart(2, '0');
       const year = date.getFullYear();
@@ -258,11 +266,17 @@ export default function SimperMonitoring() {
 
   // Get monitoring days and status
   const getMonitoringStatus = (expiredDate: string | null | undefined) => {
-    if (!expiredDate || expiredDate === null || expiredDate === undefined || expiredDate === '') {
+    if (!expiredDate || expiredDate === null || expiredDate === undefined || expiredDate === '' || expiredDate === 'N/A') {
       return { days: null, status: "Tidak Ada Data", variant: "outline" as const, customStyle: "" };
     }
     
-    const expired = new Date(expiredDate);
+    const date = new Date(expiredDate);
+    // Check if date is valid
+    if (isNaN(date.getTime())) {
+      return { days: null, status: "Tidak Ada Data", variant: "outline" as const, customStyle: "" };
+    }
+    
+    const expired = date;
     const today = new Date();
     const diffTime = expired.getTime() - today.getTime();
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));

@@ -3136,93 +3136,64 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Helper function to convert Excel serial date to JavaScript Date
   const excelSerialDateToJSDate = (serial: any) => {
-    console.log(`🔍 Processing date value:`, {
-      value: serial,
-      type: typeof serial,
-      isNull: serial === null,
-      isUndefined: serial === undefined,
-      isEmpty: serial === '',
-      stringValue: String(serial)
-    });
-    
-    if (!serial) {
-      console.log(`❌ Date value is empty/null/undefined`);
+    if (!serial || serial === 'N/A' || serial === '' || serial === null || serial === undefined) {
       return null;
     }
     
     // Handle Date objects directly (Excel with cellDates: true might return Date objects)
     if (serial instanceof Date) {
-      console.log(`📅 Date object detected: ${serial.toISOString()}`);
       return serial.toISOString().split('T')[0];
     }
     
     // If it's already a string date, try to parse it
     if (typeof serial === 'string') {
-      // Try different date formats
       const dateStr = serial.trim();
-      console.log(`📝 Processing string date: "${dateStr}"`);
       
       // Try dd-mm-yyyy format
       if (/^\d{1,2}-\d{1,2}-\d{4}$/.test(dateStr)) {
-        console.log(`✅ Matched dd-mm-yyyy format`);
         const [day, month, year] = dateStr.split('-');
         const date = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
         if (!isNaN(date.getTime())) {
-          const result = date.toISOString().split('T')[0];
-          console.log(`✅ Successfully parsed dd-mm-yyyy: ${result}`);
-          return result;
+          return date.toISOString().split('T')[0];
         }
       }
       
       // Try dd/mm/yyyy format
       if (/^\d{1,2}\/\d{1,2}\/\d{4}$/.test(dateStr)) {
-        console.log(`✅ Matched dd/mm/yyyy format`);
         const [day, month, year] = dateStr.split('/');
         const date = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
         if (!isNaN(date.getTime())) {
-          const result = date.toISOString().split('T')[0];
-          console.log(`✅ Successfully parsed dd/mm/yyyy: ${result}`);
-          return result;
+          return date.toISOString().split('T')[0];
         }
       }
       
       // Try yyyy-mm-dd format (ISO format)
       if (/^\d{4}-\d{1,2}-\d{1,2}$/.test(dateStr)) {
-        console.log(`✅ Matched yyyy-mm-dd format`);
         const date = new Date(dateStr);
         if (!isNaN(date.getTime())) {
-          const result = date.toISOString().split('T')[0];
-          console.log(`✅ Successfully parsed yyyy-mm-dd: ${result}`);
-          return result;
+          return date.toISOString().split('T')[0];
         }
       }
       
       // Try parsing as general date
-      console.log(`🔄 Attempting general date parsing`);
       const isoDate = new Date(dateStr);
       if (!isNaN(isoDate.getTime())) {
-        const result = isoDate.toISOString().split('T')[0];
-        console.log(`✅ Successfully parsed general date: ${result}`);
-        return result;
+        return isoDate.toISOString().split('T')[0];
       }
     }
     
     // If it's a number, treat it as Excel serial date
     if (typeof serial === 'number' && serial > 0) {
-      console.log(`🔢 Processing Excel serial number: ${serial}`);
       // Excel serial date starts from January 1, 1900
       // Excel incorrectly treats 1900 as a leap year, so we need to adjust
       const excelEpoch = new Date(1899, 11, 30); // December 30, 1899
       const jsDate = new Date(excelEpoch.getTime() + (serial * 24 * 60 * 60 * 1000));
       
       if (!isNaN(jsDate.getTime())) {
-        const result = jsDate.toISOString().split('T')[0];
-        console.log(`✅ Successfully parsed Excel serial: ${result}`);
-        return result;
+        return jsDate.toISOString().split('T')[0];
       }
     }
     
-    console.log(`❌ Failed to parse date value: ${serial}`);
     return null;
   };
 
@@ -3297,19 +3268,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
         const processedBibDate = excelSerialDateToJSDate(bibDate);
         const processedTiaDate = excelSerialDateToJSDate(tiaDate);
-        
-        // Debug logging for problematic rows
-        if (!employeeName || !nik) {
-          console.log(`⚠️ Row ${index + 1}: Missing required data - Name: "${employeeName}", NIK: "${nik}"`);
-        }
-        
-        if (bibDate && !processedBibDate) {
-          console.log(`⚠️ Row ${index + 1}: Failed to process BIB date "${bibDate}" for ${employeeName}`);
-        }
-        
-        if (tiaDate && !processedTiaDate) {
-          console.log(`⚠️ Row ${index + 1}: Failed to process TIA date "${tiaDate}" for ${employeeName}`);
-        }
 
         return {
           employeeName: employeeName.trim(),
@@ -3318,13 +3276,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
           simperTiaExpiredDate: processedTiaDate || undefined
         };
       });
-
-      console.log(`📊 Processed data sample:`, simperData.slice(0, 3).map(item => ({
-        name: item.employeeName,
-        nik: item.nik,
-        bibDate: item.simperBibExpiredDate,
-        tiaDate: item.simperTiaExpiredDate
-      })));
 
       const result = await storage.bulkUploadSimperData(simperData);
       

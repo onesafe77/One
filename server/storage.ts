@@ -1447,7 +1447,7 @@ export class DrizzleStorage implements IStorage {
         }
         
         success++;
-        console.log(`✅ Processed ${cleanName} (${cleanNik}) - BIB: ${item.simperBibExpiredDate || 'N/A'}, TIA: ${item.simperTiaExpiredDate || 'N/A'}`);
+        console.log(`✅ Processed ${cleanName} (${cleanNik}) - BIB: ${item.simperBibExpiredDate || 'Kosong'}, TIA: ${item.simperTiaExpiredDate || 'Kosong'}`);
         
       } catch (error) {
         const errorMsg = `Error untuk NIK ${item.nik} (baris ${index + 1}): ${error}`;
