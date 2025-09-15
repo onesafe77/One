@@ -304,6 +304,11 @@ export async function generateAttendancePDF(data: ReportData): Promise<void> {
   }
 }
 
+// Architect's solution: shift normalization helper
+function normalizeShift(shift: string): string {
+  return (shift || '').toUpperCase().replace(/\s+/g, ' ').trim();
+}
+
 function generateShiftSection(
   doc: jsPDF, 
   data: ReportData, 
@@ -321,41 +326,37 @@ function generateShiftSection(
   doc.text(shiftName.toUpperCase(), margin, yPosition);
   yPosition += 8; // Compact spacing
   
-  // FIXED: Build key-based lookup map untuk menghindari index misalignment
-  // Build roster map by employeeId + date for reliable lookups
-  const rosterMap = new Map();
-  data.roster?.forEach(r => {
-    if (r.date === data.startDate) {
-      const key = `${r.employeeId}|${r.date}`;
-      rosterMap.set(key, r);
-    }
+  console.log(`🔥 PDF GENERATION: Starting ${shiftName} with data:`, {
+    totalRoster: data.roster?.length || 0,
+    totalEmployees: data.employees?.length || 0,
+    date: data.startDate
   });
   
-  // Get base roster data for this shift (normalized shift comparison)
-  const baseRosterForShift = data.roster?.filter(r => 
-    r.shift.toUpperCase() === shiftName.toUpperCase() && 
-    r.date === data.startDate
-  ) || [];
+  // ARCHITECT FIX: Filter roster by date and shift with proper normalization
+  const normalizedShiftName = normalizeShift(shiftName);
+  const rosterFiltered = (data.roster || []).filter(r => {
+    const matchesDate = r.date === data.startDate;
+    const matchesShift = normalizeShift(r.shift) === normalizedShiftName;
+    return matchesDate && matchesShift;
+  });
   
-  console.log(`📊 ROSTER ${shiftName}: Found ${baseRosterForShift.length} scheduled employees for ${data.startDate}`);
+  console.log(`🎯 FILTERED ROSTER: Found ${rosterFiltered.length} entries for ${shiftName} on ${data.startDate}`);
   
-  // DEBUG: Lihat sample roster data untuk shift ini
-  if (baseRosterForShift.length > 0) {
-    console.log(`🔍 Sample roster for ${shiftName}:`, baseRosterForShift.slice(0, 3).map(r => ({
-      name: data.employees.find(e => e.id === r.employeeId)?.name || r.employeeId,
-      hariKerja: r.hariKerja,
-      shift: r.shift,
-      date: r.date
-    })));
-  } else {
-    console.log(`❌ NO ROSTER DATA FOUND for ${shiftName} on ${data.startDate}`);
-    console.log(`📋 Total roster entries in data:`, data.roster?.length);
-    console.log(`📋 Available shifts:`, Array.from(new Set(data.roster?.map(r => r.shift))));
-    console.log(`📋 Available dates:`, Array.from(new Set(data.roster?.map(r => r.date))));
-  }
+  // ARCHITECT FIX: Build Map by employeeId with numeric coercion
+  const rosterByEmp = new Map();
+  rosterFiltered.forEach(r => {
+    const empId = String(r.employeeId).trim();
+    const hariKerja = Number.parseInt(String(r.hariKerja), 10) || 0;
+    rosterByEmp.set(empId, {
+      ...r,
+      hariKerja: hariKerja
+    });
+  });
   
-  // Build final employee list with reliable key-based roster lookup
-  const scheduledEmployees = baseRosterForShift.map(rosterRecord => {
+  console.log(`🗺️ ROSTER MAP: Built map with ${rosterByEmp.size} entries`);
+  
+  // Build employee list from roster (not from separate employee array)
+  const scheduledEmployees = rosterFiltered.map(rosterRecord => {
     const employee = data.employees.find(emp => emp.id === rosterRecord.employeeId);
     const attendanceRecord = data.attendance.find(att => 
       att.employeeId === rosterRecord.employeeId && att.date === data.startDate
@@ -366,31 +367,40 @@ function generateShiftSection(
       return null;
     }
     
-    // Key-based roster lookup untuk memastikan data yang benar
-    const rosterKey = `${rosterRecord.employeeId}|${data.startDate}`;
-    const correctRosterData = rosterMap.get(rosterKey);
+    // ARCHITECT FIX: Use Map-based lookup with employeeId
+    const empId = String(employee.id).trim();
+    const rosterData = rosterByEmp.get(empId);
+    const hariKerja = rosterData?.hariKerja ?? 0;
     
-    if (!correctRosterData) {
-      console.warn(`⚠️ No roster data found for ${employee.name} on ${data.startDate}`);
-    }
-    
-    // FIXED: Use correctRosterData as base instead of rosterRecord to avoid data corruption
-    const base = correctRosterData || rosterRecord;
     const enrichedRecord = {
-      ...base,  // ✅ Using correct key-based roster data
       employee: employee,
+      hariKerja: hariKerja,
+      shift: rosterRecord.shift,
       jamTidur: attendanceRecord?.jamTidur || '',
       fitToWork: attendanceRecord?.fitToWork || 'Fit To Work',
       status: attendanceRecord ? 'present' : 'absent',
     };
     
-    // DEBUG untuk verify data fix
-    if (employee.name.includes('WARSITO') || employee.name.includes('ABRAHAM') || employee.name.includes('RIKI')) {
-      console.log(`🎯 FIXED: ${employee.name}, hariKerja="${enrichedRecord.hariKerja}", status=${enrichedRecord.status}`);
-    }
-    
     return enrichedRecord;
   }).filter(Boolean); // Remove null entries
+  
+  // ARCHITECT DEBUG: Mapping diagnostics
+  console.log(`📊 MAPPING RESULTS: ${scheduledEmployees.length} employees mapped`);
+  const sampleMappings = scheduledEmployees.slice(0, 5).map(emp => emp ? ({
+    empId: emp.employee.id,
+    name: emp.employee.name,
+    hariKerja: emp.hariKerja
+  }) : null).filter(Boolean);
+  console.log(`🔍 First 5 mappings:`, sampleMappings);
+  
+  // Check specific employees
+  const warsito = scheduledEmployees.find(emp => emp && emp.employee.name.includes('WARSITO'));
+  const abraham = scheduledEmployees.find(emp => emp && emp.employee.name.includes('ABRAHAM'));
+  const riki = scheduledEmployees.find(emp => emp && emp.employee.name.includes('RIKI'));
+  
+  if (warsito) console.log(`🎯 WARSITO found: hariKerja=${warsito.hariKerja}`);
+  if (abraham) console.log(`🎯 ABRAHAM found: hariKerja=${abraham.hariKerja}`);
+  if (riki) console.log(`🎯 RIKI found: hariKerja=${riki.hariKerja}`);
   
   // Check if there's no data for this shift
   if (scheduledEmployees.length === 0) {
