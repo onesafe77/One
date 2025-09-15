@@ -364,6 +364,19 @@ function generateShiftSection(
         
         console.log(`🎯 Employee ${employee.name}: menggunakan roster tanggal ${data.startDate} dengan hariKerja="${exactDateRoster?.hariKerja || 'KOSONG'}"`);
         
+        // SPECIAL DEBUG untuk WARSITO
+        if (employee.name.includes('WARSITO')) {
+          console.log('🔍 WARSITO DEBUG DATA:', {
+            employeeName: employee.name,
+            employeeId: att.employeeId,
+            reportDate: data.startDate,
+            exactDateRoster: exactDateRoster,
+            hariKerjaValue: exactDateRoster?.hariKerja,
+            hariKerjaType: typeof exactDateRoster?.hariKerja,
+            allRosterForThisEmployee: data.roster?.filter(r => r.employeeId === att.employeeId)
+          });
+        }
+        
         scheduledEmployees.push({
           id: `temp-${att.employeeId}`,
           employeeId: att.employeeId,
@@ -480,6 +493,17 @@ function generateShiftSection(
       if (hariKerjaStr && hariKerjaStr !== '0' && hariKerjaStr !== 'null' && hariKerjaStr !== 'undefined') {
         workDaysText = hariKerjaStr;
       }
+    }
+    
+    // SPECIAL DEBUG untuk WARSITO
+    if (employee?.name?.includes('WARSITO')) {
+      console.log('🔍 WARSITO WORKDAYS PROCESSING:', {
+        employeeName: employee.name,
+        originalHariKerja: rosterRecord.hariKerja,
+        hariKerjaType: typeof rosterRecord.hariKerja,
+        finalWorkDaysText: workDaysText,
+        rosterRecordFull: rosterRecord
+      });
     }
     
     
