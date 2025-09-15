@@ -339,6 +339,21 @@ function generateShiftSection(
   
   console.log(`📊 ROSTER ${shiftName}: Found ${baseRosterForShift.length} scheduled employees for ${data.startDate}`);
   
+  // DEBUG: Lihat sample roster data untuk shift ini
+  if (baseRosterForShift.length > 0) {
+    console.log(`🔍 Sample roster for ${shiftName}:`, baseRosterForShift.slice(0, 3).map(r => ({
+      name: data.employees.find(e => e.id === r.employeeId)?.name || r.employeeId,
+      hariKerja: r.hariKerja,
+      shift: r.shift,
+      date: r.date
+    })));
+  } else {
+    console.log(`❌ NO ROSTER DATA FOUND for ${shiftName} on ${data.startDate}`);
+    console.log(`📋 Total roster entries in data:`, data.roster?.length);
+    console.log(`📋 Available shifts:`, [...new Set(data.roster?.map(r => r.shift))]);
+    console.log(`📋 Available dates:`, [...new Set(data.roster?.map(r => r.date))]);
+  }
+  
   // Build final employee list with reliable key-based roster lookup
   const scheduledEmployees = baseRosterForShift.map(rosterRecord => {
     const employee = data.employees.find(emp => emp.id === rosterRecord.employeeId);
