@@ -31,6 +31,7 @@ export default function Roster() {
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [editingRoster, setEditingRoster] = useState<RosterSchedule | null>(null);
   const [shiftFilter, setShiftFilter] = useState("all");
+  const [attendanceFilter, setAttendanceFilter] = useState("all");
   const [searchName, setSearchName] = useState("");
   const [searchNIK, setSearchNIK] = useState("");
   const [isDeleteAllDialogOpen, setIsDeleteAllDialogOpen] = useState(false);
@@ -564,7 +565,17 @@ export default function Roster() {
     const employee = roster.employee || employees.find(emp => emp.id === roster.employeeId);
     const nameMatch = !searchName || (employee?.name || '').toLowerCase().includes(searchName.toLowerCase());
     
-    return shiftMatch && nikMatch && nameMatch;
+    // Filter by attendance status
+    const hasAttended = attendance.some(att => att.employeeId === roster.employeeId);
+    let attendanceMatch = true;
+    if (attendanceFilter === "hadir") {
+      attendanceMatch = hasAttended;
+    } else if (attendanceFilter === "belum_hadir") {
+      attendanceMatch = !hasAttended;
+    }
+    // If attendanceFilter === "all", attendanceMatch remains true
+    
+    return shiftMatch && nikMatch && nameMatch && attendanceMatch;
   });
 
   const rosterWithAttendance = filteredRosterSchedules.map(roster => ({
@@ -640,6 +651,18 @@ export default function Roster() {
                 <SelectItem value="SHIFT 2">SHIFT 2</SelectItem>
                 <SelectItem value="OVER SHIFT">OVER SHIFT</SelectItem>
                 <SelectItem value="CUTI">CUTI</SelectItem>
+              </SelectContent>
+            </Select>
+
+            {/* Filter Status Kehadiran */}
+            <Select value={attendanceFilter} onValueChange={setAttendanceFilter}>
+              <SelectTrigger className="w-48" data-testid="attendance-filter-select">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Semua Status</SelectItem>
+                <SelectItem value="hadir">Hadir</SelectItem>
+                <SelectItem value="belum_hadir">Belum Hadir</SelectItem>
               </SelectContent>
             </Select>
 
