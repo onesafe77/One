@@ -364,12 +364,25 @@ function generateShiftSection(
       const existingIndex = scheduledEmployees.findIndex(emp => emp.employeeId === att.employeeId);
       
       if (existingIndex >= 0) {
-        // Update existing roster entry with attendance data
+        // Update existing roster entry with attendance data - PRESERVE hariKerja dari roster asli!
+        const originalHariKerja = scheduledEmployees[existingIndex].hariKerja;
         scheduledEmployees[existingIndex] = {
           ...scheduledEmployees[existingIndex],
           jamTidur: att.jamTidur || '',
-          fitToWork: att.fitToWork || 'Fit To Work'
+          fitToWork: att.fitToWork || 'Fit To Work',
+          // CRITICAL: Pertahankan hariKerja dari roster asli
+          hariKerja: originalHariKerja
         };
+        
+        // SPECIAL DEBUG untuk WARSITO
+        if (employee.name.includes('WARSITO')) {
+          console.log('🔍 WARSITO UPDATE EXISTING ROSTER:', {
+            employeeName: employee.name,
+            originalHariKerja: originalHariKerja,
+            preservedHariKerja: scheduledEmployees[existingIndex].hariKerja,
+            updatedRecord: scheduledEmployees[existingIndex]
+          });
+        }
       } else {
         // FIXED: HANYA gunakan data roster untuk tanggal EXACT yang dilaporkan
         // Jangan ambil dari tanggal lain - sesuai permintaan user
@@ -1177,12 +1190,25 @@ function getShiftEmployees(data: ReportData, shift: string): any[] {
       const existingIndex = scheduledEmployees.findIndex(emp => emp.employeeId === att.employeeId);
       
       if (existingIndex >= 0) {
-        // Update existing roster entry with attendance data
+        // Update existing roster entry with attendance data - PRESERVE hariKerja dari roster asli!
+        const originalHariKerja = scheduledEmployees[existingIndex].hariKerja;
         scheduledEmployees[existingIndex] = {
           ...scheduledEmployees[existingIndex],
           jamTidur: att.jamTidur || '',
-          fitToWork: att.fitToWork || 'Fit To Work'
+          fitToWork: att.fitToWork || 'Fit To Work',
+          // CRITICAL: Pertahankan hariKerja dari roster asli
+          hariKerja: originalHariKerja
         };
+        
+        // SPECIAL DEBUG untuk WARSITO
+        if (employee.name.includes('WARSITO')) {
+          console.log('🔍 WARSITO UPDATE EXISTING ROSTER:', {
+            employeeName: employee.name,
+            originalHariKerja: originalHariKerja,
+            preservedHariKerja: scheduledEmployees[existingIndex].hariKerja,
+            updatedRecord: scheduledEmployees[existingIndex]
+          });
+        }
       } else {
         // Add new roster entry for attendance - get hariKerja with smart matching
         const sameDate = data.roster?.find(r => r.employeeId === att.employeeId && r.date === data.startDate);
