@@ -355,15 +355,14 @@ function generateShiftSection(
           fitToWork: att.fitToWork || 'Fit To Work'
         };
       } else {
-        // Add new roster entry for attendance - get hariKerja with smart matching
-        // Priority: same date + same shift > same date + any shift > any date + any shift > recent record
-        const sameDate = data.roster?.find(r => r.employeeId === att.employeeId && r.date === data.startDate);
-        const anyDateSameEmployee = data.roster?.filter(r => r.employeeId === att.employeeId) || [];
-        const mostRecentRecord = anyDateSameEmployee.sort((a, b) => (b.date || '').localeCompare(a.date || ''))[0];
+        // FIXED: HANYA gunakan data roster untuk tanggal EXACT yang dilaporkan
+        // Jangan ambil dari tanggal lain - sesuai permintaan user
+        const exactDateRoster = data.roster?.find(r => 
+          r.employeeId === att.employeeId && 
+          r.date === data.startDate
+        );
         
-        const bestRosterRecord = sameDate || mostRecentRecord;
-        
-        console.log(`🔍 Employee ${employee.name}: found roster record with hariKerja="${bestRosterRecord?.hariKerja}" (sameDate=${!!sameDate}, total records=${anyDateSameEmployee.length})`);
+        console.log(`🎯 Employee ${employee.name}: menggunakan roster tanggal ${data.startDate} dengan hariKerja="${exactDateRoster?.hariKerja || 'KOSONG'}"`);
         
         scheduledEmployees.push({
           id: `temp-${att.employeeId}`,
@@ -374,7 +373,7 @@ function generateShiftSection(
           endTime: shiftName.toUpperCase() === 'SHIFT 1' ? '15:30' : '20:00',
           jamTidur: att.jamTidur || '',
           fitToWork: att.fitToWork || 'Fit To Work',
-          hariKerja: bestRosterRecord?.hariKerja || '', // Use best matching hariKerja
+          hariKerja: exactDateRoster?.hariKerja || '', // HANYA dari roster tanggal exact
           status: 'present',
           employee: employee
         } as any);

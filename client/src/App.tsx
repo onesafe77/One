@@ -74,6 +74,19 @@ function Router() {
       
       {/* Landing Page */}
       <Route path="/" component={Landing} />
+      
+      {/* Catch-all redirect untuk direct access ke workspace pages */}
+      <Route path="/:rest*">
+        {(params) => {
+          const currentPath = params['rest*'] ? `/${params['rest*']}` : '/';
+          // Redirect ke workspace dengan path yang sama
+          if (currentPath !== '/') {
+            window.location.replace(`/workspace${currentPath}${window.location.search}`);
+            return <div>Redirecting to workspace...</div>;
+          }
+          return <div>Page not found</div>;
+        }}
+      </Route>
     </Switch>
   );
 }
