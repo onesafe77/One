@@ -350,8 +350,8 @@ function generateShiftSection(
   } else {
     console.log(`❌ NO ROSTER DATA FOUND for ${shiftName} on ${data.startDate}`);
     console.log(`📋 Total roster entries in data:`, data.roster?.length);
-    console.log(`📋 Available shifts:`, [...new Set(data.roster?.map(r => r.shift))]);
-    console.log(`📋 Available dates:`, [...new Set(data.roster?.map(r => r.date))]);
+    console.log(`📋 Available shifts:`, Array.from(new Set(data.roster?.map(r => r.shift))));
+    console.log(`📋 Available dates:`, Array.from(new Set(data.roster?.map(r => r.date))));
   }
   
   // Build final employee list with reliable key-based roster lookup
@@ -374,20 +374,19 @@ function generateShiftSection(
       console.warn(`⚠️ No roster data found for ${employee.name} on ${data.startDate}`);
     }
     
-    // Use correct roster data with attendance overlay
+    // FIXED: Use correctRosterData as base instead of rosterRecord to avoid data corruption
+    const base = correctRosterData || rosterRecord;
     const enrichedRecord = {
-      ...rosterRecord,
+      ...base,  // ✅ Using correct key-based roster data
       employee: employee,
       jamTidur: attendanceRecord?.jamTidur || '',
       fitToWork: attendanceRecord?.fitToWork || 'Fit To Work',
       status: attendanceRecord ? 'present' : 'absent',
-      // CRITICAL: Always use roster data hariKerja - no array index confusion
-      hariKerja: correctRosterData?.hariKerja || rosterRecord.hariKerja || ''
     };
     
-    // DEBUG untuk verify data WARSITO dan employee lain
-    if (employee.name.includes('WARSITO') || correctRosterData?.hariKerja) {
-      console.log(`📅 ${employee.name}: roster_hariKerja=${correctRosterData?.hariKerja}, final_hariKerja=${enrichedRecord.hariKerja}, status=${enrichedRecord.status}`);
+    // DEBUG untuk verify data fix
+    if (employee.name.includes('WARSITO') || employee.name.includes('ABRAHAM') || employee.name.includes('RIKI')) {
+      console.log(`🎯 FIXED: ${employee.name}, hariKerja="${enrichedRecord.hariKerja}", status=${enrichedRecord.status}`);
     }
     
     return enrichedRecord;
