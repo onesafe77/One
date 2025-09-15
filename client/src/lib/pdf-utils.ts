@@ -321,104 +321,46 @@ function generateShiftSection(
   doc.text(shiftName.toUpperCase(), margin, yPosition);
   yPosition += 8; // Compact spacing
   
-  // Get scheduled employees for this shift first (from roster)
+  // FIXED: Ambil SEMUA employee yang dijadwalkan di roster untuk tanggal dan shift ini
+  // Terlepas apakah mereka hadir atau tidak - sesuai permintaan user
   const scheduledEmployees = data.roster?.filter(r => r.shift === shiftName && r.date === data.startDate) || [];
   
-  // DEBUG: Check for WARSITO in initial roster data
-  const warsitoInRoster = scheduledEmployees.find(emp => {
-    const employee = data.employees.find(e => e.id === emp.employeeId);
-    return employee?.name?.includes('WARSITO');
-  });
-  if (warsitoInRoster) {
-    console.log('🔍 WARSITO FOUND IN INITIAL ROSTER:', {
-      employeeId: warsitoInRoster.employeeId,
-      shift: warsitoInRoster.shift,
-      date: warsitoInRoster.date,
-      hariKerja: warsitoInRoster.hariKerja,
-      hariKerjaType: typeof warsitoInRoster.hariKerja,
-      fullRosterRecord: warsitoInRoster
-    });
-  }
+  console.log(`📊 ROSTER ${shiftName}: Found ${scheduledEmployees.length} scheduled employees for ${data.startDate}`);
   
-  // For SHIFT 1: show all attendance, For SHIFT 2: show only if there's actual Shift 2 roster data
-  let attendanceForThisShift: typeof data.attendance;
-  
-  if (shiftName.toUpperCase() === 'SHIFT 1') {
-    // For Shift 1 section: Include ALL attendance records for this date
-    attendanceForThisShift = data.attendance.filter(att => att.date === data.startDate);
-  } else {
-    // For Shift 2 section: Only show if employee is actually scheduled for Shift 2
-    attendanceForThisShift = data.attendance.filter(att => {
-      if (att.date !== data.startDate) return false;
-      const employeeRoster = data.roster?.find(r => r.employeeId === att.employeeId && r.date === data.startDate && r.shift === 'Shift 2');
-      return !!employeeRoster;
-    });
-  }
-  
-  // Add all attendance records as roster entries for this shift
-  attendanceForThisShift.forEach(att => {
-    const employee = data.employees.find(emp => emp.id === att.employeeId);
+  // Untuk setiap employee yang dijadwalkan, cek apakah mereka hadir dan update datanya
+  scheduledEmployees.forEach((rosterRecord, index) => {
+    const employee = data.employees.find(emp => emp.id === rosterRecord.employeeId);
+    const attendanceRecord = data.attendance.find(att => att.employeeId === rosterRecord.employeeId && att.date === data.startDate);
     
     if (employee) {
-      // Check if employee already exists in scheduledEmployees
-      const existingIndex = scheduledEmployees.findIndex(emp => emp.employeeId === att.employeeId);
-      
-      if (existingIndex >= 0) {
-        // Update existing roster entry with attendance data - PRESERVE hariKerja dari roster asli!
-        const originalHariKerja = scheduledEmployees[existingIndex].hariKerja;
-        scheduledEmployees[existingIndex] = {
-          ...scheduledEmployees[existingIndex],
-          jamTidur: att.jamTidur || '',
-          fitToWork: att.fitToWork || 'Fit To Work',
-          // CRITICAL: Pertahankan hariKerja dari roster asli
-          hariKerja: originalHariKerja
-        };
-        
-        // SPECIAL DEBUG untuk WARSITO
-        if (employee.name.includes('WARSITO')) {
-          console.log('🔍 WARSITO UPDATE EXISTING ROSTER:', {
-            employeeName: employee.name,
-            originalHariKerja: originalHariKerja,
-            preservedHariKerja: scheduledEmployees[existingIndex].hariKerja,
-            updatedRecord: scheduledEmployees[existingIndex]
-          });
-        }
-      } else {
-        // FIXED: HANYA gunakan data roster untuk tanggal EXACT yang dilaporkan
-        // Jangan ambil dari tanggal lain - sesuai permintaan user
-        const exactDateRoster = data.roster?.find(r => 
-          r.employeeId === att.employeeId && 
-          r.date === data.startDate
-        );
-        
-        console.log(`🎯 Employee ${employee.name}: menggunakan roster tanggal ${data.startDate} dengan hariKerja="${exactDateRoster?.hariKerja || 'KOSONG'}"`);
-        
-        // SPECIAL DEBUG untuk WARSITO
-        if (employee.name.includes('WARSITO')) {
-          console.log('🔍 WARSITO DEBUG DATA:', {
-            employeeName: employee.name,
-            employeeId: att.employeeId,
-            reportDate: data.startDate,
-            exactDateRoster: exactDateRoster,
-            hariKerjaValue: exactDateRoster?.hariKerja,
-            hariKerjaType: typeof exactDateRoster?.hariKerja,
-            allRosterForThisEmployee: data.roster?.filter(r => r.employeeId === att.employeeId)
-          });
-        }
-        
-        scheduledEmployees.push({
-          id: `temp-${att.employeeId}`,
-          employeeId: att.employeeId,
-          date: data.startDate,
-          shift: shiftName,
-          startTime: shiftName.toUpperCase() === 'SHIFT 1' ? '05:00' : '16:00',
-          endTime: shiftName.toUpperCase() === 'SHIFT 1' ? '15:30' : '20:00',
-          jamTidur: att.jamTidur || '',
-          fitToWork: att.fitToWork || 'Fit To Work',
-          hariKerja: exactDateRoster?.hariKerja || '', // HANYA dari roster tanggal exact
+      // Update roster record dengan data attendance jika ada
+      if (attendanceRecord) {
+        scheduledEmployees[index] = {
+          ...rosterRecord,
+          jamTidur: attendanceRecord.jamTidur || '',
+          fitToWork: attendanceRecord.fitToWork || 'Fit To Work',
           status: 'present',
-          employee: employee
-        } as any);
+          // CRITICAL: Tetap gunakan hariKerja dari roster asli
+          hariKerja: rosterRecord.hariKerja
+        };
+      } else {
+        // Employee tidak hadir, tetap tampilkan dengan status absent
+        scheduledEmployees[index] = {
+          ...rosterRecord,
+          jamTidur: '',
+          fitToWork: 'Fit To Work',
+          status: 'absent',
+          // CRITICAL: Tetap gunakan hariKerja dari roster asli
+          hariKerja: rosterRecord.hariKerja
+        };
+      }
+      
+      // Add employee data to roster record
+      scheduledEmployees[index].employee = employee;
+      
+      // DEBUG untuk employee dengan hari kerja
+      if (rosterRecord.hariKerja) {
+        console.log(`📅 ${employee.name}: tanggal=${data.startDate}, shift=${shiftName}, hariKerja=${rosterRecord.hariKerja}, status=${scheduledEmployees[index].status}`);
       }
     }
   });
