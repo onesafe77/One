@@ -526,7 +526,7 @@ function generateShiftSection(
     // Prepare row data using enriched record data
     const jamTidur = enrichedRecord.jamTidur || '-';
     const fitToWorkStatus = enrichedRecord.fitToWork || 'Not Fit To Work';
-    const attendanceStatus = enrichedRecord.status === 'present' ? '✅ Hadir' : '❌ Tidak Hadir';
+    const attendanceStatus = enrichedRecord.status === 'present' ? 'Hadir' : 'Tidak Hadir';
     const attendanceTime = enrichedRecord.status === 'present' ? data.attendance.find(att => att.employeeId === employee.id)?.time || '-' : '-';
     
     const rowData = [
@@ -1284,7 +1284,7 @@ function addAttendanceSummaryPage(doc: jsPDF, data: ReportData, margin: number, 
   // Main Statistics Table
   doc.setFontSize(11);
   doc.setFont('helvetica', 'bold');
-  doc.text('📊 STATISTIK KEHADIRAN', margin, yPosition);
+  doc.text('STATISTIK KEHADIRAN', margin, yPosition);
   yPosition += 15;
   
   const statData = [
@@ -1294,44 +1294,64 @@ function addAttendanceSummaryPage(doc: jsPDF, data: ReportData, margin: number, 
     ['TOTAL', (shift1Roster.length + shift2Roster.length).toString(), (shift1OnLeave + shift2OnLeave).toString(), (shift1EffectiveScheduled + shift2EffectiveScheduled).toString(), (shift1Attended.length + shift2Attended.length).toString(), ((shift1EffectiveScheduled + shift2EffectiveScheduled) - (shift1Attended.length + shift2Attended.length)).toString(), (shift1EffectiveScheduled + shift2EffectiveScheduled) > 0 ? `${(((shift1Attended.length + shift2Attended.length) / (shift1EffectiveScheduled + shift2EffectiveScheduled)) * 100).toFixed(1)}%` : '0%']
   ];
   
-  const colWidths = [50, 60, 40, 50, 40, 60, 60];
+  // Improved table layout with better proportions and spacing
+  const colWidths = [60, 70, 45, 60, 50, 70, 75];
   const tableWidth = colWidths.reduce((sum, width) => sum + width, 0);
-  const startX = (pageWidth - tableWidth) / 2;
+  const startX = margin + 10; // Left align with margin for better readability
   
-  // Draw main statistics table
+  // Draw main statistics table with improved styling
   statData.forEach((row, rowIndex) => {
     let currentX = startX;
+    const rowHeight = 14; // Increased row height for better readability
     
     if (rowIndex === 0) {
-      doc.setFillColor(128, 128, 128);
-      doc.rect(startX, yPosition - 5, tableWidth, 12, 'F');
+      // Header row
+      doc.setFillColor(60, 60, 60);
+      doc.rect(startX, yPosition - 6, tableWidth, rowHeight, 'F');
       doc.setTextColor(255, 255, 255);
       doc.setFont('helvetica', 'bold');
-      doc.setFontSize(8);
+      doc.setFontSize(9);
     } else if (rowIndex === statData.length - 1) {
-      doc.setFillColor(220, 220, 220);
-      doc.rect(startX, yPosition - 5, tableWidth, 12, 'F');
+      // Total row
+      doc.setFillColor(240, 240, 240);
+      doc.rect(startX, yPosition - 6, tableWidth, rowHeight, 'F');
       doc.setTextColor(0, 0, 0);
       doc.setFont('helvetica', 'bold');
-      doc.setFontSize(8);
+      doc.setFontSize(9);
     } else {
+      // Data rows with alternating colors
+      if (rowIndex % 2 === 0) {
+        doc.setFillColor(250, 250, 250);
+        doc.rect(startX, yPosition - 6, tableWidth, rowHeight, 'F');
+      }
       doc.setTextColor(0, 0, 0);
       doc.setFont('helvetica', 'normal');
-      doc.setFontSize(8);
+      doc.setFontSize(9);
     }
     
     row.forEach((cell, colIndex) => {
       const cellWidth = colWidths[colIndex];
       const textWidth = doc.getTextWidth(cell);
-      const centerX = currentX + (cellWidth - textWidth) / 2;
-      doc.text(cell, centerX, yPosition);
-      doc.setDrawColor(0, 0, 0);
-      doc.setLineWidth(0.2);
-      doc.rect(currentX, yPosition - 5, cellWidth, 12);
+      
+      // Better text alignment: left align for text columns, center for numbers
+      let textX;
+      if (colIndex === 0) { // Shift column - left align
+        textX = currentX + 5;
+      } else { // Numeric columns - center align
+        textX = currentX + (cellWidth - textWidth) / 2;
+      }
+      
+      doc.text(cell, textX, yPosition + 4);
+      
+      // Table borders
+      doc.setDrawColor(120, 120, 120);
+      doc.setLineWidth(0.3);
+      doc.rect(currentX, yPosition - 6, cellWidth, rowHeight);
+      
       currentX += cellWidth;
     });
     
-    yPosition += 12;
+    yPosition += rowHeight;
   });
   
   yPosition += 20;
@@ -1340,7 +1360,7 @@ function addAttendanceSummaryPage(doc: jsPDF, data: ReportData, margin: number, 
   doc.setTextColor(0, 0, 0);
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(11);
-  doc.text('🏥 ANALISIS FIT TO WORK', margin, yPosition);
+  doc.text('ANALISIS FIT TO WORK', margin, yPosition);
   yPosition += 10;
   
   const fitToWorkCount = data.attendance?.filter(a => a.fitToWork === 'Fit To Work').length || 0;
@@ -1350,9 +1370,9 @@ function addAttendanceSummaryPage(doc: jsPDF, data: ReportData, margin: number, 
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(10);
   const fitAnalysis = [
-    `• Fit To Work: ${fitToWorkCount} orang (${totalWithFitData > 0 ? ((fitToWorkCount / totalWithFitData) * 100).toFixed(1) : '0'}%)`,
-    `• Not Fit: ${notFitCount} orang (${totalWithFitData > 0 ? ((notFitCount / totalWithFitData) * 100).toFixed(1) : '0'}%)`,
-    `• Status tidak diketahui: ${(shift1Attended.length + shift2Attended.length) - totalWithFitData} orang`
+    `* Fit To Work: ${fitToWorkCount} orang (${totalWithFitData > 0 ? ((fitToWorkCount / totalWithFitData) * 100).toFixed(1) : '0'}%)`,
+    `* Not Fit: ${notFitCount} orang (${totalWithFitData > 0 ? ((notFitCount / totalWithFitData) * 100).toFixed(1) : '0'}%)`,
+    `* Status tidak diketahui: ${(shift1Attended.length + shift2Attended.length) - totalWithFitData} orang`
   ];
   
   fitAnalysis.forEach(item => {
@@ -1365,7 +1385,7 @@ function addAttendanceSummaryPage(doc: jsPDF, data: ReportData, margin: number, 
   // Jam Tidur Analysis
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(11);
-  doc.text('😴 ANALISIS JAM TIDUR', margin, yPosition);
+  doc.text('ANALISIS JAM TIDUR', margin, yPosition);
   yPosition += 10;
   
   const jamTidurData = data.attendance?.filter(a => a.jamTidur && a.jamTidur.trim() !== '').map(a => {
@@ -1380,10 +1400,10 @@ function addAttendanceSummaryPage(doc: jsPDF, data: ReportData, margin: number, 
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(10);
   const sleepAnalysis = [
-    `• Rata-rata jam tidur: ${avgSleep} jam`,
-    `• Karyawan kurang tidur (<6 jam): ${shortSleep} orang`,
-    `• Jam tidur maksimal: ${maxSleep} jam`,
-    `• Total data jam tidur: ${jamTidurData.length} dari ${shift1Attended.length + shift2Attended.length} hadir`
+    `* Rata-rata jam tidur: ${avgSleep} jam`,
+    `* Karyawan kurang tidur (<6 jam): ${shortSleep} orang`,
+    `* Jam tidur maksimal: ${maxSleep} jam`,
+    `* Total data jam tidur: ${jamTidurData.length} dari ${shift1Attended.length + shift2Attended.length} hadir`
   ];
   
   sleepAnalysis.forEach(item => {
@@ -1402,13 +1422,13 @@ function addAttendanceSummaryPage(doc: jsPDF, data: ReportData, margin: number, 
   
   if (overallRate < 90) {
     doc.setTextColor(255, 0, 0); // Red for warning
-    doc.text('⚠️  PERINGATAN: Tingkat kehadiran di bawah 90%', margin, yPosition);
+    doc.text('PERINGATAN: Tingkat kehadiran di bawah 90%', margin, yPosition);
   } else if (overallRate >= 95) {
     doc.setTextColor(0, 150, 0); // Green for excellent
-    doc.text('✅ EXCELLENT: Tingkat kehadiran sangat baik (≥95%)', margin, yPosition);
+    doc.text('EXCELLENT: Tingkat kehadiran sangat baik (>=95%)', margin, yPosition);
   } else {
     doc.setTextColor(255, 165, 0); // Orange for good
-    doc.text('👍 BAIK: Tingkat kehadiran memenuhi standar (90-94%)', margin, yPosition);
+    doc.text('BAIK: Tingkat kehadiran memenuhi standar (90-94%)', margin, yPosition);
   }
   
   yPosition += 15;
@@ -1418,9 +1438,9 @@ function addAttendanceSummaryPage(doc: jsPDF, data: ReportData, margin: number, 
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(10);
   const summaryNotes = [
-    `📝 Laporan dibuat pada: ${new Date().toLocaleString('id-ID')}`,
-    `📊 Data mencakup ${effectiveFilter === 'all' ? 'semua shift' : effectiveFilter}`,
-    `⏰ Analisis berdasarkan ${totalPresent} kehadiran dari ${totalEffective} karyawan efektif`
+    `* Laporan dibuat pada: ${new Date().toLocaleString('id-ID')}`,
+    `* Data mencakup ${effectiveFilter === 'all' ? 'semua shift' : effectiveFilter}`,
+    `* Analisis berdasarkan ${totalPresent} kehadiran dari ${totalEffective} karyawan efektif`
   ];
   
   summaryNotes.forEach(note => {
