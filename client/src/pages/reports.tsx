@@ -335,6 +335,7 @@ export default function Reports() {
                   <SelectItem value="all">Semua Shift</SelectItem>
                   <SelectItem value="Shift 1">Shift 1 saja</SelectItem>
                   <SelectItem value="Shift 2">Shift 2 saja</SelectItem>
+                  <SelectItem value="SHIFT 1 DAN SHIFT 2">SHIFT 1 DAN SHIFT 2</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -391,6 +392,7 @@ export default function Reports() {
                   <SelectContent>
                     <SelectItem value="Shift 1">Shift 1</SelectItem>
                     <SelectItem value="Shift 2">Shift 2</SelectItem>
+                    <SelectItem value="SHIFT 1 DAN SHIFT 2">SHIFT 1 DAN SHIFT 2</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
