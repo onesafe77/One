@@ -1,10 +1,12 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useMemo } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { apiRequest, queryClient } from "@/lib/queryClient";
@@ -123,6 +125,11 @@ export default function Employees() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingEmployee, setEditingEmployee] = useState<Employee | null>(null);
   const [isUploadDialogOpen, setIsUploadDialogOpen] = useState(false);
+  const [activeTab, setActiveTab] = useState("dashboard");
+  // Dashboard filters
+  const [dashboardDepartmentFilter, setDashboardDepartmentFilter] = useState("all");
+  const [dashboardPositionFilter, setDashboardPositionFilter] = useState("all");
+  const [dashboardStatusFilter, setDashboardStatusFilter] = useState("all");
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
 
@@ -212,6 +219,66 @@ export default function Employees() {
       });
     },
   });
+
+  // Dashboard statistics
+  const dashboardStats = useMemo(() => {
+    const filteredData = employees.filter((employee) => {
+      const matchesDepartment = dashboardDepartmentFilter === "" || dashboardDepartmentFilter === "all" || employee.department === dashboardDepartmentFilter;
+      const matchesPosition = dashboardPositionFilter === "" || dashboardPositionFilter === "all" || employee.position === dashboardPositionFilter;
+      const matchesStatus = dashboardStatusFilter === "" || dashboardStatusFilter === "all" || employee.status === dashboardStatusFilter;
+      return matchesDepartment && matchesPosition && matchesStatus;
+    });
+
+    const totalEmployees = filteredData.length;
+    const activeEmployees = filteredData.filter(emp => emp.status === 'active').length;
+    const inactiveEmployees = filteredData.filter(emp => emp.status === 'inactive').length;
+    
+    // Position statistics
+    const positionCounts = filteredData.reduce((acc, employee) => {
+      const position = employee.position || 'Unknown';
+      acc[position] = (acc[position] || 0) + 1;
+      return acc;
+    }, {} as Record<string, number>);
+    
+    // Department statistics
+    const departmentCounts = filteredData.reduce((acc, employee) => {
+      const department = employee.department || 'Unknown';
+      acc[department] = (acc[department] || 0) + 1;
+      return acc;
+    }, {} as Record<string, number>);
+    
+    // Investor Group statistics
+    const investorGroupCounts = filteredData.reduce((acc, employee) => {
+      const group = employee.investorGroup || 'Unknown';
+      acc[group] = (acc[group] || 0) + 1;
+      return acc;
+    }, {} as Record<string, number>);
+    
+    const uniquePositions = Object.keys(positionCounts).length;
+    const uniqueDepartments = Object.keys(departmentCounts).length;
+    
+    return {
+      totalEmployees,
+      activeEmployees,
+      inactiveEmployees,
+      uniquePositions,
+      uniqueDepartments,
+      positionCounts,
+      departmentCounts,
+      investorGroupCounts,
+    };
+  }, [employees, dashboardDepartmentFilter, dashboardPositionFilter, dashboardStatusFilter]);
+  
+  // Get unique values for filters
+  const uniquePositionsForFilter = useMemo(() => {
+    const positions = Array.from(new Set(employees.map(emp => emp.position).filter((pos): pos is string => Boolean(pos))));
+    return positions.sort();
+  }, [employees]);
+  
+  const uniqueDepartmentsForFilter = useMemo(() => {
+    const departments = Array.from(new Set(employees.map(emp => emp.department).filter((dept): dept is string => Boolean(dept))));
+    return departments.sort();
+  }, [employees]);
 
   const filteredEmployees = employees.filter((employee) => {
     const matchesSearch = employee.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -347,6 +414,23 @@ export default function Employees() {
     const workbook = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(workbook, worksheet, "Template Karyawan");
     XLSX.writeFile(workbook, "Template_Karyawan.xlsx");
+  };
+
+  // Dashboard functions
+  const handlePositionClick = (position: string) => {
+    setSearchTerm(position);
+    setActiveTab("list");
+  };
+  
+  const handleDepartmentClick = (department: string) => {
+    setSearchTerm(department);
+    setActiveTab("list");
+  };
+  
+  const clearDashboardFilters = () => {
+    setDashboardDepartmentFilter("all");
+    setDashboardPositionFilter("all");
+    setDashboardStatusFilter("all");
   };
 
   return (
@@ -563,6 +647,241 @@ export default function Employees() {
       </CardHeader>
       
       <CardContent>
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+          <TabsList className="grid w-full grid-cols-2">
+            <TabsTrigger value="dashboard" data-testid="dashboard-tab">Dashboard</TabsTrigger>
+            <TabsTrigger value="list" data-testid="list-tab">List</TabsTrigger>
+          </TabsList>
+          
+          <TabsContent value="dashboard" className="space-y-6 mt-6">
+            {/* Dashboard Filters */}
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+              <Select value={dashboardDepartmentFilter} onValueChange={setDashboardDepartmentFilter}>
+                <SelectTrigger data-testid="dashboard-department-filter">
+                  <SelectValue placeholder="Semua Department" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Semua Department</SelectItem>
+                  {uniqueDepartmentsForFilter.map(dept => (
+                    <SelectItem key={dept} value={dept}>{dept}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              
+              <Select value={dashboardPositionFilter} onValueChange={setDashboardPositionFilter}>
+                <SelectTrigger data-testid="dashboard-position-filter">
+                  <SelectValue placeholder="Semua Posisi" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Semua Posisi</SelectItem>
+                  {uniquePositionsForFilter.map(pos => (
+                    <SelectItem key={pos} value={pos}>{pos}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              
+              <Select value={dashboardStatusFilter} onValueChange={setDashboardStatusFilter}>
+                <SelectTrigger data-testid="dashboard-status-filter">
+                  <SelectValue placeholder="Semua Status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Semua Status</SelectItem>
+                  <SelectItem value="active">Aktif</SelectItem>
+                  <SelectItem value="inactive">Tidak Aktif</SelectItem>
+                </SelectContent>
+              </Select>
+              
+              <Button 
+                variant="outline" 
+                onClick={clearDashboardFilters}
+                data-testid="clear-dashboard-filters"
+              >
+                Reset Filter
+              </Button>
+            </div>
+            
+            {/* Summary Cards */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+              <Card>
+                <CardContent className="flex items-center p-6">
+                  <div className="flex items-center space-x-4">
+                    <div className="p-2 bg-blue-100 dark:bg-blue-900 rounded-lg">
+                      <div className="w-4 h-4 bg-blue-600 rounded"></div>
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium text-gray-600 dark:text-gray-300">Total Karyawan</p>
+                      <p className="text-2xl font-bold text-gray-900 dark:text-white" data-testid="card-total-employees">
+                        {dashboardStats.totalEmployees}
+                      </p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+              
+              <Card>
+                <CardContent className="flex items-center p-6">
+                  <div className="flex items-center space-x-4">
+                    <div className="p-2 bg-green-100 dark:bg-green-900 rounded-lg">
+                      <div className="w-4 h-4 bg-green-600 rounded"></div>
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium text-gray-600 dark:text-gray-300">Aktif</p>
+                      <p className="text-2xl font-bold text-gray-900 dark:text-white" data-testid="card-active">
+                        {dashboardStats.activeEmployees}
+                      </p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+              
+              <Card>
+                <CardContent className="flex items-center p-6">
+                  <div className="flex items-center space-x-4">
+                    <div className="p-2 bg-red-100 dark:bg-red-900 rounded-lg">
+                      <div className="w-4 h-4 bg-red-600 rounded"></div>
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium text-gray-600 dark:text-gray-300">Tidak Aktif</p>
+                      <p className="text-2xl font-bold text-gray-900 dark:text-white" data-testid="card-inactive">
+                        {dashboardStats.inactiveEmployees}
+                      </p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+              
+              <Card>
+                <CardContent className="flex items-center p-6">
+                  <div className="flex items-center space-x-4">
+                    <div className="p-2 bg-purple-100 dark:bg-purple-900 rounded-lg">
+                      <div className="w-4 h-4 bg-purple-600 rounded"></div>
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium text-gray-600 dark:text-gray-300">Total Posisi</p>
+                      <p className="text-2xl font-bold text-gray-900 dark:text-white" data-testid="card-unique-positions">
+                        {dashboardStats.uniquePositions}
+                      </p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+              
+              <Card>
+                <CardContent className="flex items-center p-6">
+                  <div className="flex items-center space-x-4">
+                    <div className="p-2 bg-orange-100 dark:bg-orange-900 rounded-lg">
+                      <div className="w-4 h-4 bg-orange-600 rounded"></div>
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium text-gray-600 dark:text-gray-300">Total Dept</p>
+                      <p className="text-2xl font-bold text-gray-900 dark:text-white" data-testid="card-unique-departments">
+                        {dashboardStats.uniqueDepartments}
+                      </p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+            
+            {/* Position and Department Tables */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {/* Position Table */}
+              <Card>
+                <CardHeader>
+                  <CardTitle>Berdasarkan Posisi</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Posisi</TableHead>
+                        <TableHead className="text-right">Jumlah</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {Object.entries(dashboardStats.positionCounts)
+                        .sort(([,a], [,b]) => b - a)
+                        .map(([position, count]) => (
+                        <TableRow 
+                          key={position}
+                          className="cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800"
+                          onClick={() => handlePositionClick(position)}
+                          data-testid={`position-row-${position}`}
+                        >
+                          <TableCell className="font-medium">{position}</TableCell>
+                          <TableCell className="text-right">{count}</TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </CardContent>
+              </Card>
+              
+              {/* Department Table */}
+              <Card>
+                <CardHeader>
+                  <CardTitle>Berdasarkan Department</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Department</TableHead>
+                        <TableHead className="text-right">Jumlah</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {Object.entries(dashboardStats.departmentCounts)
+                        .sort(([,a], [,b]) => b - a)
+                        .map(([department, count]) => (
+                        <TableRow 
+                          key={department}
+                          className="cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800"
+                          onClick={() => handleDepartmentClick(department)}
+                          data-testid={`department-row-${department}`}
+                        >
+                          <TableCell className="font-medium">{department}</TableCell>
+                          <TableCell className="text-right">{count}</TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </CardContent>
+              </Card>
+            </div>
+            
+            {/* Investor Group Table */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Berdasarkan Investor Group</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Investor Group</TableHead>
+                      <TableHead className="text-right">Jumlah</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {Object.entries(dashboardStats.investorGroupCounts)
+                      .sort(([,a], [,b]) => b - a)
+                      .map(([group, count]) => (
+                      <TableRow 
+                        key={group}
+                        data-testid={`investor-group-row-${group}`}
+                      >
+                        <TableCell className="font-medium">{group}</TableCell>
+                        <TableCell className="text-right">{count}</TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </CardContent>
+            </Card>
+          </TabsContent>
+          
+          <TabsContent value="list" className="mt-6">
         {/* Search and Filter */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-6 space-y-3 sm:space-y-0 sm:space-x-4">
           <div className="flex-1 relative">
@@ -715,6 +1034,8 @@ export default function Employees() {
             </DialogContent>
           </Dialog>
         </div>
+          </TabsContent>
+        </Tabs>
       </CardContent>
     </Card>
   );
