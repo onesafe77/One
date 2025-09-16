@@ -1217,7 +1217,7 @@ function getShiftEmployees(data: ReportData, shift: string): any[] {
   return scheduledEmployees;
 }
 
-// Function to add attendance summary page
+// Function to add comprehensive attendance summary page
 function addAttendanceSummaryPage(doc: jsPDF, data: ReportData, margin: number, pageWidth: number, pageHeight: number) {
   // Add new page for summary
   doc.addPage();
@@ -1227,7 +1227,7 @@ function addAttendanceSummaryPage(doc: jsPDF, data: ReportData, margin: number, 
   // Title
   doc.setFontSize(14);
   doc.setFont('helvetica', 'bold');
-  const title = 'RINGKASAN KEHADIRAN';
+  const title = 'RINGKASAN KEHADIRAN - ANALISIS KOMPREHENSIF';
   const titleWidth = doc.getTextWidth(title);
   const titleX = (pageWidth - titleWidth) / 2;
   doc.text(title, titleX, yPosition);
@@ -1239,53 +1239,78 @@ function addAttendanceSummaryPage(doc: jsPDF, data: ReportData, margin: number, 
   doc.text(`Tanggal: ${data.startDate}`, margin, yPosition);
   yPosition += 15;
   
-  // Calculate statistics for both shifts
-  const shift1Roster = data.roster?.filter(r => r.date === data.startDate && normalizeShift(r.shift) === 'SHIFT 1') || [];
-  const shift2Roster = data.roster?.filter(r => r.date === data.startDate && normalizeShift(r.shift) === 'SHIFT 2') || [];
+  // ARCHITECT FIX: Use all shifts when shiftFilter === 'all', not limited by reportInfo.shift
+  const effectiveFilter = data.shiftFilter; // Use original shiftFilter for aggregation
+  
+  // Calculate statistics with leave consideration
+  const allRoster = data.roster?.filter(r => r.date === data.startDate) || [];
+  const shift1Roster = allRoster.filter(r => normalizeShift(r.shift) === 'SHIFT 1');
+  const shift2Roster = allRoster.filter(r => normalizeShift(r.shift) === 'SHIFT 2');
+  
+  // Get leave monitoring data to exclude approved leave
+  const approvedLeave = data.leaveMonitoring?.filter(l => 
+    l.status === 'approved' && l.date === data.startDate
+  ) || [];
+  
+  // Calculate attendance with leave adjustment
   const shift1Attended = data.attendance?.filter(a => {
     const attendedEmployee = shift1Roster.find(r => r.employeeId === a.employeeId);
     return attendedEmployee !== undefined;
   }) || [];
+  
   const shift2Attended = data.attendance?.filter(a => {
     const attendedEmployee = shift2Roster.find(r => r.employeeId === a.employeeId);
     return attendedEmployee !== undefined;
   }) || [];
   
-  // Statistics table - consistent with main table formatting
+  // Adjust scheduled count by removing approved leave
+  const shift1OnLeave = approvedLeave.filter(l => 
+    shift1Roster.some(r => r.employeeId === l.employeeId)
+  ).length;
+  const shift2OnLeave = approvedLeave.filter(l => 
+    shift2Roster.some(r => r.employeeId === l.employeeId)
+  ).length;
+  
+  const shift1EffectiveScheduled = shift1Roster.length - shift1OnLeave;
+  const shift2EffectiveScheduled = shift2Roster.length - shift2OnLeave;
+  
+  // Main Statistics Table
+  doc.setFontSize(11);
+  doc.setFont('helvetica', 'bold');
+  doc.text('📊 STATISTIK KEHADIRAN', margin, yPosition);
+  yPosition += 15;
+  
   const statData = [
-    ['Shift', 'Dijadwalkan', 'Hadir', 'Tidak Hadir', '% Kehadiran'],
-    ['Shift 1', shift1Roster.length.toString(), shift1Attended.length.toString(), (shift1Roster.length - shift1Attended.length).toString(), shift1Roster.length > 0 ? `${((shift1Attended.length / shift1Roster.length) * 100).toFixed(1)}%` : '0%'],
-    ['Shift 2', shift2Roster.length.toString(), shift2Attended.length.toString(), (shift2Roster.length - shift2Attended.length).toString(), shift2Roster.length > 0 ? `${((shift2Attended.length / shift2Roster.length) * 100).toFixed(1)}%` : '0%'],
-    ['Total', (shift1Roster.length + shift2Roster.length).toString(), (shift1Attended.length + shift2Attended.length).toString(), ((shift1Roster.length + shift2Roster.length) - (shift1Attended.length + shift2Attended.length)).toString(), (shift1Roster.length + shift2Roster.length) > 0 ? `${(((shift1Attended.length + shift2Attended.length) / (shift1Roster.length + shift2Roster.length)) * 100).toFixed(1)}%` : '0%']
+    ['Shift', 'Dijadwalkan', 'Cuti', 'Efektif', 'Hadir', 'Tidak Hadir', '% Kehadiran'],
+    ['Shift 1', shift1Roster.length.toString(), shift1OnLeave.toString(), shift1EffectiveScheduled.toString(), shift1Attended.length.toString(), (shift1EffectiveScheduled - shift1Attended.length).toString(), shift1EffectiveScheduled > 0 ? `${((shift1Attended.length / shift1EffectiveScheduled) * 100).toFixed(1)}%` : '0%'],
+    ['Shift 2', shift2Roster.length.toString(), shift2OnLeave.toString(), shift2EffectiveScheduled.toString(), shift2Attended.length.toString(), (shift2EffectiveScheduled - shift2Attended.length).toString(), shift2EffectiveScheduled > 0 ? `${((shift2Attended.length / shift2EffectiveScheduled) * 100).toFixed(1)}%` : '0%'],
+    ['TOTAL', (shift1Roster.length + shift2Roster.length).toString(), (shift1OnLeave + shift2OnLeave).toString(), (shift1EffectiveScheduled + shift2EffectiveScheduled).toString(), (shift1Attended.length + shift2Attended.length).toString(), ((shift1EffectiveScheduled + shift2EffectiveScheduled) - (shift1Attended.length + shift2Attended.length)).toString(), (shift1EffectiveScheduled + shift2EffectiveScheduled) > 0 ? `${(((shift1Attended.length + shift2Attended.length) / (shift1EffectiveScheduled + shift2EffectiveScheduled)) * 100).toFixed(1)}%` : '0%']
   ];
   
-  const colWidths = [60, 80, 60, 80, 80];
+  const colWidths = [50, 60, 40, 50, 40, 60, 60];
   const tableWidth = colWidths.reduce((sum, width) => sum + width, 0);
   const startX = (pageWidth - tableWidth) / 2;
   
-  // Draw table
+  // Draw main statistics table
   statData.forEach((row, rowIndex) => {
     let currentX = startX;
     
-    // Header row background
     if (rowIndex === 0) {
       doc.setFillColor(128, 128, 128);
       doc.rect(startX, yPosition - 5, tableWidth, 12, 'F');
       doc.setTextColor(255, 255, 255);
       doc.setFont('helvetica', 'bold');
-      doc.setFontSize(9); // Consistent with main table headers
+      doc.setFontSize(8);
     } else if (rowIndex === statData.length - 1) {
-      // Total row background
       doc.setFillColor(220, 220, 220);
       doc.rect(startX, yPosition - 5, tableWidth, 12, 'F');
       doc.setTextColor(0, 0, 0);
       doc.setFont('helvetica', 'bold');
-      doc.setFontSize(8); // Bold for total row but smaller font
+      doc.setFontSize(8);
     } else {
-      // Data rows - normal font weight like main tables
       doc.setTextColor(0, 0, 0);
       doc.setFont('helvetica', 'normal');
-      doc.setFontSize(8); // Consistent with main table content
+      doc.setFontSize(8);
     }
     
     row.forEach((cell, colIndex) => {
@@ -1293,12 +1318,9 @@ function addAttendanceSummaryPage(doc: jsPDF, data: ReportData, margin: number, 
       const textWidth = doc.getTextWidth(cell);
       const centerX = currentX + (cellWidth - textWidth) / 2;
       doc.text(cell, centerX, yPosition);
-      
-      // Draw cell borders
       doc.setDrawColor(0, 0, 0);
       doc.setLineWidth(0.2);
       doc.rect(currentX, yPosition - 5, cellWidth, 12);
-      
       currentX += cellWidth;
     });
     
@@ -1307,27 +1329,94 @@ function addAttendanceSummaryPage(doc: jsPDF, data: ReportData, margin: number, 
   
   yPosition += 20;
   
-  // Additional insights
+  // Fit To Work Analysis
   doc.setTextColor(0, 0, 0);
   doc.setFont('helvetica', 'bold');
-  doc.setFontSize(12);
-  doc.text('Catatan:', margin, yPosition);
+  doc.setFontSize(11);
+  doc.text('🏥 ANALISIS FIT TO WORK', margin, yPosition);
   yPosition += 10;
+  
+  const fitToWorkCount = data.attendance?.filter(a => a.fitToWork === 'Fit To Work').length || 0;
+  const notFitCount = data.attendance?.filter(a => a.fitToWork && a.fitToWork !== 'Fit To Work').length || 0;
+  const totalWithFitData = fitToWorkCount + notFitCount;
   
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(10);
-  const totalScheduled = shift1Roster.length + shift2Roster.length;
-  const totalAttended = shift1Attended.length + shift2Attended.length;
-  const attendanceRate = totalScheduled > 0 ? ((totalAttended / totalScheduled) * 100).toFixed(1) : '0';
-  
-  const notes = [
-    `• Total karyawan dijadwalkan: ${totalScheduled} orang`,
-    `• Total karyawan hadir: ${totalAttended} orang`,
-    `• Tingkat kehadiran keseluruhan: ${attendanceRate}%`,
-    `• Laporan dibuat pada: ${new Date().toLocaleString('id-ID')}`
+  const fitAnalysis = [
+    `• Fit To Work: ${fitToWorkCount} orang (${totalWithFitData > 0 ? ((fitToWorkCount / totalWithFitData) * 100).toFixed(1) : '0'}%)`,
+    `• Not Fit: ${notFitCount} orang (${totalWithFitData > 0 ? ((notFitCount / totalWithFitData) * 100).toFixed(1) : '0'}%)`,
+    `• Status tidak diketahui: ${(shift1Attended.length + shift2Attended.length) - totalWithFitData} orang`
   ];
   
-  notes.forEach(note => {
+  fitAnalysis.forEach(item => {
+    doc.text(item, margin, yPosition);
+    yPosition += 8;
+  });
+  
+  yPosition += 10;
+  
+  // Jam Tidur Analysis
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(11);
+  doc.text('😴 ANALISIS JAM TIDUR', margin, yPosition);
+  yPosition += 10;
+  
+  const jamTidurData = data.attendance?.filter(a => a.jamTidur && a.jamTidur.trim() !== '').map(a => {
+    const jam = parseInt(a.jamTidur || '0');
+    return isNaN(jam) ? 0 : jam;
+  }) || [];
+  
+  const avgSleep = jamTidurData.length > 0 ? (jamTidurData.reduce((a, b) => a + b, 0) / jamTidurData.length).toFixed(1) : '0';
+  const shortSleep = jamTidurData.filter(j => j < 6).length;
+  const maxSleep = jamTidurData.length > 0 ? Math.max(...jamTidurData) : 0;
+  
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(10);
+  const sleepAnalysis = [
+    `• Rata-rata jam tidur: ${avgSleep} jam`,
+    `• Karyawan kurang tidur (<6 jam): ${shortSleep} orang`,
+    `• Jam tidur maksimal: ${maxSleep} jam`,
+    `• Total data jam tidur: ${jamTidurData.length} dari ${shift1Attended.length + shift2Attended.length} hadir`
+  ];
+  
+  sleepAnalysis.forEach(item => {
+    doc.text(item, margin, yPosition);
+    yPosition += 8;
+  });
+  
+  yPosition += 10;
+  
+  // Performance Flags
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(11);
+  const totalEffective = shift1EffectiveScheduled + shift2EffectiveScheduled;
+  const totalPresent = shift1Attended.length + shift2Attended.length;
+  const overallRate = totalEffective > 0 ? ((totalPresent / totalEffective) * 100) : 0;
+  
+  if (overallRate < 90) {
+    doc.setTextColor(255, 0, 0); // Red for warning
+    doc.text('⚠️  PERINGATAN: Tingkat kehadiran di bawah 90%', margin, yPosition);
+  } else if (overallRate >= 95) {
+    doc.setTextColor(0, 150, 0); // Green for excellent
+    doc.text('✅ EXCELLENT: Tingkat kehadiran sangat baik (≥95%)', margin, yPosition);
+  } else {
+    doc.setTextColor(255, 165, 0); // Orange for good
+    doc.text('👍 BAIK: Tingkat kehadiran memenuhi standar (90-94%)', margin, yPosition);
+  }
+  
+  yPosition += 15;
+  
+  // Summary Notes
+  doc.setTextColor(0, 0, 0);
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(10);
+  const summaryNotes = [
+    `📝 Laporan dibuat pada: ${new Date().toLocaleString('id-ID')}`,
+    `📊 Data mencakup ${effectiveFilter === 'all' ? 'semua shift' : effectiveFilter}`,
+    `⏰ Analisis berdasarkan ${totalPresent} kehadiran dari ${totalEffective} karyawan efektif`
+  ];
+  
+  summaryNotes.forEach(note => {
     doc.text(note, margin, yPosition);
     yPosition += 8;
   });
