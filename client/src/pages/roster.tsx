@@ -395,15 +395,35 @@ export default function Roster() {
         const chunk = jsonData.slice(i, i + chunkSize);
         
         const processedChunk = chunk.map((row: any) => {
-          // Parse jam kerja format "08:00 - 16:00"
-          const jamKerja = row['Jam Kerja'] || row.jamKerja || '';
-          const jamKerjaParts = jamKerja.split(' - ');
+          // Parse format Excel user: Jam Kel dan Jam Tld sebagai kolom terpisah
           
-          // Normalize shift values - handle case sensitivity and trailing spaces
-          const rawShift = String(row.Shift || row.shift || '').trim().toUpperCase();
-          const normalizedShift = ['SHIFT 1', 'SHIFT 2', 'CUTI', 'OVER SHIFT'].includes(rawShift) 
-            ? rawShift 
-            : 'SHIFT 1';
+          // Normalize shift values - handle various formats and variations
+          const rawShift = String(row.Shift || row.shift || '')
+            .trim()
+            .replace(/\s+/g, ' ') // Collapse multiple spaces
+            .replace(/[\u00A0\u2000-\u200B]/g, ' ') // Remove non-breaking spaces
+            .toUpperCase();
+          
+          // Map common shift variations to canonical values
+          let normalizedShift = 'SHIFT 1'; // Default
+          
+          const shift1Variants = ['SHIFT 1', 'SHIFT1', 'S1', '1', 'SHIFT I'];
+          const shift2Variants = ['SHIFT 2', 'SHIFT2', 'S2', '2', 'SHIFT II'];
+          const overShiftVariants = ['OVER SHIFT', 'OVER', 'OS', 'O/S', 'OVERTIME'];
+          const cutiVariants = ['CUTI', 'OFF', 'LEAVE'];
+          
+          if (shift1Variants.includes(rawShift)) {
+            normalizedShift = 'SHIFT 1';
+          } else if (shift2Variants.includes(rawShift)) {
+            normalizedShift = 'SHIFT 2';
+          } else if (overShiftVariants.includes(rawShift)) {
+            normalizedShift = 'OVER SHIFT';
+          } else if (cutiVariants.includes(rawShift)) {
+            normalizedShift = 'CUTI';
+          } else if (rawShift !== '') {
+            // Log unknown shift format
+            console.warn(`⚠️ Unknown shift format: "${rawShift}" - defaulting to SHIFT 1`);
+          }
           
           // Set default times based on normalized shift
           let defaultStartTime = '06:00';
@@ -420,19 +440,40 @@ export default function Roster() {
             defaultEndTime = '18:00';
           }
           
-          const startTime = jamKerjaParts[0] ? jamKerjaParts[0].trim() : defaultStartTime;
-          const endTime = jamKerjaParts[1] ? jamKerjaParts[1].trim() : defaultEndTime;
+          // Handle Jam Kel dan Jam Tld sebagai kolom terpisah (format user)
+          const jamKel = row['Jam Kel'] || row.jamKel || '';
+          const jamTld = row['Jam Tld'] || row.jamTld || '';
+          
+          const startTime = jamKel && jamKel !== '' ? String(jamKel).trim() : defaultStartTime;
+          const endTime = jamTld && jamTld !== '' ? String(jamTld).trim() : defaultEndTime;
 
-          // Handle date formatting - use correct Tanggal column
+          // Handle date formatting - parsing format Indonesia "16 September 2025"
           let rosterDate = row.Tanggal || row.tanggal || row.Date || row.date || selectedDate;
           
-          // If the date is an Excel serial number, convert it to a proper date
-          if (typeof rosterDate === 'number') {
-            const excelEpoch = new Date(1900, 0, 1);
-            const convertedDate = new Date(excelEpoch.getTime() + (rosterDate - 2) * 24 * 60 * 60 * 1000);
-            rosterDate = convertedDate.toISOString().split('T')[0];
+          // Parse format tanggal Indonesia "16 September 2025" 
+          if (typeof rosterDate === 'string' && rosterDate.includes('September')) {
+            const monthMap: {[key: string]: string} = {
+              'Januari': '01', 'Februari': '02', 'Maret': '03', 'April': '04',
+              'Mei': '05', 'Juni': '06', 'Juli': '07', 'Agustus': '08',
+              'September': '09', 'Oktober': '10', 'November': '11', 'Desember': '12'
+            };
+            
+            const parts = rosterDate.split(' ');
+            if (parts.length === 3) {
+              const day = parts[0].padStart(2, '0');
+              const month = monthMap[parts[1]] || '01';
+              const year = parts[2];
+              rosterDate = `${year}-${month}-${day}`;
+            }
+          } else if (typeof rosterDate === 'number') {
+            // Excel serial number conversion - timezone safe
+            const utcDate = new Date(Date.UTC(1899, 11, 30) + (rosterDate * 24 * 60 * 60 * 1000));
+            const year = utcDate.getUTCFullYear();
+            const month = String(utcDate.getUTCMonth() + 1).padStart(2, '0');
+            const day = String(utcDate.getUTCDate()).padStart(2, '0');
+            rosterDate = `${year}-${month}-${day}`;
           } else if (rosterDate && typeof rosterDate === 'string') {
-            // Ensure the date is in YYYY-MM-DD format
+            // Standard date formats
             const dateObj = new Date(rosterDate);
             if (!isNaN(dateObj.getTime())) {
               rosterDate = dateObj.toISOString().split('T')[0];
@@ -448,19 +489,21 @@ export default function Roster() {
             startTime: startTime,
             endTime: endTime,
             jamTidur: String(row['Jam Tidur'] || row.jamTidur || ''),
-            fitToWork: row['Fit To Work'] || row.fitToWork || 'Fit To Work',
+            fitToWork: row['Fit To W'] || row['Fit To Work'] || row.fitToWork || 'Fit To Work',
             hariKerja: String(row['Hari Kerja'] || row.hariKerja || ''),
-            status: row.status || 'scheduled'
+            status: row.Status || row.status || 'scheduled'
           };
           
-          // Debug log untuk melihat mapping data (seperti pandas)
+          // Debug log untuk melihat mapping data (format user)
           if (i < 3) { // Log first 3 rows untuk debug
-            console.log(`=== PANDAS-STYLE MAPPING ROW ${i + 1} ===`);
+            console.log(`=== USER EXCEL FORMAT MAPPING ROW ${i + 1} ===`);
             console.log('📊 Raw Excel row:', row);
             console.log('🔍 Available columns:', Object.keys(row));
-            console.log('📅 Tanggal (Excel serial):', row.Tanggal, 'type:', typeof row.Tanggal);
+            console.log('📅 Tanggal (format Indonesia):', row.Tanggal, 'type:', typeof row.Tanggal);
             console.log('⚡ Shift:', row.Shift, 'type:', typeof row.Shift);
-            console.log('🎯 Hari Kerja (EXACT):', row['Hari Kerja'], 'type:', typeof row['Hari Kerja']);
+            console.log('🕐 Jam Kel:', row['Jam Kel'], 'type:', typeof row['Jam Kel']);
+            console.log('🕐 Jam Tld:', row['Jam Tld'], 'type:', typeof row['Jam Tld']);
+            console.log('🎯 Hari Kerja:', row['Hari Kerja'], 'type:', typeof row['Hari Kerja']);
             console.log('✅ Processed result:', processedRow);
             console.log('===================');
           }
