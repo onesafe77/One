@@ -398,15 +398,26 @@ export default function Roster() {
           // Parse jam kerja format "08:00 - 16:00"
           const jamKerja = row['Jam Kerja'] || row.jamKerja || '';
           const jamKerjaParts = jamKerja.split(' - ');
-          const shift = row.Shift || row.shift || 'Shift 1';
           
-          // Set default times based on shift if jam kerja is not provided
+          // Normalize shift values - handle case sensitivity and trailing spaces
+          const rawShift = String(row.Shift || row.shift || '').trim().toUpperCase();
+          const normalizedShift = ['SHIFT 1', 'SHIFT 2', 'CUTI', 'OVER SHIFT'].includes(rawShift) 
+            ? rawShift 
+            : 'SHIFT 1';
+          
+          // Set default times based on normalized shift
           let defaultStartTime = '06:00';
           let defaultEndTime = '16:00';
           
-          if (shift === 'Shift 2') {
-            defaultStartTime = '16:30';
-            defaultEndTime = '20:00';
+          if (normalizedShift === 'SHIFT 2') {
+            defaultStartTime = '18:00';
+            defaultEndTime = '06:00';
+          } else if (normalizedShift === 'CUTI') {
+            defaultStartTime = '00:00';
+            defaultEndTime = '00:00';
+          } else if (normalizedShift === 'OVER SHIFT') {
+            defaultStartTime = '06:00';
+            defaultEndTime = '18:00';
           }
           
           const startTime = jamKerjaParts[0] ? jamKerjaParts[0].trim() : defaultStartTime;
@@ -433,7 +444,7 @@ export default function Roster() {
             employeeName: row.Nama || row.nama || row.Name || row.name || '',
             nomorLambung: row['Nomor Lambung'] || row.nomorLambung || row.nomor_lambung || '',
             date: rosterDate,
-            shift: row.Shift || row.shift || 'SHIFT 1',
+            shift: normalizedShift,
             startTime: startTime,
             endTime: endTime,
             jamTidur: String(row['Jam Tidur'] || row.jamTidur || ''),
@@ -455,7 +466,7 @@ export default function Roster() {
           }
           
           return processedRow;
-        }).filter(row => row.employeeId && row.shift && row.startTime && row.endTime);
+        }).filter(row => row.employeeId && row.shift); // Hapus filter startTime/endTime untuk mencegah data hilang
 
         rosterData.push(...processedChunk);
         
