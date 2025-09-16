@@ -1107,7 +1107,9 @@ async function generateA4PortraitTable(
         shift === 'Shift 1' ? '1' : '2',
         hariKerjaValue,
         jamMasuk,
-        employee.nomorLambung || '-',
+        // Format nomor lambung untuk karyawan asli SPARE yang sudah update (sama seperti landscape)
+        employee.isSpareOrigin && employee.nomorLambung !== "SPARE" ? 
+         `SPARE ${employee.nomorLambung}` : (employee.nomorLambung || '-'),
         jamTidur,
         fitToWork,
         attendanceStatus
