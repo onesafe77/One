@@ -138,6 +138,19 @@ export default function DriverView() {
     return () => clearTimeout(timer);
   }, [nik]);
 
+  // Auto-populate NIK dari URL parameter (untuk QR scan redirect)
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const scannedNik = urlParams.get('nik');
+    
+    if (scannedNik && employees && Array.isArray(employees) && employees.length > 0) {
+      setNik(scannedNik);
+      // Clear URL parameter setelah digunakan untuk UI yang bersih
+      const newUrl = window.location.pathname;
+      window.history.replaceState({}, document.title, newUrl);
+    }
+  }, [employees]);
+
   // Auto search when debounced value changes
   useEffect(() => {
     if (debouncedNik.trim() && employees) {

@@ -208,16 +208,17 @@ export function QRScanner() {
         // Deteksi apakah diakses dari mobile
         const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || window.innerWidth <= 768;
         
+        // Stop scanning dan redirect ke driver view untuk semua device
+        stopScanning();
+        
         if (isMobile) {
           // Jika mobile, redirect ke mobile driver view
-          stopScanning();
           window.location.href = `/mobile-driver?nik=${qrData.id}`;
-          return;
         } else {
-          // Jika desktop, lanjutkan proses normal
-          validateAndProcess(qrData.id, qrData.token);
-          return;
+          // Jika desktop, redirect ke desktop driver view
+          window.location.href = `/driver-view?nik=${qrData.id}`;
         }
+        return;
       } else {
         console.log("QR validation failed for data:", code.data);
         // Don't show toast for every invalid scan, just continue scanning
