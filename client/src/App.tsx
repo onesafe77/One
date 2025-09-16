@@ -36,10 +36,16 @@ function Router() {
       
       {/* Mobile Driver dan Driver View dengan parameter NIK */}
       <Route path="/mobile-driver">
-        {() => urlParams.has('nik') ? <MobileDriverView /> : <div>Parameter NIK required</div>}
+        {() => {
+          const params = new URLSearchParams(window.location.search);
+          return params.has('nik') ? <MobileDriverView /> : <div>Parameter NIK required</div>;
+        }}
       </Route>
       <Route path="/driver-view">
-        {() => urlParams.has('nik') ? <DriverView /> : <div>Parameter NIK required</div>}
+        {() => {
+          const params = new URLSearchParams(window.location.search);
+          return params.has('nik') ? <DriverView /> : <div>Parameter NIK required</div>;
+        }}
       </Route>
       
       {/* Meeting Scanner Route */}
