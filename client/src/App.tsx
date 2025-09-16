@@ -34,19 +34,9 @@ function Router() {
         }}
       </Route>
       
-      {/* Mobile Driver dan Driver View dengan parameter NIK */}
-      <Route path="/mobile-driver">
-        {() => {
-          const params = new URLSearchParams(window.location.search);
-          return params.has('nik') ? <MobileDriverView /> : <div>Parameter NIK required</div>;
-        }}
-      </Route>
-      <Route path="/driver-view">
-        {() => {
-          const params = new URLSearchParams(window.location.search);
-          return params.has('nik') ? <DriverView /> : <div>Parameter NIK required</div>;
-        }}
-      </Route>
+      {/* Mobile Driver dan Driver View - render langsung tanpa guard */}
+      <Route path="/mobile-driver" component={MobileDriverView} />
+      <Route path="/driver-view" component={DriverView} />
       
       {/* Meeting Scanner Route */}
       <Route path="/meeting-scanner">

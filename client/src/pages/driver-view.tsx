@@ -145,9 +145,8 @@ export default function DriverView() {
     
     if (scannedNik && employees && Array.isArray(employees) && employees.length > 0) {
       setNik(scannedNik);
-      // Clear URL parameter setelah digunakan untuk UI yang bersih
-      const newUrl = window.location.pathname;
-      window.history.replaceState({}, document.title, newUrl);
+      // Jangan hapus URL parameter agar stabil untuk mobile scanning
+      // Biarkan parameter NIK tetap di URL untuk stabilitas
     }
   }, [employees]);
 
