@@ -267,16 +267,32 @@ export async function generateAttendancePDF(data: ReportData): Promise<void> {
     doc.text(reportDate, pageWidth / 2, yPosition, { align: 'center' });
     yPosition += 12; // Professional spacing
     
-    // Generate shift sections based on filter
-    if (data.shiftFilter === 'all' || data.shiftFilter === 'Shift 1') {
+    // DEBUG: Check filter conditions
+    console.log(`🔍 FILTER DEBUG: shiftFilter="${data.shiftFilter}", reportInfo.shift="${data.reportInfo?.shift}"`);
+    
+    // FIXED: Use reportInfo.shift if available, otherwise use shiftFilter
+    const effectiveShiftFilter = data.reportInfo?.shift || data.shiftFilter;
+    console.log(`🎯 Effective shift filter: "${effectiveShiftFilter}"`);
+    
+    // Generate shift sections based on effective filter
+    const shouldGenerateShift1 = effectiveShiftFilter === 'all' || effectiveShiftFilter === 'Shift 1';
+    console.log(`🔍 Should generate Shift 1: ${shouldGenerateShift1}`);
+    
+    if (shouldGenerateShift1) {
+      console.log(`🚀 Calling generateShiftSection for Shift 1...`);
       yPosition = generateShiftSection(doc, data, 'Shift 1', yPosition, margin, pageWidth);
+    } else {
+      console.log(`❌ Skipping Shift 1 generation`);
     }
     
     // Add Shift 2 if needed - only if there's actually Shift 2 data
     const shift2Data = data.roster?.filter(r => r.shift === 'Shift 2' && r.date === data.startDate) || [];
-    if ((data.shiftFilter === 'all' || data.shiftFilter === 'Shift 2') && shift2Data.length > 0) {
+    const shouldGenerateShift2 = (effectiveShiftFilter === 'all' || effectiveShiftFilter === 'Shift 2') && shift2Data.length > 0;
+    console.log(`🔍 Should generate Shift 2: ${shouldGenerateShift2} (shift2Data.length: ${shift2Data.length})`);
+    
+    if (shouldGenerateShift2) {
       // Only add space/page if we already rendered Shift 1
-      if (data.shiftFilter === 'all') {
+      if (effectiveShiftFilter === 'all') {
         if (yPosition > pageHeight - 100) {
           doc.addPage();
           yPosition = 30;
