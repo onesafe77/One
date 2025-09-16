@@ -253,11 +253,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
         ? `https://${process.env.REPLIT_DOMAINS.split(',')[0]}`
         : 'http://localhost:5000';
       
-      // Create simple redirect URL that's more mobile-scanner friendly
-      const qrData = `${baseUrl}/qr/${validatedData.id}`;
+      // Create JSON format for internal app QR scanner (original format)
+      const qrPayload = {
+        id: validatedData.id,
+        token: qrToken
+      };
+      const qrData = JSON.stringify(qrPayload);
       const employeeWithQR = {
         ...validatedData,
-        qrCode: qrData // Simpan sebagai JSON untuk validasi
+        qrCode: qrData // JSON format untuk sistem internal
       };
       
       const employee = await storage.createEmployee(employeeWithQR);
@@ -1131,13 +1135,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
         ? `https://${process.env.REPLIT_DOMAINS.split(',')[0]}`
         : 'http://localhost:5000';
       
-      // Create simple redirect URL that's more mobile-scanner friendly
-      const qrData = `${baseUrl}/qr/${employeeId}`;
+      // Create JSON format for internal app QR scanner (original format)
+      const qrPayload = {
+        id: employeeId,
+        token: token
+      };
+      const qrData = JSON.stringify(qrPayload);
 
       res.json({
         employeeId,
         token,
-        qrData: qrData // Compact URL format for camera compatibility
+        qrData: qrData // JSON format untuk sistem scan QR internal
       });
     } catch (error) {
       res.status(500).json({ message: "Failed to generate QR token" });
