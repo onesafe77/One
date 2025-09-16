@@ -1,7 +1,7 @@
 import jsPDF from 'jspdf';
 import type { AttendanceRecord, Employee, RosterSchedule } from '@shared/schema';
 import { determineShiftByTime } from './shift-utils';
-import companyLogo from '@assets/image_1756993494840.png';
+// Company logo import removed
 
 interface ReportInfo {
   perusahaan: string;
@@ -83,22 +83,10 @@ export async function generateAttendancePDF(data: ReportData): Promise<void> {
     
     let yPosition = 20;
     
-    // Company Header with Logo
-    try {
-      // Add company logo
-      doc.addImage(companyLogo, 'PNG', margin, yPosition - 5, 30, 15); // Logo with 30x15 size
-      
-      // Company name next to logo
-      doc.setFontSize(12);
-      doc.setFont('helvetica', 'bold');
-      // Company name removed
-    } catch (error) {
-      console.warn('Could not add logo to PDF:', error);
-      // Fallback to text only
-      doc.setFontSize(12);
-      doc.setFont('helvetica', 'bold');
-      // Company name removed
-    }
+    // Company Header - Clean design without logo
+    doc.setFontSize(12);
+    doc.setFont('helvetica', 'bold');
+    // Company branding removed for clean report
     yPosition += 25;
     
     // Main Title (following ReportLab 14pt font standard)
@@ -672,13 +660,7 @@ function addProfessionalFooter(doc: jsPDF, pageWidth: number, pageHeight: number
 function addProfessionalHeader(doc: jsPDF, margin: number, shiftName: string): number {
   let yPosition = margin;
   
-  // Add company logo
-  try {
-    doc.addImage(companyLogo, 'PNG', margin, yPosition, 30, 15);
-  } catch (error) {
-    console.warn('Could not add logo to new page:', error);
-  }
-  
+  // Clean header without logo
   yPosition += 25;
   
   // Shift title
