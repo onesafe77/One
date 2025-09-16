@@ -220,7 +220,29 @@ export function QRScanner() {
         // Stop scanning first
         stopScanning();
         
-        // Handle compact URL format (redirect directly)
+        // Handle direct URL format (contains mobile-driver or driver-view)
+        if (qrData.token === 'direct') {
+          // For direct URLs, check if it's already a mobile or desktop URL
+          if (code.data.includes('/mobile-driver?')) {
+            // QR already contains mobile URL, just redirect
+            const nikMatch = code.data.match(/[?&]nik=([^&]+)/);
+            if (nikMatch && nikMatch[1]) {
+              window.location.href = `/mobile-driver?nik=${decodeURIComponent(nikMatch[1])}`;
+              return;
+            }
+          } else if (code.data.includes('/driver-view?')) {
+            // QR contains desktop URL, redirect based on device
+            const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || window.innerWidth <= 768;
+            if (isMobile) {
+              window.location.href = `/mobile-driver?nik=${qrData.id}`;
+            } else {
+              window.location.href = `/driver-view?nik=${qrData.id}`;
+            }
+            return;
+          }
+        }
+        
+        // Handle compact URL format (redirect directly) - legacy
         if (qrData.id === 'compact') {
           // For compact URLs, redirect to the server endpoint which will handle device detection
           window.location.href = `/q/${qrData.token}`;

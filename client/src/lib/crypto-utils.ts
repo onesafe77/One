@@ -21,7 +21,27 @@ export function validateQRData(qrDataString: string): { id: string; token: strin
   } catch {
     // If direct JSON parsing fails, try to extract from URL format
     try {
-      // Check for compact URL format: /q/{token} or https://domain.com/q/{token}
+      // Check for direct mobile-driver URL format
+      if (qrDataString.includes('/mobile-driver?nik=')) {
+        const nikMatch = qrDataString.match(/[?&]nik=([^&]+)/);
+        if (nikMatch && nikMatch[1]) {
+          const nik = decodeURIComponent(nikMatch[1]);
+          // For direct URLs, return the NIK as both id and token for compatibility
+          return { id: nik, token: 'direct' };
+        }
+      }
+      
+      // Check for driver-view URL format (desktop)
+      if (qrDataString.includes('/driver-view?nik=')) {
+        const nikMatch = qrDataString.match(/[?&]nik=([^&]+)/);
+        if (nikMatch && nikMatch[1]) {
+          const nik = decodeURIComponent(nikMatch[1]);
+          // For direct URLs, return the NIK as both id and token for compatibility
+          return { id: nik, token: 'direct' };
+        }
+      }
+      
+      // Check for compact URL format: /q/{token} (legacy)
       if (qrDataString.includes('/q/')) {
         const tokenMatch = qrDataString.match(/\/q\/([a-zA-Z0-9_-]+)/);
         if (tokenMatch && tokenMatch[1]) {
