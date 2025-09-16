@@ -1,7 +1,6 @@
 import jsPDF from 'jspdf';
 import type { AttendanceRecord, Employee, RosterSchedule } from '@shared/schema';
-// ARCHITECT FIX: Removed time-based shift inference to prevent data corruption
-// import { determineShiftByTime } from './shift-utils';
+import { determineShiftByTime } from './shift-utils';
 import companyLogo from '@assets/image_1756993494840.png';
 
 interface ReportInfo {
@@ -268,52 +267,25 @@ export async function generateAttendancePDF(data: ReportData): Promise<void> {
     doc.text(reportDate, pageWidth / 2, yPosition, { align: 'center' });
     yPosition += 12; // Professional spacing
     
-    // ARCHITECT FIX: Generate shift sections with Set-based filtering
-    console.log(`📊 MAIN PDF: Processing shift filter "${data.shiftFilter}"`);
-    
-    // Determine which shifts to include
-    const normalizedFilter = (data.shiftFilter || 'all').toUpperCase();
-    const shiftsToRender = [];
-    
-    if (normalizedFilter === 'ALL') {
-      shiftsToRender.push('SHIFT 1', 'SHIFT 2');
-    } else if (normalizedFilter === 'SHIFT 1') {
-      shiftsToRender.push('SHIFT 1');
-    } else if (normalizedFilter === 'SHIFT 2') {
-      shiftsToRender.push('SHIFT 2');
-    } else if (normalizedFilter.includes('SHIFT 1') && normalizedFilter.includes('SHIFT 2')) {
-      // Handle "SHIFT 1 DAN SHIFT 2" option
-      shiftsToRender.push('SHIFT 1', 'SHIFT 2');
+    // Generate shift sections based on filter
+    if (data.shiftFilter === 'all' || data.shiftFilter === 'Shift 1') {
+      yPosition = generateShiftSection(doc, data, 'Shift 1', yPosition, margin, pageWidth);
     }
     
-    console.log(`🎯 SHIFTS TO RENDER:`, shiftsToRender);
-    
-    let isFirstShift = true;
-    for (const shiftToRender of shiftsToRender) {
-      // Check if this shift has data
-      const shiftData = data.roster?.filter(r => 
-        r.date === data.startDate && 
-        String(r.shift || '').toUpperCase() === shiftToRender
-      ) || [];
-      
-      if (shiftData.length > 0) {
-        // Add space/page between shifts
-        if (!isFirstShift) {
-          if (yPosition > pageHeight - 100) {
-            doc.addPage();
-            yPosition = 30;
-          } else {
-            yPosition += 20;
-          }
+    // Add Shift 2 if needed - only if there's actually Shift 2 data
+    const shift2Data = data.roster?.filter(r => r.shift === 'Shift 2' && r.date === data.startDate) || [];
+    if ((data.shiftFilter === 'all' || data.shiftFilter === 'Shift 2') && shift2Data.length > 0) {
+      // Only add space/page if we already rendered Shift 1
+      if (data.shiftFilter === 'all') {
+        if (yPosition > pageHeight - 100) {
+          doc.addPage();
+          yPosition = 30;
+        } else {
+          yPosition += 20; // Reduced space between sections
         }
-        
-        // Use the proper shift name format for display
-        const displayName = shiftToRender === 'SHIFT 1' ? 'Shift 1' : 'Shift 2';
-        yPosition = generateShiftSection(doc, data, displayName, yPosition, margin, pageWidth);
-        isFirstShift = false;
-      } else {
-        console.log(`⚠️ No data found for ${shiftToRender}`);
       }
+      
+      yPosition = generateShiftSection(doc, data, 'Shift 2', yPosition, margin, pageWidth);
     }
     
     // Ensure enough space for footer and summary (need at least 60px total)
@@ -360,46 +332,28 @@ function generateShiftSection(
     date: data.startDate
   });
   
-  // ARCHITECT FIX: Set-based shift filtering for SHIFT 1 DAN SHIFT 2 support
-  const normalizedSel = (shiftName || 'ALL').toUpperCase();
-  const shiftsWanted = normalizedSel.includes('SHIFT 1') && normalizedSel.includes('SHIFT 2') 
-    ? new Set(['SHIFT 1','SHIFT 2']) 
-    : normalizedSel === 'ALL' 
-      ? new Set(['SHIFT 1','SHIFT 2']) 
-      : new Set([normalizeShift(shiftName)]);
-  
-  console.log(`🎯 SHIFT FILTER: Looking for shifts:`, Array.from(shiftsWanted));
-  
+  // ARCHITECT FIX: Filter roster by date and shift with proper normalization
+  const normalizedShiftName = normalizeShift(shiftName);
   const rosterFiltered = (data.roster || []).filter(r => {
     const matchesDate = r.date === data.startDate;
-    const rosterShift = String(r.shift || '').toUpperCase();
-    const matchesShift = shiftsWanted.has(rosterShift);
+    const matchesShift = normalizeShift(r.shift) === normalizedShiftName;
     return matchesDate && matchesShift;
   });
   
-  console.log(`🎯 FILTERED ROSTER: Found ${rosterFiltered.length} entries for criteria on ${data.startDate}`);
+  console.log(`🎯 FILTERED ROSTER: Found ${rosterFiltered.length} entries for ${shiftName} on ${data.startDate}`);
   
-  // ARCHITECT FIX: Multi-key robust roster mapping
-  const keyOf = (v: any) => (v ?? '').toString().trim().toUpperCase();
-  const rosterMap = new Map();
-  
+  // ARCHITECT FIX: Build Map by employeeId with numeric coercion
+  const rosterByEmp = new Map();
   rosterFiltered.forEach(r => {
-    const hk = Number.parseInt(String(r.hariKerja), 10) || 0;
-    const enrichedRoster = { ...r, hariKerja: hk };
-    
-    // Multi-key insertion: employeeId only for roster, additional keys from employee lookup
-    if (r.employeeId) {
-      rosterMap.set(keyOf(r.employeeId), enrichedRoster);
-      // Try to find employee to get additional keys
-      const emp = data.employees.find(e => e.id === r.employeeId);
-      if (emp) {
-        if (emp.nomorLambung) rosterMap.set(keyOf(emp.nomorLambung), enrichedRoster);
-        if (emp.name) rosterMap.set(keyOf(emp.name), enrichedRoster);
-      }
-    }
+    const empId = String(r.employeeId).trim();
+    const hariKerja = Number.parseInt(String(r.hariKerja), 10) || 0;
+    rosterByEmp.set(empId, {
+      ...r,
+      hariKerja: hariKerja
+    });
   });
   
-  console.log(`🗺️ MULTI-KEY ROSTER MAP: Built map with ${rosterMap.size} keys`);
+  console.log(`🗺️ ROSTER MAP: Built map with ${rosterByEmp.size} entries`);
   
   // Build employee list from roster (not from separate employee array)
   const scheduledEmployees = rosterFiltered.map(rosterRecord => {
@@ -413,41 +367,14 @@ function generateShiftSection(
       return null;
     }
     
-    // ARCHITECT FIX: Multi-key roster lookup
-    const candidates = [employee.id, employee.nomorLambung, employee.name];
-    let rosterData = null;
-    let keyUsed = null;
-    
-    for (const candidate of candidates) {
-      if (candidate) {
-        const key = keyOf(candidate);
-        if (rosterMap.has(key)) {
-          rosterData = rosterMap.get(key);
-          keyUsed = key;
-          break;
-        }
-      }
-    }
-    
-    if (!rosterData) {
-      console.debug('Roster join miss', { 
-        emp: employee.name, 
-        id: employee.id, 
-        nl: employee.nomorLambung 
-      });
-      rosterData = { hariKerja: 0 }; // Fallback
-    } else {
-      console.debug('Roster match', { 
-        keyUsed, 
-        hariKerja: rosterData.hariKerja, 
-        shift: rosterData.shift,
-        name: employee.name
-      });
-    }
+    // ARCHITECT FIX: Use Map-based lookup with employeeId
+    const empId = String(employee.id).trim();
+    const rosterData = rosterByEmp.get(empId);
+    const hariKerja = rosterData?.hariKerja ?? 0;
     
     const enrichedRecord = {
       employee: employee,
-      hariKerja: rosterData.hariKerja,
+      hariKerja: hariKerja,
       shift: rosterRecord.shift,
       jamTidur: attendanceRecord?.jamTidur || '',
       fitToWork: attendanceRecord?.fitToWork || 'Fit To Work',
