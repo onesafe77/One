@@ -253,8 +253,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         ? `https://${process.env.REPLIT_DOMAINS.split(',')[0]}`
         : 'http://localhost:5000';
       
-      // Create direct driver-view URL for camera scanning 
-      const qrData = `${baseUrl}/driver-view?nik=${validatedData.id}`;
+      // Create simple redirect URL that's more mobile-scanner friendly
+      const qrData = `${baseUrl}/qr/${validatedData.id}`;
       const employeeWithQR = {
         ...validatedData,
         qrCode: qrData // Simpan sebagai JSON untuk validasi
@@ -1131,8 +1131,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         ? `https://${process.env.REPLIT_DOMAINS.split(',')[0]}`
         : 'http://localhost:5000';
       
-      // Create direct driver-view URL for camera scanning 
-      const qrData = `${baseUrl}/driver-view?nik=${employeeId}`;
+      // Create simple redirect URL that's more mobile-scanner friendly
+      const qrData = `${baseUrl}/qr/${employeeId}`;
 
       res.json({
         employeeId,
@@ -1141,6 +1141,65 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
     } catch (error) {
       res.status(500).json({ message: "Failed to generate QR token" });
+    }
+  });
+
+  // Simple QR redirect endpoint for mobile scanner compatibility
+  app.get("/qr/:employeeId", async (req, res) => {
+    try {
+      const { employeeId } = req.params;
+      
+      // Log for debugging mobile scanner access
+      console.log(`📱 QR Scanner access: ${employeeId} from ${req.get('User-Agent')}`);
+      
+      // Check if employee exists
+      const employee = await storage.getEmployee(employeeId);
+      if (!employee) {
+        return res.status(404).send(`
+          <html>
+            <head><title>Karyawan Tidak Ditemukan</title></head>
+            <body style="font-family: Arial; text-align: center; padding: 50px;">
+              <h2>❌ Karyawan Tidak Ditemukan</h2>
+              <p>NIK: ${employeeId}</p>
+            </body>
+          </html>
+        `);
+      }
+
+      // Redirect to driver view with NIK parameter
+      const redirectUrl = `/driver-view?nik=${employeeId}`;
+      
+      // Use HTML meta refresh for better mobile compatibility
+      res.send(`
+        <html>
+          <head>
+            <title>Redirect ke Driver View</title>
+            <meta http-equiv="refresh" content="0; url=${redirectUrl}">
+            <script>
+              // Fallback JavaScript redirect
+              setTimeout(() => {
+                window.location.href = '${redirectUrl}';
+              }, 100);
+            </script>
+          </head>
+          <body style="font-family: Arial; text-align: center; padding: 50px;">
+            <h2>🔄 Mengarahkan...</h2>
+            <p>Membuka data karyawan: ${employee.name}</p>
+            <p>Jika tidak dialihkan otomatis, <a href="${redirectUrl}">klik di sini</a></p>
+          </body>
+        </html>
+      `);
+    } catch (error) {
+      console.error('❌ Error in QR redirect:', error);
+      res.status(500).send(`
+        <html>
+          <head><title>Error</title></head>
+          <body style="font-family: Arial; text-align: center; padding: 50px;">
+            <h2>❌ Terjadi Kesalahan</h2>
+            <p>Silahkan coba lagi</p>
+          </body>
+        </html>
+      `);
     }
   });
 
