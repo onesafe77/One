@@ -927,6 +927,9 @@ async function generateA4PortraitPDF(data: ReportData): Promise<void> {
   // Generate tabel dengan proporsi kolom yang tepat
   await generateA4PortraitTable(doc, data, yPosition, margin, pageWidth, pageHeight, bottomMargin, pageNumber);
   
+  // Add attendance summary page before saving
+  addAttendanceSummaryPage(doc, data, margin, pageWidth, pageHeight);
+  
   // Save PDF
   const fileName = `laporan-attendance-${formatDateForPDF(data.startDate)}-A4.pdf`;
   doc.save(fileName);
@@ -1069,6 +1072,10 @@ async function generateA4PortraitTable(
         pageNumber++;
         yPosition = margin + 30;
         yPosition = drawTableHeader(yPosition); // Redraw header di halaman baru
+        
+        // CRITICAL FIX: Reset font to normal after header redraw
+        doc.setFont('helvetica', 'normal');
+        doc.setFontSize(9);
       }
       
       // Alternating row background
