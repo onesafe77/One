@@ -24,6 +24,16 @@ function Router() {
   
   return (
     <Switch>
+      {/* Compact QR Route Handler */}
+      <Route path="/q/:token">
+        {(params) => {
+          // This route will be handled by server-side redirect
+          // But we add this for fallback if needed
+          window.location.reload();
+          return <div>Processing QR code...</div>;
+        }}
+      </Route>
+      
       {/* Mobile Driver dan Driver View dengan parameter NIK */}
       <Route path="/mobile-driver">
         {() => urlParams.has('nik') ? <MobileDriverView /> : <div>Parameter NIK required</div>}

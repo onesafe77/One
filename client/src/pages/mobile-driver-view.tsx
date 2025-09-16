@@ -68,8 +68,12 @@ interface SimperMonitoring {
 }
 
 export default function MobileDriverView() {
-  const [nik, setNik] = useState("");
-  const [debouncedNik, setDebouncedNik] = useState("");
+  // Get NIK from URL parameters
+  const urlParams = new URLSearchParams(window.location.search);
+  const nikFromUrl = urlParams.get('nik') || "";
+  
+  const [nik, setNik] = useState(nikFromUrl);
+  const [debouncedNik, setDebouncedNik] = useState(nikFromUrl);
   const [searchEmployee, setSearchEmployee] = useState<Employee | null>(null);
   const [suggestions, setSuggestions] = useState<Employee[]>([]);
   const [activeTab, setActiveTab] = useState<'roster' | 'leave' | 'monitoring' | 'simper'>('roster');
@@ -232,23 +236,18 @@ export default function MobileDriverView() {
     setIsSearching(false);
   }, [employees]);
 
-  // Auto-focus untuk mobile - OPTIMIZED
+  // Auto-search when NIK from URL is present and employees are loaded
   useEffect(() => {
-    console.log('🚀 Mobile Driver View loaded');
-    // Detect if accessed via QR scan (check URL params)
-    const urlParams = new URLSearchParams(window.location.search);
-    const scannedNik = urlParams.get('nik');
-    console.log('🔗 URL params - nik:', scannedNik);
+    console.log('🚀 Mobile Driver View loaded with nikFromUrl:', nikFromUrl);
     
-    if (scannedNik && employees && Array.isArray(employees) && employees.length > 0) {
-      setNik(scannedNik);
-      console.log('📱 Auto-searching for employee:', scannedNik);
+    if (nikFromUrl && employees && Array.isArray(employees) && employees.length > 0) {
+      console.log('📱 Auto-searching for employee from URL:', nikFromUrl);
       // Immediate search - no delay needed
-      handleSearchWithNik(scannedNik);
+      handleSearchWithNik(nikFromUrl);
       // Auto set to roster tab for quick access
       setActiveTab('roster');
     }
-  }, [employees, handleSearchWithNik]); // Depend on employees so it runs when data is loaded
+  }, [employees, nikFromUrl, handleSearchWithNik]); // Depend on employees so it runs when data is loaded
 
   const handleSearch = () => {
     handleSearchWithNik(nik);
