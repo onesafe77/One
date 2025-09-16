@@ -249,17 +249,9 @@ export function QRScanner() {
           return;
         }
         
-        // Handle traditional JSON format (direct redirect)
-        const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || window.innerWidth <= 768;
-        
-        if (isMobile) {
-          // Jika mobile, redirect ke mobile driver view
-          window.location.href = `/mobile-driver?nik=${qrData.id}`;
-        } else {
-          // Jika desktop, redirect ke desktop driver view
-          window.location.href = `/driver-view?nik=${qrData.id}`;
-        }
-        return;
+        // Handle traditional JSON format (for attendance system)
+        console.log("Processing traditional JSON QR for attendance:", qrData);
+        validateAndProcess(qrData.id, qrData.token);
       } else {
         console.log("QR validation failed for data:", code.data);
         // Don't show toast for every invalid scan, just continue scanning
