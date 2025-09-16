@@ -253,8 +253,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         ? `https://${process.env.REPLIT_DOMAINS.split(',')[0]}`
         : 'http://localhost:5000';
       
-      // Create direct mobile URL for camera scanning (no redirect needed)
-      const qrData = `${baseUrl}/mobile-driver?nik=${validatedData.id}`;
+      // Create direct driver-view URL for camera scanning 
+      const qrData = `${baseUrl}/driver-view?nik=${validatedData.id}`;
       const employeeWithQR = {
         ...validatedData,
         qrCode: qrData // Simpan sebagai JSON untuk validasi
@@ -1131,8 +1131,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         ? `https://${process.env.REPLIT_DOMAINS.split(',')[0]}`
         : 'http://localhost:5000';
       
-      // Create direct mobile URL for camera scanning (no redirect needed)
-      const qrData = `${baseUrl}/mobile-driver?nik=${employeeId}`;
+      // Create direct driver-view URL for camera scanning 
+      const qrData = `${baseUrl}/driver-view?nik=${employeeId}`;
 
       res.json({
         employeeId,
