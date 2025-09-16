@@ -48,6 +48,15 @@ function capitalizeNames(text: string): string {
 }
 
 export async function generateAttendancePDF(data: ReportData): Promise<void> {
+  console.log('🚀 STARTING generateAttendancePDF with data:', {
+    rosterCount: data.roster?.length || 0,
+    employeeCount: data.employees?.length || 0,
+    startDate: data.startDate,
+    shiftFilter: data.shiftFilter,
+    reportInfoShift: data.reportInfo?.shift,
+    hasReportInfo: !!data.reportInfo
+  });
+  
   try {
     console.log('🔥 DEBUGGING: Starting PDF generation...', {
       orientation: data.orientation,
@@ -1021,8 +1030,21 @@ async function generateA4PortraitTable(
     doc.text(timestamp, margin, footerY);
   };
   
+  // FIXED: Use reportInfo.shift if available, same logic as landscape mode
+  console.log('🎯 PORTRAIT MODE: About to generate table sections...');
+  console.log('📊 PORTRAIT DATA CHECK:', {
+    totalRoster: data.roster?.length || 0,
+    totalEmployees: data.employees?.length || 0,
+    startDate: data.startDate,
+    shiftFilter: data.shiftFilter,
+    reportInfoShift: data.reportInfo?.shift
+  });
+  
+  const effectiveShiftFilter = data.reportInfo?.shift || data.shiftFilter;
+  console.log(`🎯 PORTRAIT: Effective shift filter: "${effectiveShiftFilter}"`);
+  
   // Generate shift sections
-  const shifts = data.shiftFilter === 'all' ? ['Shift 1', 'Shift 2'] : [data.shiftFilter || 'Shift 1'];
+  const shifts = effectiveShiftFilter === 'all' ? ['Shift 1', 'Shift 2'] : [effectiveShiftFilter || 'Shift 1'];
   
   for (const shift of shifts) {
     const shiftEmployees = getShiftEmployees(data, shift);
@@ -1150,92 +1172,63 @@ async function generateA4PortraitTable(
 
 // Helper function untuk get shift employees
 function getShiftEmployees(data: ReportData, shift: string): any[] {
-  // Get scheduled employees for this shift first (from roster)
-  const scheduledEmployees = data.roster?.filter(r => r.shift === shift && r.date === data.startDate) || [];
+  console.log(`🔍 PORTRAIT: Getting employees for ${shift}...`);
   
-  // For SHIFT 1: show all attendance, For SHIFT 2: show only if there's actual Shift 2 roster data
-  let attendanceForThisShift: typeof data.attendance;
+  // FIXED: Use same normalization logic as landscape mode
+  const normalizedShiftName = normalizeShift(shift);
+  const rosterFiltered = (data.roster || []).filter(r => {
+    const matchesDate = r.date === data.startDate;
+    const matchesShift = normalizeShift(r.shift) === normalizedShiftName;
+    return matchesDate && matchesShift;
+  });
   
-  if (shift.toUpperCase() === 'SHIFT 1') {
-    // For Shift 1 section: Include ALL attendance records for this date
-    attendanceForThisShift = data.attendance.filter(att => att.date === data.startDate);
-  } else {
-    // For Shift 2 section: Only show if employee is actually scheduled for Shift 2
-    attendanceForThisShift = data.attendance.filter(att => {
-      if (att.date !== data.startDate) return false;
-      const employeeRoster = data.roster?.find(r => r.employeeId === att.employeeId && r.date === data.startDate && r.shift === 'Shift 2');
-      return !!employeeRoster;
+  console.log(`🎯 PORTRAIT FILTERED: Found ${rosterFiltered.length} roster entries for ${shift} on ${data.startDate}`);
+  
+  // Build Map by employeeId with numeric coercion (same as landscape)
+  const rosterByEmp = new Map();
+  rosterFiltered.forEach(r => {
+    const empId = String(r.employeeId).trim();
+    const hariKerja = Number.parseInt(String(r.hariKerja), 10) || 0;
+    rosterByEmp.set(empId, {
+      ...r,
+      hariKerja: hariKerja
     });
-  }
+  });
   
-  // Add all attendance records as roster entries for this shift
-  attendanceForThisShift.forEach(att => {
-    const employee = data.employees.find(emp => emp.id === att.employeeId);
+  console.log(`🗺️ PORTRAIT MAP: Built map with ${rosterByEmp.size} entries`);
+  
+  // Build employee list from roster (same logic as landscape)
+  const scheduledEmployees = rosterFiltered.map(rosterRecord => {
+    const employee = data.employees.find(emp => emp.id === rosterRecord.employeeId);
+    const attendanceRecord = data.attendance.find(att => 
+      att.employeeId === rosterRecord.employeeId && att.date === data.startDate
+    );
     
-    if (employee) {
-      // Check if employee already exists in scheduledEmployees
-      const existingIndex = scheduledEmployees.findIndex(emp => emp.employeeId === att.employeeId);
-      
-      if (existingIndex >= 0) {
-        // Update existing roster entry with attendance data - PRESERVE hariKerja dari roster asli!
-        const originalHariKerja = scheduledEmployees[existingIndex].hariKerja;
-        scheduledEmployees[existingIndex] = {
-          ...scheduledEmployees[existingIndex],
-          jamTidur: att.jamTidur || '',
-          fitToWork: att.fitToWork || 'Fit To Work',
-          // CRITICAL: Pertahankan hariKerja dari roster asli
-          hariKerja: originalHariKerja
-        };
-        
-        // SPECIAL DEBUG untuk WARSITO
-        if (employee.name.includes('WARSITO')) {
-          console.log('🔍 WARSITO UPDATE EXISTING ROSTER:', {
-            employeeName: employee.name,
-            originalHariKerja: originalHariKerja,
-            preservedHariKerja: scheduledEmployees[existingIndex].hariKerja,
-            updatedRecord: scheduledEmployees[existingIndex]
-          });
-        }
-      } else {
-        // Add new roster entry for attendance - get hariKerja with smart matching
-        const sameDate = data.roster?.find(r => r.employeeId === att.employeeId && r.date === data.startDate);
-        const anyDateSameEmployee = data.roster?.filter(r => r.employeeId === att.employeeId) || [];
-        const mostRecentRecord = anyDateSameEmployee.sort((a, b) => (b.date || '').localeCompare(a.date || ''))[0];
-        
-        const bestRosterRecord = sameDate || mostRecentRecord;
-        
-        const tempRoster = {
-          id: `temp-${att.employeeId}`,
-          employeeId: att.employeeId,
-          date: data.startDate,
-          shift: shift,
-          startTime: shift === 'Shift 1' ? '06:00' : '18:00',
-          endTime: shift === 'Shift 1' ? '18:00' : '06:00',
-          jamTidur: att.jamTidur || '',
-          fitToWork: att.fitToWork || 'Fit To Work',
-          hariKerja: bestRosterRecord?.hariKerja || '',
-          status: 'scheduled'
-        } as any;
-        
-        // Add extra properties for processing
-        (tempRoster as any).employee = employee;
-        (tempRoster as any).workDays = (bestRosterRecord as any)?.workDays || parseInt(bestRosterRecord?.hariKerja || '0', 10);
-        
-        scheduledEmployees.push(tempRoster);
-      }
+    if (!employee) {
+      console.warn(`⚠️ PORTRAIT: Employee not found: ${rosterRecord.employeeId}`);
+      return null;
     }
-  });
-  
-  // Convert to simple employee objects with enhanced data
-  return scheduledEmployees.map(roster => {
-    const employee = (roster as any).employee || data.employees.find(e => e.id === roster.employeeId);
-    const workDays = (roster as any).workDays || parseInt(roster.hariKerja || '0', 10);
     
-    return {
-      id: roster.employeeId,
-      name: employee?.name || 'Unknown',
-      nomorLambung: employee?.nomorLambung || '-',
-      workDays: workDays
+    // Use Map-based lookup with employeeId (same as landscape)
+    const empId = String(employee.id).trim();
+    const rosterData = rosterByEmp.get(empId);
+    const hariKerja = rosterData?.hariKerja ?? 0;
+    
+    const enrichedRecord = {
+      ...employee,
+      hariKerja: hariKerja,
+      workDays: hariKerja, // For compatibility with existing portrait table code
+      shift: rosterRecord.shift,
+      jamTidur: attendanceRecord?.jamTidur || '',
+      fitToWork: attendanceRecord?.fitToWork || 'Fit To Work',
+      status: attendanceRecord ? 'present' : 'absent',
     };
-  });
+    
+    return enrichedRecord;
+  }).filter(Boolean);
+  
+  console.log(`📊 PORTRAIT RESULT: ${scheduledEmployees.length} employees mapped for ${shift}`);
+  
+  return scheduledEmployees;
 }
+
