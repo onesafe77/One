@@ -1106,8 +1106,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const activeToken = existingTokens.find(t => t.isActive);
       
       let token;
-      if (activeToken) {
-        // Use existing active token
+      // Always regenerate token to ensure URL-safe format
+      // (Remove this after all tokens are migrated)
+      if (false && activeToken) {
+        // Use existing active token (disabled temporarily for migration)
         token = activeToken.token;
       } else {
         // Generate consistent token based on employee ID only
