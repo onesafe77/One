@@ -36,7 +36,9 @@ function Router() {
       
       {/* Mobile Driver dan Driver View - render langsung tanpa guard */}
       <Route path="/mobile-driver" component={MobileDriverView} />
+      <Route path="/mobile-driver/" component={MobileDriverView} />
       <Route path="/driver-view" component={DriverView} />
+      <Route path="/driver-view/" component={DriverView} />
       
       {/* Meeting Scanner Route */}
       <Route path="/meeting-scanner">
@@ -85,6 +87,12 @@ function Router() {
       <Route path="/:rest*">
         {(params) => {
           const currentPath = params['rest*'] ? `/${params['rest*']}` : '/';
+          
+          // Jangan redirect halaman publik (driver-view, mobile-driver)
+          if (currentPath === '/driver-view' || currentPath === '/mobile-driver') {
+            return <div>Page not found</div>;
+          }
+          
           // Redirect ke workspace dengan path yang sama
           if (currentPath !== '/') {
             window.location.replace(`/workspace${currentPath}${window.location.search}`);
