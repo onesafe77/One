@@ -189,7 +189,7 @@ export function QRScanner() {
     
     const imageData = context.getImageData(0, 0, canvasWidth, canvasHeight);
     const code = jsQR(imageData.data, imageData.width, imageData.height, {
-      inversionAttempts: "dontInvert", // Skip inversion for faster processing
+      inversionAttempts: "attemptBoth", // Try both modes for better detection
     });
     
     if (code) {
@@ -201,15 +201,34 @@ export function QRScanner() {
       }
       setLastScanTime(now);
       
-      console.log("Raw QR Code data detected:", code.data);
+      console.log("🔍 RAW QR Code detected:", code.data);
+      console.log("🔍 QR Code length:", code.data?.length || 0);
+      console.log("🔍 QR Code type:", typeof code.data);
+      
+      // Check for empty or whitespace data
+      if (!code.data || code.data.trim() === '') {
+        console.log("⚠️ Empty QR data detected, continuing scan...");
+        requestAnimationFrame(scanQRCode);
+        return;
+      }
+      
+      console.log("🔍 QR Code first 200 chars:", code.data.substring(0, 200));
+      
       const qrData = validateQRData(code.data);
-      console.log("Validated QR Data:", qrData);
+      console.log("🔍 Validated QR Data:", qrData);
       if (qrData) {
-        // Deteksi apakah diakses dari mobile
-        const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || window.innerWidth <= 768;
-        
-        // Stop scanning dan redirect ke driver view untuk semua device
+        // Stop scanning first
         stopScanning();
+        
+        // Handle compact URL format (redirect directly)
+        if (qrData.id === 'compact') {
+          // For compact URLs, redirect to the server endpoint which will handle device detection
+          window.location.href = `/q/${qrData.token}`;
+          return;
+        }
+        
+        // Handle traditional JSON format (direct redirect)
+        const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || window.innerWidth <= 768;
         
         if (isMobile) {
           // Jika mobile, redirect ke mobile driver view

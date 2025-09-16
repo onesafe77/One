@@ -246,16 +246,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Generate QR Code token for the employee
       const secretKey = process.env.QR_SECRET_KEY || 'AttendanceQR2024';
       const tokenData = `${validatedData.id || ''}${secretKey}Attend`;
-      const qrToken = Buffer.from(tokenData).toString('base64').slice(0, 16);
+      const qrToken = Buffer.from(tokenData).toString('base64').slice(0, 16)
+        .replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, ''); // Make URL-safe
       // Create URL yang mengarah ke aplikasi untuk QR Code
       const baseUrl = process.env.REPLIT_DOMAINS 
         ? `https://${process.env.REPLIT_DOMAINS.split(',')[0]}`
         : 'http://localhost:5000';
       
-      const qrUrl = `${baseUrl}/qr-redirect?data=${encodeURIComponent(JSON.stringify({ id: validatedData.id, token: qrToken }))}`;
-      
-      // Add QR Code to employee data as JSON (untuk compatibility)
-      const qrData = JSON.stringify({ id: validatedData.id, token: qrToken });
+      // Create compact URL for camera scanning (shorter and camera-friendly)
+      const qrData = `${baseUrl}/q/${qrToken}`;
       const employeeWithQR = {
         ...validatedData,
         qrCode: qrData // Simpan sebagai JSON untuk validasi
@@ -1114,7 +1113,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // Generate consistent token based on employee ID only
         const secretKey = process.env.QR_SECRET_KEY || 'AttendanceQR2024';
         const tokenData = `${employeeId}${secretKey}Attend`;
-        token = Buffer.from(tokenData).toString('base64').slice(0, 16);
+        token = Buffer.from(tokenData).toString('base64').slice(0, 16)
+          .replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, ''); // Make URL-safe
 
         // Create new token
         await storage.createQrToken({
@@ -1129,12 +1129,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         ? `https://${process.env.REPLIT_DOMAINS.split(',')[0]}`
         : 'http://localhost:5000';
       
-      const qrUrl = `${baseUrl}/qr-redirect?data=${encodeURIComponent(JSON.stringify({ id: employeeId, token }))}`;
+      // Create compact URL for camera scanning (shorter and camera-friendly)  
+      const qrData = `${baseUrl}/q/${token}`;
 
       res.json({
         employeeId,
         token,
-        qrData: qrUrl // Sekarang berisi URL langsung
+        qrData: qrData // Compact URL format for camera compatibility
       });
     } catch (error) {
       res.status(500).json({ message: "Failed to generate QR token" });
@@ -2629,6 +2630,124 @@ export async function registerRoutes(app: Express): Promise<Server> {
         message: "Failed to update QR codes", 
         error: error instanceof Error ? error.message : String(error)
       });
+    }
+  });
+
+  // Compact QR endpoint untuk mobile camera scanning
+  app.get("/q/:token", async (req, res) => {
+    try {
+      const token = req.params.token;
+      
+      if (!token) {
+        return res.status(400).send(`
+          <html>
+            <head>
+              <title>QR Code Invalid</title>
+              <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            </head>
+            <body>
+              <div style="text-align:center; padding:20px; font-family:Arial;">
+                <h2>QR Code Invalid</h2>
+                <p>Token QR code tidak valid</p>
+              </div>
+            </body>
+          </html>
+        `);
+      }
+
+      // Find employee by token using QR token table (more efficient)
+      let employee = null;
+      try {
+        // Try to find the token in QR tokens table first
+        const allEmployees = await storage.getAllEmployees();
+        for (const emp of allEmployees) {
+          try {
+            const employeeTokens = await storage.getQrTokensByEmployee(emp.id);
+            const matchingToken = employeeTokens.find(t => t.token === token && t.isActive);
+            if (matchingToken) {
+              employee = emp;
+              break;
+            }
+          } catch {
+            // Continue if getQrTokensByEmployee fails for this employee
+            continue;
+          }
+        }
+        
+        // Fallback to QR code string matching for backward compatibility
+        if (!employee) {
+          employee = allEmployees.find(emp => {
+            try {
+              if (emp.qrCode) {
+                // Check if qrCode contains this token (either in URL or JSON format)
+                return emp.qrCode.includes(token);
+              }
+              return false;
+            } catch {
+              return false;
+            }
+          });
+        }
+      } catch (error) {
+        console.error('Error finding employee by token:', error);
+        return res.status(500).send(`
+          <html>
+            <head>
+              <title>Server Error</title>
+              <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            </head>
+            <body>
+              <div style="text-align:center; padding:20px; font-family:Arial;">
+                <h2>Server Error</h2>
+                <p>Error saat mencari karyawan</p>
+              </div>
+            </body>
+          </html>
+        `);
+      }
+
+      if (!employee) {
+        return res.status(404).send(`
+          <html>
+            <head>
+              <title>Employee Not Found</title>
+              <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            </head>
+            <body>
+              <div style="text-align:center; padding:20px; font-family:Arial;">
+                <h2>Employee Not Found</h2>
+                <p>Token QR code tidak ditemukan</p>
+              </div>
+            </body>
+          </html>
+        `);
+      }
+
+      // Detect mobile and redirect appropriately
+      const userAgent = req.headers['user-agent'] || '';
+      const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(userAgent);
+      
+      if (isMobile) {
+        return res.redirect(`/mobile-driver?nik=${employee.id}`);
+      } else {
+        return res.redirect(`/driver-view?nik=${employee.id}`);
+      }
+    } catch (error) {
+      console.error('Compact QR redirect error:', error);
+      return res.status(500).send(`
+        <html>
+          <head>
+            <title>Server Error</title>
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+          </head>
+          <body>
+            <div style="text-align:center; padding:20px; font-family:Arial;">
+              <h2>Server Error</h2>
+              <p>Terjadi kesalahan sistem</p>
+            </div>
+          </body>
+        </html>
+      `);
     }
   });
 

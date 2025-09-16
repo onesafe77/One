@@ -12,7 +12,7 @@ export function validateQRData(qrDataString: string): { id: string; token: strin
   }
   
   try {
-    // First, try direct JSON parsing
+    // First, try direct JSON parsing (backward compatibility)
     const qrData = JSON.parse(qrDataString);
     if (qrData.id && qrData.token) {
       return { id: qrData.id, token: qrData.token };
@@ -21,7 +21,19 @@ export function validateQRData(qrDataString: string): { id: string; token: strin
   } catch {
     // If direct JSON parsing fails, try to extract from URL format
     try {
-      // Helper function to parse URL parameters
+      // Check for compact URL format: /q/{token} or https://domain.com/q/{token}
+      if (qrDataString.includes('/q/')) {
+        const tokenMatch = qrDataString.match(/\/q\/([a-zA-Z0-9_-]+)/);
+        if (tokenMatch && tokenMatch[1]) {
+          const token = tokenMatch[1];
+          // For compact URLs, we need to extract the employee ID from the token
+          // This is a limitation - we'll need to validate on the server side
+          // For now, return a special format that the scanner can recognize
+          return { id: 'compact', token: token };
+        }
+      }
+      
+      // Helper function to parse URL parameters (legacy support)
       const parseQRParams = (url: URL) => {
         // Try multiple parameter names for compatibility
         const dataParam = url.searchParams.get('data') || url.searchParams.get('qr');
@@ -35,14 +47,14 @@ export function validateQRData(qrDataString: string): { id: string; token: strin
         return null;
       };
       
-      // Check if it's a full URL with qr-redirect
+      // Check if it's a full URL with qr-redirect (legacy)
       if (qrDataString.includes('qr-redirect?')) {
         const url = new URL(qrDataString);
         const result = parseQRParams(url);
         if (result) return result;
       }
       
-      // Handle case where QR might be just the URL path without domain
+      // Handle case where QR might be just the URL path without domain (legacy)
       if (qrDataString.includes('/qr-redirect?')) {
         // Extract query string part
         const parts = qrDataString.split('/qr-redirect?');
