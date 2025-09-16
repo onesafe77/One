@@ -308,6 +308,9 @@ export async function generateAttendancePDF(data: ReportData): Promise<void> {
     // Professional footer dengan page numbers dan timestamp
     addProfessionalFooter(doc, pageWidth, pageHeight, margin, 1); // Single page for main report
     
+    // Add attendance summary page
+    addAttendanceSummaryPage(doc, data, margin, pageWidth, pageHeight);
+    
     // Download
     const filename = `Laporan_Absensi_${data.startDate.replace(/-/g, '')}.pdf`;
     doc.save(filename);
@@ -494,7 +497,7 @@ function generateShiftSection(
     yPosition = redrawTableHeader(doc, headers, columnWidths, finalTableWidth, margin, yPosition, headerHeight);
     
     doc.setFont('helvetica', 'normal');
-    doc.setFontSize(10); // Professional font size
+    doc.setFontSize(8); // Keep consistent 8pt font size for table content
     
   }
 
@@ -1212,5 +1215,124 @@ function getShiftEmployees(data: ReportData, shift: string): any[] {
   console.log(`📊 PORTRAIT RESULT: ${scheduledEmployees.length} employees mapped for ${shift}`);
   
   return scheduledEmployees;
+}
+
+// Function to add attendance summary page
+function addAttendanceSummaryPage(doc: jsPDF, data: ReportData, margin: number, pageWidth: number, pageHeight: number) {
+  // Add new page for summary
+  doc.addPage();
+  
+  let yPosition = 30;
+  
+  // Title
+  doc.setFontSize(14);
+  doc.setFont('helvetica', 'bold');
+  const title = 'RINGKASAN KEHADIRAN';
+  const titleWidth = doc.getTextWidth(title);
+  const titleX = (pageWidth - titleWidth) / 2;
+  doc.text(title, titleX, yPosition);
+  yPosition += 20;
+  
+  // Date info
+  doc.setFontSize(12);
+  doc.setFont('helvetica', 'normal');
+  doc.text(`Tanggal: ${data.startDate}`, margin, yPosition);
+  yPosition += 15;
+  
+  // Calculate statistics for both shifts
+  const shift1Roster = data.roster?.filter(r => r.date === data.startDate && normalizeShift(r.shift) === 'SHIFT 1') || [];
+  const shift2Roster = data.roster?.filter(r => r.date === data.startDate && normalizeShift(r.shift) === 'SHIFT 2') || [];
+  const shift1Attended = data.attendance?.filter(a => {
+    const attendedEmployee = shift1Roster.find(r => r.employeeId === a.employeeId);
+    return attendedEmployee !== undefined;
+  }) || [];
+  const shift2Attended = data.attendance?.filter(a => {
+    const attendedEmployee = shift2Roster.find(r => r.employeeId === a.employeeId);
+    return attendedEmployee !== undefined;
+  }) || [];
+  
+  // Statistics table - consistent with main table formatting
+  const statData = [
+    ['Shift', 'Dijadwalkan', 'Hadir', 'Tidak Hadir', '% Kehadiran'],
+    ['Shift 1', shift1Roster.length.toString(), shift1Attended.length.toString(), (shift1Roster.length - shift1Attended.length).toString(), shift1Roster.length > 0 ? `${((shift1Attended.length / shift1Roster.length) * 100).toFixed(1)}%` : '0%'],
+    ['Shift 2', shift2Roster.length.toString(), shift2Attended.length.toString(), (shift2Roster.length - shift2Attended.length).toString(), shift2Roster.length > 0 ? `${((shift2Attended.length / shift2Roster.length) * 100).toFixed(1)}%` : '0%'],
+    ['Total', (shift1Roster.length + shift2Roster.length).toString(), (shift1Attended.length + shift2Attended.length).toString(), ((shift1Roster.length + shift2Roster.length) - (shift1Attended.length + shift2Attended.length)).toString(), (shift1Roster.length + shift2Roster.length) > 0 ? `${(((shift1Attended.length + shift2Attended.length) / (shift1Roster.length + shift2Roster.length)) * 100).toFixed(1)}%` : '0%']
+  ];
+  
+  const colWidths = [60, 80, 60, 80, 80];
+  const tableWidth = colWidths.reduce((sum, width) => sum + width, 0);
+  const startX = (pageWidth - tableWidth) / 2;
+  
+  // Draw table
+  statData.forEach((row, rowIndex) => {
+    let currentX = startX;
+    
+    // Header row background
+    if (rowIndex === 0) {
+      doc.setFillColor(128, 128, 128);
+      doc.rect(startX, yPosition - 5, tableWidth, 12, 'F');
+      doc.setTextColor(255, 255, 255);
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(9); // Consistent with main table headers
+    } else if (rowIndex === statData.length - 1) {
+      // Total row background
+      doc.setFillColor(220, 220, 220);
+      doc.rect(startX, yPosition - 5, tableWidth, 12, 'F');
+      doc.setTextColor(0, 0, 0);
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(8); // Bold for total row but smaller font
+    } else {
+      // Data rows - normal font weight like main tables
+      doc.setTextColor(0, 0, 0);
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(8); // Consistent with main table content
+    }
+    
+    row.forEach((cell, colIndex) => {
+      const cellWidth = colWidths[colIndex];
+      const textWidth = doc.getTextWidth(cell);
+      const centerX = currentX + (cellWidth - textWidth) / 2;
+      doc.text(cell, centerX, yPosition);
+      
+      // Draw cell borders
+      doc.setDrawColor(0, 0, 0);
+      doc.setLineWidth(0.2);
+      doc.rect(currentX, yPosition - 5, cellWidth, 12);
+      
+      currentX += cellWidth;
+    });
+    
+    yPosition += 12;
+  });
+  
+  yPosition += 20;
+  
+  // Additional insights
+  doc.setTextColor(0, 0, 0);
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(12);
+  doc.text('Catatan:', margin, yPosition);
+  yPosition += 10;
+  
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(10);
+  const totalScheduled = shift1Roster.length + shift2Roster.length;
+  const totalAttended = shift1Attended.length + shift2Attended.length;
+  const attendanceRate = totalScheduled > 0 ? ((totalAttended / totalScheduled) * 100).toFixed(1) : '0';
+  
+  const notes = [
+    `• Total karyawan dijadwalkan: ${totalScheduled} orang`,
+    `• Total karyawan hadir: ${totalAttended} orang`,
+    `• Tingkat kehadiran keseluruhan: ${attendanceRate}%`,
+    `• Laporan dibuat pada: ${new Date().toLocaleString('id-ID')}`
+  ];
+  
+  notes.forEach(note => {
+    doc.text(note, margin, yPosition);
+    yPosition += 8;
+  });
+  
+  // Footer
+  addProfessionalFooter(doc, pageWidth, pageHeight, margin, 2); // Page 2
 }
 
