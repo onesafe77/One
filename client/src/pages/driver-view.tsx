@@ -255,227 +255,235 @@ export default function DriverView() {
   };
 
   return (
-    <div className="container mx-auto p-6 space-y-6">
-      <div className="text-center mb-8">
-        <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
-          Driver View - Data Karyawan
-        </h1>
-        <p className="text-gray-600 dark:text-gray-400">
-          Scan barcode atau masukkan NIK untuk melihat data roster dan cuti karyawan
-        </p>
-      </div>
-
-      {/* Loading State untuk employees */}
-      {employeesLoading && (
-        <Card className="shadow-lg">
-          <CardContent className="p-8">
-            <div className="flex flex-col items-center space-y-4">
-              <div className="animate-spin rounded-full h-12 w-12 border-b-4 border-[#E53935]"></div>
-              <p className="text-gray-600 dark:text-gray-300 font-semibold">Loading employee data...</p>
-              <p className="text-gray-400 text-sm">Memuat data karyawan dari server...</p>
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+      <div className="container mx-auto px-4 py-6 max-w-6xl">
+        <div className="mb-8">
+          <div className="flex items-center space-x-3 mb-4">
+            <div className="w-10 h-10 bg-blue-600 rounded-lg flex items-center justify-center">
+              <User className="h-6 w-6 text-white" />
             </div>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Search Section */}
-      {!employeesLoading && (
-        <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Search className="h-5 w-5" />
-            Cari Karyawan
-          </CardTitle>
-          <CardDescription>
-            Masukkan NIK atau nama karyawan untuk melihat data roster dan cuti
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="relative">
-            <div className="flex gap-2">
-              <Input
-                placeholder="Masukkan NIK, nama, atau posisi karyawan..."
-                value={nik}
-                onChange={(e) => setNik(e.target.value)}
-                data-testid="input-nik-search"
-                className="flex-1"
-              />
-              {isSearching && (
-                <div className="flex items-center px-3">
-                  <Loader2 className="h-4 w-4 animate-spin text-gray-500" />
-                </div>
-              )}
-            </div>
-            
-            {/* Suggestions dropdown */}
-            {suggestions.length > 0 && (
-              <div className="absolute top-full left-0 right-0 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-md shadow-lg z-10 mt-1">
-                {suggestions.map((emp) => (
-                  <div
-                    key={emp.id}
-                    className="px-3 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer border-b border-gray-100 dark:border-gray-700 last:border-b-0"
-                    onClick={() => {
-                      setNik(emp.name);
-                      setSearchEmployee(emp);
-                      setSuggestions([]);
-                    }}
-                  >
-                    <div className="font-medium">{emp.name}</div>
-                    <div className="text-sm text-gray-600 dark:text-gray-400">
-                      NIK: {emp.id} | {emp.position} | {emp.department}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-          
-          {nik && !searchEmployee && (
-            <div className="text-red-500 text-sm space-y-1">
-              <p>Karyawan dengan kata kunci "{nik}" tidak ditemukan</p>
-              <p className="text-xs text-gray-500">Coba cari dengan NIK, nama, atau posisi karyawan</p>
-            </div>
-          )}
-        </CardContent>
-      </Card>
-      )}
-
-      {/* Unified Employee Information Card */}
-      {searchEmployee && (
-        <Card className="shadow-xl border-0 bg-gradient-to-br from-white to-gray-50 dark:from-gray-800 dark:to-gray-900">
-          <CardHeader className="bg-gradient-to-r from-[#E53935] to-red-600 text-white rounded-t-lg">
-            <div className="flex items-center justify-between">
-              <div>
-                <CardTitle className="text-2xl font-bold flex items-center gap-3">
-                  <User className="h-7 w-7" />
-                  {searchEmployee.name}
-                </CardTitle>
-                <CardDescription className="text-red-100 text-lg">
-                  NIK: {searchEmployee.id} | {searchEmployee.position}
-                </CardDescription>
-              </div>
-              <div className="text-right">
-                <p className="text-red-100 text-sm">{searchEmployee.department}</p>
-                <p className="text-red-200 text-xs">{searchEmployee.investorGroup}</p>
-              </div>
-            </div>
-          </CardHeader>
-
-          {/* Tab Navigation */}
-          <div className="border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
-            <div className="flex space-x-0">
-              <Button
-                variant={activeTab === 'roster' ? "default" : "ghost"}
-                onClick={() => setActiveTab('roster')}
-                className={`flex-1 rounded-none border-0 h-14 text-base font-semibold transition-all duration-200 ${
-                  activeTab === 'roster'
-                    ? 'bg-[#E53935] text-white shadow-lg'
-                    : 'bg-transparent text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700'
-                }`}
-              >
-                <Calendar className="h-5 w-5 mr-2" />
-                Roster Kerja
-              </Button>
-              <Button
-                variant={activeTab === 'leave' ? "default" : "ghost"}
-                onClick={() => setActiveTab('leave')}
-                className={`flex-1 rounded-none border-0 h-14 text-base font-semibold transition-all duration-200 ${
-                  activeTab === 'leave'
-                    ? 'bg-[#E53935] text-white shadow-lg'
-                    : 'bg-transparent text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700'
-                }`}
-              >
-                <MapPin className="h-5 w-5 mr-2" />
-                Data Cuti
-              </Button>
-              <Button
-                variant={activeTab === 'simper' ? "default" : "ghost"}
-                onClick={() => setActiveTab('simper')}
-                className={`flex-1 rounded-none border-0 h-14 text-base font-semibold transition-all duration-200 ${
-                  activeTab === 'simper'
-                    ? 'bg-[#E53935] text-white shadow-lg'
-                    : 'bg-transparent text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700'
-                }`}
-              >
-                <Shield className="h-5 w-5 mr-2" />
-                SIMPER
-              </Button>
+            <div>
+              <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Driver View</h1>
+              <p className="text-sm text-gray-600 dark:text-gray-400">Employee Data & Monitoring System</p>
             </div>
           </div>
+        </div>
 
-          {/* Tab Content */}
-          <CardContent className="p-8 bg-gradient-to-br from-gray-50 to-white dark:from-gray-800 dark:to-gray-900 min-h-[500px]">
-            {/* Roster Tab */}
-            {activeTab === 'roster' && (
-              <div className="space-y-6">
-                <div className="flex items-center justify-between mb-6">
-                  <h3 className="text-2xl font-bold text-gray-800 dark:text-white flex items-center">
-                    <Calendar className="h-7 w-7 mr-3 text-[#E53935]" />
-                    Jadwal Roster Kerja
-                  </h3>
-                  <Badge className="bg-blue-100 text-blue-800 px-4 py-2">
-                    {employeeRoster.length} Jadwal Ditemukan
-                  </Badge>
-                </div>
+        {/* Modern Loading State */}
+        {employeesLoading && (
+          <Card className="border-0 shadow-sm bg-white dark:bg-gray-800">
+            <CardContent className="p-8">
+              <div className="flex flex-col items-center space-y-4">
+                <div className="w-10 h-10 border-2 border-blue-200 border-t-blue-600 rounded-full animate-spin"></div>
+                <p className="text-gray-700 dark:text-gray-300 font-medium">Loading employee data...</p>
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
-                {rosterLoading ? (
-                  <div className="flex flex-col items-center justify-center py-16">
-                    <div className="animate-spin rounded-full h-12 w-12 border-b-4 border-[#E53935] mb-4"></div>
-                    <p className="text-gray-600 dark:text-gray-300 font-semibold">Memuat data roster...</p>
-                  </div>
-                ) : employeeRoster.length > 0 ? (
-                  <div className="grid gap-4">
-                    {employeeRoster
-                      .sort((a: RosterSchedule, b: RosterSchedule) => 
-                        new Date(b.date).getTime() - new Date(a.date).getTime()
-                      )
-                      .slice(0, 10)
-                      .map((roster: RosterSchedule) => (
-                        <div key={roster.id} className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-lg border border-gray-100 dark:border-gray-700 hover:shadow-xl transition-all duration-200" data-testid={`roster-item-${roster.id}`}>
-                          <div className="flex justify-between items-start">
-                            <div className="space-y-3">
-                              <div className="flex items-center gap-3">
-                                <div className="w-3 h-8 bg-[#E53935] rounded-full"></div>
-                                <p className="text-2xl font-bold text-gray-800 dark:text-white">
-                                  {format(new Date(roster.date), "dd MMM yyyy")}
-                                </p>
-                              </div>
-                              <div className="flex gap-3">
-                                <Badge className={getShiftBadgeColor(roster.shift) + " px-4 py-2 text-sm font-bold"}>
-                                  {roster.shift}
-                                </Badge>
-                                <Badge variant="outline" className={getStatusBadgeColor(roster.status) + " px-4 py-2 text-sm font-bold"}>
-                                  {roster.status}
-                                </Badge>
-                              </div>
-                            </div>
-                            <div className="text-right space-y-2">
-                              <div className="flex items-center gap-2 text-lg font-semibold text-gray-800 dark:text-white">
-                                <Clock className="h-5 w-5 text-[#E53935]" />
-                                <span>{roster.startTime} - {roster.endTime}</span>
-                              </div>
-                              {roster.jamTidur && (
-                                <p className="text-gray-600 dark:text-gray-400 font-medium">
-                                  Jam Tidur: {roster.jamTidur}
-                                </p>
-                              )}
-                              <p className="text-gray-600 dark:text-gray-400 font-medium">
-                                {roster.fitToWork}
-                              </p>
-                            </div>
-                          </div>
+        {/* Clean Search Section */}
+        {!employeesLoading && (
+          <Card className="border-0 shadow-sm bg-white dark:bg-gray-800">
+            <CardHeader className="pb-4">
+              <CardTitle className="text-xl font-semibold text-gray-900 dark:text-white">
+                Search Employee
+              </CardTitle>
+              <CardDescription className="text-gray-600 dark:text-gray-400">
+                Enter NIK or name to view employee roster and leave data
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+                <Input
+                  placeholder="Search by NIK, name, or position..."
+                  value={nik}
+                  onChange={(e) => setNik(e.target.value)}
+                  data-testid="input-nik-search"
+                  className="pl-12 h-12 border-gray-200 focus:border-blue-500 focus:ring-blue-500 rounded-lg text-base"
+                />
+                {isSearching && (
+                  <Loader2 className="absolute right-3 top-1/2 transform -translate-y-1/2 h-5 w-5 animate-spin text-blue-500" />
+                )}
+                
+                {/* Clean Suggestions Dropdown - Fixed positioning */}
+                {suggestions.length > 0 && (
+                  <div className="absolute top-full left-0 right-0 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg z-10 mt-1">
+                    {suggestions.map((emp) => (
+                      <div
+                        key={emp.id}
+                        className="px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer border-b border-gray-100 dark:border-gray-700 last:border-b-0 first:rounded-t-lg last:rounded-b-lg"
+                        onClick={() => {
+                          setNik(emp.name);
+                          setSearchEmployee(emp);
+                          setSuggestions([]);
+                        }}
+                        data-testid={`suggestion-item-${emp.id}`}
+                      >
+                        <div className="font-semibold text-gray-900 dark:text-white">{emp.name}</div>
+                        <div className="text-sm text-gray-600 dark:text-gray-400">
+                          NIK: {emp.id} • {emp.position} • {emp.department}
                         </div>
-                      ))}
-                  </div>
-                ) : (
-                  <div className="text-center py-16">
-                    <Calendar className="h-20 w-20 text-gray-300 mx-auto mb-4" />
-                    <p className="text-xl text-gray-500 font-semibold">Tidak ada data roster ditemukan</p>
-                    <p className="text-gray-400 mt-2">Belum ada jadwal kerja yang terdaftar untuk karyawan ini</p>
+                      </div>
+                    ))}
                   </div>
                 )}
               </div>
-            )}
+              
+              {nik && !searchEmployee && (
+                <div className="p-3 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg">
+                  <p className="text-sm font-medium text-amber-800 dark:text-amber-200">Employee "{nik}" not found</p>
+                  <p className="text-xs text-amber-600 dark:text-amber-300 mt-1">Try searching with NIK, name, or position</p>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Clean Employee Information Card */}
+        {searchEmployee && (
+          <Card className="border-0 shadow-sm bg-white dark:bg-gray-800">
+            <CardHeader className="pb-4">
+              <div className="flex items-start space-x-4">
+                <div className="w-16 h-16 bg-blue-100 dark:bg-blue-900/30 rounded-full flex items-center justify-center">
+                  <User className="h-8 w-8 text-blue-600 dark:text-blue-400" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <CardTitle className="text-2xl font-bold text-gray-900 dark:text-white truncate">
+                    {searchEmployee.name}
+                  </CardTitle>
+                  <CardDescription className="text-gray-600 dark:text-gray-400 text-base mt-1">
+                    NIK: {searchEmployee.id} • {searchEmployee.position}
+                  </CardDescription>
+                  <div className="flex flex-wrap gap-2 mt-3">
+                    <Badge variant="secondary" className="text-xs">{searchEmployee.department}</Badge>
+                    <Badge variant="outline" className="text-xs">{searchEmployee.investorGroup}</Badge>
+                  </div>
+                </div>
+              </div>
+            </CardHeader>
+
+            {/* Clean Tab Navigation */}
+            <div className="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-1 mx-6 mb-6">
+              <div className="grid grid-cols-3 gap-1">
+                <Button
+                  variant="ghost"
+                  onClick={() => setActiveTab('roster')}
+                  className={`h-12 rounded-lg ${
+                    activeTab === 'roster' 
+                      ? 'bg-white dark:bg-gray-800 text-blue-600 dark:text-blue-400 border border-blue-200 dark:border-blue-800 shadow-sm' 
+                      : 'text-gray-600 dark:text-gray-400 hover:bg-white/50 dark:hover:bg-gray-600/50'
+                  }`}
+                  data-testid="tab-roster"
+                  role="tab"
+                  aria-selected={activeTab === 'roster'}
+                >
+                  <Calendar className="h-5 w-5 mr-2" />
+                  Work Schedule
+                </Button>
+                <Button
+                  variant="ghost"
+                  onClick={() => setActiveTab('leave')}
+                  className={`h-12 rounded-lg ${
+                    activeTab === 'leave' 
+                      ? 'bg-white dark:bg-gray-800 text-emerald-600 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800 shadow-sm' 
+                      : 'text-gray-600 dark:text-gray-400 hover:bg-white/50 dark:hover:bg-gray-600/50'
+                  }`}
+                  data-testid="tab-leave"
+                  role="tab"
+                  aria-selected={activeTab === 'leave'}
+                >
+                  <MapPin className="h-5 w-5 mr-2" />
+                  Leave History
+                </Button>
+                <Button
+                  variant="ghost"
+                  onClick={() => setActiveTab('simper')}
+                  className={`h-12 rounded-lg ${
+                    activeTab === 'simper' 
+                      ? 'bg-white dark:bg-gray-800 text-purple-600 dark:text-purple-400 border border-purple-200 dark:border-purple-800 shadow-sm' 
+                      : 'text-gray-600 dark:text-gray-400 hover:bg-white/50 dark:hover:bg-gray-600/50'
+                  }`}
+                  data-testid="tab-simper"
+                  role="tab"
+                  aria-selected={activeTab === 'simper'}
+                >
+                  <Shield className="h-5 w-5 mr-2" />
+                  SIMPER
+                </Button>
+              </div>
+            </div>
+
+            {/* Tab Content */}
+            <CardContent className="px-6 pb-6">
+              {/* Clean Roster Tab */}
+              {activeTab === 'roster' && (
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white flex items-center">
+                      <Calendar className="h-5 w-5 mr-2 text-blue-600 dark:text-blue-400" />
+                      Work Schedule
+                    </h3>
+                    <Badge variant="secondary" className="text-xs">
+                      {employeeRoster.length} schedules found
+                    </Badge>
+                  </div>
+
+                  {rosterLoading ? (
+                    <div className="text-center py-12">
+                      <div className="w-8 h-8 border-2 border-blue-200 border-t-blue-600 rounded-full animate-spin mx-auto"></div>
+                      <p className="text-sm text-gray-600 dark:text-gray-400 mt-3">Loading schedule...</p>
+                    </div>
+                  ) : employeeRoster.length > 0 ? (
+                    <div className="grid gap-3">
+                      {employeeRoster
+                        .sort((a: RosterSchedule, b: RosterSchedule) => 
+                          new Date(b.date).getTime() - new Date(a.date).getTime()
+                        )
+                        .slice(0, 10)
+                        .map((roster: RosterSchedule) => (
+                          <div key={roster.id} className="border border-gray-200 dark:border-gray-700 rounded-lg p-4 bg-gray-50/50 dark:bg-gray-700/30 hover:bg-gray-100/70 dark:hover:bg-gray-600/50 transition-colors" data-testid={`roster-item-${roster.id}`}>
+                            <div className="flex justify-between items-start">
+                              <div className="space-y-2">
+                                <p className="text-base font-semibold text-gray-900 dark:text-white">
+                                  {format(new Date(roster.date), "dd MMM yyyy")}
+                                </p>
+                                <div className="flex gap-2">
+                                  <Badge className={`${getShiftBadgeColor(roster.shift)} px-2 py-1 rounded-md text-xs font-medium`}>
+                                    {roster.shift}
+                                  </Badge>
+                                  <Badge className={`${getStatusBadgeColor(roster.status)} px-2 py-1 rounded-md text-xs font-medium`}>
+                                    {roster.status}
+                                  </Badge>
+                                </div>
+                              </div>
+                              <div className="text-right space-y-1">
+                                <div className="flex items-center gap-1 text-gray-600 dark:text-gray-400">
+                                  <Clock className="h-4 w-4" />
+                                  <span className="text-sm font-medium">{roster.startTime} - {roster.endTime}</span>
+                                </div>
+                                {roster.jamTidur && (
+                                  <p className="text-xs text-gray-500 dark:text-gray-400">
+                                    Sleep: {roster.jamTidur}
+                                  </p>
+                                )}
+                                <p className="text-xs text-gray-600 dark:text-gray-300">
+                                  {roster.fitToWork}
+                                </p>
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                    </div>
+                  ) : (
+                    <div className="text-center py-12">
+                      <Calendar className="h-12 w-12 text-gray-300 dark:text-gray-600 mx-auto mb-3" />
+                      <p className="text-sm text-gray-600 dark:text-gray-400">No schedule found</p>
+                      <p className="text-xs text-gray-500 dark:text-gray-500 mt-1">No work schedule available for this employee</p>
+                    </div>
+                  )}
+                </div>
+              )}
 
             {/* Leave Tab */}
             {activeTab === 'leave' && (
@@ -659,7 +667,8 @@ export default function DriverView() {
             )}
           </CardContent>
         </Card>
-      )}
+        )}
+      </div>
     </div>
   );
 }
