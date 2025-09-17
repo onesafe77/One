@@ -41,25 +41,25 @@ export function Header({ title, onMenuClick }: HeaderProps) {
   };
 
   return (
-    <header className="bg-white dark:bg-gray-800 shadow-sm border-b border-gray-200 dark:border-gray-700">
-      <div className="flex items-center justify-between px-6 py-4">
+    <header className="bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700">
+      <div className="flex items-center justify-between px-4 py-3">
         <div className="flex items-center">
           <Button
             variant="ghost"
             size="icon"
-            className="lg:hidden mr-2"
+            className="lg:hidden mr-2 hover:bg-gray-100 dark:hover:bg-gray-800"
             onClick={onMenuClick}
             data-testid="menu-button"
           >
-            <Menu className="w-6 h-6" />
+            <Menu className="w-5 h-5" />
           </Button>
-          <h1 className="text-2xl font-semibold text-gray-900 dark:text-white" data-testid="page-title">
+          <h1 className="text-lg font-semibold text-gray-900 dark:text-white" data-testid="page-title">
             {title}
           </h1>
         </div>
         
-        <div className="flex items-center space-x-4">
-          <div className="text-right" data-testid="datetime-display">
+        <div className="flex items-center space-x-2">
+          <div className="text-right hidden sm:block" data-testid="datetime-display">
             <p className="text-sm font-medium text-gray-900 dark:text-white">
               {formatDate(currentTime)}
             </p>
@@ -72,10 +72,11 @@ export function Header({ title, onMenuClick }: HeaderProps) {
             <Button
               variant="ghost"
               size="icon"
-              className="bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600"
-              title="Kembali ke Landing Page"
+              className="hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
+              title="Back to Landing Page"
+              data-testid="link-home"
             >
-              <Home className="w-5 h-5" />
+              <Home className="w-4 h-4" />
             </Button>
           </Link>
           
@@ -83,13 +84,13 @@ export function Header({ title, onMenuClick }: HeaderProps) {
             variant="ghost"
             size="icon"
             onClick={toggleTheme}
-            className="bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600"
+            className="hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
             data-testid="theme-toggle"
           >
             {theme === 'dark' ? (
-              <Sun className="w-5 h-5" />
+              <Sun className="w-4 h-4" />
             ) : (
-              <Moon className="w-5 h-5" />
+              <Moon className="w-4 h-4" />
             )}
           </Button>
         </div>

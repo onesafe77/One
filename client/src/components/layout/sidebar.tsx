@@ -16,6 +16,7 @@ import {
   Shield
 } from "lucide-react";
 import companyLogo from "@assets/WhatsApp Image 2024-11-30 at 13.08.33_1755505069008.jpeg";
+import { useState } from "react";
 
 const navigation = [
   { name: "Dashboard", href: "/workspace", icon: BarChart3 },
@@ -31,6 +32,29 @@ const navigation = [
   { name: "Driver View", href: "/workspace/driver-view", icon: User },
   { name: "Laporan", href: "/workspace/reports", icon: FileText },
 ];
+
+function LogoWithFallback() {
+  const [hasImageError, setHasImageError] = useState(false);
+
+  if (hasImageError) {
+    return (
+      <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
+        <QrCode className="w-5 h-5 text-white" />
+      </div>
+    );
+  }
+
+  return (
+    <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center overflow-hidden">
+      <img 
+        src={companyLogo} 
+        alt="Company Logo" 
+        className="w-full h-full object-cover"
+        onError={() => setHasImageError(true)}
+      />
+    </div>
+  );
+}
 
 interface SidebarProps {
   isOpen: boolean;
@@ -49,52 +73,35 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
           onClick={onClose}
         />
       )}
-      {/* Sidebar */}
+      {/* Modern Sidebar */}
       <div className={cn(
-        "fixed inset-y-0 left-0 z-50 w-64 bg-white dark:bg-gray-800 shadow-lg transform transition-transform duration-300 lg:translate-x-0 lg:static lg:inset-0",
+        "fixed inset-y-0 left-0 z-50 w-64 bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-700 transform transition-transform duration-300 lg:translate-x-0 lg:static lg:inset-0",
         isOpen ? "translate-x-0" : "-translate-x-full"
       )}>
-        {/* Logo */}
-        <div className="flex items-center justify-center h-16 px-4 bg-primary-600 dark:bg-primary-700">
-          <div className="flex items-center space-x-2">
-            <div className="w-10 h-10 bg-white rounded-lg overflow-hidden flex items-center justify-center">
-              <img 
-                src={companyLogo} 
-                alt="Company Logo" 
-                className="w-full h-full object-cover"
-                onError={(e) => {
-                  // Fallback to QR icon if image fails to load
-                  const target = e.target as HTMLImageElement;
-                  target.style.display = 'none';
-                  if (target.parentElement) {
-                    const fallbackDiv = document.createElement('div');
-                    fallbackDiv.className = 'w-5 h-5 text-primary-600 flex items-center justify-center';
-                    const qrIcon = document.createElement('svg');
-                    qrIcon.innerHTML = '<path d="M3 3h6v6H3V3zM15 3h6v6h-6V3zM3 15h6v6H3v-6zM15 15h6v6h-6v-6z" stroke="currentColor" fill="none" stroke-width="2"/>';
-                    qrIcon.setAttribute('viewBox', '0 0 24 24');
-                    qrIcon.className = 'w-full h-full';
-                    fallbackDiv.appendChild(qrIcon);
-                    target.parentElement.appendChild(fallbackDiv);
-                  }
-                }}
-              />
-            </div>
-            <Link href="/" className="text-xl font-bold text-white hover:text-gray-200 transition-colors">OneTalent GECL</Link>
+        {/* Clean Logo Section */}
+        <div className="flex items-center h-16 px-4 border-b border-gray-200 dark:border-gray-700">
+          <div className="flex items-center space-x-3">
+            <LogoWithFallback />
+            <Link href="/" className="text-base font-semibold text-gray-900 dark:text-white hover:text-blue-600 dark:hover:text-blue-400 transition-colors">
+              OneTalent GECL
+            </Link>
           </div>
         </div>
         
-        {/* Navigation */}
-        <nav className="mt-8 px-4 space-y-2">
+        {/* Modern Navigation */}
+        <nav className="p-4 space-y-1">
           {navigation.map((item) => {
-            const isActive = location === item.href;
+            const isActive = location === item.href || location.startsWith(item.href + '/');
             const IconComponent = item.icon;
             return (
               <Link
                 key={item.name}
                 href={item.href}
                 className={cn(
-                  "nav-item flex items-center px-4 py-3 text-sm font-medium rounded-lg transition-colors",
-                  isActive && "active"
+                  "flex items-center px-3 py-2 text-sm font-medium rounded-lg transition-all duration-200",
+                  isActive 
+                    ? "bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800" 
+                    : "text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-gray-900 dark:hover:text-white"
                 )}
                 data-testid={`nav-link-${item.name.toLowerCase().replace(/\s+/g, '-')}`}
                 onClick={() => {
@@ -103,8 +110,8 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
                   }
                 }}
               >
-                <IconComponent className="w-5 h-5 mr-3" />
-                {item.name}
+                <IconComponent className="w-4 h-4 mr-3 flex-shrink-0" />
+                <span className="truncate">{item.name}</span>
               </Link>
             );
           })}
