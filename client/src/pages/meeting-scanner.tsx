@@ -316,14 +316,14 @@ export default function MeetingScanner() {
 
         {/* Meeting Information Card */}
         {meetingToken && meeting && !isLoadingMeeting && (
-          <Card className="mb-6">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
+          <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg mb-6">
+            <div className="p-6 border-b border-gray-200 dark:border-gray-700">
+              <h2 className="text-lg font-semibold text-gray-900 dark:text-white flex items-center gap-2">
                 <Calendar className="w-5 h-5 text-blue-600" />
                 Informasi Meeting
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
+              </h2>
+            </div>
+            <div className="p-6">
               <div className="space-y-3">
                 <div className="flex items-center gap-2">
                   <User className="w-4 h-4 text-gray-500" />
@@ -346,22 +346,22 @@ export default function MeetingScanner() {
                   <span>Penyelenggara: {meeting.organizer}</span>
                 </div>
               </div>
-            </CardContent>
-          </Card>
+            </div>
+          </div>
         )}
 
         {/* Attendance Tabs */}
-        <Card className="mb-6">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
+        <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg mb-6">
+          <div className="p-6 border-b border-gray-200 dark:border-gray-700">
+            <h2 className="text-lg font-semibold text-gray-900 dark:text-white flex items-center gap-2">
               <UserCheck className="w-5 h-5" />
               Form Absensi
-            </CardTitle>
-            <CardDescription>
+            </h2>
+            <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
               {meetingToken ? "Pilih metode absensi yang Anda inginkan" : "Scan QR code meeting atau isi form manual untuk absensi"}
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
+            </p>
+          </div>
+          <div className="p-6">
             <Tabs defaultValue="qr-scan" className="w-full">
               <TabsList className="grid w-full grid-cols-2 mb-6">
                 <TabsTrigger value="qr-scan" data-testid="tab-qr-scan">
@@ -619,14 +619,14 @@ export default function MeetingScanner() {
                 )}
               </TabsContent>
             </Tabs>
-          </CardContent>
-        </Card>
+          </div>
+        </div>
 
-        {/* Scan Result */}
+        {/* Modern Scan Result */}
         {lastScanResult && (
-          <Card className={`mb-6 ${lastScanResult.error ? 'border-red-200' : 'border-green-200'}`}>
-            <CardHeader>
-              <CardTitle className={`text-lg flex items-center gap-2 ${lastScanResult.error ? 'text-red-600' : 'text-green-600'}`}>
+          <div className={`bg-white dark:bg-gray-800 border rounded-lg mb-6 ${lastScanResult.error ? 'border-red-200 dark:border-red-700' : 'border-green-200 dark:border-green-700'}`}>
+            <div className="p-6 border-b border-gray-200 dark:border-gray-700">
+              <h2 className={`text-lg font-semibold flex items-center gap-2 ${lastScanResult.error ? 'text-red-600 dark:text-red-400' : 'text-green-600 dark:text-green-400'}`}>
                 {lastScanResult.error ? (
                   <>
                     <AlertCircle className="w-5 h-5" />
@@ -638,9 +638,9 @@ export default function MeetingScanner() {
                     Absensi Berhasil
                   </>
                 )}
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
+              </h2>
+            </div>
+            <div className="p-6">
               {lastScanResult.error ? (
                 <div className="text-red-600 text-sm">
                   {lastScanResult.error}
@@ -669,16 +669,16 @@ export default function MeetingScanner() {
                   )}
                 </div>
               )}
-            </CardContent>
-          </Card>
+            </div>
+          </div>
         )}
 
         {/* Instructions */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-lg">Cara Penggunaan</CardTitle>
-          </CardHeader>
-          <CardContent>
+        <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg">
+          <div className="p-6 border-b border-gray-200 dark:border-gray-700">
+            <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Cara Penggunaan</h2>
+          </div>
+          <div className="p-6">
             <Tabs defaultValue="qr-instructions" className="w-full">
               <TabsList className="grid w-full grid-cols-2 mb-4">
                 <TabsTrigger value="qr-instructions" className="text-xs">
@@ -761,8 +761,8 @@ export default function MeetingScanner() {
                 </div>
               </TabsContent>
             </Tabs>
-          </CardContent>
-        </Card>
+          </div>
+        </div>
       </div>
     </div>
   );

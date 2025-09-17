@@ -110,12 +110,12 @@ export function QRGenerator() {
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-      {/* Employee Selection */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Generate QR Code Karyawan</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
+      {/* Modern Employee Selection */}
+      <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg">
+        <div className="p-6 border-b border-gray-200 dark:border-gray-700">
+          <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Generate QR Code Karyawan</h2>
+        </div>
+        <div className="p-6 space-y-4">
           {/* Search Input */}
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
@@ -165,7 +165,7 @@ export function QRGenerator() {
           </div>
           
           {selectedEmployee && (
-            <div className="p-4 bg-gray-50 dark:bg-gray-700 rounded-lg" data-testid="employee-details">
+            <div className="p-4 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg" data-testid="employee-details">
               <h4 className="font-medium text-gray-900 dark:text-white mb-2">Detail Karyawan</h4>
               <div className="space-y-2 text-sm">
                 <p><span className="font-medium">ID:</span> {selectedEmployee.id}</p>
@@ -185,18 +185,18 @@ export function QRGenerator() {
           >
             {isGenerating ? "Generating..." : "Generate QR Code"}
           </Button>
-        </CardContent>
-      </Card>
+        </div>
+      </div>
       
-      {/* QR Code Display */}
-      <Card>
-        <CardHeader>
-          <CardTitle>QR Code Result</CardTitle>
-        </CardHeader>
-        <CardContent>
+      {/* Modern QR Code Display */}
+      <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg">
+        <div className="p-6 border-b border-gray-200 dark:border-gray-700">
+          <h2 className="text-lg font-semibold text-gray-900 dark:text-white">QR Code Result</h2>
+        </div>
+        <div className="p-6">
           {!qrData ? (
             <div className="text-center" data-testid="qr-placeholder">
-              <div className="w-64 h-64 bg-gray-100 dark:bg-gray-700 rounded-lg flex items-center justify-center mx-auto mb-4">
+              <div className="w-64 h-64 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg flex items-center justify-center mx-auto mb-4">
                 <p className="text-gray-500 dark:text-gray-400">QR Code akan muncul di sini</p>
               </div>
               <p className="text-sm text-gray-500 dark:text-gray-400">Pilih karyawan dan klik Generate QR Code</p>
@@ -215,7 +215,7 @@ export function QRGenerator() {
               </div>
               
               <div className="space-y-3">
-                <div className="p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                <div className="p-3 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg">
                   <p className="text-xs font-mono text-gray-600 dark:text-gray-400 break-all" data-testid="qr-data">
                     {qrData}
                   </p>
@@ -244,8 +244,8 @@ export function QRGenerator() {
               </div>
             </div>
           )}
-        </CardContent>
-      </Card>
+        </div>
+      </div>
     </div>
   );
 }

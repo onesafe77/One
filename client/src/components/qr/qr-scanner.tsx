@@ -538,15 +538,15 @@ export function QRScanner() {
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-      {/* Camera Scanner */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Scan QR Code</CardTitle>
-          <div className="text-sm text-gray-600 dark:text-gray-400">
+      {/* Modern Camera Scanner */}
+      <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg">
+        <div className="p-6 border-b border-gray-200 dark:border-gray-700">
+          <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Scan QR Code</h2>
+          <div className="text-sm text-gray-600 dark:text-gray-400 mt-1">
             Waktu sekarang: {currentTime} • {currentShift}
           </div>
-        </CardHeader>
-        <CardContent className="space-y-4">
+        </div>
+        <div className="p-6 space-y-4">
           <div className="relative">
             <video 
               ref={videoRef}
@@ -604,15 +604,15 @@ export function QRScanner() {
               ⏳ Memvalidasi QR Code...
             </div>
           )}
-        </CardContent>
-      </Card>
+        </div>
+      </div>
       
-      {/* Scan Result */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Hasil Scan</CardTitle>
-        </CardHeader>
-        <CardContent>
+      {/* Modern Scan Result */}
+      <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg">
+        <div className="p-6 border-b border-gray-200 dark:border-gray-700">
+          <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Hasil Scan</h2>
+        </div>
+        <div className="p-6">
           {!scanResult ? (
             <div className="text-center py-8" data-testid="scan-placeholder">
               <div className="w-16 h-16 bg-gray-100 dark:bg-gray-700 rounded-full flex items-center justify-center mx-auto mb-4">
@@ -813,18 +813,18 @@ export function QRScanner() {
               )}
             </div>
           )}
-        </CardContent>
-      </Card>
+        </div>
+      </div>
 
-      {/* Recent Activities Card */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center">
+      {/* Modern Recent Activities */}
+      <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg">
+        <div className="p-6 border-b border-gray-200 dark:border-gray-700">
+          <h2 className="text-lg font-semibold text-gray-900 dark:text-white flex items-center">
             <Activity className="w-5 h-5 mr-2" />
             Aktivitas Absensi Terbaru
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
+          </h2>
+        </div>
+        <div className="p-6">
           {recentActivities?.length === 0 ? (
             <div className="text-center py-8" data-testid="no-activities">
               <div className="w-16 h-16 bg-gray-100 dark:bg-gray-700 rounded-full flex items-center justify-center mx-auto mb-4">
@@ -896,8 +896,8 @@ export function QRScanner() {
               )}
             </div>
           )}
-        </CardContent>
-      </Card>
+        </div>
+      </div>
 
     </div>
   );
