@@ -1162,7 +1162,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Test page for mobile redirect verification
   app.get("/test-mobile-redirect", (req, res) => {
     const userAgent = req.get('User-Agent') || '';
-    const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini|Mobile/i.test(userAgent);
+    const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini|Mobile|mobi|phone|tablet/i.test(userAgent) ||
+                    /Chrome.*Mobile|Safari.*Mobile|Firefox.*Mobile/i.test(userAgent);
     
     res.send(`
       <html>
@@ -1175,40 +1176,56 @@ export async function registerRoutes(app: Express): Promise<Server> {
             .mobile { background: #d4edda; color: #155724; }
             .desktop { background: #f8d7da; color: #721c24; }
             .link { margin: 20px; padding: 15px; background: #007bff; color: white; text-decoration: none; border-radius: 5px; display: inline-block; }
+            .debug { background: #f8f9fa; border: 1px solid #dee2e6; padding: 15px; margin: 20px 0; border-radius: 5px; text-left; }
           </style>
         </head>
         <body>
-          <h1>🔍 Test Mobile Detection</h1>
+          <h1>🔍 Test Mobile Detection & Redirect</h1>
           <div class="status ${isMobile ? 'mobile' : 'desktop'}">
             <h2>${isMobile ? '📱 Mobile Device Terdeteksi' : '🖥️ Desktop Device Terdeteksi'}</h2>
+          </div>
+          
+          <div class="debug">
+            <h3>Debug Info:</h3>
             <p><strong>User Agent:</strong> ${userAgent}</p>
+            <p><strong>Mobile Detection:</strong> ${isMobile ? 'YES' : 'NO'}</p>
+            <p><strong>Host:</strong> ${req.get('host')}</p>
+            <p><strong>Protocol:</strong> ${req.protocol}</p>
           </div>
           
           <a href="/workspace/driver-view?nik=C-030012" class="link">
-            Test Redirect ke Driver View
+            🎯 Test Redirect ke Driver View
+          </a>
+          
+          <a href="/workspace/mobile-driver?nik=C-030012" class="link">
+            📱 Direct ke Mobile Driver (Fallback)
           </a>
           
           <div style="margin-top: 30px;">
-            <h3>QR Code untuk Test:</h3>
-            <p>Scan QR ini dengan handphone Anda:</p>
+            <h3>📊 QR Code Test:</h3>
+            <p>Scan dengan handphone:</p>
             <div id="qr-container"></div>
+            <p style="font-size: 12px; color: #666; margin-top: 10px;">
+              URL: ${req.protocol}://${req.get('host')}/workspace/driver-view?nik=C-030012
+            </p>
           </div>
           
           <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
           <script>
             const qrUrl = "${req.protocol}://${req.get('host')}/workspace/driver-view?nik=C-030012";
-            console.log('Generating QR for URL:', qrUrl);
+            console.log('📊 Generating QR for URL:', qrUrl);
+            console.log('📱 User Agent detected as mobile:', ${isMobile});
             
             QRCode.toCanvas(document.createElement('canvas'), qrUrl, {
               width: 256,
               margin: 2
             }, function (error, canvas) {
               if (error) {
-                console.error('QR generation error:', error);
-                document.getElementById('qr-container').innerHTML = '<p>Error generating QR code</p>';
+                console.error('❌ QR generation error:', error);
+                document.getElementById('qr-container').innerHTML = '<p style="color: red;">Error generating QR code</p>';
               } else {
                 document.getElementById('qr-container').appendChild(canvas);
-                console.log('QR code generated successfully');
+                console.log('✅ QR code generated successfully');
               }
             });
           </script>
