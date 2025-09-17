@@ -1234,30 +1234,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       console.log(`📱 Redirecting mobile user to: ${redirectUrl}`);
       
-      return res.send(`
-        <html>
-          <head>
-            <title>Redirect ke Mobile Driver View</title>
-            <meta name="viewport" content="width=device-width, initial-scale=1.0">
-            <meta http-equiv="refresh" content="1; url=${redirectUrl}">
-            <script>
-              console.log('Mobile redirect page loaded');
-              console.log('Redirecting to: ${redirectUrl}');
-              // Immediate redirect for mobile
-              setTimeout(() => {
-                window.location.href = '${redirectUrl}';
-              }, 100);
-            </script>
-          </head>
-          <body style="font-family: Arial; text-align: center; padding: 50px; background: #e8f5e8;">
-            <h2>📱 Mengarahkan ke Mobile View...</h2>
-            <p><strong>NIK:</strong> ${nik}</p>
-            <p><strong>Device:</strong> Mobile</p>
-            <p>Tunggu sebentar...</p>
-            <p><a href="${redirectUrl}" style="color: #007bff; text-decoration: none; font-weight: bold;">Klik di sini jika tidak dialihkan otomatis</a></p>
-          </body>
-        </html>
-      `);
+      // Direct 302 redirect for better mobile experience
+      return res.redirect(302, redirectUrl);
     }
     
     // Continue to regular React app for desktop
