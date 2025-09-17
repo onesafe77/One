@@ -78,6 +78,7 @@ export default function MobileDriverView() {
   const [suggestions, setSuggestions] = useState<Employee[]>([]);
   const [activeTab, setActiveTab] = useState<'roster' | 'leave' | 'monitoring' | 'simper'>('roster');
   const [isSearching, setIsSearching] = useState(false);
+  const [urlSearchCompleted, setUrlSearchCompleted] = useState(false); // Flag to prevent duplicate search
 
   // Query untuk mencari employee berdasarkan NIK - OPTIMIZED
   const { data: employees, isLoading: employeesLoading } = useQuery({
@@ -188,15 +189,20 @@ export default function MobileDriverView() {
     return () => clearTimeout(timer);
   }, [nik]);
 
-  // Auto search when debounced value changes
+  // Auto search when debounced value changes - SKIP if URL search already completed
   useEffect(() => {
+    // Skip debounced search if URL search was already completed for this exact value
+    if (urlSearchCompleted && debouncedNik === nikFromUrl) {
+      return;
+    }
+    
     if (debouncedNik.trim() && employees) {
       handleSearchWithNik(debouncedNik);
     } else {
       setSuggestions([]);
       setSearchEmployee(null);
     }
-  }, [debouncedNik, employees]);
+  }, [debouncedNik, employees, urlSearchCompleted, nikFromUrl]);
 
   const handleSearchWithNik = useCallback((nikValue: string) => {
     if (!nikValue.trim()) return;
@@ -236,18 +242,20 @@ export default function MobileDriverView() {
     setIsSearching(false);
   }, [employees]);
 
-  // Auto-search when NIK from URL is present and employees are loaded
+  // Auto-search when NIK from URL is present and employees are loaded - ONE TIME ONLY
   useEffect(() => {
     console.log('🚀 Mobile Driver View loaded with nikFromUrl:', nikFromUrl);
     
-    if (nikFromUrl && employees && Array.isArray(employees) && employees.length > 0) {
-      console.log('📱 Auto-searching for employee from URL:', nikFromUrl);
+    if (nikFromUrl && employees && Array.isArray(employees) && employees.length > 0 && !urlSearchCompleted) {
+      console.log('📱 Auto-searching for employee from URL (ONE-TIME):', nikFromUrl);
       // Immediate search - no delay needed
       handleSearchWithNik(nikFromUrl);
       // Auto set to roster tab for quick access
       setActiveTab('roster');
+      // Mark URL search as completed to prevent duplicate
+      setUrlSearchCompleted(true);
     }
-  }, [employees, nikFromUrl, handleSearchWithNik]); // Depend on employees so it runs when data is loaded
+  }, [employees, nikFromUrl, handleSearchWithNik, urlSearchCompleted]); // Depend on employees so it runs when data is loaded
 
   const handleSearch = () => {
     handleSearchWithNik(nik);
