@@ -15,7 +15,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { insertEmployeeSchema } from "@shared/schema";
 import type { Employee, InsertEmployee } from "@shared/schema";
-import { Plus, Search, Edit, Trash2, Upload, AlertCircle, Download, Eye, QrCode } from "lucide-react";
+import { Plus, Search, Edit, Trash2, Upload, AlertCircle, Download, Eye, QrCode, Users, CheckCircle, Clock, User, FileText } from "lucide-react";
 import { z } from "zod";
 import * as XLSX from "xlsx";
 import { useAutoSave } from "@/hooks/useAutoSave";
@@ -462,10 +462,11 @@ export default function Employees() {
   };
 
   return (
-    <Card>
-      <CardHeader>
+    <div className="space-y-6">
+      {/* Modern Header */}
+      <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-4">
         <div className="flex items-center justify-between">
-          <CardTitle>Data Karyawan</CardTitle>
+          <h1 className="text-lg font-semibold text-gray-900 dark:text-white">Data Karyawan</h1>
           <div className="flex gap-2">
             <Button 
               onClick={async () => {
@@ -487,6 +488,7 @@ export default function Employees() {
               variant="outline"
               size="sm"
               data-testid="update-qr-button"
+              className="hover:bg-gray-50 dark:hover:bg-gray-700"
             >
               <QrCode className="w-4 h-4 mr-2" />
               Update QR URL
@@ -682,16 +684,19 @@ export default function Employees() {
           </Dialog>
           </div>
         </div>
-      </CardHeader>
+      </div>
       
-      <CardContent>
+      {/* Modern Tab Container */}
+      <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg">
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid w-full grid-cols-2">
-            <TabsTrigger value="dashboard" data-testid="dashboard-tab">Dashboard</TabsTrigger>
-            <TabsTrigger value="list" data-testid="list-tab">List</TabsTrigger>
-          </TabsList>
+          <div className="border-b border-gray-200 dark:border-gray-700 p-4">
+            <TabsList className="grid w-full grid-cols-2 bg-gray-50 dark:bg-gray-700/50">
+              <TabsTrigger value="dashboard" data-testid="dashboard-tab" className="data-[state=active]:bg-white dark:data-[state=active]:bg-gray-800">Dashboard</TabsTrigger>
+              <TabsTrigger value="list" data-testid="list-tab" className="data-[state=active]:bg-white dark:data-[state=active]:bg-gray-800">List</TabsTrigger>
+            </TabsList>
+          </div>
           
-          <TabsContent value="dashboard" className="space-y-6 mt-6">
+          <TabsContent value="dashboard" className="space-y-6 p-6">
             {/* Dashboard Filters */}
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
               <Select value={dashboardDepartmentFilter} onValueChange={setDashboardDepartmentFilter}>
@@ -738,97 +743,87 @@ export default function Employees() {
               </Button>
             </div>
             
-            {/* Summary Cards */}
+            {/* Modern Summary Cards */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
-              <Card>
-                <CardContent className="flex items-center p-6">
-                  <div className="flex items-center space-x-4">
-                    <div className="p-2 bg-blue-100 dark:bg-blue-900 rounded-lg">
-                      <div className="w-4 h-4 bg-blue-600 rounded"></div>
-                    </div>
-                    <div>
-                      <p className="text-sm font-medium text-gray-600 dark:text-gray-300">Total Karyawan</p>
-                      <p className="text-2xl font-bold text-gray-900 dark:text-white" data-testid="card-total-employees">
-                        {dashboardStats.totalEmployees}
-                      </p>
-                    </div>
+              <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-4 hover:shadow-sm transition-shadow">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Total Karyawan</p>
+                    <p className="text-2xl font-bold text-gray-900 dark:text-white" data-testid="card-total-employees">
+                      {dashboardStats.totalEmployees}
+                    </p>
                   </div>
-                </CardContent>
-              </Card>
+                  <div className="w-10 h-10 bg-blue-50 dark:bg-blue-900/20 rounded-lg flex items-center justify-center">
+                    <Users className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+                  </div>
+                </div>
+              </div>
               
-              <Card>
-                <CardContent className="flex items-center p-6">
-                  <div className="flex items-center space-x-4">
-                    <div className="p-2 bg-green-100 dark:bg-green-900 rounded-lg">
-                      <div className="w-4 h-4 bg-green-600 rounded"></div>
-                    </div>
-                    <div>
-                      <p className="text-sm font-medium text-gray-600 dark:text-gray-300">Aktif</p>
-                      <p className="text-2xl font-bold text-gray-900 dark:text-white" data-testid="card-active">
-                        {dashboardStats.activeEmployees}
-                      </p>
-                    </div>
+              <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-4 hover:shadow-sm transition-shadow">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Aktif</p>
+                    <p className="text-2xl font-bold text-gray-900 dark:text-white" data-testid="card-active">
+                      {dashboardStats.activeEmployees}
+                    </p>
                   </div>
-                </CardContent>
-              </Card>
+                  <div className="w-10 h-10 bg-emerald-50 dark:bg-emerald-900/20 rounded-lg flex items-center justify-center">
+                    <CheckCircle className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
+                  </div>
+                </div>
+              </div>
               
-              <Card>
-                <CardContent className="flex items-center p-6">
-                  <div className="flex items-center space-x-4">
-                    <div className="p-2 bg-red-100 dark:bg-red-900 rounded-lg">
-                      <div className="w-4 h-4 bg-red-600 rounded"></div>
-                    </div>
-                    <div>
-                      <p className="text-sm font-medium text-gray-600 dark:text-gray-300">Tidak Aktif</p>
-                      <p className="text-2xl font-bold text-gray-900 dark:text-white" data-testid="card-inactive">
-                        {dashboardStats.inactiveEmployees}
-                      </p>
-                    </div>
+              <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-4 hover:shadow-sm transition-shadow">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Tidak Aktif</p>
+                    <p className="text-2xl font-bold text-gray-900 dark:text-white" data-testid="card-inactive">
+                      {dashboardStats.inactiveEmployees}
+                    </p>
                   </div>
-                </CardContent>
-              </Card>
+                  <div className="w-10 h-10 bg-red-50 dark:bg-red-900/20 rounded-lg flex items-center justify-center">
+                    <Clock className="w-5 h-5 text-red-600 dark:text-red-400" />
+                  </div>
+                </div>
+              </div>
               
-              <Card>
-                <CardContent className="flex items-center p-6">
-                  <div className="flex items-center space-x-4">
-                    <div className="p-2 bg-purple-100 dark:bg-purple-900 rounded-lg">
-                      <div className="w-4 h-4 bg-purple-600 rounded"></div>
-                    </div>
-                    <div>
-                      <p className="text-sm font-medium text-gray-600 dark:text-gray-300">Total Posisi</p>
-                      <p className="text-2xl font-bold text-gray-900 dark:text-white" data-testid="card-unique-positions">
-                        {dashboardStats.uniquePositions}
-                      </p>
-                    </div>
+              <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-4 hover:shadow-sm transition-shadow">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Total Posisi</p>
+                    <p className="text-2xl font-bold text-gray-900 dark:text-white" data-testid="card-unique-positions">
+                      {dashboardStats.uniquePositions}
+                    </p>
                   </div>
-                </CardContent>
-              </Card>
+                  <div className="w-10 h-10 bg-purple-50 dark:bg-purple-900/20 rounded-lg flex items-center justify-center">
+                    <User className="w-5 h-5 text-purple-600 dark:text-purple-400" />
+                  </div>
+                </div>
+              </div>
               
-              <Card>
-                <CardContent className="flex items-center p-6">
-                  <div className="flex items-center space-x-4">
-                    <div className="p-2 bg-orange-100 dark:bg-orange-900 rounded-lg">
-                      <div className="w-4 h-4 bg-orange-600 rounded"></div>
-                    </div>
-                    <div>
-                      <p className="text-sm font-medium text-gray-600 dark:text-gray-300">Total Dept</p>
-                      <p className="text-2xl font-bold text-gray-900 dark:text-white" data-testid="card-unique-departments">
-                        {dashboardStats.uniqueDepartments}
-                      </p>
-                    </div>
+              <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-4 hover:shadow-sm transition-shadow">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Total Dept</p>
+                    <p className="text-2xl font-bold text-gray-900 dark:text-white" data-testid="card-unique-departments">
+                      {dashboardStats.uniqueDepartments}
+                    </p>
                   </div>
-                </CardContent>
-              </Card>
+                  <div className="w-10 h-10 bg-orange-50 dark:bg-orange-900/20 rounded-lg flex items-center justify-center">
+                    <FileText className="w-5 h-5 text-orange-600 dark:text-orange-400" />
+                  </div>
+                </div>
+              </div>
             </div>
             
-            {/* Position and Department Tables */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {/* Modern Position and Department Tables */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
               {/* Position Table */}
-              <Card>
-                <CardHeader>
-                  <CardTitle>Berdasarkan Posisi</CardTitle>
-                </CardHeader>
-                <CardContent>
+              <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg">
+                <div className="p-4 border-b border-gray-200 dark:border-gray-700">
+                  <h3 className="text-base font-semibold text-gray-900 dark:text-white">Berdasarkan Posisi</h3>
+                </div>
+                <div className="p-4">
                   <Table>
                     <TableHeader>
                       <TableRow>
@@ -842,7 +837,7 @@ export default function Employees() {
                         .map(([position, count]) => (
                         <TableRow 
                           key={position}
-                          className="cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800"
+                          className="cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700/50"
                           onClick={() => handlePositionClick(position)}
                           data-testid={`position-row-${position}`}
                         >
@@ -852,15 +847,15 @@ export default function Employees() {
                       ))}
                     </TableBody>
                   </Table>
-                </CardContent>
-              </Card>
+                </div>
+              </div>
               
               {/* Department Table */}
-              <Card>
-                <CardHeader>
-                  <CardTitle>Berdasarkan Department</CardTitle>
-                </CardHeader>
-                <CardContent>
+              <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg">
+                <div className="p-4 border-b border-gray-200 dark:border-gray-700">
+                  <h3 className="text-base font-semibold text-gray-900 dark:text-white">Berdasarkan Department</h3>
+                </div>
+                <div className="p-4">
                   <Table>
                     <TableHeader>
                       <TableRow>
@@ -874,7 +869,7 @@ export default function Employees() {
                         .map(([department, count]) => (
                         <TableRow 
                           key={department}
-                          className="cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800"
+                          className="cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700/50"
                           onClick={() => handleDepartmentClick(department)}
                           data-testid={`department-row-${department}`}
                         >
@@ -884,16 +879,16 @@ export default function Employees() {
                       ))}
                     </TableBody>
                   </Table>
-                </CardContent>
-              </Card>
+                </div>
+              </div>
             </div>
             
-            {/* Investor Group Table */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Berdasarkan Investor Group</CardTitle>
-              </CardHeader>
-              <CardContent>
+            {/* Modern Investor Group Table */}
+            <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg">
+              <div className="p-4 border-b border-gray-200 dark:border-gray-700">
+                <h3 className="text-base font-semibold text-gray-900 dark:text-white">Berdasarkan Investor Group</h3>
+              </div>
+              <div className="p-4">
                 <Table>
                   <TableHeader>
                     <TableRow>
@@ -908,6 +903,7 @@ export default function Employees() {
                       <TableRow 
                         key={group}
                         data-testid={`investor-group-row-${group}`}
+                        className="hover:bg-gray-50 dark:hover:bg-gray-700/50"
                       >
                         <TableCell className="font-medium">{group}</TableCell>
                         <TableCell className="text-right">{count}</TableCell>
@@ -915,8 +911,8 @@ export default function Employees() {
                     ))}
                   </TableBody>
                 </Table>
-              </CardContent>
-            </Card>
+              </div>
+            </div>
           </TabsContent>
           
           <TabsContent value="list" className="mt-6">
@@ -1074,7 +1070,7 @@ export default function Employees() {
         </div>
           </TabsContent>
         </Tabs>
-      </CardContent>
+      </div>
       
       {/* Delete All Confirmation Dialog */}
       <Dialog open={isDeleteAllDialogOpen} onOpenChange={setIsDeleteAllDialogOpen}>
@@ -1118,6 +1114,6 @@ export default function Employees() {
           </div>
         </DialogContent>
       </Dialog>
-    </Card>
+    </div>
   );
 }
