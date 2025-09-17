@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -79,6 +79,9 @@ export default function MobileDriverView() {
   const [activeTab, setActiveTab] = useState<'roster' | 'leave' | 'monitoring' | 'simper'>('roster');
   const [isSearching, setIsSearching] = useState(false);
   const [urlSearchCompleted, setUrlSearchCompleted] = useState(false); // Flag to prevent duplicate search
+  
+  // Query client for prefetching
+  const queryClient = useQueryClient();
 
   // Query untuk mencari employee berdasarkan NIK - OPTIMIZED
   const { data: employees, isLoading: employeesLoading } = useQuery({
@@ -113,36 +116,41 @@ export default function MobileDriverView() {
     staleTime: 3 * 60 * 1000, // 3 minutes cache
   });
 
-  // Query untuk leave monitoring data - LAZY LOADING
-  const { data: upcomingLeaves = [] } = useQuery({
-    queryKey: ["/api/leave-monitoring/upcoming"],
+  // Query untuk monitoring data - CONSOLIDATED untuk performance
+  const { data: monitoringData, isLoading: monitoringLoading } = useQuery({
+    queryKey: ["/api/leave-monitoring/summary", { employeeId: searchEmployee?.id }],
+    queryFn: async () => {
+      if (!searchEmployee?.id) return null;
+      
+      // For now, we'll make parallel calls but in future this should be a single endpoint
+      const [upcomingRes, historyRes, pendingRes, rosterMonitoringRes] = await Promise.all([
+        fetch("/api/leave-monitoring/upcoming").then(r => r.ok ? r.json() : []),
+        fetch("/api/leave-monitoring/history").then(r => r.ok ? r.json() : []),
+        fetch("/api/leave/pending-from-monitoring").then(r => r.ok ? r.json() : []),
+        fetch("/api/leave-roster-monitoring").then(r => r.ok ? r.json() : [])
+      ]);
+      
+      // Filter and find employee-specific data
+      const employeeMonitoring = rosterMonitoringRes.find(
+        (item: LeaveRosterMonitoring) => item.nik === searchEmployee.id
+      ) || null;
+      
+      return {
+        upcoming: upcomingRes,
+        history: historyRes,
+        pending: pendingRes,
+        employeeMonitoring
+      };
+    },
     enabled: !!searchEmployee && activeTab === 'monitoring', // Only load when monitoring tab active
     staleTime: 2 * 60 * 1000, // 2 minutes cache
   });
 
-  const { data: leaveHistory = [] } = useQuery({
-    queryKey: ["/api/leave-monitoring/history"],
-    enabled: !!searchEmployee && activeTab === 'monitoring', // Only load when monitoring tab active
-    staleTime: 2 * 60 * 1000, // 2 minutes cache
-  });
-
-  const { data: pendingLeaves = [] } = useQuery({
-    queryKey: ["/api/leave/pending-from-monitoring"],
-    enabled: !!searchEmployee && activeTab === 'monitoring', // Only load when monitoring tab active
-    staleTime: 1 * 60 * 1000, // 1 minute cache
-  });
-
-  // Query untuk leave roster monitoring data - COMPREHENSIVE
-  const { data: leaveRosterMonitoring = [], isLoading: monitoringLoading } = useQuery({
-    queryKey: ["/api/leave-roster-monitoring"],
-    enabled: !!searchEmployee && activeTab === 'monitoring', // Only load when monitoring tab active
-    staleTime: 2 * 60 * 1000, // 2 minutes cache
-  });
-
-  // Filter data monitoring untuk employee yang dipilih
-  const employeeMonitoring = (leaveRosterMonitoring as LeaveRosterMonitoring[]).find(
-    (item: LeaveRosterMonitoring) => item.nik === searchEmployee?.id
-  ) || null;
+  // Extract monitoring data from consolidated response
+  const upcomingLeaves = monitoringData?.upcoming || [];
+  const leaveHistory = monitoringData?.history || [];
+  const pendingLeaves = monitoringData?.pending || [];
+  const employeeMonitoring = monitoringData?.employeeMonitoring || null;
 
   // Query untuk SIMPER monitoring berdasarkan employee yang dipilih - LAZY LOADING
   const { data: simperData, isLoading: simperLoading } = useQuery({
@@ -247,6 +255,77 @@ export default function MobileDriverView() {
     setSearchEmployee(employee || null);
     setIsSearching(false);
   }, [employees]);
+
+  // PREFETCH related data after employee selection for instant tab switching
+  useEffect(() => {
+    if (searchEmployee?.id) {
+      console.log('🚀 Prefetching data for employee:', searchEmployee.name);
+      
+      // Prefetch roster data
+      queryClient.prefetchQuery({
+        queryKey: ["/api/roster", { employeeId: searchEmployee.id }],
+        queryFn: async () => {
+          const response = await fetch(`/api/roster?employeeId=${searchEmployee.id}`);
+          if (!response.ok) throw new Error('Failed to fetch roster');
+          return response.json();
+        },
+        staleTime: 5 * 60 * 1000,
+      });
+
+      // Prefetch leave data
+      queryClient.prefetchQuery({
+        queryKey: ["/api/leave", { employeeId: searchEmployee.id }],
+        queryFn: async () => {
+          const response = await fetch(`/api/leave?employeeId=${searchEmployee.id}&limit=50`);
+          if (!response.ok) throw new Error('Failed to fetch leave data');
+          return response.json();
+        },
+        staleTime: 3 * 60 * 1000,
+      });
+
+      // Prefetch SIMPER data
+      queryClient.prefetchQuery({
+        queryKey: ["/api/simper-monitoring/nik", searchEmployee.id],
+        queryFn: async () => {
+          const response = await fetch(`/api/simper-monitoring/nik/${searchEmployee.id}`);
+          if (!response.ok) {
+            if (response.status === 404) return null;
+            throw new Error('Failed to fetch SIMPER data');
+          }
+          const data = await response.json();
+          
+          // Calculate monitoring days and status
+          const today = new Date();
+          const processSIMPER = (expiredDate: string | null) => {
+            if (!expiredDate) return { days: null, status: 'Tidak Ada Data' };
+            
+            const expired = new Date(expiredDate);
+            const diffTime = expired.getTime() - today.getTime();
+            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+            
+            if (diffDays < 0) return { days: diffDays, status: 'Segera Perpanjang' };
+            if (diffDays < 7) return { days: diffDays, status: 'Mendekati Perpanjangan' };
+            if (diffDays < 30) return { days: diffDays, status: 'Menuju Perpanjangan' };
+            return { days: diffDays, status: 'Aktif' };
+          };
+
+          const bibStatus = processSIMPER(data.simperBibExpiredDate);
+          const tiaStatus = processSIMPER(data.simperTiaExpiredDate);
+
+          return {
+            ...data,
+            bibMonitoringDays: bibStatus.days,
+            bibStatus: bibStatus.status,
+            tiaMonitoringDays: tiaStatus.days,
+            tiaStatus: tiaStatus.status
+          };
+        },
+        staleTime: 5 * 60 * 1000,
+      });
+
+      console.log('✅ Prefetch initiated for all employee data');
+    }
+  }, [searchEmployee, queryClient]);
 
   // Auto-search when NIK from URL is present and employees are loaded - ONE TIME ONLY
   useEffect(() => {
