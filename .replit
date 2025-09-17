@@ -1,4 +1,4 @@
-modules = ["nodejs-20", "web", "postgresql-16"]
+modules = ["nodejs-20", "web"]
 run = "npm run dev"
 hidden = [".config", ".git", "generated-icon.png", "node_modules", "dist"]
 
@@ -17,6 +17,10 @@ externalPort = 80
 [[ports]]
 localPort = 36241
 externalPort = 3000
+
+[[ports]]
+localPort = 42049
+externalPort = 3002
 
 [[ports]]
 localPort = 46815
@@ -47,3 +51,4 @@ args = "npm run dev"
 waitForPort = 5000
 
 [agent]
+integrations = ["javascript_log_in_with_replit:1.0.0"]
