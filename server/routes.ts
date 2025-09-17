@@ -957,6 +957,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Leave routes
   app.get("/api/leave", async (req, res) => {
     try {
+      const { employeeId, limit } = req.query;
+      
+      // If employeeId is provided, filter by employee and apply limit
+      if (employeeId) {
+        const leaves = await storage.getLeaveByEmployee(employeeId as string);
+        const limitedLeaves = limit ? leaves.slice(0, parseInt(limit as string)) : leaves;
+        return res.json(limitedLeaves);
+      }
+      
+      // Otherwise return all leaves
       const leaves = await storage.getAllLeaveRequests();
       res.json(leaves);
     } catch (error) {

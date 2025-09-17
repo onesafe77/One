@@ -100,9 +100,15 @@ export default function MobileDriverView() {
     staleTime: 5 * 60 * 1000, // 5 minutes cache
   });
 
-  // Query untuk leave requests berdasarkan employee yang dipilih - LAZY LOADING
+  // Query untuk leave requests berdasarkan employee yang dipilih - OPTIMIZED WITH PARAMETERS
   const { data: leaveData, isLoading: leaveLoading } = useQuery({
-    queryKey: ["/api/leave"],
+    queryKey: ["/api/leave", { employeeId: searchEmployee?.id }],
+    queryFn: async () => {
+      if (!searchEmployee?.id) return [];
+      const response = await fetch(`/api/leave?employeeId=${searchEmployee.id}&limit=50`);
+      if (!response.ok) throw new Error('Failed to fetch leave data');
+      return response.json();
+    },
     enabled: !!searchEmployee && activeTab === 'leave', // Only load when leave tab active
     staleTime: 3 * 60 * 1000, // 3 minutes cache
   });
@@ -262,10 +268,8 @@ export default function MobileDriverView() {
   };
 
   const employeeRoster = (rosterData as RosterSchedule[]) || [];
-  const leaveList = leaveData as LeaveRequest[] || [];
-  const employeeLeaves = leaveList.filter((leave: LeaveRequest) => 
-    leave.employeeId === searchEmployee?.id
-  );
+  // Leave data is already filtered by employeeId from backend, no need for client-side filtering
+  const employeeLeaves = (leaveData as LeaveRequest[]) || [];
 
   const getShiftBadgeColor = (shift: string) => {
     return shift === "Shift 1" ? "bg-blue-500 text-white" : "bg-orange-500 text-white";
