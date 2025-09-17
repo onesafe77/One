@@ -281,11 +281,11 @@ export default function Reports() {
   return (
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
       {/* Export Options */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Export Laporan</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
+      <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg">
+        <div className="p-6 border-b border-gray-200 dark:border-gray-700">
+          <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Export Laporan</h2>
+        </div>
+        <div className="p-6 space-y-4">
           <div>
             <Label className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
               Periode
@@ -488,15 +488,15 @@ export default function Reports() {
             <Download className="w-4 h-4 mr-2" />
             {isExporting ? "Mengunduh..." : "Download Laporan"}
           </Button>
-        </CardContent>
-      </Card>
+        </div>
+      </div>
       
       {/* Report Summary */}
-      <Card className="lg:col-span-2">
-        <CardHeader>
-          <CardTitle>Ringkasan Laporan</CardTitle>
-        </CardHeader>
-        <CardContent>
+      <div className="lg:col-span-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg">
+        <div className="p-6 border-b border-gray-200 dark:border-gray-700">
+          <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Ringkasan Laporan</h2>
+        </div>
+        <div className="p-6">
           {/* Summary Stats */}
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
             <div className="text-center p-3 bg-gray-50 dark:bg-gray-700 rounded-lg" data-testid="stats-attendance-rate">
@@ -570,8 +570,8 @@ export default function Reports() {
               ))}
             </div>
           </div>
-        </CardContent>
-      </Card>
+        </div>
+      </div>
     </div>
   );
 }

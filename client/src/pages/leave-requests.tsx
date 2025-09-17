@@ -125,10 +125,10 @@ export default function LeaveRequests() {
   };
 
   return (
-    <Card>
-      <CardHeader>
+    <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg">
+      <div className="p-6 border-b border-gray-200 dark:border-gray-700">
         <div className="flex items-center justify-between">
-          <CardTitle>Permohonan Cuti</CardTitle>
+          <h1 className="text-lg font-semibold text-gray-900 dark:text-white">Permohonan Cuti</h1>
           <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
             <DialogTrigger asChild>
               <Button data-testid="add-leave-request-button">
@@ -268,8 +268,8 @@ export default function LeaveRequests() {
             </DialogContent>
           </Dialog>
         </div>
-      </CardHeader>
-      <CardContent>
+      </div>
+      <div className="p-6">
         {/* Leave Requests Table */}
         <div className="overflow-x-auto">
           <table className="w-full table-auto">
@@ -343,7 +343,7 @@ export default function LeaveRequests() {
             </tbody>
           </table>
         </div>
-      </CardContent>
-    </Card>
+      </div>
+    </div>
   );
 }
