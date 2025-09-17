@@ -1159,34 +1159,102 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Test page for mobile redirect verification
+  app.get("/test-mobile-redirect", (req, res) => {
+    const userAgent = req.get('User-Agent') || '';
+    const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini|Mobile/i.test(userAgent);
+    
+    res.send(`
+      <html>
+        <head>
+          <title>Test Mobile Detection</title>
+          <meta name="viewport" content="width=device-width, initial-scale=1.0">
+          <style>
+            body { font-family: Arial; padding: 20px; text-align: center; }
+            .status { padding: 10px; margin: 10px; border-radius: 5px; }
+            .mobile { background: #d4edda; color: #155724; }
+            .desktop { background: #f8d7da; color: #721c24; }
+            .link { margin: 20px; padding: 15px; background: #007bff; color: white; text-decoration: none; border-radius: 5px; display: inline-block; }
+          </style>
+        </head>
+        <body>
+          <h1>🔍 Test Mobile Detection</h1>
+          <div class="status ${isMobile ? 'mobile' : 'desktop'}">
+            <h2>${isMobile ? '📱 Mobile Device Terdeteksi' : '🖥️ Desktop Device Terdeteksi'}</h2>
+            <p><strong>User Agent:</strong> ${userAgent}</p>
+          </div>
+          
+          <a href="/workspace/driver-view?nik=C-030012" class="link">
+            Test Redirect ke Driver View
+          </a>
+          
+          <div style="margin-top: 30px;">
+            <h3>QR Code untuk Test:</h3>
+            <p>Scan QR ini dengan handphone Anda:</p>
+            <div id="qr-container"></div>
+          </div>
+          
+          <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
+          <script>
+            const qrUrl = "${req.protocol}://${req.get('host')}/workspace/driver-view?nik=C-030012";
+            console.log('Generating QR for URL:', qrUrl);
+            
+            QRCode.toCanvas(document.createElement('canvas'), qrUrl, {
+              width: 256,
+              margin: 2
+            }, function (error, canvas) {
+              if (error) {
+                console.error('QR generation error:', error);
+                document.getElementById('qr-container').innerHTML = '<p>Error generating QR code</p>';
+              } else {
+                document.getElementById('qr-container').appendChild(canvas);
+                console.log('QR code generated successfully');
+              }
+            });
+          </script>
+        </body>
+      </html>
+    `);
+  });
+
   // Mobile-aware redirect endpoint for QR codes
   app.get("/workspace/driver-view", (req, res, next) => {
     const userAgent = req.get('User-Agent') || '';
     const nik = req.query.nik;
     
-    // Check if this is a mobile device
-    const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini|Mobile/i.test(userAgent);
+    // Enhanced mobile detection including common mobile browsers
+    const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini|Mobile|mobi|phone|tablet/i.test(userAgent) ||
+                    /Chrome.*Mobile|Safari.*Mobile|Firefox.*Mobile/i.test(userAgent);
     
-    console.log(`📱 Driver view access: NIK=${nik}, Mobile=${isMobile}, UA=${userAgent.substring(0, 50)}...`);
+    console.log(`📱 Driver view access: NIK=${nik}, Mobile=${isMobile}, UA=${userAgent}`);
     
     // If mobile device and has NIK parameter, redirect to mobile driver view
     if (isMobile && nik) {
       const redirectUrl = `/workspace/mobile-driver?nik=${encodeURIComponent(nik as string)}`;
       
+      console.log(`📱 Redirecting mobile user to: ${redirectUrl}`);
+      
       return res.send(`
         <html>
           <head>
             <title>Redirect ke Mobile Driver View</title>
-            <meta http-equiv="refresh" content="0; url=${redirectUrl}">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <meta http-equiv="refresh" content="1; url=${redirectUrl}">
             <script>
+              console.log('Mobile redirect page loaded');
+              console.log('Redirecting to: ${redirectUrl}');
               // Immediate redirect for mobile
-              window.location.href = '${redirectUrl}';
+              setTimeout(() => {
+                window.location.href = '${redirectUrl}';
+              }, 100);
             </script>
           </head>
-          <body style="font-family: Arial; text-align: center; padding: 50px;">
+          <body style="font-family: Arial; text-align: center; padding: 50px; background: #e8f5e8;">
             <h2>📱 Mengarahkan ke Mobile View...</h2>
-            <p>NIK: ${nik}</p>
-            <p>Jika tidak dialihkan otomatis, <a href="${redirectUrl}">klik di sini</a></p>
+            <p><strong>NIK:</strong> ${nik}</p>
+            <p><strong>Device:</strong> Mobile</p>
+            <p>Tunggu sebentar...</p>
+            <p><a href="${redirectUrl}" style="color: #007bff; text-decoration: none; font-weight: bold;">Klik di sini jika tidak dialihkan otomatis</a></p>
           </body>
         </html>
       `);
