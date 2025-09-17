@@ -1159,6 +1159,43 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Mobile-aware redirect endpoint for QR codes
+  app.get("/workspace/driver-view", (req, res, next) => {
+    const userAgent = req.get('User-Agent') || '';
+    const nik = req.query.nik;
+    
+    // Check if this is a mobile device
+    const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini|Mobile/i.test(userAgent);
+    
+    console.log(`📱 Driver view access: NIK=${nik}, Mobile=${isMobile}, UA=${userAgent.substring(0, 50)}...`);
+    
+    // If mobile device and has NIK parameter, redirect to mobile driver view
+    if (isMobile && nik) {
+      const redirectUrl = `/workspace/mobile-driver?nik=${encodeURIComponent(nik as string)}`;
+      
+      return res.send(`
+        <html>
+          <head>
+            <title>Redirect ke Mobile Driver View</title>
+            <meta http-equiv="refresh" content="0; url=${redirectUrl}">
+            <script>
+              // Immediate redirect for mobile
+              window.location.href = '${redirectUrl}';
+            </script>
+          </head>
+          <body style="font-family: Arial; text-align: center; padding: 50px;">
+            <h2>📱 Mengarahkan ke Mobile View...</h2>
+            <p>NIK: ${nik}</p>
+            <p>Jika tidak dialihkan otomatis, <a href="${redirectUrl}">klik di sini</a></p>
+          </body>
+        </html>
+      `);
+    }
+    
+    // Continue to regular React app for desktop
+    next();
+  });
+
   // Simple QR redirect endpoint for mobile scanner compatibility
   app.get("/qr/:employeeId", async (req, res) => {
     try {
@@ -1181,8 +1218,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         `);
       }
 
-      // Redirect to driver view with NIK parameter
-      const redirectUrl = `/driver-view?nik=${employeeId}`;
+      // Redirect to driver view with NIK parameter (will be handled by mobile detection above)
+      const redirectUrl = `/workspace/driver-view?nik=${employeeId}`;
       
       // Use HTML meta refresh for better mobile compatibility
       res.send(`
