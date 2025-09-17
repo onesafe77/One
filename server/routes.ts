@@ -338,6 +338,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const deleted = await storage.deleteAllEmployees();
       if (deleted) {
+        // Clear all caches since we're deleting all employee data
+        clearAllCaches();
+        console.log('🧹 All employee data and caches cleared');
         res.json({ message: "Semua data karyawan berhasil dihapus" });
       } else {
         res.status(500).json({ message: "Gagal menghapus data karyawan" });

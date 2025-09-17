@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogTrigger } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
@@ -125,6 +125,7 @@ export default function Employees() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingEmployee, setEditingEmployee] = useState<Employee | null>(null);
   const [isUploadDialogOpen, setIsUploadDialogOpen] = useState(false);
+  const [isDeleteAllDialogOpen, setIsDeleteAllDialogOpen] = useState(false);
   const [activeTab, setActiveTab] = useState("dashboard");
   // Dashboard filters
   const [dashboardDepartmentFilter, setDashboardDepartmentFilter] = useState("all");
@@ -220,6 +221,24 @@ export default function Employees() {
     },
   });
 
+  const deleteAllMutation = useMutation<void, Error>({
+    mutationFn: () => apiRequest("/api/employees", "DELETE"),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/employees"] });
+      toast({
+        title: "Berhasil",
+        description: "Semua data karyawan berhasil dihapus",
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Error",
+        description: error.message || "Gagal menghapus semua data karyawan",
+        variant: "destructive",
+      });
+    },
+  });
+
   // Dashboard statistics
   const dashboardStats = useMemo(() => {
     const filteredData = employees.filter((employee) => {
@@ -299,6 +318,15 @@ export default function Employees() {
       const { id, ...employeeData } = values;
       createMutation.mutate(employeeData as InsertEmployee);
     }
+  };
+
+  const handleDeleteAll = () => {
+    setIsDeleteAllDialogOpen(true);
+  };
+
+  const confirmDeleteAll = () => {
+    deleteAllMutation.mutate();
+    setIsDeleteAllDialogOpen(false);
   };
 
   const handleEdit = (employee: Employee) => {
@@ -462,6 +490,16 @@ export default function Employees() {
             >
               <QrCode className="w-4 h-4 mr-2" />
               Update QR URL
+            </Button>
+            <Button 
+              onClick={handleDeleteAll}
+              variant="destructive"
+              size="sm"
+              data-testid="delete-all-button"
+              disabled={employees.length === 0}
+            >
+              <Trash2 className="w-4 h-4 mr-2" />
+              Hapus Semua
             </Button>
             <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
               <DialogTrigger asChild>
@@ -1037,6 +1075,49 @@ export default function Employees() {
           </TabsContent>
         </Tabs>
       </CardContent>
+      
+      {/* Delete All Confirmation Dialog */}
+      <Dialog open={isDeleteAllDialogOpen} onOpenChange={setIsDeleteAllDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Konfirmasi Hapus Semua Data</DialogTitle>
+            <DialogDescription>
+              ⚠️ PERINGATAN: Anda akan menghapus semua data karyawan ({employees.length} karyawan). 
+              Tindakan ini tidak dapat dibatalkan dan akan menghapus semua data yang terkait.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <p className="text-sm text-gray-600 dark:text-gray-300">
+              Operasi ini akan menghapus:
+            </p>
+            <ul className="text-sm text-gray-600 dark:text-gray-300 list-disc ml-6">
+              <li>Semua data karyawan</li>
+              <li>QR Code yang terkait</li>
+              <li>Riwayat kehadiran (jika ada)</li>
+            </ul>
+            <p className="text-sm text-red-600 font-semibold">
+              Pastikan Anda sudah membackup data jika diperlukan!
+            </p>
+            <div className="flex gap-2 justify-end">
+              <Button 
+                variant="outline" 
+                onClick={() => setIsDeleteAllDialogOpen(false)}
+                data-testid="cancel-delete-all"
+              >
+                Batal
+              </Button>
+              <Button 
+                variant="destructive" 
+                onClick={confirmDeleteAll}
+                disabled={deleteAllMutation.isPending}
+                data-testid="confirm-delete-all"
+              >
+                {deleteAllMutation.isPending ? "Menghapus..." : "Ya, Hapus Semua"}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </Card>
   );
 }
