@@ -212,8 +212,35 @@ export function QRScanner() {
         return;
       }
       
-      console.log("🔍 QR Code first 200 chars:", code.data.substring(0, 200));
+      console.log("🔍 QR Code content:", code.data);
       
+      // Special handling for direct URLs (user's request)
+      if (code.data.includes('workspace/driver-view?nik=') || code.data.includes('workspace/mobile-driver?nik=')) {
+        console.log("🔗 Direct URL detected, redirecting based on device...");
+        const nikMatch = code.data.match(/[?&]nik=([^&]+)/);
+        if (nikMatch && nikMatch[1]) {
+          const nik = decodeURIComponent(nikMatch[1]);
+          const isOnMobile = isMobileDevice();
+          
+          console.log("📱 Mobile detection:", {
+            userAgent: navigator.userAgent,
+            screenWidth: window.innerWidth,
+            hasTouch: 'ontouchstart' in window,
+            isOnMobile: isOnMobile
+          });
+          
+          if (isOnMobile) {
+            console.log("📱 Redirecting to mobile driver view");
+            window.location.href = `/workspace/mobile-driver?nik=${nik}`;
+          } else {
+            console.log("🖥️ Redirecting to desktop driver view");
+            window.location.href = `/workspace/driver-view?nik=${nik}`;
+          }
+          return;
+        }
+      }
+      
+      // Continue with traditional QR validation for JSON format
       const qrData = validateQRData(code.data);
       console.log("🔍 Validated QR Data:", qrData);
       if (qrData) {
