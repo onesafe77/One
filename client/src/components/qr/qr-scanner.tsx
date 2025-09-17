@@ -222,6 +222,14 @@ export function QRScanner() {
         
         // Check if we're on mobile device first
         const isOnMobile = isMobileDevice();
+        console.log("🔍 Mobile Detection Results:", {
+          userAgent: navigator.userAgent,
+          screenWidth: window.innerWidth,
+          screenHeight: window.innerHeight,
+          hasTouch: 'ontouchstart' in window,
+          maxTouchPoints: navigator.maxTouchPoints,
+          isOnMobile: isOnMobile
+        });
         
         // Handle direct URL format (contains mobile-driver or driver-view)
         if (qrData.token === 'direct') {
@@ -269,6 +277,8 @@ export function QRScanner() {
         // On desktop: continue with attendance system
         if (isOnMobile) {
           console.log("📱 Mobile device detected - redirecting to driver view:", qrData.id);
+          console.log("📱 Redirect URL will be:", `/workspace/mobile-driver?nik=${qrData.id}`);
+          
           toast({
             title: "🔄 Redirect ke Driver View",
             description: `Membuka data untuk ${qrData.id}...`,
@@ -276,6 +286,7 @@ export function QRScanner() {
           
           // Add small delay for user to see the message
           setTimeout(() => {
+            console.log("📱 Executing redirect to:", `/workspace/mobile-driver?nik=${qrData.id}`);
             window.location.href = `/workspace/mobile-driver?nik=${qrData.id}`;
           }, 800);
           return;
