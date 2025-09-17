@@ -797,26 +797,31 @@ export class DrizzleStorage implements IStorage {
 
   async deleteAllEmployees(): Promise<boolean> {
     // Delete all related data first to avoid foreign key constraints
-    console.log('🗑️ Deleting all attendance records...');
-    await this.db.delete(attendanceRecords);
-    
-    console.log('🗑️ Deleting all leave requests...');
-    await this.db.delete(leaveRequests);
-    
-    console.log('🗑️ Deleting all leave roster monitoring...');
-    await this.db.delete(leaveRosterMonitoring);
-    
-    console.log('🗑️ Deleting all QR tokens...');
-    await this.db.delete(qrTokens);
-    
-    console.log('🗑️ Deleting all roster schedules...');
-    await this.db.delete(rosterSchedules);
-    
-    console.log('🗑️ Deleting all employees...');
-    await this.db.delete(employees);
-    
-    console.log('✅ All employee data and related records deleted successfully');
-    return true;
+    // Use transaction to ensure atomicity
+    return await this.db.transaction(async (tx) => {
+      console.log('🗑️ Starting transaction to delete all employee data...');
+      
+      console.log('🗑️ Deleting all attendance records...');
+      await tx.delete(attendanceRecords);
+      
+      console.log('🗑️ Deleting all leave requests...');
+      await tx.delete(leaveRequests);
+      
+      console.log('🗑️ Deleting all leave roster monitoring...');
+      await tx.delete(leaveRosterMonitoring);
+      
+      console.log('🗑️ Deleting all QR tokens...');
+      await tx.delete(qrTokens);
+      
+      console.log('🗑️ Deleting all roster schedules...');
+      await tx.delete(rosterSchedules);
+      
+      console.log('🗑️ Deleting all employees...');
+      await tx.delete(employees);
+      
+      console.log('✅ All employee data and related records deleted successfully');
+      return true;
+    });
   }
 
   // Attendance methods
