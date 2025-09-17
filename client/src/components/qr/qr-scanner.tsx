@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { validateQRData } from "@/lib/crypto-utils";
+import { validateQRData, isMobileDevice } from "@/lib/crypto-utils";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { determineShiftByTime, getCurrentShift } from "@/lib/shift-utils";
@@ -220,23 +220,38 @@ export function QRScanner() {
         // Stop scanning first
         stopScanning();
         
+        // Check if we're on mobile device first
+        const isOnMobile = isMobileDevice();
+        
         // Handle direct URL format (contains mobile-driver or driver-view)
         if (qrData.token === 'direct') {
-          // For direct URLs, check if it's already a mobile or desktop URL
-          if (code.data.includes('/mobile-driver?')) {
-            // QR already contains mobile URL, just redirect
+          // For direct URLs, check if it's already a mobile or desktop URL (both legacy and workspace patterns)
+          if (code.data.includes('/mobile-driver?') || code.data.includes('/workspace/mobile-driver?')) {
+            // QR contains mobile URL, but redirect based on current device for better UX
             const nikMatch = code.data.match(/[?&]nik=([^&]+)/);
             if (nikMatch && nikMatch[1]) {
-              window.location.href = `/mobile-driver?nik=${decodeURIComponent(nikMatch[1])}`;
+              const nik = decodeURIComponent(nikMatch[1]);
+              if (isOnMobile) {
+                window.location.href = `/workspace/mobile-driver?nik=${nik}`;
+              } else {
+                window.location.href = `/workspace/driver-view?nik=${nik}`;
+              }
               return;
             }
-          } else if (code.data.includes('/driver-view?')) {
+          } else if (code.data.includes('/driver-view?') || code.data.includes('/workspace/driver-view?')) {
             // QR contains desktop URL, redirect based on device
-            const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || window.innerWidth <= 768;
-            if (isMobile) {
-              window.location.href = `/mobile-driver?nik=${qrData.id}`;
+            if (isOnMobile) {
+              window.location.href = `/workspace/mobile-driver?nik=${qrData.id}`;
             } else {
-              window.location.href = `/driver-view?nik=${qrData.id}`;
+              window.location.href = `/workspace/driver-view?nik=${qrData.id}`;
+            }
+            return;
+          } else {
+            // Safety fallback for unrecognized direct URLs - redirect based on device
+            if (isOnMobile) {
+              window.location.href = `/workspace/mobile-driver?nik=${qrData.id}`;
+            } else {
+              window.location.href = `/workspace/driver-view?nik=${qrData.id}`;
             }
             return;
           }
@@ -249,8 +264,25 @@ export function QRScanner() {
           return;
         }
         
-        // Handle traditional JSON format (for attendance system)
-        console.log("Processing traditional JSON QR for attendance:", qrData);
+        // Handle traditional JSON format
+        // On mobile: redirect to driver view automatically (user request)
+        // On desktop: continue with attendance system
+        if (isOnMobile) {
+          console.log("📱 Mobile device detected - redirecting to driver view:", qrData.id);
+          toast({
+            title: "🔄 Redirect ke Driver View",
+            description: `Membuka data untuk ${qrData.id}...`,
+          });
+          
+          // Add small delay for user to see the message
+          setTimeout(() => {
+            window.location.href = `/workspace/mobile-driver?nik=${qrData.id}`;
+          }, 800);
+          return;
+        }
+        
+        // Desktop: continue with traditional attendance system
+        console.log("🖥️ Desktop device - processing attendance:", qrData);
         validateAndProcess(qrData.id, qrData.token);
       } else {
         console.log("QR validation failed for data:", code.data);

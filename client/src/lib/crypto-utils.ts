@@ -21,8 +21,8 @@ export function validateQRData(qrDataString: string): { id: string; token: strin
   } catch {
     // If direct JSON parsing fails, try to extract from URL format
     try {
-      // Check for direct mobile-driver URL format
-      if (qrDataString.includes('/mobile-driver?nik=')) {
+      // Check for direct mobile-driver URL format (both workspace and legacy)
+      if (qrDataString.includes('/mobile-driver?nik=') || qrDataString.includes('/workspace/mobile-driver?nik=')) {
         const nikMatch = qrDataString.match(/[?&]nik=([^&]+)/);
         if (nikMatch && nikMatch[1]) {
           const nik = decodeURIComponent(nikMatch[1]);
@@ -31,8 +31,8 @@ export function validateQRData(qrDataString: string): { id: string; token: strin
         }
       }
       
-      // Check for driver-view URL format (desktop)
-      if (qrDataString.includes('/driver-view?nik=')) {
+      // Check for driver-view URL format (both workspace and legacy)
+      if (qrDataString.includes('/driver-view?nik=') || qrDataString.includes('/workspace/driver-view?nik=')) {
         const nikMatch = qrDataString.match(/[?&]nik=([^&]+)/);
         if (nikMatch && nikMatch[1]) {
           const nik = decodeURIComponent(nikMatch[1]);
@@ -95,4 +95,21 @@ export function validateQRData(qrDataString: string): { id: string; token: strin
 
 export function createQRPayload(employeeId: string, token: string): string {
   return JSON.stringify({ id: employeeId, token });
+}
+
+// Utility function untuk deteksi mobile device
+export function isMobileDevice(): boolean {
+  // Check user agent for mobile patterns
+  const userAgentCheck = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini|Mobile|mobile/i.test(navigator.userAgent);
+  
+  // Check screen size and touch capability together to avoid false positives on touch laptops
+  const mobileScreenAndTouch = window.innerWidth <= 768 && ('ontouchstart' in window || navigator.maxTouchPoints > 0);
+  
+  // Return true if user agent indicates mobile OR if it's a small touch screen
+  return userAgentCheck || mobileScreenAndTouch;
+}
+
+// Check if device is specifically a phone (smaller mobile device)
+export function isMobilePhone(): boolean {
+  return isMobileDevice() && window.innerWidth <= 480;
 }
