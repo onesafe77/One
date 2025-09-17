@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Search, User, Calendar, Clock, MapPin, Shield, AlertTriangle, Loader2 } from "lucide-react";
 import { format } from "date-fns";
+import { isMobileDevice } from "@/lib/crypto-utils";
 
 interface Employee {
   id: string;
@@ -53,6 +54,17 @@ interface SimperMonitoring {
 }
 
 export default function DriverView() {
+  // Mobile redirect logic - if user accesses this page on mobile, redirect to mobile version
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const nikFromUrl = urlParams.get('nik');
+    
+    if (isMobileDevice() && nikFromUrl) {
+      window.location.href = `/workspace/mobile-driver?nik=${nikFromUrl}`;
+      return;
+    }
+  }, []);
+
   const [nik, setNik] = useState("");
   const [debouncedNik, setDebouncedNik] = useState("");
   const [searchEmployee, setSearchEmployee] = useState<Employee | null>(null);
