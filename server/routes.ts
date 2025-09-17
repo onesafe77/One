@@ -1138,17 +1138,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
         ? `https://${process.env.REPLIT_DOMAINS.split(',')[0]}`
         : 'http://localhost:5000';
       
-      // Create JSON format for internal app QR scanner (original format)
+      // Generate URL langsung ke driver view - mobile scanner akan detect device dan redirect
+      const directUrl = `${baseUrl}/workspace/driver-view?nik=${employeeId}`;
+      
+      // Also keep JSON format for backward compatibility with internal scanner
       const qrPayload = {
         id: employeeId,
         token: token
       };
-      const qrData = JSON.stringify(qrPayload);
+      const jsonData = JSON.stringify(qrPayload);
 
       res.json({
         employeeId,
         token,
-        qrData: qrData // JSON format untuk sistem scan QR internal
+        qrData: directUrl, // URL langsung untuk mobile scanning
+        jsonData: jsonData // JSON format untuk backward compatibility
       });
     } catch (error) {
       res.status(500).json({ message: "Failed to generate QR token" });
