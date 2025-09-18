@@ -417,7 +417,8 @@ export default function Roster() {
           // Parse format Excel user: Jam Kel dan Jam Tld sebagai kolom terpisah
           
           // Normalize shift values - handle various formats and variations
-          const rawShift = String(row.Shift || row.shift || '')
+          // IMPORTANT: Check both "Shift" column AND "Jam Kerja" column for shift data
+          const rawShift = String(row.Shift || row.shift || row['Jam Kerja'] || row.jamKerja || '')
             .trim()
             .replace(/\s+/g, ' ') // Collapse multiple spaces
             .replace(/[\u00A0\u2000-\u200B]/g, ' ') // Remove non-breaking spaces
@@ -520,6 +521,9 @@ export default function Roster() {
             console.log('🔍 Available columns:', Object.keys(row));
             console.log('📅 Tanggal (format Indonesia):', row.Tanggal, 'type:', typeof row.Tanggal);
             console.log('⚡ Shift:', row.Shift, 'type:', typeof row.Shift);
+            console.log('⚡ Jam Kerja (shift):', row['Jam Kerja'], 'type:', typeof row['Jam Kerja']);
+            console.log('⚡ Raw shift value:', rawShift);
+            console.log('⚡ Normalized shift:', normalizedShift);
             console.log('🕐 Jam Kel:', row['Jam Kel'], 'type:', typeof row['Jam Kel']);
             console.log('🕐 Jam Tld:', row['Jam Tld'], 'type:', typeof row['Jam Tld']);
             console.log('🎯 Hari Kerja:', row['Hari Kerja'], 'type:', typeof row['Hari Kerja']);
