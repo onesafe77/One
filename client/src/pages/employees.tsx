@@ -15,7 +15,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { insertEmployeeSchema } from "@shared/schema";
 import type { Employee, InsertEmployee } from "@shared/schema";
-import { Plus, Search, Edit, Trash2, Upload, AlertCircle, Download, Eye, QrCode, Users, CheckCircle, Clock, User, FileText } from "lucide-react";
+import { Plus, Search, Edit, Trash2, Upload, AlertCircle, Download, Eye, QrCode, Users, CheckCircle, Clock, User, FileText, Building2, TrendingUp, BarChart3, Shield, Zap, Target } from "lucide-react";
 import { z } from "zod";
 import * as XLSX from "xlsx";
 import { useAutoSave } from "@/hooks/useAutoSave";
@@ -462,54 +462,88 @@ export default function Employees() {
   };
 
   return (
-    <div className="space-y-6">
-      {/* Modern Header */}
-      <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-4">
-        <div className="flex items-center justify-between">
-          <h1 className="text-lg font-semibold text-gray-900 dark:text-white">Data Karyawan</h1>
-          <div className="flex gap-2">
-            <Button 
-              onClick={async () => {
-                try {
-                  const response = await apiRequest("/api/qr/update-all", "POST", {});
-                  toast({
-                    title: "QR Code Update",
-                    description: response.message || "Semua QR Code berhasil diupdate ke format URL",
-                  });
-                  queryClient.invalidateQueries({ queryKey: ["/api/employees"] });
-                } catch (error) {
-                  toast({
-                    title: "Error",
-                    description: "Gagal mengupdate QR Code",
-                    variant: "destructive",
-                  });
-                }
-              }}
-              variant="outline"
-              size="sm"
-              data-testid="update-qr-button"
-              className="hover:bg-gray-50 dark:hover:bg-gray-700"
-            >
-              <QrCode className="w-4 h-4 mr-2" />
-              Update QR URL
-            </Button>
-            <Button 
-              onClick={handleDeleteAll}
-              variant="destructive"
-              size="sm"
-              data-testid="delete-all-button"
-              disabled={employees.length === 0}
-            >
-              <Trash2 className="w-4 h-4 mr-2" />
-              Hapus Semua
-            </Button>
-            <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-              <DialogTrigger asChild>
-                <Button onClick={handleNewEmployee} data-testid="add-employee-button">
-                  <Plus className="w-4 h-4 mr-2" />
-                  Tambah Karyawan
-                </Button>
-              </DialogTrigger>
+    <div className="space-y-8">
+      {/* Hero Header Section */}
+      <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-blue-600 via-purple-600 to-indigo-600 text-white p-8 md:p-12">
+        <div className="absolute inset-0 bg-gradient-to-tr from-black/20 to-white/10 opacity-30"></div>
+        <div className="relative z-10">
+          <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between space-y-6 lg:space-y-0">
+            <div className="space-y-4">
+              <div className="flex items-center space-x-4">
+                <div className="w-16 h-16 bg-white/20 rounded-2xl flex items-center justify-center">
+                  <Users className="w-8 h-8 text-white" />
+                </div>
+                <div>
+                  <h1 className="text-4xl font-bold tracking-tight">
+                    Manajemen Karyawan
+                  </h1>
+                  <p className="text-xl text-blue-100 mt-2">
+                    Kelola data karyawan dan QR code dengan mudah
+                  </p>
+                </div>
+              </div>
+              <div className="flex flex-wrap items-center gap-4 text-sm">
+                <div className="flex items-center gap-2 bg-white/10 rounded-xl px-4 py-2 backdrop-blur-sm">
+                  <Users className="w-4 h-4" />
+                  <span>Total: {employees.length} Karyawan</span>
+                </div>
+                <div className="flex items-center gap-2 bg-white/10 rounded-xl px-4 py-2 backdrop-blur-sm">
+                  <CheckCircle className="w-4 h-4" />
+                  <span>Aktif: {employees.filter(emp => emp.status === 'active').length}</span>
+                </div>
+                <div className="flex items-center gap-2 bg-white/10 rounded-xl px-4 py-2 backdrop-blur-sm">
+                  <Clock className="w-4 h-4" />
+                  <span>Tidak Aktif: {employees.filter(emp => emp.status === 'inactive').length}</span>
+                </div>
+              </div>
+            </div>
+            <div className="flex flex-wrap gap-3">
+              <Button 
+                onClick={async () => {
+                  try {
+                    const response = await apiRequest("/api/qr/update-all", "POST", {});
+                    toast({
+                      title: "QR Code Update",
+                      description: response.message || "Semua QR Code berhasil diupdate ke format URL",
+                    });
+                    queryClient.invalidateQueries({ queryKey: ["/api/employees"] });
+                  } catch (error) {
+                    toast({
+                      title: "Error",
+                      description: "Gagal mengupdate QR Code",
+                      variant: "destructive",
+                    });
+                  }
+                }}
+                variant="outline"
+                size="sm"
+                data-testid="update-qr-button"
+                className="bg-white/10 border-white/20 text-white hover:bg-white/20 backdrop-blur-sm"
+              >
+                <QrCode className="w-4 h-4 mr-2" />
+                Update QR URL
+              </Button>
+              <Button 
+                onClick={handleDeleteAll}
+                size="sm"
+                data-testid="delete-all-button"
+                disabled={employees.length === 0}
+                className="bg-red-500/20 border-red-300/30 text-red-100 hover:bg-red-500/30 backdrop-blur-sm"
+              >
+                <Trash2 className="w-4 h-4 mr-2" />
+                Hapus Semua
+              </Button>
+              <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+                <DialogTrigger asChild>
+                  <Button 
+                    onClick={handleNewEmployee} 
+                    data-testid="add-employee-button"
+                    className="bg-white text-blue-600 hover:bg-gray-100 shadow-lg"
+                  >
+                    <Plus className="w-4 h-4 mr-2" />
+                    Tambah Karyawan
+                  </Button>
+                </DialogTrigger>
               <DialogContent className="sm:max-w-[425px]">
               <DialogHeader>
                 <DialogTitle className="flex items-center justify-between">
@@ -682,391 +716,550 @@ export default function Employees() {
               </Form>
             </DialogContent>
           </Dialog>
+            </div>
           </div>
         </div>
       </div>
       
-      {/* Modern Tab Container */}
-      <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg">
+      {/* Enhanced Tab Container */}
+      <div className="bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-2xl shadow-sm overflow-hidden">
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <div className="border-b border-gray-200 dark:border-gray-700 p-4">
-            <TabsList className="grid w-full grid-cols-2 bg-gray-50 dark:bg-gray-700/50">
-              <TabsTrigger value="dashboard" data-testid="dashboard-tab" className="data-[state=active]:bg-white dark:data-[state=active]:bg-gray-800">Dashboard</TabsTrigger>
-              <TabsTrigger value="list" data-testid="list-tab" className="data-[state=active]:bg-white dark:data-[state=active]:bg-gray-800">List</TabsTrigger>
+          <div className="bg-gradient-to-r from-gray-50 to-blue-50 dark:from-gray-800 dark:to-blue-900/10 border-b border-gray-100 dark:border-gray-700 p-6">
+            <TabsList className="grid w-full max-w-md mx-auto grid-cols-2 bg-white/50 dark:bg-gray-700/50 rounded-2xl p-1 backdrop-blur-sm">
+              <TabsTrigger 
+                value="dashboard" 
+                data-testid="dashboard-tab" 
+                className="rounded-xl data-[state=active]:bg-white dark:data-[state=active]:bg-gray-800 data-[state=active]:shadow-sm transition-all duration-200"
+              >
+                <BarChart3 className="w-4 h-4 mr-2" />
+                Dashboard
+              </TabsTrigger>
+              <TabsTrigger 
+                value="list" 
+                data-testid="list-tab" 
+                className="rounded-xl data-[state=active]:bg-white dark:data-[state=active]:bg-gray-800 data-[state=active]:shadow-sm transition-all duration-200"
+              >
+                <Users className="w-4 h-4 mr-2" />
+                List
+              </TabsTrigger>
             </TabsList>
           </div>
           
-          <TabsContent value="dashboard" className="space-y-6 p-6">
-            {/* Dashboard Filters */}
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-              <Select value={dashboardDepartmentFilter} onValueChange={setDashboardDepartmentFilter}>
-                <SelectTrigger data-testid="dashboard-department-filter">
-                  <SelectValue placeholder="Semua Department" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Semua Department</SelectItem>
-                  {uniqueDepartmentsForFilter.map(dept => (
-                    <SelectItem key={dept} value={dept}>{dept}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              
-              <Select value={dashboardPositionFilter} onValueChange={setDashboardPositionFilter}>
-                <SelectTrigger data-testid="dashboard-position-filter">
-                  <SelectValue placeholder="Semua Posisi" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Semua Posisi</SelectItem>
-                  {uniquePositionsForFilter.map(pos => (
-                    <SelectItem key={pos} value={pos}>{pos}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              
-              <Select value={dashboardStatusFilter} onValueChange={setDashboardStatusFilter}>
-                <SelectTrigger data-testid="dashboard-status-filter">
-                  <SelectValue placeholder="Semua Status" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Semua Status</SelectItem>
-                  <SelectItem value="active">Aktif</SelectItem>
-                  <SelectItem value="inactive">Tidak Aktif</SelectItem>
-                </SelectContent>
-              </Select>
-              
-              <Button 
-                variant="outline" 
-                onClick={clearDashboardFilters}
-                data-testid="clear-dashboard-filters"
-              >
-                Reset Filter
-              </Button>
-            </div>
-            
-            {/* Modern Summary Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
-              <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-4 hover:shadow-sm transition-shadow">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Total Karyawan</p>
-                    <p className="text-2xl font-bold text-gray-900 dark:text-white" data-testid="card-total-employees">
-                      {dashboardStats.totalEmployees}
-                    </p>
-                  </div>
-                  <div className="w-10 h-10 bg-blue-50 dark:bg-blue-900/20 rounded-lg flex items-center justify-center">
-                    <Users className="w-5 h-5 text-blue-600 dark:text-blue-400" />
-                  </div>
+          <TabsContent value="dashboard" className="space-y-8 p-6">
+            {/* Enhanced Dashboard Filters */}
+            <div className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/10 dark:to-indigo-900/10 rounded-2xl p-6 border border-blue-200 dark:border-blue-800">
+              <div className="flex items-center justify-between mb-4">
+                <div className="space-y-1">
+                  <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Filter & Analytics</h3>
+                  <p className="text-sm text-gray-600 dark:text-gray-400">Analisis data karyawan berdasarkan kategori</p>
+                </div>
+                <div className="w-12 h-12 bg-blue-100 dark:bg-blue-900/20 rounded-2xl flex items-center justify-center">
+                  <Target className="w-6 h-6 text-blue-600 dark:text-blue-400" />
                 </div>
               </div>
-              
-              <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-4 hover:shadow-sm transition-shadow">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Aktif</p>
-                    <p className="text-2xl font-bold text-gray-900 dark:text-white" data-testid="card-active">
-                      {dashboardStats.activeEmployees}
-                    </p>
-                  </div>
-                  <div className="w-10 h-10 bg-emerald-50 dark:bg-emerald-900/20 rounded-lg flex items-center justify-center">
-                    <CheckCircle className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
-                  </div>
-                </div>
-              </div>
-              
-              <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-4 hover:shadow-sm transition-shadow">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Tidak Aktif</p>
-                    <p className="text-2xl font-bold text-gray-900 dark:text-white" data-testid="card-inactive">
-                      {dashboardStats.inactiveEmployees}
-                    </p>
-                  </div>
-                  <div className="w-10 h-10 bg-red-50 dark:bg-red-900/20 rounded-lg flex items-center justify-center">
-                    <Clock className="w-5 h-5 text-red-600 dark:text-red-400" />
-                  </div>
-                </div>
-              </div>
-              
-              <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-4 hover:shadow-sm transition-shadow">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Total Posisi</p>
-                    <p className="text-2xl font-bold text-gray-900 dark:text-white" data-testid="card-unique-positions">
-                      {dashboardStats.uniquePositions}
-                    </p>
-                  </div>
-                  <div className="w-10 h-10 bg-purple-50 dark:bg-purple-900/20 rounded-lg flex items-center justify-center">
-                    <User className="w-5 h-5 text-purple-600 dark:text-purple-400" />
-                  </div>
-                </div>
-              </div>
-              
-              <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-4 hover:shadow-sm transition-shadow">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Total Dept</p>
-                    <p className="text-2xl font-bold text-gray-900 dark:text-white" data-testid="card-unique-departments">
-                      {dashboardStats.uniqueDepartments}
-                    </p>
-                  </div>
-                  <div className="w-10 h-10 bg-orange-50 dark:bg-orange-900/20 rounded-lg flex items-center justify-center">
-                    <FileText className="w-5 h-5 text-orange-600 dark:text-orange-400" />
-                  </div>
-                </div>
-              </div>
-            </div>
-            
-            {/* Modern Position and Department Tables */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-              {/* Position Table */}
-              <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg">
-                <div className="p-4 border-b border-gray-200 dark:border-gray-700">
-                  <h3 className="text-base font-semibold text-gray-900 dark:text-white">Berdasarkan Posisi</h3>
-                </div>
-                <div className="p-4">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Posisi</TableHead>
-                        <TableHead className="text-right">Jumlah</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {Object.entries(dashboardStats.positionCounts)
-                        .sort(([,a], [,b]) => b - a)
-                        .map(([position, count]) => (
-                        <TableRow 
-                          key={position}
-                          className="cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700/50"
-                          onClick={() => handlePositionClick(position)}
-                          data-testid={`position-row-${position}`}
-                        >
-                          <TableCell className="font-medium">{position}</TableCell>
-                          <TableCell className="text-right">{count}</TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                </div>
-              </div>
-              
-              {/* Department Table */}
-              <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg">
-                <div className="p-4 border-b border-gray-200 dark:border-gray-700">
-                  <h3 className="text-base font-semibold text-gray-900 dark:text-white">Berdasarkan Department</h3>
-                </div>
-                <div className="p-4">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Department</TableHead>
-                        <TableHead className="text-right">Jumlah</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {Object.entries(dashboardStats.departmentCounts)
-                        .sort(([,a], [,b]) => b - a)
-                        .map(([department, count]) => (
-                        <TableRow 
-                          key={department}
-                          className="cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700/50"
-                          onClick={() => handleDepartmentClick(department)}
-                          data-testid={`department-row-${department}`}
-                        >
-                          <TableCell className="font-medium">{department}</TableCell>
-                          <TableCell className="text-right">{count}</TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                </div>
-              </div>
-            </div>
-            
-            {/* Modern Investor Group Table */}
-            <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg">
-              <div className="p-4 border-b border-gray-200 dark:border-gray-700">
-                <h3 className="text-base font-semibold text-gray-900 dark:text-white">Berdasarkan Investor Group</h3>
-              </div>
-              <div className="p-4">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Investor Group</TableHead>
-                      <TableHead className="text-right">Jumlah</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {Object.entries(dashboardStats.investorGroupCounts)
-                      .sort(([,a], [,b]) => b - a)
-                      .map(([group, count]) => (
-                      <TableRow 
-                        key={group}
-                        data-testid={`investor-group-row-${group}`}
-                        className="hover:bg-gray-50 dark:hover:bg-gray-700/50"
-                      >
-                        <TableCell className="font-medium">{group}</TableCell>
-                        <TableCell className="text-right">{count}</TableCell>
-                      </TableRow>
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                <Select value={dashboardDepartmentFilter} onValueChange={setDashboardDepartmentFilter}>
+                  <SelectTrigger data-testid="dashboard-department-filter" className="bg-white/50 border-blue-200 dark:border-blue-700">
+                    <SelectValue placeholder="Semua Department" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Semua Department</SelectItem>
+                    {uniqueDepartmentsForFilter.map(dept => (
+                      <SelectItem key={dept} value={dept}>{dept}</SelectItem>
                     ))}
-                  </TableBody>
-                </Table>
+                  </SelectContent>
+                </Select>
+                
+                <Select value={dashboardPositionFilter} onValueChange={setDashboardPositionFilter}>
+                  <SelectTrigger data-testid="dashboard-position-filter" className="bg-white/50 border-blue-200 dark:border-blue-700">
+                    <SelectValue placeholder="Semua Posisi" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Semua Posisi</SelectItem>
+                    {uniquePositionsForFilter.map(pos => (
+                      <SelectItem key={pos} value={pos}>{pos}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                
+                <Select value={dashboardStatusFilter} onValueChange={setDashboardStatusFilter}>
+                  <SelectTrigger data-testid="dashboard-status-filter" className="bg-white/50 border-blue-200 dark:border-blue-700">
+                    <SelectValue placeholder="Semua Status" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Semua Status</SelectItem>
+                    <SelectItem value="active">Aktif</SelectItem>
+                    <SelectItem value="inactive">Tidak Aktif</SelectItem>
+                  </SelectContent>
+                </Select>
+                
+                <Button 
+                  variant="outline" 
+                  onClick={clearDashboardFilters}
+                  data-testid="clear-dashboard-filters"
+                  className="bg-white/50 border-blue-200 dark:border-blue-700 hover:bg-blue-100 dark:hover:bg-blue-900/20"
+                >
+                  <Target className="w-4 h-4 mr-2" />
+                  Reset Filter
+                </Button>
+              </div>
+            </div>
+            
+            {/* Premium Statistics Cards */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
+              <div className="group relative overflow-hidden bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-blue-900/20 dark:to-indigo-900/20 rounded-2xl p-6 border border-blue-200 dark:border-blue-800 hover:shadow-xl transition-all duration-300">
+                <div className="absolute top-0 right-0 w-20 h-20 bg-blue-500/10 rounded-full -translate-y-1/2 translate-x-1/2"></div>
+                <div className="relative">
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="w-12 h-12 bg-blue-500 rounded-2xl flex items-center justify-center shadow-lg">
+                      <Users className="w-6 h-6 text-white" />
+                    </div>
+                    <TrendingUp className="w-5 h-5 text-blue-500 opacity-60" />
+                  </div>
+                  <p className="text-sm font-medium text-blue-600 dark:text-blue-400 uppercase tracking-wide">Total Karyawan</p>
+                  <p className="text-3xl font-bold text-blue-900 dark:text-blue-100 mt-1" data-testid="card-total-employees">
+                    {dashboardStats.totalEmployees}
+                  </p>
+                </div>
+              </div>
+              
+              <div className="group relative overflow-hidden bg-gradient-to-br from-emerald-50 to-green-100 dark:from-emerald-900/20 dark:to-green-900/20 rounded-2xl p-6 border border-emerald-200 dark:border-emerald-800 hover:shadow-xl transition-all duration-300">
+                <div className="absolute top-0 right-0 w-20 h-20 bg-emerald-500/10 rounded-full -translate-y-1/2 translate-x-1/2"></div>
+                <div className="relative">
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="w-12 h-12 bg-emerald-500 rounded-2xl flex items-center justify-center shadow-lg">
+                      <CheckCircle className="w-6 h-6 text-white" />
+                    </div>
+                    <Zap className="w-5 h-5 text-emerald-500 opacity-60" />
+                  </div>
+                  <p className="text-sm font-medium text-emerald-600 dark:text-emerald-400 uppercase tracking-wide">Karyawan Aktif</p>
+                  <p className="text-3xl font-bold text-emerald-900 dark:text-emerald-100 mt-1" data-testid="card-active">
+                    {dashboardStats.activeEmployees}
+                  </p>
+                </div>
+              </div>
+              
+              <div className="group relative overflow-hidden bg-gradient-to-br from-red-50 to-rose-100 dark:from-red-900/20 dark:to-rose-900/20 rounded-2xl p-6 border border-red-200 dark:border-red-800 hover:shadow-xl transition-all duration-300">
+                <div className="absolute top-0 right-0 w-20 h-20 bg-red-500/10 rounded-full -translate-y-1/2 translate-x-1/2"></div>
+                <div className="relative">
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="w-12 h-12 bg-red-500 rounded-2xl flex items-center justify-center shadow-lg">
+                      <Clock className="w-6 h-6 text-white" />
+                    </div>
+                    <AlertCircle className="w-5 h-5 text-red-500 opacity-60" />
+                  </div>
+                  <p className="text-sm font-medium text-red-600 dark:text-red-400 uppercase tracking-wide">Tidak Aktif</p>
+                  <p className="text-3xl font-bold text-red-900 dark:text-red-100 mt-1" data-testid="card-inactive">
+                    {dashboardStats.inactiveEmployees}
+                  </p>
+                </div>
+              </div>
+              
+              <div className="group relative overflow-hidden bg-gradient-to-br from-purple-50 to-violet-100 dark:from-purple-900/20 dark:to-violet-900/20 rounded-2xl p-6 border border-purple-200 dark:border-purple-800 hover:shadow-xl transition-all duration-300">
+                <div className="absolute top-0 right-0 w-20 h-20 bg-purple-500/10 rounded-full -translate-y-1/2 translate-x-1/2"></div>
+                <div className="relative">
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="w-12 h-12 bg-purple-500 rounded-2xl flex items-center justify-center shadow-lg">
+                      <User className="w-6 h-6 text-white" />
+                    </div>
+                    <Shield className="w-5 h-5 text-purple-500 opacity-60" />
+                  </div>
+                  <p className="text-sm font-medium text-purple-600 dark:text-purple-400 uppercase tracking-wide">Total Posisi</p>
+                  <p className="text-3xl font-bold text-purple-900 dark:text-purple-100 mt-1" data-testid="card-unique-positions">
+                    {dashboardStats.uniquePositions}
+                  </p>
+                </div>
+              </div>
+              
+              <div className="group relative overflow-hidden bg-gradient-to-br from-orange-50 to-amber-100 dark:from-orange-900/20 dark:to-amber-900/20 rounded-2xl p-6 border border-orange-200 dark:border-orange-800 hover:shadow-xl transition-all duration-300">
+                <div className="absolute top-0 right-0 w-20 h-20 bg-orange-500/10 rounded-full -translate-y-1/2 translate-x-1/2"></div>
+                <div className="relative">
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="w-12 h-12 bg-orange-500 rounded-2xl flex items-center justify-center shadow-lg">
+                      <Building2 className="w-6 h-6 text-white" />
+                    </div>
+                    <BarChart3 className="w-5 h-5 text-orange-500 opacity-60" />
+                  </div>
+                  <p className="text-sm font-medium text-orange-600 dark:text-orange-400 uppercase tracking-wide">Total Dept</p>
+                  <p className="text-3xl font-bold text-orange-900 dark:text-orange-100 mt-1" data-testid="card-unique-departments">
+                    {dashboardStats.uniqueDepartments}
+                  </p>
+                </div>
+              </div>
+            </div>
+            
+            {/* Enhanced Analytics Tables */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+              {/* Position Analytics */}
+              <div className="bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-2xl shadow-sm overflow-hidden">
+                <div className="bg-gradient-to-r from-purple-50 to-violet-50 dark:from-purple-900/10 dark:to-violet-900/10 p-6 border-b border-gray-100 dark:border-gray-700">
+                  <div className="flex items-center justify-between">
+                    <div className="space-y-1">
+                      <h3 className="text-xl font-semibold text-gray-900 dark:text-white">Analisis Posisi</h3>
+                      <p className="text-sm text-gray-600 dark:text-gray-400">Distribusi karyawan berdasarkan jabatan</p>
+                    </div>
+                    <div className="w-12 h-12 bg-purple-100 dark:bg-purple-900/20 rounded-2xl flex items-center justify-center">
+                      <User className="w-6 h-6 text-purple-600 dark:text-purple-400" />
+                    </div>
+                  </div>
+                </div>
+                <div className="p-6">
+                  <div className="space-y-3">
+                    {Object.entries(dashboardStats.positionCounts)
+                      .sort(([,a], [,b]) => b - a)
+                      .map(([position, count]) => (
+                      <div 
+                        key={position}
+                        className="group flex items-center justify-between p-4 bg-gradient-to-r from-gray-50 to-purple-50 dark:from-gray-700/30 dark:to-purple-900/10 rounded-xl border border-gray-200 dark:border-gray-600 cursor-pointer hover:shadow-md transition-all duration-200"
+                        onClick={() => handlePositionClick(position)}
+                        data-testid={`position-row-${position}`}
+                      >
+                        <div className="flex items-center space-x-3">
+                          <div className="w-2 h-2 bg-purple-500 rounded-full"></div>
+                          <span className="font-medium text-gray-900 dark:text-white group-hover:text-purple-600 transition-colors">{position}</span>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          <span className="text-lg font-bold text-purple-600 dark:text-purple-400">{count}</span>
+                          <TrendingUp className="w-4 h-4 text-purple-400 opacity-0 group-hover:opacity-100 transition-opacity" />
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+              
+              {/* Department Analytics */}
+              <div className="bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-2xl shadow-sm overflow-hidden">
+                <div className="bg-gradient-to-r from-orange-50 to-amber-50 dark:from-orange-900/10 dark:to-amber-900/10 p-6 border-b border-gray-100 dark:border-gray-700">
+                  <div className="flex items-center justify-between">
+                    <div className="space-y-1">
+                      <h3 className="text-xl font-semibold text-gray-900 dark:text-white">Analisis Departemen</h3>
+                      <p className="text-sm text-gray-600 dark:text-gray-400">Distribusi karyawan berdasarkan divisi</p>
+                    </div>
+                    <div className="w-12 h-12 bg-orange-100 dark:bg-orange-900/20 rounded-2xl flex items-center justify-center">
+                      <Building2 className="w-6 h-6 text-orange-600 dark:text-orange-400" />
+                    </div>
+                  </div>
+                </div>
+                <div className="p-6">
+                  <div className="space-y-3">
+                    {Object.entries(dashboardStats.departmentCounts)
+                      .sort(([,a], [,b]) => b - a)
+                      .map(([department, count]) => (
+                      <div 
+                        key={department}
+                        className="group flex items-center justify-between p-4 bg-gradient-to-r from-gray-50 to-orange-50 dark:from-gray-700/30 dark:to-orange-900/10 rounded-xl border border-gray-200 dark:border-gray-600 cursor-pointer hover:shadow-md transition-all duration-200"
+                        onClick={() => handleDepartmentClick(department)}
+                        data-testid={`department-row-${department}`}
+                      >
+                        <div className="flex items-center space-x-3">
+                          <div className="w-2 h-2 bg-orange-500 rounded-full"></div>
+                          <span className="font-medium text-gray-900 dark:text-white group-hover:text-orange-600 transition-colors">{department}</span>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          <span className="text-lg font-bold text-orange-600 dark:text-orange-400">{count}</span>
+                          <BarChart3 className="w-4 h-4 text-orange-400 opacity-0 group-hover:opacity-100 transition-opacity" />
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </div>
+            
+            {/* Premium Investor Group Analytics */}
+            <div className="bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-2xl shadow-sm overflow-hidden">
+              <div className="bg-gradient-to-r from-teal-50 to-cyan-50 dark:from-teal-900/10 dark:to-cyan-900/10 p-6 border-b border-gray-100 dark:border-gray-700">
+                <div className="flex items-center justify-between">
+                  <div className="space-y-1">
+                    <h3 className="text-xl font-semibold text-gray-900 dark:text-white">Investor Group Analytics</h3>
+                    <p className="text-sm text-gray-600 dark:text-gray-400">Distribusi karyawan berdasarkan grup investor</p>
+                  </div>
+                  <div className="w-12 h-12 bg-teal-100 dark:bg-teal-900/20 rounded-2xl flex items-center justify-center">
+                    <Shield className="w-6 h-6 text-teal-600 dark:text-teal-400" />
+                  </div>
+                </div>
+              </div>
+              <div className="p-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {Object.entries(dashboardStats.investorGroupCounts)
+                    .sort(([,a], [,b]) => b - a)
+                    .map(([group, count]) => (
+                    <div 
+                      key={group}
+                      data-testid={`investor-group-row-${group}`}
+                      className="bg-gradient-to-br from-teal-50 to-cyan-100 dark:from-teal-900/20 dark:to-cyan-900/20 rounded-xl p-4 border border-teal-200 dark:border-teal-800 hover:shadow-md transition-all duration-200"
+                    >
+                      <div className="flex items-center justify-between">
+                        <div className="space-y-1">
+                          <p className="text-sm font-medium text-teal-600 dark:text-teal-400 uppercase tracking-wide">{group}</p>
+                          <p className="text-2xl font-bold text-teal-900 dark:text-teal-100">{count}</p>
+                        </div>
+                        <div className="w-10 h-10 bg-teal-500 rounded-xl flex items-center justify-center">
+                          <Users className="w-5 h-5 text-white" />
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
               </div>
             </div>
           </TabsContent>
           
-          <TabsContent value="list" className="mt-6">
-        {/* Search and Filter */}
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-6 space-y-3 sm:space-y-0 sm:space-x-4">
-          <div className="flex-1 relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-            <Input
-              placeholder="Cari karyawan..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-10"
-              data-testid="search-employees-input"
-            />
+          <TabsContent value="list" className="space-y-8 p-6">
+        {/* Enhanced Search and Filter */}
+        <div className="bg-gradient-to-r from-indigo-50 to-purple-50 dark:from-indigo-900/10 dark:to-purple-900/10 rounded-2xl p-6 border border-indigo-200 dark:border-indigo-800">
+          <div className="flex items-center justify-between mb-4">
+            <div className="space-y-1">
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Pencarian Karyawan</h3>
+              <p className="text-sm text-gray-600 dark:text-gray-400">Cari berdasarkan nama, NIK, posisi, atau departemen</p>
+            </div>
+            <div className="w-12 h-12 bg-indigo-100 dark:bg-indigo-900/20 rounded-2xl flex items-center justify-center">
+              <Search className="w-6 h-6 text-indigo-600 dark:text-indigo-400" />
+            </div>
           </div>
-          <div className="w-full sm:w-[180px]">
-            <Input
-              placeholder="Cari NIK..."
-              value={nikFilter}
-              onChange={(e) => setNikFilter(e.target.value)}
-              data-testid="filter-nik-input"
-            />
+          <div className="flex flex-col sm:flex-row gap-4">
+            <div className="flex-1 relative">
+              <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+              <Input
+                placeholder="Cari nama, posisi, atau departemen..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-12 h-12 bg-white/50 border-indigo-200 dark:border-indigo-700 rounded-xl"
+                data-testid="search-employees-input"
+              />
+            </div>
+            <div className="w-full sm:w-[200px] relative">
+              <User className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+              <Input
+                placeholder="Filter NIK..."
+                value={nikFilter}
+                onChange={(e) => setNikFilter(e.target.value)}
+                className="pl-12 h-12 bg-white/50 border-indigo-200 dark:border-indigo-700 rounded-xl"
+                data-testid="filter-nik-input"
+              />
+            </div>
+          </div>
+          <div className="mt-4 flex items-center justify-between text-sm">
+            <span className="text-indigo-600 dark:text-indigo-400 font-medium">
+              {filteredEmployees.length} dari {employees.length} karyawan ditemukan
+            </span>
+            <div className="flex items-center space-x-2">
+              <span className="text-gray-500 dark:text-gray-400">Hasil real-time</span>
+              <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+            </div>
           </div>
         </div>
         
-        {/* Employee Table */}
-        <div className="overflow-x-auto">
-          <table className="w-full table-auto">
-            <thead>
-              <tr className="border-b border-gray-200 dark:border-gray-700">
-                <th className="text-left py-3 px-4 font-medium text-gray-900 dark:text-white">NIK</th>
-                <th className="text-left py-3 px-4 font-medium text-gray-900 dark:text-white">Nama</th>
-                <th className="text-left py-3 px-4 font-medium text-gray-900 dark:text-white">Position</th>
-                <th className="text-left py-3 px-4 font-medium text-gray-900 dark:text-white">Department</th>
-                <th className="text-left py-3 px-4 font-medium text-gray-900 dark:text-white">Investor Group</th>
-                <th className="text-left py-3 px-4 font-medium text-gray-900 dark:text-white">WhatsApp</th>
-                <th className="text-left py-3 px-4 font-medium text-gray-900 dark:text-white">QR Code</th>
-                <th className="text-left py-3 px-4 font-medium text-gray-900 dark:text-white">Status</th>
-                <th className="text-left py-3 px-4 font-medium text-gray-900 dark:text-white">Aksi</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
-              {isLoading ? (
+        {/* Enhanced Employee Table */}
+        <div className="bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-2xl shadow-sm overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="w-full table-auto">
+              <thead className="bg-gradient-to-r from-gray-50 to-indigo-50 dark:from-gray-800 dark:to-indigo-900/10">
                 <tr>
-                  <td colSpan={9} className="py-8 text-center text-gray-500 dark:text-gray-400">
-                    Loading...
-                  </td>
+                  <th className="text-left py-4 px-6 font-semibold text-gray-700 dark:text-gray-200 uppercase tracking-wide text-xs">NIK</th>
+                  <th className="text-left py-4 px-6 font-semibold text-gray-700 dark:text-gray-200 uppercase tracking-wide text-xs">Nama</th>
+                  <th className="text-left py-4 px-6 font-semibold text-gray-700 dark:text-gray-200 uppercase tracking-wide text-xs">Position</th>
+                  <th className="text-left py-4 px-6 font-semibold text-gray-700 dark:text-gray-200 uppercase tracking-wide text-xs">Department</th>
+                  <th className="text-left py-4 px-6 font-semibold text-gray-700 dark:text-gray-200 uppercase tracking-wide text-xs">Investor Group</th>
+                  <th className="text-left py-4 px-6 font-semibold text-gray-700 dark:text-gray-200 uppercase tracking-wide text-xs">WhatsApp</th>
+                  <th className="text-left py-4 px-6 font-semibold text-gray-700 dark:text-gray-200 uppercase tracking-wide text-xs">QR Code</th>
+                  <th className="text-left py-4 px-6 font-semibold text-gray-700 dark:text-gray-200 uppercase tracking-wide text-xs">Status</th>
+                  <th className="text-left py-4 px-6 font-semibold text-gray-700 dark:text-gray-200 uppercase tracking-wide text-xs">Aksi</th>
                 </tr>
-              ) : filteredEmployees.length === 0 ? (
-                <tr>
-                  <td colSpan={9} className="py-8 text-center text-gray-500 dark:text-gray-400">
-                    Tidak ada data karyawan
-                  </td>
-                </tr>
-              ) : (
-                filteredEmployees.map((employee) => (
-                  <tr key={employee.id} data-testid={`employee-row-${employee.id}`}>
-                    <td className="py-3 px-4 text-sm text-gray-900 dark:text-white">{employee.id}</td>
-                    <td className="py-3 px-4 text-sm text-gray-900 dark:text-white">{employee.name}</td>
-                    <td className="py-3 px-4 text-sm text-gray-900 dark:text-white">{employee.position || "-"}</td>
-                    <td className="py-3 px-4 text-sm text-gray-900 dark:text-white">{employee.department || "-"}</td>
-                    <td className="py-3 px-4 text-sm text-gray-900 dark:text-white">{employee.investorGroup || "-"}</td>
-                    <td className="py-3 px-4 text-sm text-gray-900 dark:text-white">{employee.phone}</td>
-                    <td className="py-3 px-4">
-                      {employee.qrCode ? (
-                        <QRCodeDisplay qrData={employee.qrCode} employeeName={employee.name} />
-                      ) : (
-                        <Badge variant="secondary">
-                          No QR
-                        </Badge>
-                      )}
-                    </td>
-                    <td className="py-3 px-4">
-                      <Badge 
-                        variant={employee.status === 'active' ? 'default' : 'secondary'}
-                        className={employee.status === 'active' ? 'status-present' : 'status-pending'}
-                      >
-                        {employee.status === 'active' ? 'Aktif' : 'Tidak Aktif'}
-                      </Badge>
-                    </td>
-                    <td className="py-3 px-4">
-                      <div className="flex space-x-2">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleEdit(employee)}
-                          data-testid={`edit-employee-${employee.id}`}
-                        >
-                          <Edit className="w-4 h-4" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleDelete(employee.id)}
-                          className="text-red-600 hover:text-red-700"
-                          data-testid={`delete-employee-${employee.id}`}
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </Button>
+              </thead>
+              <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
+                {isLoading ? (
+                  <tr>
+                    <td colSpan={9} className="py-16 text-center">
+                      <div className="space-y-4">
+                        <div className="w-16 h-16 bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-700 dark:to-gray-600 rounded-3xl flex items-center justify-center mx-auto animate-pulse">
+                          <Users className="w-8 h-8 text-gray-400 dark:text-gray-500" />
+                        </div>
+                        <p className="text-gray-500 dark:text-gray-400 font-medium">Memuat data karyawan...</p>
                       </div>
                     </td>
                   </tr>
-                ))
-              )}
-            </tbody>
-          </table>
+                ) : filteredEmployees.length === 0 ? (
+                  <tr>
+                    <td colSpan={9} className="py-16 text-center">
+                      <div className="space-y-4">
+                        <div className="w-16 h-16 bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-700 dark:to-gray-600 rounded-3xl flex items-center justify-center mx-auto">
+                          <Search className="w-8 h-8 text-gray-400 dark:text-gray-500" />
+                        </div>
+                        <div>
+                          <p className="text-gray-900 dark:text-white font-medium mb-1">Tidak ada karyawan ditemukan</p>
+                          <p className="text-gray-500 dark:text-gray-400 text-sm">Coba ubah kata kunci pencarian atau tambah karyawan baru</p>
+                        </div>
+                      </div>
+                    </td>
+                  </tr>
+                ) : (
+                  filteredEmployees.map((employee, index) => (
+                    <tr 
+                      key={employee.id} 
+                      data-testid={`employee-row-${employee.id}`}
+                      className={`hover:bg-gradient-to-r hover:from-blue-50 hover:to-indigo-50 dark:hover:from-blue-900/10 dark:hover:to-indigo-900/10 transition-all duration-200 ${
+                        index % 2 === 0 ? 'bg-white dark:bg-gray-800' : 'bg-gray-50/30 dark:bg-gray-700/20'
+                      }`}
+                    >
+                      <td className="py-4 px-6">
+                        <div className="flex items-center space-x-2">
+                          <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                          <span className="text-sm font-mono font-medium text-gray-900 dark:text-white">{employee.id}</span>
+                        </div>
+                      </td>
+                      <td className="py-4 px-6">
+                        <div className="flex items-center space-x-3">
+                          <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-indigo-500 rounded-2xl flex items-center justify-center">
+                            <span className="text-white font-semibold text-sm">
+                              {employee.name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)}
+                            </span>
+                          </div>
+                          <div>
+                            <p className="text-sm font-medium text-gray-900 dark:text-white">{employee.name}</p>
+                            <p className="text-xs text-gray-500 dark:text-gray-400">{employee.phone}</p>
+                          </div>
+                        </div>
+                      </td>
+                      <td className="py-4 px-6">
+                        <span className="inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-medium bg-purple-100 dark:bg-purple-900/20 text-purple-800 dark:text-purple-200">
+                          {employee.position || "-"}
+                        </span>
+                      </td>
+                      <td className="py-4 px-6">
+                        <span className="inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-medium bg-orange-100 dark:bg-orange-900/20 text-orange-800 dark:text-orange-200">
+                          {employee.department || "-"}
+                        </span>
+                      </td>
+                      <td className="py-4 px-6">
+                        <span className="inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-medium bg-teal-100 dark:bg-teal-900/20 text-teal-800 dark:text-teal-200">
+                          {employee.investorGroup || "-"}
+                        </span>
+                      </td>
+                      <td className="py-4 px-6 text-sm text-gray-900 dark:text-white font-mono">{employee.phone}</td>
+                      <td className="py-4 px-6">
+                        {employee.qrCode ? (
+                          <QRCodeDisplay qrData={employee.qrCode} employeeName={employee.name} />
+                        ) : (
+                          <Badge variant="secondary" className="bg-gray-100 dark:bg-gray-700">
+                            No QR
+                          </Badge>
+                        )}
+                      </td>
+                      <td className="py-4 px-6">
+                        <Badge 
+                          variant={employee.status === 'active' ? 'default' : 'secondary'}
+                          className={employee.status === 'active' 
+                            ? 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-800 dark:text-emerald-200 border-emerald-200 dark:border-emerald-800' 
+                            : 'bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200'
+                          }
+                        >
+                          {employee.status === 'active' ? '✓ Aktif' : '⏸ Tidak Aktif'}
+                        </Badge>
+                      </td>
+                      <td className="py-4 px-6">
+                        <div className="flex space-x-1">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleEdit(employee)}
+                            data-testid={`edit-employee-${employee.id}`}
+                            className="h-8 w-8 p-0 hover:bg-blue-100 dark:hover:bg-blue-900/20 text-blue-600 dark:text-blue-400"
+                          >
+                            <Edit className="w-4 h-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleDelete(employee.id)}
+                            className="h-8 w-8 p-0 text-red-600 hover:bg-red-100 dark:hover:bg-red-900/20 hover:text-red-700"
+                            data-testid={`delete-employee-${employee.id}`}
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
         </div>
         
-        {/* Pagination Info and Upload Excel Button */}
-        <div className="flex items-center justify-between mt-6">
-          <p className="text-sm text-gray-500 dark:text-gray-400">
-            Menampilkan {filteredEmployees.length} dari {employees.length} karyawan
-          </p>
-          <Dialog open={isUploadDialogOpen} onOpenChange={setIsUploadDialogOpen}>
-            <DialogTrigger asChild>
-              <Button variant="outline" className="ml-auto" data-testid="upload-excel-button">
-                <Upload className="w-4 h-4 mr-2" />
-                Upload Excel
-              </Button>
-            </DialogTrigger>
-            <DialogContent>
-              <DialogHeader>
-                <DialogTitle>Upload Data Karyawan dari Excel</DialogTitle>
-              </DialogHeader>
-              <div className="space-y-4">
-                <p className="text-sm text-gray-600 dark:text-gray-300">
-                  Upload file Excel dengan format: NIK, Nama, Posisi, Departemen, Investor Group, No. WhatsApp
-                </p>
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  accept=".xlsx,.xls"
-                  className="hidden"
-                  onChange={handleFileUpload}
-                />
-                <Button 
-                  onClick={() => fileInputRef.current?.click()}
-                  className="w-full"
-                  data-testid="select-excel-file"
-                >
-                  <Upload className="w-4 h-4 mr-2" />
-                  Pilih File Excel
-                </Button>
-                <Button 
-                  variant="outline" 
-                  onClick={downloadTemplate}
-                  className="w-full"
-                  data-testid="download-template"
-                >
-                  Download Template Excel
-                </Button>
+        {/* Enhanced Footer with Upload */}
+        <div className="bg-gradient-to-r from-gray-50 to-blue-50 dark:from-gray-800 dark:to-blue-900/10 rounded-2xl p-6 border border-gray-200 dark:border-gray-700">
+          <div className="flex flex-col sm:flex-row items-center justify-between space-y-4 sm:space-y-0">
+            <div className="flex items-center space-x-4">
+              <div className="w-10 h-10 bg-blue-100 dark:bg-blue-900/20 rounded-2xl flex items-center justify-center">
+                <FileText className="w-5 h-5 text-blue-600 dark:text-blue-400" />
               </div>
-            </DialogContent>
-          </Dialog>
+              <div>
+                <p className="text-sm font-medium text-gray-900 dark:text-white">
+                  {filteredEmployees.length} dari {employees.length} karyawan
+                </p>
+                <p className="text-xs text-gray-500 dark:text-gray-400">
+                  Data diperbarui secara real-time
+                </p>
+              </div>
+            </div>
+            <Dialog open={isUploadDialogOpen} onOpenChange={setIsUploadDialogOpen}>
+              <DialogTrigger asChild>
+                <Button className="bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 text-white shadow-lg" data-testid="upload-excel-button">
+                  <Upload className="w-4 h-4 mr-2" />
+                  Upload Excel
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="sm:max-w-md">
+                <DialogHeader>
+                  <DialogTitle className="flex items-center space-x-3">
+                    <div className="w-10 h-10 bg-green-100 dark:bg-green-900/20 rounded-2xl flex items-center justify-center">
+                      <Upload className="w-5 h-5 text-green-600 dark:text-green-400" />
+                    </div>
+                    <span>Upload Data Karyawan</span>
+                  </DialogTitle>
+                </DialogHeader>
+                <div className="space-y-6">
+                  <div className="bg-blue-50 dark:bg-blue-900/20 rounded-xl p-4 border border-blue-200 dark:border-blue-800">
+                    <p className="text-sm text-blue-800 dark:text-blue-200 font-medium mb-2">
+                      📄 Format File Excel:
+                    </p>
+                    <ul className="text-xs text-blue-700 dark:text-blue-300 space-y-1">
+                      <li>• NIK, Nama, Posisi, Departemen</li>
+                      <li>• Investor Group, No. WhatsApp</li>
+                    </ul>
+                  </div>
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept=".xlsx,.xls"
+                    className="hidden"
+                    onChange={handleFileUpload}
+                  />
+                  <div className="space-y-3">
+                    <Button 
+                      onClick={() => fileInputRef.current?.click()}
+                      className="w-full h-12 bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 text-white"
+                      data-testid="select-excel-file"
+                    >
+                      <Upload className="w-5 h-5 mr-3" />
+                      Pilih File Excel
+                    </Button>
+                    <Button 
+                      variant="outline" 
+                      onClick={downloadTemplate}
+                      className="w-full h-12 border-2 border-green-200 dark:border-green-800 text-green-600 dark:text-green-400 hover:bg-green-50 dark:hover:bg-green-900/20"
+                      data-testid="download-template"
+                    >
+                      <Download className="w-5 h-5 mr-3" />
+                      Download Template Excel
+                    </Button>
+                  </div>
+                </div>
+              </DialogContent>
+            </Dialog>
+          </div>
         </div>
           </TabsContent>
         </Tabs>
