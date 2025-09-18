@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -54,6 +54,8 @@ interface SimperMonitoring {
 }
 
 export default function DriverView() {
+  const queryClient = useQueryClient();
+
   // Mobile redirect logic - if user accesses this page on mobile, redirect to mobile version
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
@@ -161,6 +163,72 @@ export default function DriverView() {
       // Biarkan parameter NIK tetap di URL untuk stabilitas
     }
   }, [employees]);
+
+  // PREFETCH related data after employee selection for instant tab switching
+  useEffect(() => {
+    if (searchEmployee?.id) {
+      console.log('🚀 Prefetching data for employee:', searchEmployee.name);
+      
+      // Prefetch roster data untuk instant tab switching
+      queryClient.prefetchQuery({
+        queryKey: ["/api/roster", { employeeId: searchEmployee.id }],
+        queryFn: async () => {
+          const response = await fetch(`/api/roster?employeeId=${searchEmployee.id}`);
+          if (!response.ok) throw new Error('Failed to fetch roster');
+          return response.json();
+        },
+        staleTime: 5 * 60 * 1000,
+      });
+
+      // Prefetch leave data untuk instant tab switching
+      queryClient.prefetchQuery({
+        queryKey: ["/api/leave"],
+        staleTime: 3 * 60 * 1000,
+      });
+
+      // Prefetch SIMPER data untuk instant tab switching
+      queryClient.prefetchQuery({
+        queryKey: ["/api/simper-monitoring/nik", searchEmployee.id],
+        queryFn: async () => {
+          const response = await fetch(`/api/simper-monitoring/nik/${searchEmployee.id}`);
+          if (!response.ok) {
+            if (response.status === 404) return null;
+            throw new Error('Failed to fetch SIMPER data');
+          }
+          const data = await response.json();
+          
+          // Calculate monitoring days and status
+          const today = new Date();
+          const processSIMPER = (expiredDate: string | null) => {
+            if (!expiredDate) return { days: null, status: 'Tidak Ada Data' };
+            
+            const expired = new Date(expiredDate);
+            const diffTime = expired.getTime() - today.getTime();
+            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+            
+            if (diffDays < 0) return { days: diffDays, status: 'Segera Perpanjang' };
+            if (diffDays < 7) return { days: diffDays, status: 'Mendekati Perpanjangan' };
+            if (diffDays < 30) return { days: diffDays, status: 'Menuju Perpanjangan' };
+            return { days: diffDays, status: 'Aktif' };
+          };
+
+          const bibStatus = processSIMPER(data.simperBibExpiredDate);
+          const tiaStatus = processSIMPER(data.simperTiaExpiredDate);
+
+          return {
+            ...data,
+            bibMonitoringDays: bibStatus.days,
+            bibStatus: bibStatus.status,
+            tiaMonitoringDays: tiaStatus.days,
+            tiaStatus: tiaStatus.status
+          };
+        },
+        staleTime: 5 * 60 * 1000,
+      });
+
+      console.log('✅ Prefetch initiated for all employee data');
+    }
+  }, [searchEmployee, queryClient]);
 
   // Auto search when debounced value changes
   useEffect(() => {
