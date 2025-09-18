@@ -25,7 +25,7 @@ export default function Reports() {
   
   // Form fields for report header
   const [reportInfo, setReportInfo] = useState({
-    perusahaan: "PT Goden Energi Cemerlang Lestari",
+    perusahaan: "",
     namaPengawas: "",
     hari: new Date().toLocaleDateString('id-ID', { weekday: 'long' }),
     tanggal: new Date().toLocaleDateString('id-ID'),

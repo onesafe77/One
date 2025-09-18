@@ -757,7 +757,7 @@ async function generateA4PortraitPDF(data: ReportData): Promise<void> {
   doc.setFontSize(11);
   
   const infoFields = [
-    `Perusahaan : ${data.reportInfo?.perusahaan || 'PT Goden Energi Cemerlang Lestari'}`,
+    `Perusahaan : ${data.reportInfo?.perusahaan || '(Belum diisi)'}`,
     `Nama Pengawas : ${data.reportInfo?.namaPengawas || 'BUDI HARTO DAN FADLAN'}`,
     `Hari/Tanggal/Waktu : ${data.reportInfo?.hari || 'Rabu'}, ${formatDateForPDF(data.startDate)} / ${data.reportInfo?.waktu || '17:00-18:00'}`,
     `Shift : ${data.reportInfo?.shift || 'Shift 1'}`,
