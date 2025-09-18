@@ -69,29 +69,23 @@ export default function Dashboard() {
   const { data: stats, refetch: refetchStats, isLoading: statsLoading } = useQuery<DashboardStats>({
     queryKey: ["/api/dashboard/stats", selectedDate],
     queryFn: async () => {
-      const response = await fetch(`/api/dashboard/stats?date=${selectedDate}`, {
-        cache: 'no-cache', // Force fresh data
-        headers: { 'Cache-Control': 'no-cache' }
-      });
+      const response = await fetch(`/api/dashboard/stats?date=${selectedDate}`);
       if (!response.ok) throw new Error('Failed to fetch stats');
       return response.json();
     },
-    staleTime: 0, // Data immediately stale for real-time updates
-    refetchOnWindowFocus: true,
+    staleTime: 30000, // Cache for 30 seconds for better performance
+    refetchOnWindowFocus: false, // Disable to prevent excessive refetching
   });
 
   const { data: recentActivities, refetch: refetchActivities, isLoading: activitiesLoading } = useQuery<RecentActivity[]>({
     queryKey: ["/api/dashboard/recent-activities", selectedDate],
     queryFn: async () => {
-      const response = await fetch(`/api/dashboard/recent-activities?date=${selectedDate}`, {
-        cache: 'no-cache',
-        headers: { 'Cache-Control': 'no-cache' }
-      });
+      const response = await fetch(`/api/dashboard/recent-activities?date=${selectedDate}`);
       if (!response.ok) throw new Error('Failed to fetch activities');
       return response.json();
     },
-    staleTime: 0,
-    refetchOnWindowFocus: true,
+    staleTime: 30000, // Cache for 30 seconds for better performance
+    refetchOnWindowFocus: false, // Disable to prevent excessive refetching
   });
 
 
@@ -100,11 +94,11 @@ export default function Dashboard() {
     refetchActivities();
   };
 
-  // Auto refresh yang lebih responsif untuk real-time updates
+  // Optimized auto refresh - reduced frequency for better performance
   useEffect(() => {
     const interval = setInterval(() => {
       handleRefresh();
-    }, 15000); // 15 seconds untuk update lebih cepat
+    }, 60000); // 60 seconds untuk balance antara real-time dan performance
 
     return () => clearInterval(interval);
   }, [selectedDate]);

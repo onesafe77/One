@@ -22,8 +22,8 @@ export function LoadingScreen({ isLoading, onComplete, className }: LoadingScree
         setTimeout(() => {
           setFadeOut(false); // Reset fadeOut state
           onComplete?.();
-        }, 300);
-      }, 1500);
+        }, 200);
+      }, 300);
     };
 
     startLoading();

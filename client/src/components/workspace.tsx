@@ -55,7 +55,7 @@ export function Workspace() {
     
     const timer = setTimeout(() => {
       setIsLoading(false);
-    }, 2000); // Reduced loading time untuk better UX
+    }, 500); // Ultra-fast loading untuk better UX
 
     return () => clearTimeout(timer);
   }, []);
