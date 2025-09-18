@@ -62,12 +62,31 @@ export default function Roster() {
       if (!response.ok) throw new Error('Failed to fetch roster');
       const data = await response.json();
       console.log(`🔄 Fetched ${data.length} roster entries for ${selectedDate}`);
+      
+      // Debug: Show distribution of shifts
+      const shiftCounts = data.reduce((acc: any, item: any) => {
+        acc[item.shift] = (acc[item.shift] || 0) + 1;
+        return acc;
+      }, {});
+      console.log('📊 Shift distribution:', shiftCounts);
+      
       if (data.length > 0) {
-        console.log('📋 Sample roster data:', data.slice(0, 3).map((r: any) => ({
+        console.log('📋 Sample roster data (first 3):', data.slice(0, 3).map((r: any) => ({
           name: r.employee?.name || 'N/A',
           hariKerja: r.hariKerja,
           shift: r.shift
         })));
+        
+        // Show sample from each shift type
+        const uniqueShifts = [...new Set(data.map((r: any) => r.shift))];
+        console.log('📋 Sample from each shift:', uniqueShifts.map(shift => {
+          const sample = data.find((r: any) => r.shift === shift);
+          return {
+            shift,
+            name: sample?.employee?.name || 'N/A',
+            total: shiftCounts[shift]
+          };
+        }));
       }
       return data;
     },
