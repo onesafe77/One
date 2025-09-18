@@ -13,8 +13,7 @@ import {
   Monitor,
   Video,
   Smartphone,
-  Shield,
-  Award
+  Shield
 } from "lucide-react";
 import companyLogo from "@assets/WhatsApp Image 2024-11-30 at 13.08.33_1755505069008.jpeg";
 import { useState } from "react";
@@ -31,7 +30,6 @@ const navigation = [
   { name: "Meeting Management", href: "/workspace/meetings", icon: Video },
   { name: "Scan QR Meeting", href: "/workspace/meeting-scanner", icon: Smartphone },
   { name: "Driver View", href: "/workspace/driver-view", icon: User },
-  { name: "Evaluasi Driver", href: "/workspace/driver-evaluation", icon: Award },
   { name: "Laporan", href: "/workspace/reports", icon: FileText },
 ];
 
