@@ -498,34 +498,31 @@ export default function Reports() {
                 <h4 className="font-semibold text-gray-900 dark:text-white">Informasi Laporan</h4>
               </div>
               <div className="space-y-4">
-            
-                <div>
-                  <Label className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                    Perusahaan
-                  </Label>
-                  <Input
-                    value={reportInfo.perusahaan}
-                    onChange={(e) => setReportInfo(prev => ({...prev, perusahaan: e.target.value}))}
-                    placeholder="Nama perusahaan"
-                    className="bg-white/50 border-gray-300 dark:border-gray-600"
-                    data-testid="input-perusahaan"
-                  />
-                </div>
-
-                <div>
-                  <Label className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                    Nama Pengawas
-                  </Label>
-                  <Input
-                    value={reportInfo.namaPengawas}
-                    onChange={(e) => setReportInfo(prev => ({...prev, namaPengawas: e.target.value}))}
-                    placeholder="Nama pengawas"
-                    className="bg-white/50 border-gray-300 dark:border-gray-600"
-                    data-testid="input-nama-pengawas"
-                  />
-                </div>
-
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <Label className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                      Perusahaan
+                    </Label>
+                    <Input
+                      value={reportInfo.perusahaan}
+                      onChange={(e) => setReportInfo(prev => ({...prev, perusahaan: e.target.value}))}
+                      placeholder="Nama perusahaan"
+                      className="bg-white/50 border-gray-300 dark:border-gray-600"
+                      data-testid="input-perusahaan"
+                    />
+                  </div>
+                  <div>
+                    <Label className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                      Nama Pengawas
+                    </Label>
+                    <Input
+                      value={reportInfo.namaPengawas}
+                      onChange={(e) => setReportInfo(prev => ({...prev, namaPengawas: e.target.value}))}
+                      placeholder="Nama pengawas"
+                      className="bg-white/50 border-gray-300 dark:border-gray-600"
+                      data-testid="input-nama-pengawas"
+                    />
+                  </div>
                   <div>
                     <Label className="text-sm font-medium text-gray-700 dark:text-gray-300">
                       Waktu
@@ -552,70 +549,61 @@ export default function Reports() {
                       </SelectContent>
                     </Select>
                   </div>
-                </div>
-
-                <div>
-                  <Label className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                    Tempat
-                  </Label>
-                  <Input
-                    value={reportInfo.tempat}
-                    onChange={(e) => setReportInfo(prev => ({...prev, tempat: e.target.value}))}
-                    placeholder="Titik Kumpul Workshop GECL"
-                    className="bg-white/50 border-gray-300 dark:border-gray-600"
-                    data-testid="input-tempat"
-                  />
-                </div>
-
-                <div>
-                  <Label className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                    Diperiksa Oleh
-                  </Label>
-                  <Input
-                    value={reportInfo.diperiksaOleh}
-                    onChange={(e) => setReportInfo(prev => ({...prev, diperiksaOleh: e.target.value}))}
-                    placeholder="Nama pengawas pool"
-                    className="bg-white/50 border-gray-300 dark:border-gray-600"
-                    data-testid="input-diperiksa-oleh"
-                  />
-                </div>
-
-                <div>
-                  <Label className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                    Catatan
-                  </Label>
-                  <Textarea
-                    value={reportInfo.catatan || ""}
-                    onChange={(e) => setReportInfo(prev => ({...prev, catatan: e.target.value}))}
-                    placeholder="Catatan tambahan (opsional)"
-                    className="bg-white/50 border-gray-300 dark:border-gray-600"
-                    data-testid="input-catatan"
-                    rows={3}
-                  />
-                </div>
-
-                <div>
-                  <Label className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                    Upload Tanda Tangan
-                  </Label>
-                  <Input
-                    type="file"
-                    accept="image/*"
-                    onChange={(e) => {
-                      const file = e.target.files?.[0] ?? null;
-                      setReportInfo(prev => ({...prev, tandaTangan: file}));
-                    }}
-                    className="bg-white/50 border-gray-300 dark:border-gray-600 file:bg-gray-100 file:text-gray-700"
-                    data-testid="input-tanda-tangan"
-                  />
-                  {reportInfo.tandaTangan && (
-                    <p className="text-xs text-emerald-600 dark:text-emerald-400 mt-2 flex items-center gap-1">
-                      <CheckCircle className="w-3 h-3" />
-                      File dipilih: {typeof reportInfo.tandaTangan === 'string' ? 'Signature uploaded' : reportInfo.tandaTangan.name}
-                    </p>
-                  )}
+                  <div>
+                    <Label className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                      Tempat
+                    </Label>
+                    <Input
+                      value={reportInfo.tempat}
+                      onChange={(e) => setReportInfo(prev => ({...prev, tempat: e.target.value}))}
+                      placeholder="Titik Kumpul Workshop GECL"
+                      className="bg-white/50 border-gray-300 dark:border-gray-600"
+                      data-testid="input-tempat"
+                    />
+                  </div>
+                  <div>
+                    <Label className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                      Diperiksa Oleh
+                    </Label>
+                    <Input
+                      value={reportInfo.diperiksaOleh}
+                      onChange={(e) => setReportInfo(prev => ({...prev, diperiksaOleh: e.target.value}))}
+                      placeholder="Nama pengawas pool"
+                      className="bg-white/50 border-gray-300 dark:border-gray-600"
+                      data-testid="input-diperiksa-oleh"
+                    />
+                  </div>
+                  <div>
+                    <Label className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                      Catatan
+                    </Label>
+                    <Textarea
+                      value={reportInfo.catatan || ""}
+                      onChange={(e) => setReportInfo(prev => ({...prev, catatan: e.target.value}))}
+                      placeholder="Catatan tambahan (opsional)"
+                      className="bg-white/50 border-gray-300 dark:border-gray-600"
+                      data-testid="input-catatan"
+                      rows={3}
+                    />
+                  </div>
+                  <div>
+                    <Label className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                      Upload Tanda Tangan
+                    </Label>
+                    <Input
+                      type="file"
+                      accept="image/*"
+                      onChange={(e) => {
+                        const file = e.target.files?.[0] ?? null;
+                        setReportInfo(prev => ({...prev, tandaTangan: file}));
+                      }}
+                      className="bg-white/50 border-gray-300 dark:border-gray-600 file:bg-gray-100 file:text-gray-700"
+                      data-testid="input-tanda-tangan"
+                    />
+                  </div>
                 </div>
               </div>
+            </div>
             
             <div className="bg-teal-50 dark:bg-teal-900/20 rounded-xl p-4 border border-teal-200 dark:border-teal-800">
               <div className="flex items-center gap-2 mb-3">
@@ -658,6 +646,7 @@ export default function Reports() {
               <Download className="w-5 h-5 mr-2" />
               {isExporting ? "Generating Report..." : "Generate & Download"}
             </Button>
+            </div>
         </div>
         
         {/* Enhanced Recent Reports */}
@@ -675,60 +664,51 @@ export default function Reports() {
           </div>
           <div className="p-6">
             <div className="space-y-4">
-              {[
-                {
-                  title: "Laporan Absensi Bulan Ini",
-                  description: "Dibuat hari ini",
-                  type: "attendance",
-                  icon: Calendar,
-                  color: "blue",
-                  status: "Tersedia"
-                },
-                {
-                  title: "Laporan Cuti Q4 2024",
-                  description: "Dibuat 2 hari yang lalu",
-                  type: "leave",
-                  icon: FileText,
-                  color: "emerald",
-                  status: "Tersedia"
-                },
-                {
-                  title: "Laporan Ringkasan Karyawan",
-                  description: "Dibuat 1 minggu yang lalu",
-                  type: "summary",
-                  icon: Users,
-                  color: "purple",
-                  status: "Tersedia"
-                }
-              ].map((report, index) => (
-                <div 
-                  key={index} 
-                  className="group flex items-center justify-between p-4 bg-gradient-to-r from-gray-50 to-blue-50 dark:from-gray-700/30 dark:to-blue-900/10 rounded-xl border border-gray-200 dark:border-gray-600 hover:shadow-md transition-all duration-200"
-                  data-testid={`recent-report-${report.type}`}
-                >
-                  <div className="flex items-center space-x-4">
-                    <div className={`w-12 h-12 bg-${report.color}-100 dark:bg-${report.color}-900/20 rounded-2xl flex items-center justify-center`}>
-                      <report.icon className={`w-6 h-6 text-${report.color}-600 dark:text-${report.color}-400`} />
-                    </div>
-                    <div>
-                      <p className="text-sm font-semibold text-gray-900 dark:text-white group-hover:text-blue-700 dark:group-hover:text-blue-300">{report.title}</p>
-                      <p className="text-xs text-gray-500 dark:text-gray-400">{report.description}</p>
-                      <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-emerald-100 text-emerald-800 dark:bg-emerald-900/20 dark:text-emerald-400 mt-1">
-                        {report.status}
-                      </span>
-                    </div>
+              <div className="group flex items-center justify-between p-4 bg-gradient-to-r from-gray-50 to-blue-50 dark:from-gray-700/30 dark:to-blue-900/10 rounded-xl border border-gray-200 dark:border-gray-600 hover:shadow-md transition-all duration-200">
+                <div className="flex items-center space-x-4">
+                  <div className="w-12 h-12 bg-blue-100 dark:bg-blue-900/20 rounded-2xl flex items-center justify-center">
+                    <Calendar className="w-6 h-6 text-blue-600 dark:text-blue-400" />
                   </div>
-                  <Button 
-                    variant="ghost" 
-                    size="sm"
-                    className="h-10 px-4 text-blue-600 hover:text-blue-700 hover:bg-blue-100 dark:hover:bg-blue-900/20 transition-colors"
-                    data-testid={`download-recent-${report.type}`}
-                  >
-                    <Download className="w-4 h-4 mr-2" />
-                    Download
-                  </Button>
+                  <div>
+                    <p className="text-sm font-semibold text-gray-900 dark:text-white group-hover:text-blue-700 dark:group-hover:text-blue-300">Laporan Absensi Bulan Ini</p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400">Dibuat hari ini</p>
+                    <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-emerald-100 text-emerald-800 dark:bg-emerald-900/20 dark:text-emerald-400 mt-1">
+                      Tersedia
+                    </span>
+                  </div>
                 </div>
-              ))}
+                <Button 
+                  variant="ghost" 
+                  size="sm"
+                  className="h-10 px-4 text-blue-600 hover:text-blue-700 hover:bg-blue-100 dark:hover:bg-blue-900/20 transition-colors"
+                >
+                  <Download className="w-4 h-4 mr-2" />
+                  Download
+                </Button>
+              </div>
+              
+              <div className="group flex items-center justify-between p-4 bg-gradient-to-r from-gray-50 to-green-50 dark:from-gray-700/30 dark:to-green-900/10 rounded-xl border border-gray-200 dark:border-gray-600 hover:shadow-md transition-all duration-200">
+                <div className="flex items-center space-x-4">
+                  <div className="w-12 h-12 bg-emerald-100 dark:bg-emerald-900/20 rounded-2xl flex items-center justify-center">
+                    <FileText className="w-6 h-6 text-emerald-600 dark:text-emerald-400" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-semibold text-gray-900 dark:text-white group-hover:text-blue-700 dark:group-hover:text-blue-300">Laporan Cuti Q4 2024</p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400">Dibuat 2 hari yang lalu</p>
+                    <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-emerald-100 text-emerald-800 dark:bg-emerald-900/20 dark:text-emerald-400 mt-1">
+                      Tersedia
+                    </span>
+                  </div>
+                </div>
+                <Button 
+                  variant="ghost" 
+                  size="sm"
+                  className="h-10 px-4 text-blue-600 hover:text-blue-700 hover:bg-blue-100 dark:hover:bg-blue-900/20 transition-colors"
+                >
+                  <Download className="w-4 h-4 mr-2" />
+                  Download
+                </Button>
+              </div>
             </div>
           </div>
         </div>
