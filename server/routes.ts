@@ -1148,8 +1148,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         ? `https://${process.env.REPLIT_DOMAINS.split(',')[0]}`
         : 'http://localhost:5000';
       
-      // Generate URL langsung ke driver view - mobile scanner akan detect device dan redirect
-      const directUrl = `${baseUrl}/workspace/driver-view?nik=${employeeId}`;
+      // Generate secure URL langsung ke driver view dengan signed token
+      const timestamp = Date.now();
+      const expiry = timestamp + (24 * 60 * 60 * 1000); // 24 hours validity
+      const signatureData = `${employeeId}:${expiry}:${secretKey}`;
+      const signature = Buffer.from(signatureData).toString('base64').slice(0, 16)
+        .replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '');
+      
+      const directUrl = `${baseUrl}/workspace/driver-view?nik=${employeeId}&sig=${signature}&exp=${expiry}`;
       
       // Also keep JSON format for backward compatibility with internal scanner
       const qrPayload = {
