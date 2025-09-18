@@ -21,8 +21,8 @@ import EmployeePersonalData from "@/pages/employee-personal-data";
 import NotFound from "@/pages/not-found";
 
 const workspaceRoutes = [
-  { path: "/workspace", component: Dashboard, title: "Dashboard Karyawan PT.GECL" },
-  { path: "/workspace/dashboard", component: Dashboard, title: "Dashboard Karyawan PT.GECL" },
+  { path: "/workspace", component: Dashboard, title: "Dashboard Karyawan" },
+  { path: "/workspace/dashboard", component: Dashboard, title: "Dashboard Karyawan" },
   { path: "/workspace/qr-generator", component: QRGenerator, title: "Generate QR Code" },
   { path: "/workspace/scanner", component: Scanner, title: "Scan QR Code" },
   { path: "/workspace/employees", component: Employees, title: "Data Karyawan" },

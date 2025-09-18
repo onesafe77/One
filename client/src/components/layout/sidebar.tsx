@@ -34,24 +34,31 @@ const navigation = [
 ];
 
 function LogoWithFallback() {
-  const [hasImageError, setHasImageError] = useState(false);
-
-  if (hasImageError) {
-    return (
-      <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
-        <QrCode className="w-5 h-5 text-white" />
-      </div>
-    );
-  }
-
   return (
-    <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center overflow-hidden">
-      <img 
-        src={companyLogo} 
-        alt="Company Logo" 
-        className="w-full h-full object-cover"
-        onError={() => setHasImageError(true)}
-      />
+    <div className="w-10 h-10 relative">
+      {/* Modern AbsensiQR Logo */}
+      <div className="w-full h-full bg-gradient-to-br from-blue-600 via-purple-600 to-indigo-700 rounded-xl flex items-center justify-center shadow-lg">
+        <div className="relative">
+          {/* QR Pattern Background */}
+          <div className="absolute inset-0 grid grid-cols-3 gap-0.5 opacity-30">
+            <div className="w-1 h-1 bg-white rounded-sm"></div>
+            <div className="w-1 h-1 bg-white rounded-sm"></div>
+            <div className="w-1 h-1 bg-transparent"></div>
+            <div className="w-1 h-1 bg-transparent"></div>
+            <div className="w-1 h-1 bg-white rounded-sm"></div>
+            <div className="w-1 h-1 bg-white rounded-sm"></div>
+            <div className="w-1 h-1 bg-white rounded-sm"></div>
+            <div className="w-1 h-1 bg-transparent"></div>
+            <div className="w-1 h-1 bg-white rounded-sm"></div>
+          </div>
+          {/* Main Icon */}
+          <QrCode className="w-5 h-5 text-white relative z-10" strokeWidth={2.5} />
+        </div>
+      </div>
+      {/* Badge/Indicator */}
+      <div className="absolute -top-1 -right-1 w-4 h-4 bg-green-500 rounded-full flex items-center justify-center shadow-sm">
+        <div className="w-2 h-2 bg-white rounded-full"></div>
+      </div>
     </div>
   );
 }
