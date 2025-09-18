@@ -1122,6 +1122,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const existingTokens = await storage.getQrTokensByEmployee(employeeId);
       const activeToken = existingTokens.find(t => t.isActive);
       
+      // Get secret key first (needed for both token generation and signature)
+      const secretKey = process.env.QR_SECRET_KEY || 'AttendanceQR2024';
+      
       let token;
       // Always regenerate token to ensure URL-safe format
       // (Remove this after all tokens are migrated)
@@ -1130,7 +1133,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         token = activeToken.token;
       } else {
         // Generate consistent token based on employee ID only
-        const secretKey = process.env.QR_SECRET_KEY || 'AttendanceQR2024';
         const tokenData = `${employeeId}${secretKey}Attend`;
         token = Buffer.from(tokenData).toString('base64').slice(0, 16)
           .replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, ''); // Make URL-safe
