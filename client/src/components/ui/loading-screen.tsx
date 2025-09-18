@@ -50,13 +50,13 @@ export function LoadingScreen({ isLoading, onComplete, className }: LoadingScree
         
         {/* Logo simple */}
         <div className="w-16 h-16 bg-[#E53935] rounded-xl flex items-center justify-center">
-          <span className="text-white font-bold text-xl">PT</span>
+          <span className="text-white font-bold text-xl">AQ</span>
         </div>
         
         {/* Brand name */}
         <div className="text-center">
           <h1 className="text-2xl font-semibold text-gray-900 dark:text-white mb-1">
-            OneTalent GECL
+            AbsensiQR
           </h1>
           <p className="text-gray-600 dark:text-gray-400 text-sm">
             Employee Attendance System

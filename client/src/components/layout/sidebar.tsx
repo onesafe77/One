@@ -83,7 +83,7 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
           <div className="flex items-center space-x-3">
             <LogoWithFallback />
             <Link href="/" className="text-base font-semibold text-gray-900 dark:text-white hover:text-blue-600 dark:hover:text-blue-400 transition-colors">
-              OneTalent GECL
+              AbsensiQR
             </Link>
           </div>
         </div>
