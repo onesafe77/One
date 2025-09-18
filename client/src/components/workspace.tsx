@@ -16,6 +16,7 @@ import Reports from "@/pages/reports";
 import Meetings from "@/pages/meetings";
 import MeetingScanner from "@/pages/meeting-scanner";
 import DriverView from "@/pages/driver-view";
+import DriverEvaluation from "@/pages/driver-evaluation";
 import MobileDriverView from "@/pages/mobile-driver-view";
 import EmployeePersonalData from "@/pages/employee-personal-data";
 import NotFound from "@/pages/not-found";
@@ -34,6 +35,7 @@ const workspaceRoutes = [
   { path: "/workspace/meetings", component: Meetings, title: "Meeting Management" },
   { path: "/workspace/meeting-scanner", component: MeetingScanner, title: "Scan QR Meeting" },
   { path: "/workspace/driver-view", component: DriverView, title: "Driver View - Data Karyawan" },
+  { path: "/workspace/driver-evaluation", component: DriverEvaluation, title: "Evaluasi Performa Driver" },
   { path: "/workspace/mobile-driver", component: MobileDriverView, title: "Driver Mobile View" },
   { path: "/workspace/employee-personal", component: EmployeePersonalData, title: "Data Pribadi Karyawan" },
 ];
