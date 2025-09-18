@@ -124,7 +124,7 @@ export async function generateAttendancePDF(data: ReportData): Promise<void> {
       
       doc.text('Perusahaan', leftX, leftY);
       doc.text(':', leftX + labelWidth, leftY);
-      // Company name removed
+      doc.text(data.reportInfo?.perusahaan?.trim() || '(Belum diisi)', leftX + labelWidth + 10, leftY);
       leftY += 10;
       
       doc.text('Nama Pengawas', leftX, leftY);
