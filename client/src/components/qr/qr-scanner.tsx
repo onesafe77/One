@@ -8,7 +8,7 @@ import { validateQRData, isMobileDevice } from "@/lib/crypto-utils";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { determineShiftByTime, getCurrentShift } from "@/lib/shift-utils";
-import { Camera, CameraOff, CheckCircle, User, Clock, XCircle, Moon, Heart, Activity, Calendar } from "lucide-react";
+import { Camera, CameraOff, CheckCircle, User, Clock, XCircle, Moon, Heart, Activity, Calendar, ScanLine, Zap, Shield, Target } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { queryClient } from "@/lib/queryClient";
 import jsQR from "jsqr";
@@ -537,169 +537,313 @@ export function QRScanner() {
   });
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-      {/* Modern Camera Scanner */}
-      <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg">
-        <div className="p-6 border-b border-gray-200 dark:border-gray-700">
-          <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Scan QR Code</h2>
-          <div className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-            Waktu sekarang: {currentTime} • {currentShift}
-          </div>
-        </div>
-        <div className="p-6 space-y-4">
-          <div className="relative">
-            <video 
-              ref={videoRef}
-              className="w-full h-64 bg-gray-100 dark:bg-gray-700 rounded-lg object-cover"
-              autoPlay
-              muted
-              playsInline
-              data-testid="scanner-video"
-            />
-            <canvas ref={canvasRef} className="hidden" />
-            
-            {isScanning && (
-              <div className="absolute inset-0 border-2 border-primary-500 rounded-lg opacity-50 pointer-events-none">
-                <div className="absolute top-4 left-4 w-6 h-6 border-t-4 border-l-4 border-primary-500"></div>
-                <div className="absolute top-4 right-4 w-6 h-6 border-t-4 border-r-4 border-primary-500"></div>
-                <div className="absolute bottom-4 left-4 w-6 h-6 border-b-4 border-l-4 border-primary-500"></div>
-                <div className="absolute bottom-4 right-4 w-6 h-6 border-b-4 border-r-4 border-primary-500"></div>
+    <div className="space-y-8">
+      {/* Hero Scanner Section */}
+      <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-indigo-600 via-purple-600 to-pink-600 text-white p-8 md:p-12">
+        <div className="absolute inset-0 bg-gradient-to-tr from-black/20 to-white/10 opacity-30"></div>
+        <div className="relative z-10">
+          <div className="text-center space-y-4">
+            <div className="w-20 h-20 bg-white/20 rounded-2xl flex items-center justify-center mx-auto mb-6">
+              <ScanLine className="w-10 h-10 text-white" />
+            </div>
+            <h1 className="text-4xl font-bold tracking-tight">
+              QR Code Scanner
+            </h1>
+            <p className="text-xl text-indigo-100 max-w-2xl mx-auto">
+              Scan QR code karyawan untuk absensi real-time
+            </p>
+            <div className="flex justify-center items-center gap-4 text-sm bg-white/10 rounded-xl p-4 backdrop-blur-sm">
+              <div className="flex items-center gap-2">
+                <Clock className="w-4 h-4" />
+                <span>Waktu: {currentTime}</span>
               </div>
-            )}
-          </div>
-          
-          <div className="flex space-x-2">
-            <Button 
-              onClick={startScanning} 
-              disabled={isScanning || isProcessing}
-              className="flex-1"
-              data-testid="start-scanner-button"
-            >
-              <Camera className="w-4 h-4 mr-2" />
-              {isScanning ? "Scanning..." : isProcessing ? "Memproses..." : "Mulai Scan"}
-            </Button>
-            <Button 
-              onClick={stopScanning} 
-              disabled={!isScanning}
-              variant="destructive"
-              className="flex-1"
-              data-testid="stop-scanner-button"
-            >
-              <CameraOff className="w-4 h-4 mr-2" />
-              Stop Scan
-            </Button>
-          </div>
-          
-          {isScanning && !isProcessing && (
-            <div className="text-sm text-center text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/30 p-2 rounded">
-              📱 Arahkan kamera ke QR Code untuk melakukan scan
-              <div className="text-xs mt-1 text-blue-500">
-                ⚠️ Absensi hanya diizinkan pada jam kerja: Shift 1 (06:00-16:00) • Shift 2 (16:30-20:00)
+              <div className="w-1 h-4 bg-white/30"></div>
+              <div className="flex items-center gap-2">
+                <Target className="w-4 h-4" />
+                <span>{currentShift}</span>
               </div>
             </div>
-          )}
-          
-          {isProcessing && (
-            <div className="text-sm text-center text-orange-600 dark:text-orange-400 bg-orange-50 dark:bg-orange-900/30 p-2 rounded">
-              ⏳ Memvalidasi QR Code...
-            </div>
-          )}
+          </div>
         </div>
       </div>
-      
-      {/* Modern Scan Result */}
-      <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg">
-        <div className="p-6 border-b border-gray-200 dark:border-gray-700">
-          <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Hasil Scan</h2>
-        </div>
-        <div className="p-6">
-          {!scanResult ? (
-            <div className="text-center py-8" data-testid="scan-placeholder">
-              <div className="w-16 h-16 bg-gray-100 dark:bg-gray-700 rounded-full flex items-center justify-center mx-auto mb-4">
-                <Camera className="w-8 h-8 text-gray-400" />
+
+      {/* Modern Scanner Interface */}
+      <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
+        {/* Enhanced Camera Scanner */}
+        <div className="bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-2xl shadow-sm overflow-hidden">
+          <div className="bg-gradient-to-r from-indigo-50 to-purple-50 dark:from-indigo-900/10 dark:to-purple-900/10 p-6 border-b border-gray-100 dark:border-gray-700">
+            <div className="flex items-center justify-between">
+              <div className="space-y-1">
+                <h2 className="text-xl font-semibold text-gray-900 dark:text-white">Camera Scanner</h2>
+                <p className="text-sm text-gray-600 dark:text-gray-400">Posisikan QR code di dalam frame untuk scan otomatis</p>
               </div>
-              <p className="text-gray-500 dark:text-gray-400">Siap untuk scan QR Code</p>
+              <div className="w-12 h-12 bg-indigo-100 dark:bg-indigo-900/20 rounded-2xl flex items-center justify-center">
+                <Camera className="w-6 h-6 text-indigo-600 dark:text-indigo-400" />
+              </div>
             </div>
-          ) : (
-            <div className="space-y-4" data-testid="scan-result">
-              <div className={`p-4 border rounded-lg ${
-                scanResult.status === 'processing' 
-                  ? 'bg-blue-50 dark:bg-blue-900 border-blue-200 dark:border-blue-700'
-                  : scanResult.status === 'success'
-                  ? 'bg-green-50 dark:bg-green-900 border-green-200 dark:border-green-700'
-                  : scanResult.status === 'error'
-                  ? 'bg-red-50 dark:bg-red-900 border-red-200 dark:border-red-700'
-                  : 'bg-green-50 dark:bg-green-900 border-green-200 dark:border-green-700'
-              }`}>
-                <div className="flex items-center">
-                  {scanResult.status === 'processing' ? (
-                    <>
-                      <div className="w-5 h-5 mr-2 animate-spin rounded-full border-2 border-blue-300 border-t-blue-600"></div>
-                      <span className="text-blue-800 dark:text-blue-200 font-medium">Memproses Absensi...</span>
-                    </>
-                  ) : scanResult.status === 'success' ? (
-                    <>
-                      <CheckCircle className="w-5 h-5 text-green-600 dark:text-green-300 mr-2" />
-                      <span className="text-green-800 dark:text-green-200 font-medium">Absensi Berhasil</span>
-                    </>
-                  ) : scanResult.status === 'error' ? (
-                    <>
-                      <XCircle className="w-5 h-5 text-red-600 dark:text-red-300 mr-2" />
-                      <span className="text-red-800 dark:text-red-200 font-medium">Gagal Memproses</span>
-                    </>
-                  ) : (
-                    <>
-                      <CheckCircle className="w-5 h-5 text-green-600 dark:text-green-300 mr-2" />
-                      <span className="text-green-800 dark:text-green-200 font-medium">QR Code Valid</span>
-                    </>
-                  )}
-                </div>
-                {scanResult.status === 'error' && scanResult.errorMessage && (
-                  <div className="mt-2">
-                    <p className="text-sm text-red-600 dark:text-red-300">{scanResult.errorMessage}</p>
+          </div>
+          
+          <div className="p-6 space-y-6">
+            {/* Enhanced Video Container */}
+            <div className="relative group">
+              <div className="absolute inset-0 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-2xl opacity-5"></div>
+              <video 
+                ref={videoRef}
+                className="relative z-10 w-full h-80 bg-gray-900 rounded-2xl object-cover shadow-lg"
+                autoPlay
+                muted
+                playsInline
+                data-testid="scanner-video"
+              />
+              <canvas ref={canvasRef} className="hidden" />
+              
+              {/* Modern Scanning Overlay */}
+              {isScanning && (
+                <div className="absolute inset-4 z-20 pointer-events-none">
+                  {/* Animated Corner Brackets */}
+                  <div className="absolute top-0 left-0 w-8 h-8 border-t-4 border-l-4 border-indigo-400 rounded-tl-lg animate-pulse"></div>
+                  <div className="absolute top-0 right-0 w-8 h-8 border-t-4 border-r-4 border-indigo-400 rounded-tr-lg animate-pulse"></div>
+                  <div className="absolute bottom-0 left-0 w-8 h-8 border-b-4 border-l-4 border-indigo-400 rounded-bl-lg animate-pulse"></div>
+                  <div className="absolute bottom-0 right-0 w-8 h-8 border-b-4 border-r-4 border-indigo-400 rounded-br-lg animate-pulse"></div>
+                  
+                  {/* Scanning Line Animation */}
+                  <div className="absolute inset-x-8 top-1/2 h-0.5 bg-gradient-to-r from-transparent via-indigo-400 to-transparent animate-pulse"></div>
+                  
+                  {/* Center Target */}
+                  <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2">
+                    <div className="w-20 h-20 border-2 border-indigo-400 rounded-lg flex items-center justify-center animate-pulse">
+                      <Target className="w-8 h-8 text-indigo-400" />
+                    </div>
                   </div>
-                )}
+                </div>
+              )}
+              
+              {/* Camera Off State */}
+              {!isScanning && (
+                <div className="absolute inset-0 z-20 flex items-center justify-center bg-gray-900/80 rounded-2xl">
+                  <div className="text-center space-y-4">
+                    <div className="w-16 h-16 bg-gray-700 rounded-2xl flex items-center justify-center mx-auto">
+                      <Camera className="w-8 h-8 text-gray-400" />
+                    </div>
+                    <p className="text-white text-lg font-medium">Kamera Siap</p>
+                    <p className="text-gray-300 text-sm">Klik tombol di bawah untuk memulai scanning</p>
+                  </div>
+                </div>
+              )}
+            </div>
+            
+            {/* Enhanced Control Buttons */}
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <Button 
+                  onClick={startScanning} 
+                  disabled={isScanning || isProcessing}
+                  className="h-12 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 rounded-xl font-medium shadow-lg shadow-indigo-500/25"
+                  data-testid="start-scanner-button"
+                >
+                  <Camera className="w-5 h-5 mr-2" />
+                  {isScanning ? "Scanning..." : isProcessing ? "Memproses..." : "Mulai Scan"}
+                </Button>
+                <Button 
+                  onClick={stopScanning} 
+                  disabled={!isScanning}
+                  variant="outline"
+                  className="h-12 border-2 border-red-200 dark:border-red-800 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-xl font-medium"
+                  data-testid="stop-scanner-button"
+                >
+                  <CameraOff className="w-5 h-5 mr-2" />
+                  Stop Scan
+                </Button>
               </div>
               
-              <div className="space-y-3">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                    <User className="w-4 h-4 inline mr-1" />
-                    ID Karyawan
-                  </label>
-                  <p className="text-lg font-semibold text-gray-900 dark:text-white" data-testid="scanned-employee-id">
-                    {scanResult.employeeId}
-                  </p>
-                </div>
-                
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Nama</label>
-                  <p className="text-lg font-semibold text-gray-900 dark:text-white" data-testid="scanned-employee-name">
-                    {scanResult.name}
-                  </p>
-                </div>
-                
-                {scanResult.nomorLambung && (
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Nomor Lambung</label>
-                    <p className="text-lg font-semibold text-gray-900 dark:text-white" data-testid="scanned-nomor-lambung">
-{scanResult.isSpareOrigin && scanResult.nomorLambung !== "SPARE" ? 
-                        `SPARE ${scanResult.nomorLambung}` : (scanResult.nomorLambung || '-')
-                      }
-                    </p>
+              {/* Status Indicators */}
+              {isScanning && !isProcessing && (
+                <div className="bg-gradient-to-r from-indigo-50 to-purple-50 dark:from-indigo-900/20 dark:to-purple-900/20 rounded-xl p-4 border border-indigo-200 dark:border-indigo-800">
+                  <div className="flex items-center justify-center space-x-2 text-indigo-700 dark:text-indigo-300">
+                    <ScanLine className="w-5 h-5 animate-pulse" />
+                    <span className="font-medium">Mendeteksi QR Code...</span>
                   </div>
-                )}
-                
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                    <Clock className="w-4 h-4 inline mr-1" />
-                    Waktu & Shift
-                  </label>
-                  <p className="text-lg font-semibold text-gray-900 dark:text-white" data-testid="scan-time">
-                    {scanResult.scanTime}
+                  <p className="text-xs text-center mt-2 text-indigo-600 dark:text-indigo-400">
+                    Arahkan kamera ke QR code dan pastikan pencahayaan cukup
                   </p>
                 </div>
+              )}
+              
+              {isProcessing && (
+                <div className="bg-gradient-to-r from-amber-50 to-orange-50 dark:from-amber-900/20 dark:to-orange-900/20 rounded-xl p-4 border border-amber-200 dark:border-amber-800">
+                  <div className="flex items-center justify-center space-x-2 text-amber-700 dark:text-amber-300">
+                    <div className="w-5 h-5 animate-spin rounded-full border-2 border-amber-500 border-t-transparent"></div>
+                    <span className="font-medium">Memvalidasi QR Code...</span>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      
+        {/* Enhanced Scan Result */}
+        <div className="bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-2xl shadow-sm overflow-hidden">
+          <div className="bg-gradient-to-r from-emerald-50 to-teal-50 dark:from-emerald-900/10 dark:to-teal-900/10 p-6 border-b border-gray-100 dark:border-gray-700">
+            <div className="flex items-center justify-between">
+              <div className="space-y-1">
+                <h2 className="text-xl font-semibold text-gray-900 dark:text-white">Hasil Scan</h2>
+                <p className="text-sm text-gray-600 dark:text-gray-400">Informasi karyawan yang berhasil discan</p>
               </div>
+              <div className="w-12 h-12 bg-emerald-100 dark:bg-emerald-900/20 rounded-2xl flex items-center justify-center">
+                <Shield className="w-6 h-6 text-emerald-600 dark:text-emerald-400" />
+              </div>
+            </div>
+          </div>
+          
+          <div className="p-6">
+            {!scanResult ? (
+              <div className="text-center py-16" data-testid="scan-placeholder">
+                <div className="w-24 h-24 bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-700 dark:to-gray-600 rounded-3xl flex items-center justify-center mx-auto mb-6 shadow-sm">
+                  <ScanLine className="w-12 h-12 text-gray-400 dark:text-gray-500" />
+                </div>
+                <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">Siap untuk Scan</h3>
+                <p className="text-gray-500 dark:text-gray-400 text-sm">Hasil scan QR code akan ditampilkan di sini</p>
+              </div>
+            ) : (
+              <div className="space-y-6" data-testid="scan-result">
+                {/* Enhanced Status Banner */}
+                <div className={`relative overflow-hidden rounded-2xl p-6 ${
+                  scanResult.status === 'processing' 
+                    ? 'bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 border border-blue-200 dark:border-blue-800'
+                    : scanResult.status === 'success'
+                    ? 'bg-gradient-to-r from-emerald-50 to-green-50 dark:from-emerald-900/20 dark:to-green-900/20 border border-emerald-200 dark:border-emerald-800'
+                    : scanResult.status === 'error'
+                    ? 'bg-gradient-to-r from-red-50 to-rose-50 dark:from-red-900/20 dark:to-rose-900/20 border border-red-200 dark:border-red-800'
+                    : 'bg-gradient-to-r from-emerald-50 to-green-50 dark:from-emerald-900/20 dark:to-green-900/20 border border-emerald-200 dark:border-emerald-800'
+                }`}>
+                  <div className="flex items-center space-x-4">
+                    <div className="flex-shrink-0">
+                      {scanResult.status === 'processing' ? (
+                        <div className="w-12 h-12 bg-blue-100 dark:bg-blue-900/20 rounded-2xl flex items-center justify-center">
+                          <div className="w-6 h-6 animate-spin rounded-full border-2 border-blue-600 border-t-transparent"></div>
+                        </div>
+                      ) : scanResult.status === 'success' ? (
+                        <div className="w-12 h-12 bg-emerald-100 dark:bg-emerald-900/20 rounded-2xl flex items-center justify-center">
+                          <CheckCircle className="w-6 h-6 text-emerald-600 dark:text-emerald-400" />
+                        </div>
+                      ) : scanResult.status === 'error' ? (
+                        <div className="w-12 h-12 bg-red-100 dark:bg-red-900/20 rounded-2xl flex items-center justify-center">
+                          <XCircle className="w-6 h-6 text-red-600 dark:text-red-400" />
+                        </div>
+                      ) : (
+                        <div className="w-12 h-12 bg-emerald-100 dark:bg-emerald-900/20 rounded-2xl flex items-center justify-center">
+                          <CheckCircle className="w-6 h-6 text-emerald-600 dark:text-emerald-400" />
+                        </div>
+                      )}
+                    </div>
+                    <div className="flex-1">
+                      <h3 className={`text-lg font-semibold ${
+                        scanResult.status === 'processing' 
+                          ? 'text-blue-800 dark:text-blue-200'
+                          : scanResult.status === 'success'
+                          ? 'text-emerald-800 dark:text-emerald-200'
+                          : scanResult.status === 'error'
+                          ? 'text-red-800 dark:text-red-200'
+                          : 'text-emerald-800 dark:text-emerald-200'
+                      }`}>
+                        {scanResult.status === 'processing' 
+                          ? 'Memproses Absensi...'
+                          : scanResult.status === 'success'
+                          ? '🎉 Absensi Berhasil!'
+                          : scanResult.status === 'error'
+                          ? '❌ Gagal Memproses'
+                          : '✅ QR Code Valid'
+                        }
+                      </h3>
+                      <p className={`text-sm mt-1 ${
+                        scanResult.status === 'processing' 
+                          ? 'text-blue-600 dark:text-blue-300'
+                          : scanResult.status === 'success'
+                          ? 'text-emerald-600 dark:text-emerald-300'
+                          : scanResult.status === 'error'
+                          ? 'text-red-600 dark:text-red-300'
+                          : 'text-emerald-600 dark:text-emerald-300'
+                      }`}>
+                        {scanResult.status === 'processing' 
+                          ? 'Sedang memvalidasi dan menyimpan data absensi'
+                          : scanResult.status === 'success'
+                          ? 'Data absensi berhasil disimpan ke sistem'
+                          : scanResult.status === 'error'
+                          ? 'Terjadi kesalahan saat memproses absensi'
+                          : 'QR code terdeteksi dan siap diproses'
+                        }
+                      </p>
+                      {scanResult.status === 'error' && scanResult.errorMessage && (
+                        <div className="mt-3 p-3 bg-red-100 dark:bg-red-900/30 rounded-lg">
+                          <p className="text-sm text-red-700 dark:text-red-300 font-medium">{scanResult.errorMessage}</p>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+                
+                {/* Enhanced Employee Information Cards */}
+                <div className="grid grid-cols-1 gap-4">
+                  <div className="bg-gray-50 dark:bg-gray-700/30 rounded-xl p-4 border border-gray-200 dark:border-gray-600">
+                    <div className="flex items-center space-x-3">
+                      <div className="w-10 h-10 bg-blue-100 dark:bg-blue-900/20 rounded-lg flex items-center justify-center">
+                        <User className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+                      </div>
+                      <div className="flex-1">
+                        <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">ID Karyawan</label>
+                        <p className="text-lg font-bold text-gray-900 dark:text-white" data-testid="scanned-employee-id">
+                          {scanResult.employeeId}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div className="bg-gray-50 dark:bg-gray-700/30 rounded-xl p-4 border border-gray-200 dark:border-gray-600">
+                    <div className="flex items-center space-x-3">
+                      <div className="w-10 h-10 bg-emerald-100 dark:bg-emerald-900/20 rounded-lg flex items-center justify-center">
+                        <User className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
+                      </div>
+                      <div className="flex-1">
+                        <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">Nama Karyawan</label>
+                        <p className="text-lg font-bold text-gray-900 dark:text-white" data-testid="scanned-employee-name">
+                          {scanResult.name}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  {scanResult.nomorLambung && (
+                    <div className="bg-gray-50 dark:bg-gray-700/30 rounded-xl p-4 border border-gray-200 dark:border-gray-600">
+                      <div className="flex items-center space-x-3">
+                        <div className="w-10 h-10 bg-purple-100 dark:bg-purple-900/20 rounded-lg flex items-center justify-center">
+                          <Shield className="w-5 h-5 text-purple-600 dark:text-purple-400" />
+                        </div>
+                        <div className="flex-1">
+                          <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">Nomor Lambung</label>
+                          <p className="text-lg font-bold text-gray-900 dark:text-white" data-testid="scanned-nomor-lambung">
+                            {scanResult.isSpareOrigin && scanResult.nomorLambung !== "SPARE" ? 
+                              `SPARE ${scanResult.nomorLambung}` : (scanResult.nomorLambung || '-')
+                            }
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                  
+                  <div className="bg-gray-50 dark:bg-gray-700/30 rounded-xl p-4 border border-gray-200 dark:border-gray-600">
+                    <div className="flex items-center space-x-3">
+                      <div className="w-10 h-10 bg-orange-100 dark:bg-orange-900/20 rounded-lg flex items-center justify-center">
+                        <Clock className="w-5 h-5 text-orange-600 dark:text-orange-400" />
+                      </div>
+                      <div className="flex-1">
+                        <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">Waktu & Shift</label>
+                        <p className="text-lg font-bold text-gray-900 dark:text-white" data-testid="scan-time">
+                          {scanResult.scanTime}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
               
               {/* Form pengisian jam tidur dan fit to work - tampil setelah QR valid */}
               {scanResult.status === 'validated' && (
@@ -816,88 +960,106 @@ export function QRScanner() {
         </div>
       </div>
 
-      {/* Modern Recent Activities */}
-      <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg">
-        <div className="p-6 border-b border-gray-200 dark:border-gray-700">
-          <h2 className="text-lg font-semibold text-gray-900 dark:text-white flex items-center">
-            <Activity className="w-5 h-5 mr-2" />
-            Aktivitas Absensi Terbaru
-          </h2>
+      {/* Enhanced Recent Activities */}
+      <div className="bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-2xl shadow-sm overflow-hidden">
+        <div className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/10 dark:to-indigo-900/10 p-6 border-b border-gray-100 dark:border-gray-700">
+          <div className="flex items-center justify-between">
+            <div className="space-y-1">
+              <h2 className="text-xl font-semibold text-gray-900 dark:text-white">Aktivitas Real-time</h2>
+              <p className="text-sm text-gray-600 dark:text-gray-400">Absensi karyawan terbaru hari ini</p>
+            </div>
+            <div className="w-12 h-12 bg-blue-100 dark:bg-blue-900/20 rounded-2xl flex items-center justify-center">
+              <Activity className="w-6 h-6 text-blue-600 dark:text-blue-400" />
+            </div>
+          </div>
         </div>
+        
         <div className="p-6">
           {recentActivities?.length === 0 ? (
-            <div className="text-center py-8" data-testid="no-activities">
-              <div className="w-16 h-16 bg-gray-100 dark:bg-gray-700 rounded-full flex items-center justify-center mx-auto mb-4">
-                <Activity className="w-8 h-8 text-gray-400" />
+            <div className="text-center py-16" data-testid="no-activities">
+              <div className="w-24 h-24 bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-700 dark:to-gray-600 rounded-3xl flex items-center justify-center mx-auto mb-6 shadow-sm">
+                <Activity className="w-12 h-12 text-gray-400 dark:text-gray-500" />
               </div>
-              <p className="text-gray-500 dark:text-gray-400">Belum ada aktivitas absensi hari ini</p>
+              <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">Belum Ada Aktivitas</h3>
+              <p className="text-gray-500 dark:text-gray-400 text-sm">Aktivitas absensi real-time akan ditampilkan di sini</p>
             </div>
           ) : (
-            <div className="space-y-3" data-testid="recent-activities-list">
+            <div className="space-y-4" data-testid="recent-activities-list">
               {recentActivities?.slice(0, 5).map((activity) => (
                 <div 
                   key={activity.id} 
-                  className="flex justify-between items-center p-3 bg-gray-50 dark:bg-gray-800 rounded-lg border"
+                  className="group bg-gradient-to-r from-gray-50 to-blue-50 dark:from-gray-700/30 dark:to-blue-900/10 rounded-xl p-4 border border-gray-200 dark:border-gray-600 hover:shadow-md transition-all duration-200"
                   data-testid={`activity-${activity.employeeId}`}
                 >
-                  <div className="flex-1">
-                    <div className="flex items-center space-x-2">
-                      <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                      <span className="font-medium text-sm text-gray-900 dark:text-white">
-                        {activity.employeeName}
+                  <div className="flex items-start space-x-4">
+                    <div className="flex-shrink-0">
+                      <div className="w-12 h-12 bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-2xl flex items-center justify-center shadow-lg">
+                        <CheckCircle className="w-6 h-6 text-white" />
+                      </div>
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center space-x-2 mb-2">
+                        <span className="font-semibold text-gray-900 dark:text-white">
+                          {activity.employeeName}
+                        </span>
+                        <span className="text-sm text-gray-500 dark:text-gray-400 font-mono">
+                          ({activity.employeeId})
+                        </span>
+                      </div>
+                      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 text-xs">
+                        <div className="flex items-center space-x-1 text-gray-600 dark:text-gray-300">
+                          <Clock className="w-4 h-4 text-blue-500" />
+                          <span className="font-medium">{activity.time}</span>
+                        </div>
+                        <div className="flex items-center space-x-1 text-gray-600 dark:text-gray-300">
+                          <Moon className="w-4 h-4 text-indigo-500" />
+                          <span className="font-medium">{activity.jamTidur}h tidur</span>
+                        </div>
+                        <div className="flex items-center space-x-1 text-gray-600 dark:text-gray-300">
+                          <Heart className={`w-4 h-4 ${
+                            activity.fitToWork === 'Fit' ? 'text-emerald-500' : 'text-amber-500'
+                          }`} />
+                          <span className={`font-medium ${
+                            activity.fitToWork === 'Fit' ? 'text-emerald-600 dark:text-emerald-400' : 'text-amber-600 dark:text-amber-400'
+                          }`}>{activity.fitToWork}</span>
+                        </div>
+                        <div className="flex items-center space-x-1 text-gray-600 dark:text-gray-300">
+                          <Calendar className="w-4 h-4 text-purple-500" />
+                          <span className="font-medium">Hari ke-{activity.workingDays}</span>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="flex-shrink-0 flex flex-col items-end space-y-2">
+                      <span className="bg-gradient-to-r from-emerald-100 to-green-100 dark:from-emerald-900/30 dark:to-green-900/30 text-emerald-800 dark:text-emerald-200 px-3 py-1 rounded-full text-xs font-semibold border border-emerald-200 dark:border-emerald-800">
+                        ✓ Hadir
                       </span>
                       <span className="text-xs text-gray-500 dark:text-gray-400">
-                        ({activity.employeeId})
+                        {new Date(activity.createdAt).toLocaleTimeString('id-ID', {
+                          hour: '2-digit',
+                          minute: '2-digit'
+                        })}
                       </span>
                     </div>
-                    <div className="flex items-center space-x-3 mt-1 text-xs text-gray-600 dark:text-gray-300">
-                      <span className="flex items-center">
-                        <Clock className="w-3 h-3 mr-1" />
-                        {activity.time}
-                      </span>
-                      <span className="flex items-center">
-                        <Moon className="w-3 h-3 mr-1" />
-                        {activity.jamTidur} jam
-                      </span>
-                      <span className="flex items-center">
-                        <Heart className="w-3 h-3 mr-1" />
-                        {activity.fitToWork}
-                      </span>
-                      <span className="flex items-center">
-                        <Calendar className="w-3 h-3 mr-1" />
-                        Hari ke-{activity.workingDays}
-                      </span>
-                    </div>
-                  </div>
-                  <div className="flex flex-col items-end">
-                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                      activity.status === 'present' 
-                        ? 'bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200'
-                        : 'bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200'
-                    }`}>
-                      {activity.status === 'present' ? 'Hadir' : activity.status}
-                    </span>
-                    <span className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                      {new Date(activity.createdAt).toLocaleTimeString('id-ID', {
-                        hour: '2-digit',
-                        minute: '2-digit'
-                      })}
-                    </span>
                   </div>
                 </div>
               ))}
               
               {recentActivities && recentActivities.length > 5 && (
-                <div className="text-center pt-2">
-                  <p className="text-sm text-gray-500 dark:text-gray-400">
-                    Menampilkan 5 dari {recentActivities.length} aktivitas hari ini
-                  </p>
+                <div className="text-center pt-4">
+                  <div className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 rounded-xl p-3">
+                    <p className="text-sm text-blue-600 dark:text-blue-400 font-medium">
+                      Menampilkan 5 dari {recentActivities.length} aktivitas • 
+                      <button className="underline hover:no-underline">Lihat Semua</button>
+                    </p>
+                  </div>
                 </div>
               )}
             </div>
           )}
         </div>
       </div>
+
+    </div>
 
     </div>
   );
