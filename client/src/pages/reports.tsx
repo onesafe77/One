@@ -5,12 +5,13 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { generateAttendancePDF } from "@/lib/pdf-utils";
 import { exportAttendanceToCSV, exportLeaveToCSV, exportEmployeesToCSV } from "@/lib/csv-utils";
 import { useToast } from "@/hooks/use-toast";
 import type { Employee, AttendanceRecord, LeaveRequest, RosterSchedule } from "@shared/schema";
-import { Download, FileText, Calendar, Users, TrendingUp, RefreshCw, CheckCircle } from "lucide-react";
+import { Download, FileText, Calendar, Users, TrendingUp, RefreshCw, CheckCircle, BarChart3, Activity, Target, Zap, Shield, Filter } from "lucide-react";
 
 export default function Reports() {
   console.log('🟢 Reports component loading...'); // Debug test
@@ -279,291 +280,451 @@ export default function Reports() {
   const pendingLeave = leaveRequests.filter(r => r.status === 'pending').length;
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-      {/* Export Options */}
-      <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg">
-        <div className="p-6 border-b border-gray-200 dark:border-gray-700">
-          <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Export Laporan</h2>
-        </div>
-        <div className="p-6 space-y-4">
-          <div>
-            <Label className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-              Periode
-            </Label>
-            <div className="grid grid-cols-2 gap-2">
-              <Input
-                type="date"
-                value={startDate}
-                onChange={(e) => setStartDate(e.target.value)}
-                data-testid="report-start-date"
-              />
-              <Input
-                type="date"
-                value={endDate}
-                onChange={(e) => setEndDate(e.target.value)}
-                data-testid="report-end-date"
-              />
-            </div>
-          </div>
-          
-          <div>
-            <Label className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-              Jenis Laporan
-            </Label>
-            <Select value={reportType} onValueChange={setReportType}>
-              <SelectTrigger data-testid="report-type-select">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="attendance">Laporan Absensi</SelectItem>
-                <SelectItem value="leave">Laporan Cuti</SelectItem>
-                <SelectItem value="summary">Laporan Ringkasan</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-
-          {reportType === "attendance" && (
-            <div>
-              <Label className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Filter Shift
-              </Label>
-              <Select value={shiftFilter} onValueChange={setShiftFilter}>
-                <SelectTrigger data-testid="shift-filter-select">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Semua Shift</SelectItem>
-                  <SelectItem value="Shift 1">Shift 1 saja</SelectItem>
-                  <SelectItem value="Shift 2">Shift 2 saja</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          )}
-
-          {/* Report Information Form */}
-          <div className="space-y-4 p-4 border rounded-lg bg-gray-50 dark:bg-gray-800">
-            <h4 className="font-medium text-gray-900 dark:text-white">Informasi Laporan</h4>
-            
-            <div>
-              <Label className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                Perusahaan
-              </Label>
-              <Input
-                value={reportInfo.perusahaan}
-                onChange={(e) => setReportInfo(prev => ({...prev, perusahaan: e.target.value}))}
-                placeholder="Nama perusahaan"
-                data-testid="input-perusahaan"
-              />
-            </div>
-
-            <div>
-              <Label className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                Nama Pengawas
-              </Label>
-              <Input
-                value={reportInfo.namaPengawas}
-                onChange={(e) => setReportInfo(prev => ({...prev, namaPengawas: e.target.value}))}
-                placeholder="Nama pengawas"
-                data-testid="input-nama-pengawas"
-              />
-            </div>
-
-            <div className="grid grid-cols-2 gap-2">
-              <div>
-                <Label className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                  Waktu
-                </Label>
-                <Input
-                  value={reportInfo.waktu}
-                  onChange={(e) => setReportInfo(prev => ({...prev, waktu: e.target.value}))}
-                  placeholder="17:00 - 18:30"
-                  data-testid="input-waktu"
-                />
+    <div className="space-y-8">
+      {/* Hero Header Section */}
+      <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-emerald-600 via-teal-600 to-green-600 text-white p-8 md:p-12">
+        <div className="absolute inset-0 bg-gradient-to-tr from-black/20 to-white/10 opacity-30"></div>
+        <div className="relative z-10">
+          <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between space-y-6 lg:space-y-0">
+            <div className="space-y-4">
+              <div className="flex items-center space-x-4">
+                <div className="w-16 h-16 bg-white/20 rounded-2xl flex items-center justify-center">
+                  <BarChart3 className="w-8 h-8 text-white" />
+                </div>
+                <div>
+                  <h1 className="text-4xl font-bold tracking-tight">
+                    Analytics & Reports
+                  </h1>
+                  <p className="text-xl text-green-100 mt-2">
+                    Generate sophisticated attendance and leave reports
+                  </p>
+                </div>
               </div>
-              <div>
-                <Label className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                  Shift
-                </Label>
-                <Select value={reportInfo.shift} onValueChange={(value) => setReportInfo(prev => ({...prev, shift: value}))}>
-                  <SelectTrigger data-testid="select-shift">
-                    <SelectValue placeholder="Pilih Shift" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="Shift 1">Shift 1</SelectItem>
-                    <SelectItem value="Shift 2">Shift 2</SelectItem>
-                  </SelectContent>
-                </Select>
+              <div className="flex flex-wrap items-center gap-4 text-sm">
+                <div className="flex items-center gap-2 bg-white/10 rounded-xl px-4 py-2 backdrop-blur-sm">
+                  <Activity className="w-4 h-4" />
+                  <span>Real-time Data</span>
+                </div>
+                <div className="flex items-center gap-2 bg-white/10 rounded-xl px-4 py-2 backdrop-blur-sm">
+                  <Target className="w-4 h-4" />
+                  <span>{attendanceRate}% Kehadiran</span>
+                </div>
+                <div className="flex items-center gap-2 bg-white/10 rounded-xl px-4 py-2 backdrop-blur-sm">
+                  <Users className="w-4 h-4" />
+                  <span>{employees.length} Karyawan</span>
+                </div>
               </div>
             </div>
-
-            <div>
-              <Label className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                Tempat
-              </Label>
-              <Input
-                value={reportInfo.tempat}
-                onChange={(e) => setReportInfo(prev => ({...prev, tempat: e.target.value}))}
-                placeholder="Titik Kumpul Workshop GECL"
-                data-testid="input-tempat"
-              />
-            </div>
-
-            <div>
-              <Label className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                Diperiksa Oleh
-              </Label>
-              <Input
-                value={reportInfo.diperiksaOleh}
-                onChange={(e) => setReportInfo(prev => ({...prev, diperiksaOleh: e.target.value}))}
-                placeholder="Nama pengawas pool"
-                data-testid="input-diperiksa-oleh"
-              />
-            </div>
-
-            <div>
-              <Label className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                Catatan
-              </Label>
-              <Input
-                value={reportInfo.catatan || ""}
-                onChange={(e) => setReportInfo(prev => ({...prev, catatan: e.target.value}))}
-                placeholder="Catatan tambahan (opsional)"
-                data-testid="input-catatan"
-              />
-            </div>
-
-            <div>
-              <Label className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                Upload Tanda Tangan
-              </Label>
-              <Input
-                type="file"
-                accept="image/*"
-                onChange={(e) => {
-                  const file = e.target.files?.[0] || null;
-                  setReportInfo(prev => ({...prev, tandaTangan: file}));
-                }}
-                data-testid="input-tanda-tangan"
-              />
-              {reportInfo.tandaTangan && (
-                <p className="text-xs text-green-600 dark:text-green-400 mt-1">
-                  File dipilih: {typeof reportInfo.tandaTangan === 'string' ? 'Signature uploaded' : reportInfo.tandaTangan.name}
-                </p>
+            <div className="flex items-center gap-3">
+              {updateStatus && (
+                <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-4">
+                  <div className="flex items-center gap-2 text-sm">
+                    <CheckCircle className="w-4 h-4 text-green-200" />
+                    <span>Data terupdate</span>
+                  </div>
+                  <p className="text-xs text-green-200 mt-1">Auto-refresh active</p>
+                </div>
               )}
             </div>
           </div>
-          
-          <div>
-            <Label className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-              Format & Orientasi
-            </Label>
-            <RadioGroup value={format} onValueChange={setFormat} className="space-y-2">
-              <div className="flex items-center space-x-2">
-                <RadioGroupItem value="pdf" id="format-pdf" data-testid="format-pdf" />
-                <Label htmlFor="format-pdf" className="text-sm text-gray-700 dark:text-gray-300">
-                  PDF Landscape (ReportLab Style)
-                </Label>
-              </div>
-              <div className="flex items-center space-x-2">
-                <RadioGroupItem value="pdf-portrait" id="format-pdf-portrait" data-testid="format-pdf-portrait" />
-                <Label htmlFor="format-pdf-portrait" className="text-sm text-gray-700 dark:text-gray-300">
-                  PDF A4 Portrait (Professional)
-                </Label>
-              </div>
-              <div className="flex items-center space-x-2">
-                <RadioGroupItem value="csv" id="format-csv" data-testid="format-csv" />
-                <Label htmlFor="format-csv" className="text-sm text-gray-700 dark:text-gray-300">
-                  CSV
-                </Label>
-              </div>
-            </RadioGroup>
-          </div>
-          
-          <Button 
-            onClick={handleExport} 
-            className="w-full bg-green-600 hover:bg-green-700"
-            data-testid="download-report-button"
-            disabled={!startDate || !endDate || isExporting}
-          >
-            <Download className="w-4 h-4 mr-2" />
-            {isExporting ? "Mengunduh..." : "Download Laporan"}
-          </Button>
         </div>
       </div>
-      
-      {/* Report Summary */}
-      <div className="lg:col-span-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg">
-        <div className="p-6 border-b border-gray-200 dark:border-gray-700">
-          <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Ringkasan Laporan</h2>
+
+      {/* Enhanced Statistics Overview */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div className="group relative overflow-hidden bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-blue-900/20 dark:to-indigo-900/20 rounded-2xl p-6 border border-blue-200 dark:border-blue-800 hover:shadow-xl transition-all duration-300">
+          <div className="absolute top-0 right-0 w-20 h-20 bg-blue-500/10 rounded-full -translate-y-1/2 translate-x-1/2"></div>
+          <div className="relative">
+            <div className="flex items-center justify-between mb-3">
+              <div className="w-12 h-12 bg-blue-500 rounded-2xl flex items-center justify-center shadow-lg">
+                <TrendingUp className="w-6 h-6 text-white" />
+              </div>
+              <Zap className="w-5 h-5 text-blue-500 opacity-60" />
+            </div>
+            <p className="text-sm font-medium text-blue-600 dark:text-blue-400 uppercase tracking-wide">Tingkat Kehadiran</p>
+            <p className="text-3xl font-bold text-blue-900 dark:text-blue-100 mt-1" data-testid="stats-attendance-rate">{attendanceRate}%</p>
+          </div>
         </div>
-        <div className="p-6">
-          {/* Summary Stats */}
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-            <div className="text-center p-3 bg-gray-50 dark:bg-gray-700 rounded-lg" data-testid="stats-attendance-rate">
-              <TrendingUp className="w-6 h-6 mx-auto mb-2 text-blue-600 dark:text-blue-400" />
-              <p className="text-xl font-semibold text-gray-900 dark:text-white">{attendanceRate}%</p>
-              <p className="text-xs text-gray-600 dark:text-gray-400">Tingkat Kehadiran</p>
+        
+        <div className="group relative overflow-hidden bg-gradient-to-br from-emerald-50 to-green-100 dark:from-emerald-900/20 dark:to-green-900/20 rounded-2xl p-6 border border-emerald-200 dark:border-emerald-800 hover:shadow-xl transition-all duration-300">
+          <div className="absolute top-0 right-0 w-20 h-20 bg-emerald-500/10 rounded-full -translate-y-1/2 translate-x-1/2"></div>
+          <div className="relative">
+            <div className="flex items-center justify-between mb-3">
+              <div className="w-12 h-12 bg-emerald-500 rounded-2xl flex items-center justify-center shadow-lg">
+                <Calendar className="w-6 h-6 text-white" />
+              </div>
+              <CheckCircle className="w-5 h-5 text-emerald-500 opacity-60" />
             </div>
-            <div className="text-center p-3 bg-gray-50 dark:bg-gray-700 rounded-lg" data-testid="stats-total-attendance">
-              <Calendar className="w-6 h-6 mx-auto mb-2 text-green-600 dark:text-green-400" />
-              <p className="text-xl font-semibold text-gray-900 dark:text-white">{totalAttendance}</p>
-              <p className="text-xs text-gray-600 dark:text-gray-400">Total Absensi</p>
+            <p className="text-sm font-medium text-emerald-600 dark:text-emerald-400 uppercase tracking-wide">Total Absensi</p>
+            <p className="text-3xl font-bold text-emerald-900 dark:text-emerald-100 mt-1" data-testid="stats-total-attendance">{totalAttendance}</p>
+          </div>
+        </div>
+        
+        <div className="group relative overflow-hidden bg-gradient-to-br from-purple-50 to-violet-100 dark:from-purple-900/20 dark:to-violet-900/20 rounded-2xl p-6 border border-purple-200 dark:border-purple-800 hover:shadow-xl transition-all duration-300">
+          <div className="absolute top-0 right-0 w-20 h-20 bg-purple-500/10 rounded-full -translate-y-1/2 translate-x-1/2"></div>
+          <div className="relative">
+            <div className="flex items-center justify-between mb-3">
+              <div className="w-12 h-12 bg-purple-500 rounded-2xl flex items-center justify-center shadow-lg">
+                <Users className="w-6 h-6 text-white" />
+              </div>
+              <Shield className="w-5 h-5 text-purple-500 opacity-60" />
             </div>
-            <div className="text-center p-3 bg-gray-50 dark:bg-gray-700 rounded-lg" data-testid="stats-total-employees">
-              <Users className="w-6 h-6 mx-auto mb-2 text-purple-600 dark:text-purple-400" />
-              <p className="text-xl font-semibold text-gray-900 dark:text-white">{employees.length}</p>
-              <p className="text-xs text-gray-600 dark:text-gray-400">Total Karyawan</p>
+            <p className="text-sm font-medium text-purple-600 dark:text-purple-400 uppercase tracking-wide">Total Karyawan</p>
+            <p className="text-3xl font-bold text-purple-900 dark:text-purple-100 mt-1" data-testid="stats-total-employees">{employees.length}</p>
+          </div>
+        </div>
+        
+        <div className="group relative overflow-hidden bg-gradient-to-br from-amber-50 to-orange-100 dark:from-amber-900/20 dark:to-orange-900/20 rounded-2xl p-6 border border-amber-200 dark:border-amber-800 hover:shadow-xl transition-all duration-300">
+          <div className="absolute top-0 right-0 w-20 h-20 bg-amber-500/10 rounded-full -translate-y-1/2 translate-x-1/2"></div>
+          <div className="relative">
+            <div className="flex items-center justify-between mb-3">
+              <div className="w-12 h-12 bg-amber-500 rounded-2xl flex items-center justify-center shadow-lg">
+                <FileText className="w-6 h-6 text-white" />
+              </div>
+              <Activity className="w-5 h-5 text-amber-500 opacity-60" />
             </div>
-            <div className="text-center p-3 bg-gray-50 dark:bg-gray-700 rounded-lg" data-testid="stats-total-leave">
-              <FileText className="w-6 h-6 mx-auto mb-2 text-yellow-600 dark:text-yellow-400" />
-              <p className="text-xl font-semibold text-gray-900 dark:text-white">{totalLeave}</p>
-              <p className="text-xs text-gray-600 dark:text-gray-400">Total Cuti</p>
+            <p className="text-sm font-medium text-amber-600 dark:text-amber-400 uppercase tracking-wide">Total Cuti</p>
+            <p className="text-3xl font-bold text-amber-900 dark:text-amber-100 mt-1" data-testid="stats-total-leave">{totalLeave}</p>
+          </div>
+        </div>
+      </div>
+
+      {/* Enhanced Report Generator & Analytics */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        {/* Premium Export Options */}
+        <div className="bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-2xl shadow-sm overflow-hidden">
+          <div className="bg-gradient-to-r from-emerald-50 to-green-50 dark:from-emerald-900/10 dark:to-green-900/10 p-6 border-b border-gray-100 dark:border-gray-700">
+            <div className="flex items-center justify-between">
+              <div className="space-y-1">
+                <h2 className="text-xl font-semibold text-gray-900 dark:text-white">Report Generator</h2>
+                <p className="text-sm text-gray-600 dark:text-gray-400">Buat dan download laporan dengan konfigurasi lengkap</p>
+              </div>
+              <div className="w-12 h-12 bg-emerald-100 dark:bg-emerald-900/20 rounded-2xl flex items-center justify-center">
+                <Download className="w-6 h-6 text-emerald-600 dark:text-emerald-400" />
+              </div>
             </div>
           </div>
-          
-          {/* Recent Reports */}
-          <div>
-            <h4 className="font-medium text-gray-900 dark:text-white mb-3">Laporan Terbaru</h4>
-            <div className="space-y-3">
+          <div className="p-6 space-y-6">
+            <div className="bg-blue-50 dark:bg-blue-900/20 rounded-xl p-4 border border-blue-200 dark:border-blue-800">
+              <div className="flex items-center gap-2 mb-3">
+                <Calendar className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+                <Label className="text-sm font-medium text-blue-700 dark:text-blue-300">
+                  Periode Laporan
+                </Label>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <Label className="text-xs text-blue-600 dark:text-blue-400 mb-1 block">Dari Tanggal</Label>
+                  <Input
+                    type="date"
+                    value={startDate}
+                    onChange={(e) => setStartDate(e.target.value)}
+                    className="bg-white/50 border-blue-200 dark:border-blue-700"
+                    data-testid="report-start-date"
+                  />
+                </div>
+                <div>
+                  <Label className="text-xs text-blue-600 dark:text-blue-400 mb-1 block">Sampai Tanggal</Label>
+                  <Input
+                    type="date"
+                    value={endDate}
+                    onChange={(e) => setEndDate(e.target.value)}
+                    className="bg-white/50 border-blue-200 dark:border-blue-700"
+                    data-testid="report-end-date"
+                  />
+                </div>
+              </div>
+            </div>
+            
+            <div className="bg-purple-50 dark:bg-purple-900/20 rounded-xl p-4 border border-purple-200 dark:border-purple-800">
+              <div className="flex items-center gap-2 mb-3">
+                <FileText className="w-5 h-5 text-purple-600 dark:text-purple-400" />
+                <Label className="text-sm font-medium text-purple-700 dark:text-purple-300">
+                  Jenis Laporan
+                </Label>
+              </div>
+              <Select value={reportType} onValueChange={setReportType}>
+                <SelectTrigger className="bg-white/50 border-purple-200 dark:border-purple-700" data-testid="report-type-select">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="attendance">
+                    <div className="flex items-center gap-2">
+                      <Calendar className="w-4 h-4" />
+                      Laporan Absensi
+                    </div>
+                  </SelectItem>
+                  <SelectItem value="leave">
+                    <div className="flex items-center gap-2">
+                      <FileText className="w-4 h-4" />
+                      Laporan Cuti
+                    </div>
+                  </SelectItem>
+                  <SelectItem value="summary">
+                    <div className="flex items-center gap-2">
+                      <BarChart3 className="w-4 h-4" />
+                      Laporan Ringkasan
+                    </div>
+                  </SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            {reportType === "attendance" && (
+              <div className="bg-orange-50 dark:bg-orange-900/20 rounded-xl p-4 border border-orange-200 dark:border-orange-800">
+                <div className="flex items-center gap-2 mb-3">
+                  <Filter className="w-5 h-5 text-orange-600 dark:text-orange-400" />
+                  <Label className="text-sm font-medium text-orange-700 dark:text-orange-300">
+                    Filter Shift
+                  </Label>
+                </div>
+                <Select value={shiftFilter} onValueChange={setShiftFilter}>
+                  <SelectTrigger className="bg-white/50 border-orange-200 dark:border-orange-700" data-testid="shift-filter-select">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Semua Shift</SelectItem>
+                    <SelectItem value="Shift 1">Shift 1 saja</SelectItem>
+                    <SelectItem value="Shift 2">Shift 2 saja</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+
+            {/* Enhanced Report Information Form */}
+            <div className="bg-gradient-to-br from-gray-50 to-blue-50 dark:from-gray-800 dark:to-blue-900/10 rounded-xl p-6 border border-gray-200 dark:border-gray-700">
+              <div className="flex items-center gap-2 mb-4">
+                <Shield className="w-5 h-5 text-gray-600 dark:text-gray-400" />
+                <h4 className="font-semibold text-gray-900 dark:text-white">Informasi Laporan</h4>
+              </div>
+              <div className="space-y-4">
+            
+                <div>
+                  <Label className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                    Perusahaan
+                  </Label>
+                  <Input
+                    value={reportInfo.perusahaan}
+                    onChange={(e) => setReportInfo(prev => ({...prev, perusahaan: e.target.value}))}
+                    placeholder="Nama perusahaan"
+                    className="bg-white/50 border-gray-300 dark:border-gray-600"
+                    data-testid="input-perusahaan"
+                  />
+                </div>
+
+                <div>
+                  <Label className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                    Nama Pengawas
+                  </Label>
+                  <Input
+                    value={reportInfo.namaPengawas}
+                    onChange={(e) => setReportInfo(prev => ({...prev, namaPengawas: e.target.value}))}
+                    placeholder="Nama pengawas"
+                    className="bg-white/50 border-gray-300 dark:border-gray-600"
+                    data-testid="input-nama-pengawas"
+                  />
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <Label className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                      Waktu
+                    </Label>
+                    <Input
+                      value={reportInfo.waktu}
+                      onChange={(e) => setReportInfo(prev => ({...prev, waktu: e.target.value}))}
+                      placeholder="17:00 - 18:30"
+                      className="bg-white/50 border-gray-300 dark:border-gray-600"
+                      data-testid="input-waktu"
+                    />
+                  </div>
+                  <div>
+                    <Label className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                      Shift
+                    </Label>
+                    <Select value={reportInfo.shift} onValueChange={(value) => setReportInfo(prev => ({...prev, shift: value}))}>
+                      <SelectTrigger className="bg-white/50 border-gray-300 dark:border-gray-600" data-testid="select-shift">
+                        <SelectValue placeholder="Pilih Shift" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="Shift 1">Shift 1</SelectItem>
+                        <SelectItem value="Shift 2">Shift 2</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+
+                <div>
+                  <Label className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                    Tempat
+                  </Label>
+                  <Input
+                    value={reportInfo.tempat}
+                    onChange={(e) => setReportInfo(prev => ({...prev, tempat: e.target.value}))}
+                    placeholder="Titik Kumpul Workshop GECL"
+                    className="bg-white/50 border-gray-300 dark:border-gray-600"
+                    data-testid="input-tempat"
+                  />
+                </div>
+
+                <div>
+                  <Label className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                    Diperiksa Oleh
+                  </Label>
+                  <Input
+                    value={reportInfo.diperiksaOleh}
+                    onChange={(e) => setReportInfo(prev => ({...prev, diperiksaOleh: e.target.value}))}
+                    placeholder="Nama pengawas pool"
+                    className="bg-white/50 border-gray-300 dark:border-gray-600"
+                    data-testid="input-diperiksa-oleh"
+                  />
+                </div>
+
+                <div>
+                  <Label className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                    Catatan
+                  </Label>
+                  <Textarea
+                    value={reportInfo.catatan || ""}
+                    onChange={(e) => setReportInfo(prev => ({...prev, catatan: e.target.value}))}
+                    placeholder="Catatan tambahan (opsional)"
+                    className="bg-white/50 border-gray-300 dark:border-gray-600"
+                    data-testid="input-catatan"
+                    rows={3}
+                  />
+                </div>
+
+                <div>
+                  <Label className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                    Upload Tanda Tangan
+                  </Label>
+                  <Input
+                    type="file"
+                    accept="image/*"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0] ?? null;
+                      setReportInfo(prev => ({...prev, tandaTangan: file}));
+                    }}
+                    className="bg-white/50 border-gray-300 dark:border-gray-600 file:bg-gray-100 file:text-gray-700"
+                    data-testid="input-tanda-tangan"
+                  />
+                  {reportInfo.tandaTangan && (
+                    <p className="text-xs text-emerald-600 dark:text-emerald-400 mt-2 flex items-center gap-1">
+                      <CheckCircle className="w-3 h-3" />
+                      File dipilih: {typeof reportInfo.tandaTangan === 'string' ? 'Signature uploaded' : reportInfo.tandaTangan.name}
+                    </p>
+                  )}
+                </div>
+              </div>
+            
+            <div className="bg-teal-50 dark:bg-teal-900/20 rounded-xl p-4 border border-teal-200 dark:border-teal-800">
+              <div className="flex items-center gap-2 mb-3">
+                <Download className="w-5 h-5 text-teal-600 dark:text-teal-400" />
+                <Label className="text-sm font-medium text-teal-700 dark:text-teal-300">
+                  Format & Orientasi
+                </Label>
+              </div>
+              <RadioGroup value={format} onValueChange={setFormat} className="space-y-3">
+                <div className="flex items-center space-x-3 p-3 bg-white/50 rounded-lg border border-teal-100 dark:border-teal-700">
+                  <RadioGroupItem value="pdf" id="format-pdf" data-testid="format-pdf" />
+                  <Label htmlFor="format-pdf" className="text-sm text-gray-700 dark:text-gray-300 flex items-center gap-2">
+                    <FileText className="w-4 h-4" />
+                    PDF Landscape (ReportLab Style)
+                  </Label>
+                </div>
+                <div className="flex items-center space-x-3 p-3 bg-white/50 rounded-lg border border-teal-100 dark:border-teal-700">
+                  <RadioGroupItem value="pdf-portrait" id="format-pdf-portrait" data-testid="format-pdf-portrait" />
+                  <Label htmlFor="format-pdf-portrait" className="text-sm text-gray-700 dark:text-gray-300 flex items-center gap-2">
+                    <FileText className="w-4 h-4" />
+                    PDF A4 Portrait (Professional)
+                  </Label>
+                </div>
+                <div className="flex items-center space-x-3 p-3 bg-white/50 rounded-lg border border-teal-100 dark:border-teal-700">
+                  <RadioGroupItem value="csv" id="format-csv" data-testid="format-csv" />
+                  <Label htmlFor="format-csv" className="text-sm text-gray-700 dark:text-gray-300 flex items-center gap-2">
+                    <BarChart3 className="w-4 h-4" />
+                    CSV
+                  </Label>
+                </div>
+              </RadioGroup>
+            </div>
+            
+            <Button 
+              onClick={handleExport} 
+              className="w-full h-12 bg-gradient-to-r from-emerald-500 to-green-500 hover:from-emerald-600 hover:to-green-600 text-white shadow-lg font-medium"
+              data-testid="download-report-button"
+              disabled={!startDate || !endDate || isExporting}
+            >
+              <Download className="w-5 h-5 mr-2" />
+              {isExporting ? "Generating Report..." : "Generate & Download"}
+            </Button>
+        </div>
+        
+        {/* Enhanced Recent Reports */}
+        <div className="bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-2xl shadow-sm overflow-hidden">
+          <div className="bg-gradient-to-r from-gray-50 to-purple-50 dark:from-gray-800 dark:to-purple-900/10 p-6 border-b border-gray-100 dark:border-gray-700">
+            <div className="flex items-center justify-between">
+              <div className="space-y-1">
+                <h2 className="text-xl font-semibold text-gray-900 dark:text-white">Recent Reports</h2>
+                <p className="text-sm text-gray-600 dark:text-gray-400">Laporan yang telah dibuat sebelumnya</p>
+              </div>
+              <div className="w-12 h-12 bg-purple-100 dark:bg-purple-900/20 rounded-2xl flex items-center justify-center">
+                <Activity className="w-6 h-6 text-purple-600 dark:text-purple-400" />
+              </div>
+            </div>
+          </div>
+          <div className="p-6">
+            <div className="space-y-4">
               {[
                 {
                   title: "Laporan Absensi Bulan Ini",
                   description: "Dibuat hari ini",
                   type: "attendance",
-                  icon: Calendar
+                  icon: Calendar,
+                  color: "blue",
+                  status: "Tersedia"
                 },
                 {
                   title: "Laporan Cuti Q4 2024",
                   description: "Dibuat 2 hari yang lalu",
                   type: "leave",
-                  icon: FileText
+                  icon: FileText,
+                  color: "emerald",
+                  status: "Tersedia"
                 },
                 {
                   title: "Laporan Ringkasan Karyawan",
                   description: "Dibuat 1 minggu yang lalu",
                   type: "summary",
-                  icon: Users
+                  icon: Users,
+                  color: "purple",
+                  status: "Tersedia"
                 }
               ].map((report, index) => (
                 <div 
                   key={index} 
-                  className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700 rounded-lg"
+                  className="group flex items-center justify-between p-4 bg-gradient-to-r from-gray-50 to-blue-50 dark:from-gray-700/30 dark:to-blue-900/10 rounded-xl border border-gray-200 dark:border-gray-600 hover:shadow-md transition-all duration-200"
                   data-testid={`recent-report-${report.type}`}
                 >
-                  <div className="flex items-center">
-                    <report.icon className="w-5 h-5 text-gray-600 dark:text-gray-400 mr-3" />
+                  <div className="flex items-center space-x-4">
+                    <div className={`w-12 h-12 bg-${report.color}-100 dark:bg-${report.color}-900/20 rounded-2xl flex items-center justify-center`}>
+                      <report.icon className={`w-6 h-6 text-${report.color}-600 dark:text-${report.color}-400`} />
+                    </div>
                     <div>
-                      <p className="text-sm font-medium text-gray-900 dark:text-white">{report.title}</p>
+                      <p className="text-sm font-semibold text-gray-900 dark:text-white group-hover:text-blue-700 dark:group-hover:text-blue-300">{report.title}</p>
                       <p className="text-xs text-gray-500 dark:text-gray-400">{report.description}</p>
+                      <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-emerald-100 text-emerald-800 dark:bg-emerald-900/20 dark:text-emerald-400 mt-1">
+                        {report.status}
+                      </span>
                     </div>
                   </div>
                   <Button 
                     variant="ghost" 
                     size="sm"
-                    className="text-primary-600 hover:text-primary-700"
+                    className="h-10 px-4 text-blue-600 hover:text-blue-700 hover:bg-blue-100 dark:hover:bg-blue-900/20 transition-colors"
                     data-testid={`download-recent-${report.type}`}
                   >
-                    <Download className="w-4 h-4 mr-1" />
+                    <Download className="w-4 h-4 mr-2" />
                     Download
                   </Button>
                 </div>
