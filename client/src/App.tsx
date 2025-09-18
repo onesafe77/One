@@ -5,7 +5,6 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { ThemeProvider } from "@/hooks/use-theme";
 
 import { Workspace } from "@/components/workspace";
-import Landing from "@/pages/landing";
 import MobileDriverView from "@/pages/mobile-driver-view";
 import DriverView from "@/pages/driver-view";
 import { Route, Switch } from "wouter";
@@ -80,8 +79,13 @@ function Router() {
         }}
       </Route>
       
-      {/* Landing Page */}
-      <Route path="/" component={Landing} />
+      {/* Root Path - Redirect to Workspace */}
+      <Route path="/">
+        {() => {
+          window.location.replace('/workspace');
+          return <div>Redirecting to workspace...</div>;
+        }}
+      </Route>
       
       {/* Catch-all redirect untuk direct access ke workspace pages */}
       <Route path="/:rest*">

@@ -68,12 +68,12 @@ export function Header({ title, onMenuClick }: HeaderProps) {
             </p>
           </div>
           
-          <Link href="/">
+          <Link href="/workspace">
             <Button
               variant="ghost"
               size="icon"
               className="hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
-              title="Back to Landing Page"
+              title="Go to Dashboard"
               data-testid="link-home"
             >
               <Home className="w-4 h-4" />
