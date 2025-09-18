@@ -1177,6 +1177,46 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Endpoint untuk update semua QR codes ke format URL driver view
+  app.post("/api/qr/update-all", async (req, res) => {
+    try {
+      const secretKey = process.env.QR_SECRET_KEY || 'AttendanceQR2024';
+      const baseUrl = process.env.REPLIT_DOMAINS 
+        ? `https://${process.env.REPLIT_DOMAINS.split(',')[0]}`
+        : 'http://localhost:5000';
+
+      // Get all employees
+      const employees = await storage.getAllEmployees();
+      
+      let updateCount = 0;
+      for (const employee of employees) {
+        // Generate new URL format for each employee
+        const timestamp = Date.now();
+        const expiry = timestamp + (24 * 60 * 60 * 1000); // 24 hours validity
+        const signatureData = `${employee.id}:${expiry}:${secretKey}`;
+        const signature = Buffer.from(signatureData).toString('base64').slice(0, 16)
+          .replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '');
+        
+        const directUrl = `${baseUrl}/workspace/driver-view?nik=${employee.id}&sig=${signature}&exp=${expiry}`;
+        
+        // Update employee with new QR URL
+        await storage.updateEmployee(employee.id, { qrCode: directUrl });
+        updateCount++;
+      }
+
+      // Clear caches after update
+      clearAllCaches();
+
+      res.json({
+        message: `Successfully updated ${updateCount} QR codes to URL format`,
+        updatedCount: updateCount
+      });
+    } catch (error) {
+      console.error('Error updating QR codes:', error);
+      res.status(500).json({ message: "Failed to update QR codes" });
+    }
+  });
+
   // Test page for mobile redirect verification
   app.get("/test-mobile-redirect", (req, res) => {
     const userAgent = req.get('User-Agent') || '';
